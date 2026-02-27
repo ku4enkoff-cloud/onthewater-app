@@ -74,22 +74,26 @@ function RangeSlider({ low, high, min, max, onChange }) {
     const lowX = toX(low);
     const highX = toX(high);
 
+    const maxThumbRight = Math.max(0, layoutW.current - THUMB_R * 2);
+    const lowThumbLeft = Math.max(0, lowX - THUMB_R);
+    const highThumbLeft = Math.min(Math.max(highX - THUMB_R, lowThumbLeft + THUMB_R * 2), maxThumbRight);
+
     return (
         <View ref={trackRef} style={[sliderStyles.track, { width: '100%' }]} onLayout={onLayout}>
             <View style={sliderStyles.trackBg} />
             <View
                 style={[
                     sliderStyles.trackFill,
-                    { left: lowX, width: highX - lowX },
+                    { left: lowX, width: Math.max(0, highX - lowX) },
                 ]}
             />
             <View
                 {...lowResp.panHandlers}
-                style={[sliderStyles.thumb, { left: lowX - THUMB_R }]}
+                style={[sliderStyles.thumb, { left: lowThumbLeft }]}
             />
             <View
                 {...highResp.panHandlers}
-                style={[sliderStyles.thumb, { left: highX - THUMB_R }]}
+                style={[sliderStyles.thumb, { left: highThumbLeft }]}
             />
         </View>
     );
@@ -177,6 +181,7 @@ export default function PriceFilterModal({ visible, onClose, priceMin = 0, price
                                 {formatPrice(low)} – {formatPrice(high)} ₽
                             </Text>
                         </View>
+                        <View style={{ paddingHorizontal: THUMB_R, overflow: 'visible' }}>
                         <RangeSlider
                             low={low}
                             high={high}
@@ -187,6 +192,7 @@ export default function PriceFilterModal({ visible, onClose, priceMin = 0, price
                                 setHigh(h);
                             }}
                         />
+                        </View>
                     </View>
 
                     <View style={styles.footer}>
@@ -237,6 +243,7 @@ const styles = StyleSheet.create({
     },
     content: {
         paddingVertical: 24,
+        overflow: 'visible',
     },
     labelRow: {
         flexDirection: 'row',
