@@ -26,6 +26,8 @@ const resolvePhotoUri = (src) => {
 import FiltersModal from '../components/FiltersModal';
 import PriceFilterModal from '../components/PriceFilterModal';
 import PassengersFilterModal from '../components/PassengersFilterModal';
+import DurationFilterModal from '../components/DurationFilterModal';
+import BoatTypeFilterModal from '../components/BoatTypeFilterModal';
 
 const NAVY = '#1B365D';
 
@@ -56,6 +58,8 @@ const DEFAULT_FILTERS = {
     duration: null,
     captain: null,
     activity: null,
+    boatTypeId: null,
+    boatTypeName: null,
 };
 
 const pluralizeReviews = (n) => {
@@ -78,6 +82,8 @@ export default function SearchResultsScreen({ route, navigation }) {
     const [filtersVisible, setFiltersVisible] = useState(false);
     const [priceModalVisible, setPriceModalVisible] = useState(false);
     const [passengersModalVisible, setPassengersModalVisible] = useState(false);
+    const [durationModalVisible, setDurationModalVisible] = useState(false);
+    const [boatTypeModalVisible, setBoatTypeModalVisible] = useState(false);
     const [filters, setFilters] = useState(DEFAULT_FILTERS);
     const [mapModalVisible, setMapModalVisible] = useState(false);
     const [mapBoats, setMapBoats] = useState([]);
@@ -209,6 +215,35 @@ export default function SearchResultsScreen({ route, navigation }) {
         return Math.max(1, Math.max(...caps));
     }, [allBoats]);
 
+    const durationOptions = useMemo(() => {
+        const fallback = [30, 60, 120, 180, 240, 360, 480];
+        if (allBoats.length === 0) return fallback;
+        const offeredSet = new Set();
+        for (const b of allBoats) {
+            const sm = Number(b.schedule_min_duration) || 60;
+            offeredSet.add(sm);
+            const tiers = Array.isArray(b.price_tiers) ? b.price_tiers : [];
+            for (const t of tiers) {
+                const d = Number(t.duration) || 0;
+                if (d > 0) offeredSet.add(d);
+            }
+        }
+        const offered = [...offeredSet].sort((a, b) => a - b);
+        return offered.length > 0 ? offered : fallback;
+    }, [allBoats]);
+
+    const boatTypes = useMemo(() => {
+        const seen = new Map();
+        for (const b of allBoats) {
+            const id = b.type_id ?? b.type_name;
+            const name = b.type_name || 'Без типа';
+            if (id != null && id !== '' && !seen.has(String(id))) {
+                seen.set(String(id), { id, name });
+            }
+        }
+        return [...seen.values()].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }, [allBoats]);
+
     useEffect(() => {
         if (priceRange.min === 0 && priceRange.max === 50000) return;
         setFilters((prev) => {
@@ -231,16 +266,28 @@ export default function SearchResultsScreen({ route, navigation }) {
         if (passengers > 1) {
             list = list.filter((b) => (Number(b.capacity) || 0) >= passengers);
         }
+        if (filters.duration) {
+            list = list.filter((b) => (Number(b.schedule_min_duration) || 60) <= filters.duration);
+        }
         if (captain === 'С капитаном') {
             list = list.filter((b) => b.captain_included);
         } else if (captain === 'Без капитана') {
             list = list.filter((b) => !b.captain_included);
+        }
+        if (filters.boatTypeId) {
+            list = list.filter(
+                (b) =>
+                    String(b.type_id) === String(filters.boatTypeId) ||
+                    ((b.type_name || '').toLowerCase() === (filters.boatTypeName || '').toLowerCase()),
+            );
         }
         return list;
     }, [allBoats, filters, priceRange.min, priceRange.max]);
 
     const isPriceFilterActive = filters.priceLow > priceRange.min || filters.priceHigh < priceRange.max;
     const isPassengersFilterActive = filters.passengers !== 1;
+    const isDurationFilterActive = !!filters.duration;
+    const isBoatTypeFilterActive = !!filters.boatTypeId || !!filters.boatTypeName;
 
     const formatPriceShort = (v) => {
         const n = Number(v) || 0;
@@ -253,6 +300,7 @@ export default function SearchResultsScreen({ route, navigation }) {
         if (filters.priceLow > priceRange.min || filters.priceHigh < priceRange.max) n++;
         if (filters.passengers !== 1) n++;
         if (filters.duration) n++;
+        if (filters.boatTypeId || filters.boatTypeName) n++;
         if (filters.captain) n++;
         if (filters.activity) n++;
         return n;
@@ -448,8 +496,62 @@ export default function SearchResultsScreen({ route, navigation }) {
                     ) : (
                         <FilterChip label="Гости" onPress={() => setPassengersModalVisible(true)} />
                     )}
-                    <FilterChip label="Длительность" onPress={() => setFiltersVisible(true)} />
-                    <FilterChip label="Тип" onPress={() => setFiltersVisible(true)} />
+                    {isDurationFilterActive ? (
+                        <TouchableOpacity
+                            style={styles.priceChipActive}
+                            activeOpacity={0.7}
+                            onPress={() => setDurationModalVisible(true)}
+                        >
+                            <Text style={styles.priceChipActiveText}>
+                                {(() => {
+                                    const d = filters.duration;
+                                    if (d < 60) return `${d} мин`;
+                                    const h = Math.floor(d / 60);
+                                    const m = d % 60;
+                                    if (m > 0) return `${h} ч ${m} мин`;
+                                    if (h === 1) return '1 час';
+                                    if (h >= 2 && h <= 4) return `${h} часа`;
+                                    return `${h} часов`;
+                                })()}
+                            </Text>
+                            <TouchableOpacity
+                                hitSlop={8}
+                                onPress={(e) => {
+                                    e.stopPropagation();
+                                    setFilters((prev) => ({ ...prev, duration: null }));
+                                }}
+                            >
+                                <X size={14} color={NAVY} />
+                            </TouchableOpacity>
+                        </TouchableOpacity>
+                    ) : (
+                        <FilterChip label="Длительность" onPress={() => setDurationModalVisible(true)} />
+                    )}
+                    {isBoatTypeFilterActive ? (
+                        <TouchableOpacity
+                            style={styles.priceChipActive}
+                            activeOpacity={0.7}
+                            onPress={() => setBoatTypeModalVisible(true)}
+                        >
+                            <Text style={styles.priceChipActiveText} numberOfLines={1}>
+                                {filters.boatTypeName || 'Тип'}
+                            </Text>
+                            <TouchableOpacity
+                                hitSlop={8}
+                                onPress={(e) => {
+                                    e.stopPropagation();
+                                    setFilters((prev) => ({ ...prev, boatTypeId: null, boatTypeName: null }));
+                                }}
+                            >
+                                <X size={14} color={NAVY} />
+                            </TouchableOpacity>
+                        </TouchableOpacity>
+                    ) : (
+                        <FilterChip
+                            label="Тип катера"
+                            onPress={() => setBoatTypeModalVisible(true)}
+                        />
+                    )}
                 </ScrollView>
             </View>
 
@@ -474,6 +576,21 @@ export default function SearchResultsScreen({ route, navigation }) {
                 onClose={() => setPassengersModalVisible(false)}
                 passengers={filters.passengers}
                 maxPassengers={maxPassengers}
+                onApply={(p) => setFilters((prev) => ({ ...prev, ...p }))}
+            />
+            <DurationFilterModal
+                visible={durationModalVisible}
+                onClose={() => setDurationModalVisible(false)}
+                duration={filters.duration}
+                durationOptions={durationOptions}
+                onApply={(p) => setFilters((prev) => ({ ...prev, ...p }))}
+            />
+            <BoatTypeFilterModal
+                visible={boatTypeModalVisible}
+                onClose={() => setBoatTypeModalVisible(false)}
+                boatTypeId={filters.boatTypeId}
+                boatTypeName={filters.boatTypeName}
+                boatTypes={boatTypes}
                 onApply={(p) => setFilters((prev) => ({ ...prev, ...p }))}
             />
 
