@@ -426,6 +426,21 @@ export default function SearchScreen({ navigation }) {
         <View style={styles.container}>
             <StatusBar style="dark" />
             {listContent}
+            <LocationPickerModal
+                visible={locationModalVisible}
+                onClose={() => {
+                    setLocationModalVisible(false);
+                    setSelectedCategory(null);
+                }}
+                onSelect={({ useMyLocation, cityName }) => {
+                    navigation.navigate('CityBoats', {
+                        useMyLocation: !!useMyLocation,
+                        cityName: useMyLocation ? null : cityName,
+                        boatTypeId: selectedCategory?.id,
+                        boatTypeName: selectedCategory?.name,
+                    });
+                }}
+            />
         </View>
     );
 }

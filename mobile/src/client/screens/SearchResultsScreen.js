@@ -69,7 +69,7 @@ const pluralizeBookings = (n) => {
 
 export default function SearchResultsScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
-    const { cityName, dateISO, useMyLocation } = route.params || {};
+    const { cityName, dateISO, useMyLocation, boatTypeId, boatTypeName } = route.params || {};
     const { toggleFavorite, isFavorite } = useContext(FavoritesContext);
     const [allBoats, setAllBoats] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -113,7 +113,7 @@ export default function SearchResultsScreen({ route, navigation }) {
             }
             const res = await api.get('/boats', { params: { lat, lng, radius: 50 } });
             const list = Array.isArray(res.data) ? res.data : [];
-            const filtered =
+            let filtered =
                 useMyLocation || !cityName
                     ? list
                     : list.filter(
@@ -121,6 +121,13 @@ export default function SearchResultsScreen({ route, navigation }) {
                               (b.location_city || '').trim().toLowerCase() ===
                               (cityName || '').toLowerCase(),
                       );
+            if (boatTypeId) {
+                filtered = filtered.filter(
+                    (b) =>
+                        String(b.type_id) === String(boatTypeId) ||
+                        (boatTypeName && (b.type_name || '').toLowerCase() === (boatTypeName || '').toLowerCase()),
+                );
+            }
             setAllBoats(filtered);
         } catch (e) {
             console.log('SearchResults fetch error', e);
@@ -128,7 +135,7 @@ export default function SearchResultsScreen({ route, navigation }) {
         } finally {
             setLoading(false);
         }
-    }, [cityName, useMyLocation]);
+    }, [cityName, useMyLocation, boatTypeId, boatTypeName]);
 
     useEffect(() => {
         fetchBoats();
