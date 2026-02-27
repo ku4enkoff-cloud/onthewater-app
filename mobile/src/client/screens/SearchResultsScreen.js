@@ -12,7 +12,7 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, ChevronDown, Heart, Zap, MapPin, Star, SlidersHorizontal } from 'lucide-react-native';
+import { ChevronLeft, ChevronDown, Heart, Zap, MapPin, Star, SlidersHorizontal, X } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 import { API_BASE } from '../../shared/infrastructure/config';
