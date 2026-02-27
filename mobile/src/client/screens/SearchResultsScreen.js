@@ -25,6 +25,7 @@ const resolvePhotoUri = (src) => {
 };
 import FiltersModal from '../components/FiltersModal';
 import PriceFilterModal from '../components/PriceFilterModal';
+import PassengersFilterModal from '../components/PassengersFilterModal';
 
 const NAVY = '#1B365D';
 
@@ -51,7 +52,7 @@ if (isMapAvailable) {
 const DEFAULT_FILTERS = {
     priceLow: 0,
     priceHigh: 50000,
-    passengers: 4,
+    passengers: 1,
     duration: null,
     captain: null,
     activity: null,
@@ -76,6 +77,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     const [loading, setLoading] = useState(true);
     const [filtersVisible, setFiltersVisible] = useState(false);
     const [priceModalVisible, setPriceModalVisible] = useState(false);
+    const [passengersModalVisible, setPassengersModalVisible] = useState(false);
     const [filters, setFilters] = useState(DEFAULT_FILTERS);
     const [mapModalVisible, setMapModalVisible] = useState(false);
     const [mapBoats, setMapBoats] = useState([]);
@@ -201,6 +203,12 @@ export default function SearchResultsScreen({ route, navigation }) {
         return { min, max: max > min ? max : min + 1000 };
     }, [allBoats]);
 
+    const maxPassengers = useMemo(() => {
+        const caps = allBoats.map((b) => Number(b.capacity) || 0).filter((c) => c > 0);
+        if (caps.length === 0) return 20;
+        return Math.max(1, Math.max(...caps));
+    }, [allBoats]);
+
     useEffect(() => {
         if (priceRange.min === 0 && priceRange.max === 50000) return;
         setFilters((prev) => {
@@ -220,7 +228,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                 return p >= priceLow && p <= priceHigh;
             });
         }
-        if (passengers !== 4) {
+        if (passengers > 1) {
             list = list.filter((b) => (Number(b.capacity) || 0) >= passengers);
         }
         if (captain === 'С капитаном') {
@@ -232,6 +240,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     }, [allBoats, filters, priceRange.min, priceRange.max]);
 
     const isPriceFilterActive = filters.priceLow > priceRange.min || filters.priceHigh < priceRange.max;
+    const isPassengersFilterActive = filters.passengers !== 1;
 
     const formatPriceShort = (v) => {
         const n = Number(v) || 0;
@@ -242,7 +251,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     const activeFilters = useMemo(() => {
         let n = 0;
         if (filters.priceLow > priceRange.min || filters.priceHigh < priceRange.max) n++;
-        if (filters.passengers !== 4) n++;
+        if (filters.passengers !== 1) n++;
         if (filters.duration) n++;
         if (filters.captain) n++;
         if (filters.activity) n++;
@@ -417,7 +426,28 @@ export default function SearchResultsScreen({ route, navigation }) {
                     ) : (
                         <FilterChip label="Цена" onPress={() => setPriceModalVisible(true)} />
                     )}
-                    <FilterChip label="Гости" onPress={() => setFiltersVisible(true)} />
+                    {isPassengersFilterActive ? (
+                        <TouchableOpacity
+                            style={styles.priceChipActive}
+                            activeOpacity={0.7}
+                            onPress={() => setPassengersModalVisible(true)}
+                        >
+                            <Text style={styles.priceChipActiveText}>
+                                {filters.passengers} {filters.passengers === 1 ? 'гость' : filters.passengers >= 2 && filters.passengers <= 4 ? 'гостя' : 'гостей'}
+                            </Text>
+                            <TouchableOpacity
+                                hitSlop={8}
+                                onPress={(e) => {
+                                    e.stopPropagation();
+                                    setFilters((prev) => ({ ...prev, passengers: 1 }));
+                                }}
+                            >
+                                <X size={14} color={NAVY} />
+                            </TouchableOpacity>
+                        </TouchableOpacity>
+                    ) : (
+                        <FilterChip label="Гости" onPress={() => setPassengersModalVisible(true)} />
+                    )}
                     <FilterChip label="Длительность" onPress={() => setFiltersVisible(true)} />
                     <FilterChip label="Тип" onPress={() => setFiltersVisible(true)} />
                 </ScrollView>
@@ -437,6 +467,13 @@ export default function SearchResultsScreen({ route, navigation }) {
                 priceMax={priceRange.max}
                 priceLow={filters.priceLow}
                 priceHigh={filters.priceHigh}
+                onApply={(p) => setFilters((prev) => ({ ...prev, ...p }))}
+            />
+            <PassengersFilterModal
+                visible={passengersModalVisible}
+                onClose={() => setPassengersModalVisible(false)}
+                passengers={filters.passengers}
+                maxPassengers={maxPassengers}
                 onApply={(p) => setFilters((prev) => ({ ...prev, ...p }))}
             />
 
