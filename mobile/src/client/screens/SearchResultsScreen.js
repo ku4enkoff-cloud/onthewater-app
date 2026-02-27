@@ -24,6 +24,7 @@ const resolvePhotoUri = (src) => {
     return API_BASE + (src.startsWith('/') ? src : '/' + src);
 };
 import FiltersModal from '../components/FiltersModal';
+import PriceFilterModal from '../components/PriceFilterModal';
 
 const NAVY = '#1B365D';
 
@@ -74,6 +75,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     const [allBoats, setAllBoats] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filtersVisible, setFiltersVisible] = useState(false);
+    const [priceModalVisible, setPriceModalVisible] = useState(false);
     const [filters, setFilters] = useState(DEFAULT_FILTERS);
     const [mapModalVisible, setMapModalVisible] = useState(false);
     const [mapBoats, setMapBoats] = useState([]);
@@ -189,10 +191,30 @@ export default function SearchResultsScreen({ route, navigation }) {
         };
     }, [mapModalVisible, fetchBoatsForMap]);
 
+    const priceRange = useMemo(() => {
+        const prices = allBoats
+            .map((b) => Number(b.price_per_hour) || 0)
+            .filter((p) => p > 0);
+        if (prices.length === 0) return { min: 0, max: 50000 };
+        const min = Math.min(...prices);
+        const max = Math.max(...prices);
+        return { min, max: max > min ? max : min + 1000 };
+    }, [allBoats]);
+
+    useEffect(() => {
+        if (priceRange.min === 0 && priceRange.max === 50000) return;
+        setFilters((prev) => {
+            if (prev.priceLow === 0 && prev.priceHigh === 50000) {
+                return { ...prev, priceLow: priceRange.min, priceHigh: priceRange.max };
+            }
+            return prev;
+        });
+    }, [priceRange.min, priceRange.max]);
+
     const boats = useMemo(() => {
         let list = [...allBoats];
         const { priceLow, priceHigh, passengers, captain } = filters;
-        if (priceLow > 0 || priceHigh < 50000) {
+        if (priceLow > priceRange.min || priceHigh < priceRange.max) {
             list = list.filter((b) => {
                 const p = Number(b.price_per_hour) || 0;
                 return p >= priceLow && p <= priceHigh;
@@ -207,17 +229,17 @@ export default function SearchResultsScreen({ route, navigation }) {
             list = list.filter((b) => !b.captain_included);
         }
         return list;
-    }, [allBoats, filters]);
+    }, [allBoats, filters, priceRange.min, priceRange.max]);
 
     const activeFilters = useMemo(() => {
         let n = 0;
-        if (filters.priceLow > 0 || filters.priceHigh < 50000) n++;
+        if (filters.priceLow > priceRange.min || filters.priceHigh < priceRange.max) n++;
         if (filters.passengers !== 4) n++;
         if (filters.duration) n++;
         if (filters.captain) n++;
         if (filters.activity) n++;
         return n;
-    }, [filters]);
+    }, [filters, priceRange.min, priceRange.max]);
 
     const renderBoatCard = ({ item }) => {
         const photoCount = Array.isArray(item.photos) ? item.photos.length : 0;
@@ -361,7 +383,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                             Фильтры{activeFilters > 0 ? ` (${activeFilters})` : ''}
                         </Text>
                     </TouchableOpacity>
-                    <FilterChip label="Цена" onPress={() => setFiltersVisible(true)} />
+                    <FilterChip label="Цена" onPress={() => setPriceModalVisible(true)} />
                     <FilterChip label="Гости" onPress={() => setFiltersVisible(true)} />
                     <FilterChip label="Длительность" onPress={() => setFiltersVisible(true)} />
                     <FilterChip label="Тип" onPress={() => setFiltersVisible(true)} />
@@ -374,6 +396,15 @@ export default function SearchResultsScreen({ route, navigation }) {
                 filters={filters}
                 onApply={setFilters}
                 totalResults={boats.length}
+            />
+            <PriceFilterModal
+                visible={priceModalVisible}
+                onClose={() => setPriceModalVisible(false)}
+                priceMin={priceRange.min}
+                priceMax={priceRange.max}
+                priceLow={filters.priceLow}
+                priceHigh={filters.priceHigh}
+                onApply={(p) => setFilters((prev) => ({ ...prev, ...p }))}
             />
 
             {/* Boat list */}
