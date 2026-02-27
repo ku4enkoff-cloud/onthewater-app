@@ -95,7 +95,15 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
         setLoadingSuggest(true);
         const url = `${YANDEX_SUGGEST_URL}?apikey=${encodeURIComponent(YANDEX_GEO_SUGGEST_API_KEY)}&text=${encodeURIComponent(debouncedQuery)}&types=locality,province,country&lang=ru&results=10`;
         fetch(url)
-            .then((r) => r.json())
+            .then(async (r) => {
+                const text = await r.text();
+                if (!text?.trim()) return { results: [] };
+                try {
+                    return JSON.parse(text);
+                } catch (_) {
+                    return { results: [] };
+                }
+            })
             .then((data) => {
                 const raw = data?.results || [];
                 const citiesSet = citiesSetRef.current;
