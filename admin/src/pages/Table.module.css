@@ -1,0 +1,160 @@
+.loading {
+  padding: 2rem;
+  color: #64748b;
+}
+
+.title {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  color: #1e293b;
+}
+
+.desc {
+  margin: 0 0 1rem;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.tab {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+}
+
+.tab:hover {
+  background: #f8fafc;
+}
+
+.tabActive {
+  background: #0d2d5c;
+  border-color: #0d2d5c;
+  color: #fff;
+}
+
+.tabActive:hover {
+  background: #1a4a7a;
+}
+
+.tableWrap {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.table th {
+  background: #f8fafc;
+  font-weight: 600;
+  color: #475569;
+}
+
+.table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.badgePending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.badgeConfirmed {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.badgeCancelled {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.empty {
+  padding: 2rem;
+  text-align: center;
+  color: #64748b;
+  margin: 0;
+}
+
+.thumb {
+  width: 60px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.select {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.btn {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: 1px solid #0d2d5c;
+  background: #0d2d5c;
+  color: #fff;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: #1a4a7a;
+}
+
+.dragHandle {
+  cursor: grab;
+  color: #94a3b8;
+  font-size: 1.1rem;
+  user-select: none;
+  vertical-align: middle;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.draggableRow {
+}
+
+.draggableRow.dragging {
+  opacity: 0.5;
+  background: #f1f5f9;
+}
+
+.draggableRow:hover .dragHandle {
+  color: #0d2d5c;
+}

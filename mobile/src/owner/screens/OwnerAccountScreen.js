@@ -1,0 +1,185 @@
+import React, { useContext, useState } from 'react';
+import {
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+    User, Bell, Settings, Plus, ChevronRight,
+} from 'lucide-react-native';
+import { AuthContext } from '../../shared/context/AuthContext';
+import { theme } from '../../shared/theme';
+
+let LinearGradient;
+try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
+
+const GRADIENT = ['#0A3D3D', '#0D5C5C', '#1A7A6E', '#3A9E7A'];
+const TEAL = '#0D5C5C';
+const NAVY = '#1B365D';
+const GOLD = '#E8A838';
+
+export default function OwnerAccountScreen({ navigation }) {
+    const insets = useSafeAreaInsets();
+    const { user, logout } = useContext(AuthContext);
+    const [loggingOut, setLoggingOut] = useState(false);
+
+    const initial = (user?.name || user?.email || 'O')[0].toUpperCase();
+    const displayName = user?.name || user?.email?.split('@')[0] || 'Владелец';
+
+    const handleLogout = () => {
+        Alert.alert('Выход', 'Вы действительно хотите выйти?', [
+            { text: 'Отмена', style: 'cancel' },
+            {
+                text: 'Выйти', style: 'destructive',
+                onPress: async () => {
+                    setLoggingOut(true);
+                    try { await logout(); } finally { setLoggingOut(false); }
+                },
+            },
+        ]);
+    };
+
+    const MENU = [
+        { icon: User, label: 'Данные аккаунта', screen: 'AccountInfo' },
+        { icon: Bell, label: 'Настройки уведомлений', screen: 'Notifications' },
+        { icon: Settings, label: 'Поддержка', screen: 'Support' },
+    ];
+
+    return (
+        <View style={s.root}>
+            <ScrollView
+                style={s.scroll}
+                contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* ---- Gradient header ---- */}
+                <View style={s.headerWrap}>
+                    {LinearGradient ? (
+                        <LinearGradient
+                            colors={GRADIENT}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={StyleSheet.absoluteFillObject}
+                        />
+                    ) : (
+                        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: TEAL }]} />
+                    )}
+
+                    <View style={[s.headerContent, { paddingTop: insets.top + 16 }]}>
+                        <Text style={s.headerTitle}>Аккаунт</Text>
+
+                        {/* Avatar */}
+                        <View style={s.avatarBlock}>
+                            <View style={s.avatarOuter}>
+                                <View style={s.avatar}>
+                                    <Text style={s.avatarLetter}>{initial}</Text>
+                                </View>
+                                <View style={s.avatarBadge}>
+                                    <Plus size={14} color="#fff" strokeWidth={3} />
+                                </View>
+                            </View>
+                            <Text style={s.displayName}>{displayName}</Text>
+                            <Text style={s.joinedText}>
+                                Зарегистрирован в {user?.created_at ? new Date(user.created_at).getFullYear() : new Date().getFullYear()} году
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* ---- Menu ---- */}
+                <View style={s.menuList}>
+                    {MENU.map((item, idx) => (
+                        <TouchableOpacity
+                            key={idx}
+                            style={[s.menuRow, idx < MENU.length - 1 && s.menuRowBorder]}
+                            activeOpacity={0.6}
+                            onPress={() => { if (item.screen) navigation.navigate(item.screen); }}
+                        >
+                            <item.icon size={22} color={NAVY} strokeWidth={1.6} />
+                            <Text style={s.menuLabel}>{item.label}</Text>
+                            <ChevronRight size={18} color={theme.colors.gray400} />
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                {/* ---- Bottom ---- */}
+                <View style={s.bottomBlock}>
+                    <TouchableOpacity
+                        onPress={handleLogout}
+                        disabled={loggingOut}
+                        activeOpacity={0.6}
+                    >
+                        <Text style={s.logoutText}>Выйти</Text>
+                    </TouchableOpacity>
+                    <Text style={s.versionText}>Версия 1.0.0</Text>
+                </View>
+            </ScrollView>
+        </View>
+    );
+}
+
+const s = StyleSheet.create({
+    root: { flex: 1, backgroundColor: '#F5F5F5' },
+    scroll: { flex: 1 },
+
+    /* Header */
+    headerWrap: {
+        overflow: 'hidden',
+        borderBottomLeftRadius: 24,
+        borderBottomRightRadius: 24,
+    },
+    headerContent: { paddingHorizontal: 24, paddingBottom: 32 },
+    headerTitle: {
+        fontSize: 26, fontFamily: theme.fonts.bold, color: '#fff',
+        marginBottom: 24,
+    },
+
+    avatarBlock: { alignItems: 'center' },
+    avatarOuter: { position: 'relative', marginBottom: 12 },
+    avatar: {
+        width: 80, height: 80, borderRadius: 40,
+        backgroundColor: '#E8E8E8',
+        justifyContent: 'center', alignItems: 'center',
+    },
+    avatarLetter: {
+        fontSize: 34, fontFamily: theme.fonts.semiBold, color: '#888',
+    },
+    avatarBadge: {
+        position: 'absolute', bottom: 0, right: -2,
+        width: 26, height: 26, borderRadius: 13,
+        backgroundColor: '#E8A838', justifyContent: 'center',
+        alignItems: 'center', borderWidth: 2.5, borderColor: '#fff',
+    },
+    displayName: {
+        fontSize: 22, fontFamily: theme.fonts.bold, color: '#fff',
+    },
+    joinedText: {
+        fontSize: 14, fontFamily: theme.fonts.regular,
+        color: 'rgba(255,255,255,0.7)', marginTop: 2,
+    },
+
+    /* Menu */
+    menuList: { marginTop: 24, paddingHorizontal: 20 },
+    menuRow: {
+        flexDirection: 'row', alignItems: 'center',
+        paddingVertical: 20,
+    },
+    menuRowBorder: {
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: '#E5E7EB',
+    },
+    menuLabel: {
+        flex: 1, fontSize: 16, fontFamily: theme.fonts.regular,
+        color: NAVY, marginLeft: 16,
+    },
+
+    /* Bottom */
+    bottomBlock: { alignItems: 'center', marginTop: 60 },
+    logoutText: {
+        fontSize: 16, fontFamily: theme.fonts.semiBold, color: TEAL,
+        marginBottom: 6,
+    },
+    versionText: {
+        fontSize: 13, fontFamily: theme.fonts.regular,
+        color: theme.colors.gray400,
+    },
+});
