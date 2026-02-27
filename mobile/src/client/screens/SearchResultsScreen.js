@@ -231,6 +231,14 @@ export default function SearchResultsScreen({ route, navigation }) {
         return list;
     }, [allBoats, filters, priceRange.min, priceRange.max]);
 
+    const isPriceFilterActive = filters.priceLow > priceRange.min || filters.priceHigh < priceRange.max;
+
+    const formatPriceShort = (v) => {
+        const n = Number(v) || 0;
+        if (n >= 1000) return Math.round(n / 1000).toLocaleString('ru-RU') + ' 000';
+        return String(n);
+    };
+
     const activeFilters = useMemo(() => {
         let n = 0;
         if (filters.priceLow > priceRange.min || filters.priceHigh < priceRange.max) n++;
@@ -383,7 +391,32 @@ export default function SearchResultsScreen({ route, navigation }) {
                             Фильтры{activeFilters > 0 ? ` (${activeFilters})` : ''}
                         </Text>
                     </TouchableOpacity>
-                    <FilterChip label="Цена" onPress={() => setPriceModalVisible(true)} />
+                    {isPriceFilterActive ? (
+                        <TouchableOpacity
+                            style={styles.priceChipActive}
+                            activeOpacity={0.7}
+                            onPress={() => setPriceModalVisible(true)}
+                        >
+                            <Text style={styles.priceChipActiveText}>
+                                {formatPriceShort(filters.priceLow)} – {formatPriceShort(filters.priceHigh)} ₽
+                            </Text>
+                            <TouchableOpacity
+                                hitSlop={8}
+                                onPress={(e) => {
+                                    e.stopPropagation();
+                                    setFilters((prev) => ({
+                                        ...prev,
+                                        priceLow: priceRange.min,
+                                        priceHigh: priceRange.max,
+                                    }));
+                                }}
+                            >
+                                <X size={14} color={NAVY} />
+                            </TouchableOpacity>
+                        </TouchableOpacity>
+                    ) : (
+                        <FilterChip label="Цена" onPress={() => setPriceModalVisible(true)} />
+                    )}
                     <FilterChip label="Гости" onPress={() => setFiltersVisible(true)} />
                     <FilterChip label="Длительность" onPress={() => setFiltersVisible(true)} />
                     <FilterChip label="Тип" onPress={() => setFiltersVisible(true)} />
@@ -608,6 +641,22 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontFamily: theme.fonts.medium,
         color: theme.colors.gray700,
+    },
+    priceChipActive: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: '#E8EEF5',
+        paddingVertical: 8,
+        paddingHorizontal: 14,
+        borderRadius: 20,
+        borderWidth: 1.5,
+        borderColor: NAVY,
+    },
+    priceChipActiveText: {
+        fontSize: 13,
+        fontFamily: theme.fonts.semiBold,
+        color: NAVY,
     },
 
     /* ---- List ---- */

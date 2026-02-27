@@ -14,9 +14,9 @@ import { theme } from '../../shared/theme';
 
 const NAVY = '#1B365D';
 const SCREEN_W = Dimensions.get('window').width;
-const SLIDER_H_PAD = 24;
-const TRACK_W = SCREEN_W - SLIDER_H_PAD * 2 - 48;
 const THUMB_R = 12;
+/** Ширина контента: экран минус отступы sheet (24*2) */
+const DEFAULT_TRACK_W = SCREEN_W - 48;
 
 
 function clamp(v, min, max) {
@@ -26,10 +26,21 @@ function clamp(v, min, max) {
 function RangeSlider({ low, high, min, max, onChange }) {
     const trackRef = useRef(null);
     const layoutX = useRef(0);
-    const layoutW = useRef(TRACK_W);
+    const layoutW = useRef(DEFAULT_TRACK_W);
 
-    const toX = (val) => ((val - min) / (max - min)) * layoutW.current;
-    const toVal = (x) => Math.round((x / layoutW.current) * (max - min) + min);
+    /** Эффективная ширина трека: минус места под бегунки по краям */
+    const effectiveW = () => Math.max(0, layoutW.current - THUMB_R * 2);
+    const toX = (val) => {
+        const w = effectiveW();
+        if (w <= 0) return THUMB_R;
+        return THUMB_R + ((val - min) / (max - min)) * w;
+    };
+    const toVal = (x) => {
+        const w = effectiveW();
+        if (w <= 0) return min;
+        const rel = (x - THUMB_R) / w;
+        return Math.round(rel * (max - min) + min);
+    };
 
     const makeResponder = (isHigh) =>
         PanResponder.create({
@@ -37,7 +48,8 @@ function RangeSlider({ low, high, min, max, onChange }) {
             onMoveShouldSetPanResponder: () => true,
             onPanResponderGrant: () => {},
             onPanResponderMove: (_, g) => {
-                const x = clamp(g.moveX - layoutX.current, 0, layoutW.current);
+                const rawX = g.moveX - layoutX.current;
+                const x = clamp(rawX, THUMB_R, layoutW.current - THUMB_R);
                 const val = toVal(x);
                 const step = Math.max(100, Math.round((max - min) / 50));
                 if (isHigh) {
@@ -52,18 +64,18 @@ function RangeSlider({ low, high, min, max, onChange }) {
     const highResp = useRef(makeResponder(true)).current;
 
     const onLayout = (e) => {
-        trackRef.current?.measureInWindow?.((x, _y, w) => {
+        const w = e.nativeEvent.layout.width;
+        if (w > 0) layoutW.current = w;
+        trackRef.current?.measureInWindow?.((x) => {
             layoutX.current = x;
-            layoutW.current = w;
         });
-        layoutW.current = e.nativeEvent.layout.width;
     };
 
     const lowX = toX(low);
     const highX = toX(high);
 
     return (
-        <View ref={trackRef} style={sliderStyles.track} onLayout={onLayout}>
+        <View ref={trackRef} style={[sliderStyles.track, { width: '100%' }]} onLayout={onLayout}>
             <View style={sliderStyles.trackBg} />
             <View
                 style={[
@@ -88,6 +100,7 @@ const sliderStyles = StyleSheet.create({
         height: 40,
         justifyContent: 'center',
         position: 'relative',
+        overflow: 'visible',
     },
     trackBg: {
         height: 4,
