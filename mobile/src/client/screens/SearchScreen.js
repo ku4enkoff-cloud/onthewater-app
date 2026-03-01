@@ -21,6 +21,7 @@ import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 import { API_BASE } from '../../shared/infrastructure/config';
 import { FavoritesContext } from '../../shared/context/FavoritesContext';
+import LocationPickerModal from '../components/LocationPickerModal';
 
 const resolvePhotoUri = (src) => {
     if (!src || typeof src !== 'string') return null;
@@ -94,6 +95,8 @@ export default function SearchScreen({ navigation }) {
     const [region] = useState({ latitude: 55.751244, longitude: 37.618423 });
     const [refreshing, setRefreshing] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
+    const [locationModalVisible, setLocationModalVisible] = useState(false);
+    const [selectedCategory, setSelectedCategory] = useState(null);
 
     const fetchBoatCategories = useCallback(async () => {
         try {
@@ -328,7 +331,15 @@ export default function SearchScreen({ navigation }) {
             <Text style={styles.sectionTitle}>Категории катеров</Text>
             <View style={styles.catGrid}>
                 {(boatCategories.length ? boatCategories : FALLBACK_CATEGORIES).map((c) => (
-                    <TouchableOpacity key={c.id} style={styles.catCard} activeOpacity={0.9}>
+                    <TouchableOpacity
+                        key={c.id}
+                        style={styles.catCard}
+                        activeOpacity={0.9}
+                        onPress={() => {
+                            setSelectedCategory(c);
+                            setLocationModalVisible(true);
+                        }}
+                    >
                         <Image source={{ uri: c.image }} style={styles.catImage} />
                         <Text style={styles.catName}>{c.name}</Text>
                     </TouchableOpacity>
@@ -415,6 +426,21 @@ export default function SearchScreen({ navigation }) {
         <View style={styles.container}>
             <StatusBar style="dark" />
             {listContent}
+            <LocationPickerModal
+                visible={locationModalVisible}
+                onClose={() => {
+                    setLocationModalVisible(false);
+                    setSelectedCategory(null);
+                }}
+                onSelect={({ useMyLocation, cityName }) => {
+                    navigation.navigate('CityBoats', {
+                        useMyLocation: !!useMyLocation,
+                        cityName: useMyLocation ? null : cityName,
+                        boatTypeId: selectedCategory?.id,
+                        boatTypeName: selectedCategory?.name,
+                    });
+                }}
+            />
         </View>
     );
 }

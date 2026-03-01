@@ -96,6 +96,21 @@ router.post('/', authenticate, requireRole(['owner', 'admin']), upload.array('ph
     }
 });
 
+// СПИСОК ГОРОДОВ С КАТЕРАМИ
+router.get('/cities', async (req, res, next) => {
+    try {
+        const result = await pool.query(
+            `SELECT DISTINCT location_city AS city FROM boats 
+             WHERE location_city IS NOT NULL 
+             AND TRIM(COALESCE(location_city, '')) <> ''
+             ORDER BY location_city`,
+        );
+        res.json(result.rows.map((r) => (r?.city ? String(r.city).trim() : null)).filter(Boolean));
+    } catch (err) {
+        next(err);
+    }
+});
+
 // ДЕТАЛИ КАЕТРА
 router.get('/:id', async (req, res, next) => {
     try {

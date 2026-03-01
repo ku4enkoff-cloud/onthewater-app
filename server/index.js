@@ -220,6 +220,21 @@ app.get('/boats', async (req, res) => {
     }
 });
 
+app.get('/boats/cities', async (req, res) => {
+    try {
+        const { rows } = await pool.query(
+            `SELECT DISTINCT location_city AS city FROM boats 
+             WHERE location_city IS NOT NULL 
+             AND TRIM(COALESCE(location_city, '')) <> ''
+             ORDER BY location_city`,
+        );
+        res.json(rows.map((r) => (r && r.city ? String(r.city).trim() : null)).filter(Boolean));
+    } catch (err) {
+        console.error('Get boats/cities error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 app.get('/boats/:id', async (req, res) => {
     try {
         const { rows } = await pool.query('SELECT * FROM boats WHERE id = $1', [parseInt(req.params.id, 10)]);
