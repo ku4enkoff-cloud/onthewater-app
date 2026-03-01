@@ -360,7 +360,17 @@ export default function SearchResultsScreen({ route, navigation }) {
                         ) : (
                             <>
                                 <Text style={styles.priceBadgeText}>от {(Number(item.price_per_hour) || 0).toLocaleString('ru-RU')} ₽</Text>
-                                <Text style={styles.priceUnit}>/час</Text>
+                                <Text style={styles.priceUnit}>
+                                    /{(() => {
+                                        const m = Number(item.schedule_min_duration) || 60;
+                                        if (m === 60) return 'час';
+                                        if (m < 60) return `${m} мин`;
+                                        const h = Math.floor(m / 60);
+                                        const min = m % 60;
+                                        if (min === 0) return h === 1 ? 'час' : `${h} ч`;
+                                        return `${h} ч ${min} мин`;
+                                    })()}
+                                </Text>
                             </>
                         )}
                     </View>
