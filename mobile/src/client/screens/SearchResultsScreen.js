@@ -89,6 +89,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     const [mapBoats, setMapBoats] = useState([]);
     const [mapLoading, setMapLoading] = useState(false);
     const [mapCenter, setMapCenter] = useState(DEFAULT_MAP_CENTER);
+    const userLocationRef = useRef(null);
     const mapRef = useRef(null);
     const mapPollRef = useRef(null);
     const lastMapCenterRef = useRef(null);
@@ -117,10 +118,13 @@ export default function SearchResultsScreen({ route, navigation }) {
                         if (pos?.coords) {
                             lat = pos.coords.latitude;
                             lng = pos.coords.longitude;
-                        }
-                    }
-                } catch (_) {}
-            }
+                            userLocationRef.current = { lat, lon: lng };
+                        } else userLocationRef.current = null;
+                    } else userLocationRef.current = null;
+                } catch (_) {
+                    userLocationRef.current = null;
+                }
+            } else userLocationRef.current = null;
             const res = await api.get('/boats', { params: { lat, lng, radius: 50 } });
             const list = Array.isArray(res.data) ? res.data : [];
             let filtered =
@@ -151,11 +155,16 @@ export default function SearchResultsScreen({ route, navigation }) {
         fetchBoats();
     }, [fetchBoats]);
 
-    const fetchBoatsForMap = useCallback(async (lat, lng) => {
+    const fetchBoatsForMap = useCallback(async (lat, lng, cityFilter = null) => {
         setMapLoading(true);
         try {
             const res = await api.get('/boats', { params: { lat, lng, radius: 50 } });
-            setMapBoats(Array.isArray(res.data) ? res.data : []);
+            let list = Array.isArray(res.data) ? res.data : [];
+            if (cityFilter) {
+                const city = (cityFilter || '').trim().toLowerCase();
+                list = list.filter((b) => (b.location_city || '').trim().toLowerCase() === city);
+            }
+            setMapBoats(list);
         } catch (_) {
             setMapBoats([]);
         } finally {
@@ -164,16 +173,28 @@ export default function SearchResultsScreen({ route, navigation }) {
     }, []);
 
     const openMapModal = useCallback(() => {
-        const center = cityName && CITY_COORDS[cityName]
-            ? CITY_COORDS[cityName]
-            : boats.length && boats[0].lat != null
-                ? { lat: boats[0].lat, lon: boats[0].lng }
-                : DEFAULT_MAP_CENTER;
+        let center;
+        if (useMyLocation && userLocationRef.current) {
+            center = { lat: userLocationRef.current.lat, lon: userLocationRef.current.lon };
+        } else if (cityName && CITY_COORDS[cityName]) {
+            center = CITY_COORDS[cityName];
+        } else if (boats.length > 0) {
+            const withCoords = boats.filter((b) => b.lat != null && b.lng != null);
+            if (withCoords.length > 0) {
+                const avgLat = withCoords.reduce((s, b) => s + Number(b.lat), 0) / withCoords.length;
+                const avgLon = withCoords.reduce((s, b) => s + Number(b.lng), 0) / withCoords.length;
+                center = { lat: avgLat, lon: avgLon };
+            } else {
+                center = DEFAULT_MAP_CENTER;
+            }
+        } else {
+            center = DEFAULT_MAP_CENTER;
+        }
         setMapCenter(center);
         setMapBoats(boats);
         setMapModalVisible(true);
         lastMapCenterRef.current = { lat: center.lat, lon: center.lon };
-    }, [boats, cityName]);
+    }, [boats, cityName, useMyLocation]);
 
     useEffect(() => {
         if (!mapModalVisible || !YaMap || !mapRef.current) return;
@@ -187,7 +208,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                     const same = last && Math.abs(last.lat - lat) < 0.01 && Math.abs(last.lon - lon) < 0.01;
                     if (!same) {
                         lastMapCenterRef.current = { lat, lon };
-                        fetchBoatsForMap(lat, lon);
+                        fetchBoatsForMap(lat, lon, !useMyLocation && cityName ? cityName : null);
                     }
                 });
             } catch (_) {}
@@ -197,7 +218,7 @@ export default function SearchResultsScreen({ route, navigation }) {
         return () => {
             if (mapPollRef.current) clearInterval(mapPollRef.current);
         };
-    }, [mapModalVisible, fetchBoatsForMap]);
+    }, [mapModalVisible, fetchBoatsForMap, cityName, useMyLocation]);
 
     const priceRange = useMemo(() => {
         const prices = allBoats

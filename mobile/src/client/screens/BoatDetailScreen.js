@@ -55,7 +55,7 @@ import {
     ShieldCheck,
 } from 'lucide-react-native';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 const NAVY = '#1B365D';
 const IMAGE_HEIGHT = 300;
 
@@ -182,6 +182,8 @@ export default function BoatDetailScreen({ route, navigation }) {
     const [reviewText, setReviewText] = useState('');
     const [reviewSubmitting, setReviewSubmitting] = useState(false);
     const [photoIndex, setPhotoIndex] = useState(0);
+    const [photoGalleryVisible, setPhotoGalleryVisible] = useState(false);
+    const galleryFlatListRef = useRef(null);
     const [descExpanded, setDescExpanded] = useState(false);
     const [specsOpen, setSpecsOpen] = useState(false);
     const [featuresExpanded, setFeaturesExpanded] = useState(false);
@@ -439,7 +441,17 @@ export default function BoatDetailScreen({ route, navigation }) {
                         }
                     >
                         {photos.map((uri, i) => (
-                            <Image key={i} source={{ uri }} style={styles.heroImage} resizeMode="cover" />
+                            <TouchableOpacity
+                                key={i}
+                                activeOpacity={1}
+                                onPress={() => {
+                                    setPhotoIndex(i);
+                                    setPhotoGalleryVisible(true);
+                                }}
+                                style={styles.heroImageWrap}
+                            >
+                                <Image source={{ uri }} style={styles.heroImage} resizeMode="cover" />
+                            </TouchableOpacity>
                         ))}
                     </ScrollView>
                     <LinearGradient
@@ -481,6 +493,73 @@ export default function BoatDetailScreen({ route, navigation }) {
                         </View>
                     )}
                 </View>
+
+                {/* Full-screen photo gallery modal */}
+                <Modal
+                    visible={photoGalleryVisible}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setPhotoGalleryVisible(false)}
+                >
+                    <View style={[fsGalleryStyles.overlay, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+                        <TouchableOpacity
+                            style={[fsGalleryStyles.closeBtn, { top: insets.top + 8 }]}
+                            onPress={() => setPhotoGalleryVisible(false)}
+                            hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+                        >
+                            <X size={28} color="#fff" />
+                        </TouchableOpacity>
+                        <FlatList
+                            ref={galleryFlatListRef}
+                            data={photos}
+                            keyExtractor={(_, i) => String(i)}
+                            horizontal
+                            pagingEnabled
+                            showsHorizontalScrollIndicator={false}
+                            initialScrollIndex={Math.min(photoIndex, photos.length - 1)}
+                            getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+                            onMomentumScrollEnd={(e) =>
+                                setPhotoIndex(Math.round(e.nativeEvent.contentOffset.x / width))
+                            }
+                            renderItem={({ item: uri }) => (
+                                <View style={fsGalleryStyles.slide}>
+                                    <Image source={{ uri }} style={fsGalleryStyles.fullImage} resizeMode="contain" />
+                                </View>
+                            )}
+                        />
+                        {photos.length > 1 && (
+                            <>
+                                <TouchableOpacity
+                                    style={[fsGalleryStyles.navBtn, fsGalleryStyles.navLeft]}
+                                    onPress={() => {
+                                        const next = Math.max(0, photoIndex - 1);
+                                        setPhotoIndex(next);
+                                        galleryFlatListRef.current?.scrollToIndex({ index: next, animated: true });
+                                    }}
+                                    disabled={photoIndex <= 0}
+                                >
+                                    <ChevronLeft size={36} color={photoIndex <= 0 ? 'rgba(255,255,255,0.3)' : '#fff'} />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[fsGalleryStyles.navBtn, fsGalleryStyles.navRight]}
+                                    onPress={() => {
+                                        const next = Math.min(photos.length - 1, photoIndex + 1);
+                                        setPhotoIndex(next);
+                                        galleryFlatListRef.current?.scrollToIndex({ index: next, animated: true });
+                                    }}
+                                    disabled={photoIndex >= photos.length - 1}
+                                >
+                                    <ChevronRight size={36} color={photoIndex >= photos.length - 1 ? 'rgba(255,255,255,0.3)' : '#fff'} />
+                                </TouchableOpacity>
+                                <View style={[fsGalleryStyles.counter, { bottom: insets.bottom + 24 }]}>
+                                    <Text style={fsGalleryStyles.counterText}>
+                                        {photoIndex + 1}/{photos.length}
+                                    </Text>
+                                </View>
+                            </>
+                        )}
+                    </View>
+                </Modal>
 
                 <View style={styles.content}>
                     {/* ============ TYPE + CITY + TITLE + RATING ============ */}
@@ -1312,6 +1391,7 @@ const styles = StyleSheet.create({
 
     /* Gallery */
     gallery: { position: 'relative' },
+    heroImageWrap: { width, height: IMAGE_HEIGHT },
     heroImage: { width, height: IMAGE_HEIGHT },
     topNav: {
         position: 'absolute', top: 0, left: 0, right: 0,
@@ -1585,6 +1665,57 @@ const styles = StyleSheet.create({
     modalRatingCount: { fontSize: 14, fontFamily: theme.fonts.regular, color: theme.colors.textMuted },
     modalReviewCard: {
         backgroundColor: '#F9FAFB', borderRadius: 14, padding: 16, marginBottom: 12,
+    },
+});
+
+const fsGalleryStyles = StyleSheet.create({
+    overlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.96)',
+        justifyContent: 'center',
+    },
+    closeBtn: {
+        position: 'absolute',
+        top: 16,
+        right: 16,
+        zIndex: 10,
+        padding: 8,
+    },
+    slide: {
+        width,
+        height: height - 120,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    fullImage: {
+        width,
+        height: height - 120,
+    },
+    navBtn: {
+        position: 'absolute',
+        top: '50%',
+        marginTop: -30,
+        padding: 12,
+        zIndex: 10,
+    },
+    navLeft: { left: 8 },
+    navRight: { right: 8 },
+    counter: {
+        position: 'absolute',
+        bottom: 24,
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+        zIndex: 10,
+    },
+    counterText: {
+        fontSize: 16,
+        fontFamily: theme.fonts.semiBold,
+        color: '#fff',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 8,
     },
 });
 
