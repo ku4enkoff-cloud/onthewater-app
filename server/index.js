@@ -550,7 +550,33 @@ app.post('/bookings/:id/cancel', authMiddleware, async (req, res) => {
 // ——— Owner bookings ———
 app.get('/owner/bookings', authMiddleware, async (req, res) => {
     try {
-        const { rows } = await pool.query('SELECT * FROM bookings WHERE owner_id = $1 ORDER BY created_at DESC', [req.user.id]);
+        const { rows: rawRows } = await pool.query(`
+            SELECT b.*, boat.schedule_work_days as boat_schedule_work_days
+            FROM bookings b
+            LEFT JOIN boats boat ON boat.id = b.boat_id
+            WHERE b.owner_id = $1
+            ORDER BY b.created_at DESC
+        `, [req.user.id]);
+        const userIds = [...new Set(rawRows.map((r) => r.user_id).filter(Boolean))];
+        const usersMap = {};
+        if (userIds.length > 0) {
+            const { rows: userRows } = await pool.query(
+                'SELECT id, name, first_name, last_name, email, phone FROM users WHERE id = ANY($1)',
+                [userIds]
+            );
+            userRows.forEach((u) => {
+                const displayName = (u.name && String(u.name).trim()) || (u.first_name || u.last_name ? [u.first_name, u.last_name].filter(Boolean).join(' ').trim() : null) || u.email;
+                usersMap[u.id] = displayName || null;
+            });
+        }
+        const rows = rawRows.map((b) => {
+            const { boat_schedule_work_days, ...rest } = b;
+            return {
+                ...rest,
+                client_name: usersMap[b.user_id] || null,
+                schedule_work_days: boat_schedule_work_days,
+            };
+        });
         res.json(rows);
     } catch (err) {
         console.error('Get owner bookings error:', err);
@@ -582,6 +608,35 @@ app.post('/owner/bookings/:id/decline', authMiddleware, async (req, res) => {
         res.json({ ok: true });
     } catch (err) {
         console.error('Decline booking error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.patch('/owner/bookings/:id', authMiddleware, async (req, res) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const { start_at, hours } = req.body || {};
+        const sets = [];
+        const vals = [];
+        let idx = 1;
+        if (start_at != null) {
+            sets.push(`start_at = $${idx++}`);
+            vals.push(new Date(start_at).toISOString());
+        }
+        if (hours != null) {
+            sets.push(`hours = $${idx++}`);
+            vals.push(parseInt(hours, 10) || 60);
+        }
+        if (sets.length === 0) return res.status(400).json({ error: 'Нет данных для обновления' });
+        vals.push(id, req.user.id);
+        const { rows } = await pool.query(
+            `UPDATE bookings SET ${sets.join(', ')} WHERE id = $${idx++} AND owner_id = $${idx++} RETURNING *`,
+            vals,
+        );
+        if (rows.length === 0) return res.status(404).json({ error: 'Not found' });
+        res.json(rows[0]);
+    } catch (err) {
+        console.error('Patch owner booking error:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -946,7 +1001,11 @@ app.patch('/admin/boats/:id', authMiddleware, adminMiddleware, async (req, res) 
 app.patch('/admin/users/:id', authMiddleware, adminMiddleware, async (req, res) => {
     try {
         const id = parseInt(req.params.id, 10);
-        const { name, email, role } = req.body || {};
+        const {
+            name, first_name, last_name, email, phone, birthdate, about,
+            address_line, address_city, address_street, address_zip, address_country,
+            role,
+        } = req.body || {};
 
         const { rows: existing } = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
         if (existing.length === 0) return res.status(404).json({ error: 'Пользователь не найден' });
@@ -963,6 +1022,16 @@ app.patch('/admin/users/:id', authMiddleware, adminMiddleware, async (req, res) 
             vals.push(email);
         }
         if (name !== undefined) { sets.push(`name = $${idx++}`); vals.push(name); }
+        if (first_name !== undefined) { sets.push(`first_name = $${idx++}`); vals.push(first_name); }
+        if (last_name !== undefined) { sets.push(`last_name = $${idx++}`); vals.push(last_name); }
+        if (phone !== undefined) { sets.push(`phone = $${idx++}`); vals.push(phone); }
+        if (birthdate !== undefined) { sets.push(`birthdate = $${idx++}`); vals.push(birthdate); }
+        if (about !== undefined) { sets.push(`about = $${idx++}`); vals.push(about); }
+        if (address_line !== undefined) { sets.push(`address_line = $${idx++}`); vals.push(address_line); }
+        if (address_city !== undefined) { sets.push(`address_city = $${idx++}`); vals.push(address_city); }
+        if (address_street !== undefined) { sets.push(`address_street = $${idx++}`); vals.push(address_street); }
+        if (address_zip !== undefined) { sets.push(`address_zip = $${idx++}`); vals.push(address_zip); }
+        if (address_country !== undefined) { sets.push(`address_country = $${idx++}`); vals.push(address_country); }
         if (role !== undefined && ['client', 'owner', 'admin'].includes(role)) { sets.push(`role = $${idx++}`); vals.push(role); }
 
         if (sets.length === 0) return res.json(user);
