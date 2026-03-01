@@ -40,18 +40,20 @@ ymaps.ready(function(){
       .then(function(data){
         var a = data.address || {};
         var country = a.country || '';
-        var city = a.city || a.town || a.village || a.state || '';
+        var state = a.state || '';
+        var city = a.city || a.town || a.village || '';
+        if(!city && state && state !== country) city = state;
         var road = a.road || '';
         var house = a.house_number || '';
         var address = road;
         if(house) address = address ? address + ', ' + house : house;
         window.ReactNativeWebView.postMessage(JSON.stringify({
-          type:'geocode', country:country, city:city, address:address
+          type:'geocode', country:country, region:state, city:city, address:address
         }));
       })
       .catch(function(err){
         window.ReactNativeWebView.postMessage(JSON.stringify({
-          type:'geocode', country:'', city:'', address:''
+          type:'geocode', country:'', region:'', city:'', address:''
         }));
       });
   }
@@ -84,6 +86,7 @@ export default function BoatLocationScreen({ navigation, route }) {
     const [lat, setLat] = useState(null);
     const [lng, setLng] = useState(null);
     const [country, setCountry] = useState('');
+    const [region, setRegion] = useState('');
     const [city, setCity] = useState('');
     const [address, setAddress] = useState('');
     const [yachtClub, setYachtClub] = useState('');
@@ -99,6 +102,7 @@ export default function BoatLocationScreen({ navigation, route }) {
                 setLng(data.lng);
             } else if (data.type === 'geocode') {
                 setCountry(data.country || '');
+                setRegion(data.region || '');
                 setCity(data.city || '');
                 setAddress(data.address || '');
             }
@@ -116,6 +120,7 @@ export default function BoatLocationScreen({ navigation, route }) {
                 lat,
                 lng,
                 country: country.trim(),
+                region: region.trim(),
                 city: city.trim(),
                 address: address.trim(),
                 yachtClub: yachtClub.trim(),
@@ -198,6 +203,17 @@ export default function BoatLocationScreen({ navigation, route }) {
                             placeholderTextColor="#9CA3AF"
                             value={country}
                             onChangeText={setCountry}
+                        />
+                    </View>
+
+                    <View style={s.fieldWrap}>
+                        <Text style={s.fieldLabel}>Область</Text>
+                        <TextInput
+                            style={s.input}
+                            placeholder="Определится автоматически"
+                            placeholderTextColor="#9CA3AF"
+                            value={region}
+                            onChangeText={setRegion}
                         />
                     </View>
 
