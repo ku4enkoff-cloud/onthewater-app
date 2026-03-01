@@ -26,7 +26,7 @@ const ONBOARDING_KEY = '@boatrent_onboarding_done';
 if (Platform.OS === 'android' || Platform.OS === 'ios') {
   try {
     const YaMap = require('react-native-yamap').default;
-    YaMap.init('666d8497-b404-4f94-97ea-8d2e64f79015');
+    YaMap.init('84448445-01d9-454b-8398-9adaaf19ad61');
   } catch (_) {}
 }
 

@@ -31,7 +31,7 @@ export default {
     permissions: ['android.permission.RECORD_AUDIO'],
     web: { favicon: './assets/favicon.png' },
     plugins: [
-      ['expo-build-properties', { android: { minSdkVersion: 26 } }],
+      ['expo-build-properties', { android: { minSdkVersion: 26, usesCleartextTraffic: true } }],
       ['expo-image-picker', { photosPermission: 'Нам нужен доступ к галерее для загрузки фотографий катера.' }],
     ],
     extra: { appVariant: variant },

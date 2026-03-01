@@ -55,7 +55,7 @@ export default function AddBoatScreen({ navigation }) {
     const pickImages = async () => {
         try {
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: ImagePicker.MediaType.Images,
                 quality: 0.8,
                 allowsEditing: false,
                 allowsMultipleSelection: true,

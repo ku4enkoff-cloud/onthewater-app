@@ -32,7 +32,13 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-// Роуты (пока заглушки)
+// Роуты
+app.get('/', (req, res) => res.json({
+    name: 'BoatRent API',
+    status: 'ok',
+    version: '1.0',
+    docs: 'See /health, /auth, /boats, /bookings, /chat, /payments',
+}));
 app.get('/health', (req, res) => res.json({ ok: true }));
 
 // Подключение роутов

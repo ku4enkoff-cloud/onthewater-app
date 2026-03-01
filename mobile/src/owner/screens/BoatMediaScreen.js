@@ -33,7 +33,7 @@ export default function BoatMediaScreen({ navigation, route }) {
         }
         try {
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: ImagePicker.MediaType.Images,
                 quality: 0.8,
                 allowsMultipleSelection: true,
             });
@@ -54,7 +54,7 @@ export default function BoatMediaScreen({ navigation, route }) {
         }
         try {
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+                mediaTypes: ImagePicker.MediaType.Videos,
                 quality: 0.7,
                 allowsMultipleSelection: true,
             });
