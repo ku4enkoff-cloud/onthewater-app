@@ -128,7 +128,7 @@ export default function FiltersModal({ visible, onClose, filters, onApply, total
     const insets = useSafeAreaInsets();
     const [priceLow, setPriceLow] = useState(filters?.priceLow ?? PRICE_MIN);
     const [priceHigh, setPriceHigh] = useState(filters?.priceHigh ?? PRICE_MAX);
-    const [passengers, setPassengers] = useState(filters?.passengers ?? 4);
+    const [passengers, setPassengers] = useState(filters?.passengers ?? 1);
     const [duration, setDuration] = useState(filters?.duration ?? null);
     const [captain, setCaptain] = useState(filters?.captain ?? null);
     const [activity, setActivity] = useState(filters?.activity ?? null);
@@ -141,7 +141,7 @@ export default function FiltersModal({ visible, onClose, filters, onApply, total
     const countActive = () => {
         let n = 0;
         if (priceLow > PRICE_MIN || priceHigh < PRICE_MAX) n++;
-        if (passengers !== 4) n++;
+        if (passengers !== 1) n++;
         if (duration) n++;
         if (captain) n++;
         if (activity) n++;
@@ -151,7 +151,7 @@ export default function FiltersModal({ visible, onClose, filters, onApply, total
     const handleClear = () => {
         setPriceLow(PRICE_MIN);
         setPriceHigh(PRICE_MAX);
-        setPassengers(4);
+        setPassengers(1);
         setDuration(null);
         setCaptain(null);
         setActivity(null);

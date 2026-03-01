@@ -27,7 +27,7 @@ const CITIES = [
 
 export default function CityBoatsScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
-    const { cityName: initialCity, useMyLocation: initialUseLocation } = route.params || {};
+    const { cityName: initialCity, useMyLocation: initialUseLocation, boatTypeId, boatTypeName } = route.params || {};
 
     const [selectedCity, setSelectedCity] = useState(
         initialUseLocation ? 'Моё местоположение' : (initialCity || 'Москва'),
@@ -61,6 +61,8 @@ export default function CityBoatsScreen({ route, navigation }) {
             cityName: isMyLocation ? null : selectedCity,
             useMyLocation: isMyLocation,
             dateISO: date.toISOString(),
+            boatTypeId,
+            boatTypeName,
         });
     };
 

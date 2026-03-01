@@ -23,3 +23,7 @@ function getApiBase() {
 
 export const API_BASE = getApiBase();
 export const SOCKET_URL = API_BASE;
+
+/** Yandex Geosuggest API key for city search. Get at https://developer.tech.yandex.com/ */
+export const YANDEX_GEO_SUGGEST_API_KEY =
+    (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_YANDEX_GEO_SUGGEST_API_KEY) || '';
