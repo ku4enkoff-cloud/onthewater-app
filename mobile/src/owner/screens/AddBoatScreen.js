@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, FileText, AlignLeft, ShieldCheck, Check, Anchor, XCircle } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
+import { API_BASE } from '../../shared/infrastructure/config';
 
 let LinearGradient = null;
 try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
@@ -97,15 +98,25 @@ export default function AddBoatScreen({ navigation, route }) {
                 payload.append('video_uris', JSON.stringify(videos));
             }
 
-            await api.post('/boats', payload);
+            await api.post('/boats', payload, { timeout: 60000 });
             Alert.alert('Успех', 'Катер успешно добавлен на модерацию', [
                 { text: 'OK', onPress: () => navigation.navigate('MainTabs') },
             ]);
         } catch (error) {
-            const message =
+            const status = error?.response?.status;
+            const data = error?.response?.data;
+            const msg = error?.message;
+            const code = error?.code;
+            console.warn('Add boat error:', { status, code, message: msg, apiUrl: API_BASE });
+            if (data) console.warn('Response:', data);
+            let message =
                 error.response?.data?.error ||
-                error.response?.data?.message ||
-                'Не удалось добавить катер';
+                error.response?.data?.message;
+            if (!message) {
+                if (error.code === 'ECONNABORTED') message = 'Превышено время ожидания. Проверьте интернет и попробуйте снова.';
+                else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network')) message = 'Нет соединения с сервером. Проверьте интернет и адрес API.';
+                else message = 'Не удалось добавить катер';
+            }
             Alert.alert('Ошибка', message);
         } finally {
             setLoading(false);

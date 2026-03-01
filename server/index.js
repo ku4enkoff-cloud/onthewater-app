@@ -314,6 +314,20 @@ app.post('/boats', authMiddleware, upload.array('photos', 10), async (req, res) 
         if (body.amenities) {
             try { amenities = typeof body.amenities === 'string' ? JSON.parse(body.amenities) : body.amenities; } catch (_) {}
         }
+        if (!Array.isArray(amenities)) amenities = [];
+
+        const safeJson = (val, def) => {
+            if (!val) return def;
+            try {
+                const parsed = typeof val === 'string' ? JSON.parse(val) : val;
+                return typeof parsed === 'object' ? val : def;
+            } catch (_) { return def; }
+        };
+        const scheduleWorkDays = safeJson(body.schedule_work_days, null);
+        const scheduleWeekdayHours = safeJson(body.schedule_weekday_hours, null);
+        const scheduleWeekendHours = safeJson(body.schedule_weekend_hours, null);
+        const priceTiers = safeJson(body.price_tiers, '[]');
+        const videoUris = safeJson(body.video_uris, '[]');
 
         const { rows } = await pool.query(`
             INSERT INTO boats (
@@ -355,20 +369,22 @@ app.post('/boats', authMiddleware, upload.array('photos', 10), async (req, res) 
                 body.cancellation_policy || '',
                 JSON.stringify(photos),
                 JSON.stringify(amenities),
-                body.schedule_work_days ? body.schedule_work_days : null,
-                body.schedule_weekday_hours ? body.schedule_weekday_hours : null,
-                body.schedule_weekend_hours ? body.schedule_weekend_hours : null,
+                scheduleWorkDays,
+                scheduleWeekdayHours,
+                scheduleWeekendHours,
                 body.schedule_min_duration ? parseInt(body.schedule_min_duration, 10) : 60,
-                body.price_tiers || '[]',
+                typeof priceTiers === 'string' ? priceTiers : JSON.stringify(priceTiers),
                 body.price_weekend !== undefined ? String(body.price_weekend).trim() : '',
-                body.video_uris ? body.video_uris : '[]',
+                typeof videoUris === 'string' ? videoUris : JSON.stringify(videoUris),
                 'moderation', 0, 0, 0,
             ],
         );
         res.status(201).json(rows[0]);
     } catch (err) {
         console.error('Create boat error:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        const msg = err.message || 'Internal server error';
+        const detail = err.detail ? ` (${err.detail})` : '';
+        res.status(500).json({ error: msg + detail });
     }
 });
 
@@ -1161,8 +1177,9 @@ app.use((err, req, res, next) => {
         await initDB();
         console.log('Database tables initialized');
         await seedData();
-        app.listen(PORT, () => {
+        app.listen(PORT, '0.0.0.0', () => {
             console.log(`BoatRent API: http://localhost:${PORT}`);
+            console.log(`Доступ из сети: http://<ваш-IP>:${PORT}`);
         });
     } catch (err) {
         console.error('Failed to start server:', err);

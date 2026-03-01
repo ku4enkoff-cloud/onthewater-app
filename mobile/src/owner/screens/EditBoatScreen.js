@@ -162,7 +162,7 @@ export default function EditBoatScreen({ route, navigation }) {
         if (photos.length >= 10) { Alert.alert('Лимит', 'Максимум 10 фотографий'); return; }
         try {
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: ImagePicker.MediaType.Images,
                 quality: 0.8,
                 allowsMultipleSelection: true,
             });
