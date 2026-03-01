@@ -42,13 +42,13 @@ router.post('/register', authLimiter, validate(registerSchema), async (req, res,
 });
 
 router.post('/login', authLimiter, validate(loginSchema), async (req, res, next) => {
-    const { login, password } = req.body;
+    const { email, login, password } = req.body;
+    const loginValue = email || login;
 
     try {
-        // login может быть как email, так и phone
         const result = await pool.query(
-            'SELECT id, email, password_hash, name, role FROM users WHERE email = $1 OR phone = $1',
-            [login]
+            'SELECT id, email, password_hash, name, role, first_name, last_name, phone FROM users WHERE email = $1 OR phone = $1',
+            [loginValue]
         );
 
         if (result.rows.length === 0) {
@@ -63,26 +63,64 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res, next)
         }
 
         const token = generateToken({ id: user.id, role: user.role });
-        delete user.password_hash; // Не возвращаем хеш
+        delete user.password_hash;
 
-        res.json({ user, token });
+        res.json({ token, user });
     } catch (err) {
         next(err);
     }
 });
 
-router.get('/me', authenticate, async (req, res, next) => {
+router.get('/me', authenticate, (req, res) => {
+    res.json(req.user);
+});
+
+router.patch('/profile', authenticate, async (req, res, next) => {
     try {
-        const result = await pool.query(
-            'SELECT id, email, phone, name, avatar, role, city, about, gims_number, rating, created_at FROM users WHERE id = $1',
-            [req.user.id]
-        );
+        const userId = req.user.id;
+        const { first_name, last_name, phone, birthdate, about, address_line, address_city, address_zip, address_country } = req.body || {};
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
+        const sets = [];
+        const vals = [];
+        let idx = 1;
+        const addField = (f, v) => { if (v !== undefined) { sets.push(`${f} = $${idx++}`); vals.push(v); } };
+        addField('first_name', first_name);
+        addField('last_name', last_name);
+        addField('phone', phone);
+        addField('birthdate', birthdate);
+        addField('about', about);
+        addField('address_line', address_line);
+        addField('address_city', address_city);
+        addField('address_zip', address_zip);
+        addField('address_country', address_country);
+        if (first_name !== undefined || last_name !== undefined) {
+            sets.push(`name = $${idx++}`);
+            vals.push([first_name !== undefined ? first_name : req.user.first_name || '', last_name !== undefined ? last_name : req.user.last_name || ''].filter(Boolean).join(' ').trim());
         }
+        if (sets.length === 0) return res.json(req.user);
+        vals.push(userId);
+        const { rows } = await pool.query(
+            `UPDATE users SET ${sets.join(', ')} WHERE id = $${idx} RETURNING id, email, name, first_name, last_name, phone, birthdate, about, address_line, address_city, address_zip, address_country, role, created_at`,
+            vals
+        );
+        res.json(rows[0]);
+    } catch (err) {
+        next(err);
+    }
+});
 
-        res.json(result.rows[0]);
+router.patch('/password', authenticate, async (req, res, next) => {
+    try {
+        const { current_password, new_password } = req.body || {};
+        if (!current_password || !new_password) return res.status(400).json({ error: 'Укажите текущий и новый пароль' });
+        const { rows } = await pool.query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
+        if (rows.length === 0) return res.status(404).json({ error: 'Пользователь не найден' });
+        const isMatch = await bcrypt.compare(current_password, rows[0].password_hash);
+        if (!isMatch) return res.status(400).json({ error: 'Неверный текущий пароль' });
+        if (new_password.length < 3) return res.status(400).json({ error: 'Новый пароль слишком короткий' });
+        const hash = await bcrypt.hash(new_password, 10);
+        await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, req.user.id]);
+        res.json({ success: true });
     } catch (err) {
         next(err);
     }

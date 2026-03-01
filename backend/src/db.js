@@ -1,15 +1,22 @@
 const { Pool } = require('pg');
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+const pool = new Pool(
+    process.env.DATABASE_URL
+        ? { connectionString: process.env.DATABASE_URL }
+        : {
+              host: process.env.PGHOST || 'localhost',
+              port: parseInt(process.env.PGPORT || '5432', 10),
+              database: process.env.PGDATABASE || 'boatrent',
+              user: process.env.PGUSER || 'postgres',
+              password: process.env.PGPASSWORD || '',
+          }
+);
 
-pool.on('error', (err, client) => {
-  console.error('Unexpected error on idle client', err);
-  process.exit(-1);
+pool.on('error', (err) => {
+    console.error('Unexpected error on idle client', err);
 });
 
 module.exports = {
-  query: (text, params) => pool.query(text, params),
-  pool,
+    query: (text, params) => pool.query(text, params),
+    pool,
 };
