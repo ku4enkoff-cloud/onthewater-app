@@ -1,6 +1,14 @@
 const multerModule = require('multer');
-const multer = typeof multerModule === 'function' ? multerModule : (multerModule.default || multerModule);
-const diskStorage = multer.diskStorage || multerModule.diskStorage;
+const multerFn = typeof multerModule === 'function'
+    ? multerModule
+    : (multerModule && (multerModule.default || multerModule));
+if (typeof multerFn !== 'function') {
+    throw new Error('multer: invalid export. Run in backend: npm ci (use multer 2.x from package-lock). Got: ' + typeof multerModule + (multerModule && typeof multerModule.default));
+}
+const diskStorage = multerFn.diskStorage || (multerModule && multerModule.diskStorage);
+if (typeof diskStorage !== 'function') {
+    throw new Error('multer.diskStorage not found. Check multer version.');
+}
 const path = require('path');
 const fs = require('fs');
 
@@ -42,7 +50,7 @@ if (process.env.YANDEX_S3_BUCKET && process.env.YANDEX_S3_ACCESS_KEY) {
     } catch (_) {}
 }
 
-const upload = multer({
+const upload = multerFn({
     storage,
     limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
