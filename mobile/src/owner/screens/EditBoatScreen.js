@@ -11,7 +11,7 @@ import {
 } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
-import { API_BASE } from '../../shared/infrastructure/config';
+import { getPhotoUrl } from '../../shared/infrastructure/config';
 
 let LinearGradient = null;
 try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
@@ -49,11 +49,7 @@ const DEFAULT_START = '08:00';
 const DEFAULT_END = '20:00';
 let tierIdCounter = 1;
 
-const photoUrl = (src) => {
-    if (!src) return null;
-    if (src.startsWith('http') || src.startsWith('file://')) return src;
-    return API_BASE + src;
-};
+const photoUrl = (src) => getPhotoUrl(src);
 
 export default function EditBoatScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();

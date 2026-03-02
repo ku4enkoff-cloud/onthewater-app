@@ -47,8 +47,13 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (loginData) => {
         const res = await api.post('/auth/login', loginData);
-        await AsyncStorage.setItem('@token', res.data.token);
-        setUser(res.data.user);
+        const token = res.data?.token;
+        const user = res.data?.user;
+        if (!token || !user) {
+            throw new Error('Сервер вернул неверный ответ. Ожидаются token и user.');
+        }
+        await AsyncStorage.setItem('@token', token);
+        setUser(user);
     };
 
     const register = async (regData) => {

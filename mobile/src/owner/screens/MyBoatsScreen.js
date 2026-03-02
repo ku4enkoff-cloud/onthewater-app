@@ -8,7 +8,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Plus, Pencil, MapPin, Ship, Anchor } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
-import { API_BASE } from '../../shared/infrastructure/config';
+import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
 
 let LinearGradient = null;
 try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
@@ -16,11 +16,7 @@ try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (
 const GRADIENT = ['#0A4D4D', '#0D5C5C', '#1A7A5A'];
 const TEAL = '#0D5C5C';
 
-const photoUrl = (src) => {
-    if (!src) return 'https://placehold.co/400x300/png';
-    if (src.startsWith('http')) return src;
-    return API_BASE + src;
-};
+const photoUrl = (src) => getPhotoUrl(src) || 'https://placehold.co/400x300/png';
 
 const DURATION_LABELS = {
     30: '30 мин', 60: '1 час', 120: '2 часа', 180: '3 часа', 240: '4 часа', 300: '5 часов',

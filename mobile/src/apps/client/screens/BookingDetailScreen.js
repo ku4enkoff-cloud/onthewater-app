@@ -3,16 +3,10 @@ import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ActivityIn
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../../../theme';
 import { api } from '../../../infrastructure/api';
-import { API_BASE } from '../../../infrastructure/config';
+import { getPhotoUrl } from '../../../shared/infrastructure/config';
 import { Calendar, Clock, MapPin, ArrowLeft, CalendarPlus } from 'lucide-react-native';
 
-const resolvePhotoUri = (src) => {
-    if (!src || typeof src !== 'string') return null;
-    const s = src.trim();
-    if (!s) return null;
-    if (/^https?:\/\//i.test(s)) return s;
-    return API_BASE + (s.startsWith('/') ? s : '/' + s);
-};
+const resolvePhotoUri = (src) => getPhotoUrl(src);
 
 export default function BookingDetailScreen({ route, navigation }) {
     const { bookingId } = route.params || {};

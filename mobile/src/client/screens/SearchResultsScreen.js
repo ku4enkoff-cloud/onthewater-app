@@ -15,14 +15,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, ChevronDown, Heart, Zap, MapPin, Star, SlidersHorizontal, X } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
-import { API_BASE } from '../../shared/infrastructure/config';
+import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
 import { FavoritesContext } from '../../shared/context/FavoritesContext';
 
-const resolvePhotoUri = (src) => {
-    if (!src) return 'https://placehold.co/400x300';
-    if (src.startsWith('http') || src.startsWith('file://')) return src;
-    return API_BASE + (src.startsWith('/') ? src : '/' + src);
-};
+const resolvePhotoUri = (src) => getPhotoUrl(src) || 'https://placehold.co/400x300';
 import FiltersModal from '../components/FiltersModal';
 import PriceFilterModal from '../components/PriceFilterModal';
 import PassengersFilterModal from '../components/PassengersFilterModal';
