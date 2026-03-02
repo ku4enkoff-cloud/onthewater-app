@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, FileText, AlignLeft, ShieldCheck, Check, Anchor, XCircle } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 import { API_BASE } from '../../shared/infrastructure/config';
@@ -89,7 +90,8 @@ export default function AddBoatScreen({ navigation, route }) {
                 }
             }
 
-            photos.forEach((uri, i) => {
+            const isLocalUri = (p) => typeof p === 'string' && (p.startsWith('file://') || p.startsWith('content://'));
+            photos.filter(isLocalUri).forEach((uri, i) => {
                 payload.append('photos', { uri, type: 'image/jpeg', name: `photo_${i}.jpg` });
             });
 
@@ -98,7 +100,28 @@ export default function AddBoatScreen({ navigation, route }) {
                 payload.append('video_uris', JSON.stringify(videos));
             }
 
-            await api.post('/boats', payload, { timeout: 60000 });
+            // Используем fetch вместо axios — лучше обрабатывает multipart на React Native
+            const token = await AsyncStorage.getItem('@token');
+            const ctrl = new AbortController();
+            const timeout = setTimeout(() => ctrl.abort(), 90000);
+            const res = await fetch(`${API_BASE}/boats`, {
+                method: 'POST',
+                headers: {
+                    ...(token && { Authorization: `Bearer ${token}` }),
+                    // НЕ задаём Content-Type — fetch сам подставит multipart/form-data с boundary
+                },
+                body: payload,
+                signal: ctrl.signal,
+            });
+            clearTimeout(timeout);
+            if (!res.ok) {
+                const errBody = await res.text();
+                let errData;
+                try { errData = JSON.parse(errBody); } catch (_) {}
+                throw Object.assign(new Error(errData?.error || errData?.message || `HTTP ${res.status}`), {
+                    response: { status: res.status, data: errData || errBody },
+                });
+            }
             Alert.alert('Успех', 'Катер успешно добавлен на модерацию', [
                 { text: 'OK', onPress: () => navigation.navigate('MainTabs') },
             ]);
@@ -113,8 +136,8 @@ export default function AddBoatScreen({ navigation, route }) {
                 error.response?.data?.error ||
                 error.response?.data?.message;
             if (!message) {
-                if (error.code === 'ECONNABORTED') message = 'Превышено время ожидания. Проверьте интернет и попробуйте снова.';
-                else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network')) {
+                if (error.code === 'ECONNABORTED' || error.name === 'AbortError') message = 'Превышено время ожидания. Проверьте интернет и попробуйте снова.';
+                else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network') || error.message?.includes('Failed to fetch')) {
                     message = `Нет соединения с сервером. Адрес: ${API_BASE}. Запустите бэкенд (backend) и проверьте настройку EXPO_PUBLIC_API_URL в mobile/.env для реального устройства.`;
                 } else message = 'Не удалось добавить катер';
             }

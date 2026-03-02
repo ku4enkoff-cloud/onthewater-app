@@ -3,6 +3,7 @@ const path = require('path');
 const { pool } = require('../db');
 const { authenticate, requireRole, optionalAuth } = require('../middleware/auth');
 const { upload } = require('../middleware/upload');
+const { processUploadedImages } = require('../middleware/imageProcessor');
 
 const router = express.Router();
 
@@ -114,7 +115,7 @@ router.post('/:id/reviews', authenticate, async (req, res, next) => {
     }
 });
 
-router.post('/', authenticate, requireRole(['owner']), upload.array('photos', 10), async (req, res, next) => {
+router.post('/', authenticate, requireRole(['owner']), upload.array('photos', 10), processUploadedImages, async (req, res, next) => {
     try {
         const body = req.body || {};
         const photoFiles = (req.files || []).map(getPhotoUrl);
@@ -172,7 +173,7 @@ router.patch('/:id', authenticate, requireRole(['owner']), (req, res, next) => {
         if (err) {
             return res.status(400).json({ error: err.message || 'Ошибка загрузки файлов' });
         }
-        next();
+        processUploadedImages(req, res, next);
     });
 }, async (req, res, next) => {
     try {

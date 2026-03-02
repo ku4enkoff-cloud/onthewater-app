@@ -9,9 +9,10 @@ import {
     ChevronLeft, ChevronDown, FileText, AlignLeft, ShieldCheck, Camera, X, Trash2,
     Ship, MapPin, Clock, DollarSign, Users, Wrench, ImageIcon, Check, Plus,
 } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
-import { getPhotoUrl } from '../../shared/infrastructure/config';
+import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
 
 let LinearGradient = null;
 try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
@@ -292,7 +293,24 @@ export default function EditBoatScreen({ route, navigation }) {
                 payload.append('photos', { uri, type: 'image/jpeg', name: `photo_${i}.jpg` });
             });
 
-            await api.patch(`/boats/${boatId}`, payload, { timeout: 30000 });
+            const token = await AsyncStorage.getItem('@token');
+            const ctrl = new AbortController();
+            const timeout = setTimeout(() => ctrl.abort(), 90000);
+            const res = await fetch(`${API_BASE}/boats/${boatId}`, {
+                method: 'PATCH',
+                headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+                body: payload,
+                signal: ctrl.signal,
+            });
+            clearTimeout(timeout);
+            if (!res.ok) {
+                const errBody = await res.text();
+                let errData;
+                try { errData = JSON.parse(errBody); } catch (_) {}
+                throw Object.assign(new Error(errData?.error || errData?.message || `HTTP ${res.status}`), {
+                    response: { status: res.status, data: errData || errBody },
+                });
+            }
             Alert.alert('Готово', 'Изменения сохранены');
             navigation.goBack();
         } catch (error) {
@@ -302,8 +320,8 @@ export default function EditBoatScreen({ route, navigation }) {
             const d = error.response?.data;
             let msg = d?.message || d?.error;
             if (!msg) {
-                if (error.code === 'ECONNABORTED') msg = 'Превышено время ожидания. Проверьте интернет.';
-                else if (!error.response && (error.code === 'ERR_NETWORK' || error.message === 'Network Error')) {
+                if (error.code === 'ECONNABORTED' || error.name === 'AbortError') msg = 'Превышено время ожидания. Проверьте интернет.';
+                else if (!error.response && (error.code === 'ERR_NETWORK' || error.message === 'Network Error' || error.message?.includes('Failed to fetch'))) {
                     msg = 'Нет связи с сервером. Проверьте интернет и доступность сервера (в .env — EXPO_PUBLIC_API_URL).';
                 } else msg = error.message || 'Не удалось сохранить';
             }
