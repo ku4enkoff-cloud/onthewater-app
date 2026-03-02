@@ -67,6 +67,10 @@ app.use('/admin', adminRoutes);
 app.use('/boat-types', boatTypesRoutes);
 app.use('/destinations', destinationsRoutes);
 
+app.use((req, res) => {
+    res.status(404).json({ error: 'Not Found', path: req.path, hint: 'Use / or /health, /auth, /boats, etc.' });
+});
+
 app.use((err, req, res, next) => {
     console.error('[Global Error]', err.stack);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
