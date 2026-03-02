@@ -165,7 +165,14 @@ router.post('/', authenticate, requireRole(['owner']), upload.array('photos', 10
     }
 });
 
-router.patch('/:id', authenticate, requireRole(['owner']), upload.array('photos', 10), async (req, res, next) => {
+router.patch('/:id', authenticate, requireRole(['owner']), (req, res, next) => {
+    upload.array('photos', 10)(req, res, (err) => {
+        if (err) {
+            return res.status(400).json({ error: err.message || 'Ошибка загрузки файлов' });
+        }
+        next();
+    });
+}, async (req, res, next) => {
     try {
         const id = parseInt(req.params.id, 10);
         const { rows: existing } = await pool.query('SELECT * FROM boats WHERE id = $1', [id]);
@@ -227,7 +234,9 @@ router.patch('/:id', authenticate, requireRole(['owner']), upload.array('photos'
         const { rows } = await pool.query(`UPDATE boats SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`, vals);
         res.json(rows[0]);
     } catch (err) {
-        next(err);
+        console.error('PATCH /boats/:id error', err.message, err.stack);
+        const msg = err.message || 'Внутренняя ошибка сервера';
+        return res.status(500).json({ error: 'Не удалось сохранить', message: msg });
     }
 });
 

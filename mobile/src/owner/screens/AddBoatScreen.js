@@ -114,8 +114,9 @@ export default function AddBoatScreen({ navigation, route }) {
                 error.response?.data?.message;
             if (!message) {
                 if (error.code === 'ECONNABORTED') message = 'Превышено время ожидания. Проверьте интернет и попробуйте снова.';
-                else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network')) message = 'Нет соединения с сервером. Проверьте интернет и адрес API.';
-                else message = 'Не удалось добавить катер';
+                else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network')) {
+                    message = `Нет соединения с сервером. Адрес: ${API_BASE}. Запустите бэкенд (backend) и проверьте настройку EXPO_PUBLIC_API_URL в mobile/.env для реального устройства.`;
+                } else message = 'Не удалось добавить катер';
             }
             Alert.alert('Ошибка', message);
         } finally {
