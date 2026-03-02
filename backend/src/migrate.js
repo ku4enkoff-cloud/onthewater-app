@@ -6,6 +6,30 @@ async function migrate() {
     try {
         console.log('Миграция БД (схема server-compatible)...');
 
+        // Совместимость: если users создан server (колонка password), добавляем password_hash
+        await client.query(`CREATE EXTENSION IF NOT EXISTS pgcrypto`).catch(() => {});
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)`).catch(() => {});
+        const { rows: cols } = await client.query(`
+            SELECT column_name FROM information_schema.columns 
+            WHERE table_name = 'users' AND column_name IN ('password', 'password_hash')
+        `);
+        const hasPass = cols.some(r => r.column_name === 'password');
+        const hasHash = cols.some(r => r.column_name === 'password_hash');
+        if (hasPass && hasHash) {
+            await client.query(`
+                UPDATE users SET password_hash = crypt(password, gen_salt('bf'))
+                WHERE password_hash IS NULL AND password IS NOT NULL
+            `).catch(() => {});
+        }
+        if (hasPass && !hasHash) {
+            await client.query(`
+                ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)
+            `).catch(() => {});
+            await client.query(`
+                UPDATE users SET password_hash = crypt(password, gen_salt('bf')) WHERE password IS NOT NULL
+            `).catch(() => {});
+        }
+
         await client.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
