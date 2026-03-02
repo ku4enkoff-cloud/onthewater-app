@@ -25,8 +25,10 @@ router.post('/register', authLimiter, validate(registerSchema), async (req, res,
             const hash = await bcrypt.hash(password, salt);
 
             const result = await client.query(
-                'INSERT INTO users (email, phone, password_hash, name, role) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, name, role',
-                [email, phone, hash, name, role || 'client']
+                `INSERT INTO users (email, phone, password, password_hash, name, role) 
+                 VALUES ($1, $2, $3, $3, $4, $5) 
+                 RETURNING id, email, name, role`,
+                [email, phone || null, hash, name || email.split('@')[0], role || 'client']
             );
 
             const user = result.rows[0];
