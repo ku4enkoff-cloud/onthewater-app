@@ -226,6 +226,7 @@ sudo nano /etc/nginx/sites-available/boatrent-api
 server {
     listen 80 default_server;
     server_name _;
+    client_max_body_size 11M;   # загрузка фото катеров (multer limit 10M)
 
     location / {
         # Важно: без слэша и без пути в конце (не http://127.0.0.1:3000/api/)
@@ -237,6 +238,10 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        # Загрузка фото: большие тела и долгие запросы
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
     }
 
     location /uploads/ {
@@ -256,6 +261,15 @@ sudo nginx -t && sudo systemctl reload nginx
 ```
 
 После этого по адресу `http://94.241.175.236/` должен открываться ответ API (JSON), а не страница Nginx.
+
+**Если GET (например `/` или `/health`) работает, а в приложении при сохранении/загрузке фото — «Network Error» или «Не удалось сохранить»:**
+
+1. **Размер тела запроса** — в блоке `server` должна быть строка `client_max_body_size 11M;` (см. пример выше). Иначе Nginx по умолчанию ограничивает тело запроса (~1M) и большие запросы с фото обрываются.
+2. **Таймауты** — в `location /` добавьте (как в примере выше):
+   - `proxy_connect_timeout 60s;`
+   - `proxy_send_timeout 60s;`
+   - `proxy_read_timeout 60s;`
+   После правок: `sudo nginx -t && sudo systemctl reload nginx`.
 
 **Если видите 502 Bad Gateway** — Nginx не может достучаться до бэкенда (он не запущен или не слушает порт 3000). На сервере выполните:
 

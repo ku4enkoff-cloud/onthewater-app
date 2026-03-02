@@ -3,18 +3,12 @@ import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from 'react
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Heart, Zap, MapPin, Star, Clock, Users, Trash2 } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
-import { API_BASE } from '../../shared/infrastructure/config';
+import { getPhotoUrl } from '../../shared/infrastructure/config';
 import { FavoritesContext } from '../../shared/context/FavoritesContext';
 import { AuthContext } from '../../shared/context/AuthContext';
 import UnauthorizedCard from '../../shared/components/UnauthorizedCard';
 
-const resolvePhotoUri = (src) => {
-    if (!src || typeof src !== 'string') return null;
-    const s = src.trim();
-    if (!s) return null;
-    if (/^https?:\/\//i.test(s)) return s;
-    return API_BASE + (s.startsWith('/') ? s : '/' + s);
-};
+const resolvePhotoUri = (src) => getPhotoUrl(src);
 
 export default function FavoritesScreen({ navigation }) {
     const insets = useSafeAreaInsets();

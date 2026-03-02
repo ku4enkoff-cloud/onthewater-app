@@ -3,17 +3,11 @@ import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Dimensions, 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../../theme';
 import { api } from '../../../infrastructure/api';
-import { API_BASE } from '../../../infrastructure/config';
+import { getPhotoUrl } from '../../../shared/infrastructure/config';
 
 const { width } = Dimensions.get('window');
 
-const resolvePhotoUri = (src) => {
-    if (!src || typeof src !== 'string') return null;
-    const s = src.trim();
-    if (!s) return null;
-    if (/^https?:\/\//i.test(s)) return s;
-    return API_BASE + (s.startsWith('/') ? s : '/' + s);
-};
+const resolvePhotoUri = (src) => getPhotoUrl(src);
 
 // Карта доступна только если нативный модуль Яндекс.Карт слинкован (не в Expo Go)
 const isMapAvailable = NativeModules.yamap != null;

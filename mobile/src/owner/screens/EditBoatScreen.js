@@ -11,7 +11,7 @@ import {
 } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
-import { API_BASE } from '../../shared/infrastructure/config';
+import { getPhotoUrl } from '../../shared/infrastructure/config';
 
 let LinearGradient = null;
 try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
@@ -49,11 +49,7 @@ const DEFAULT_START = '08:00';
 const DEFAULT_END = '20:00';
 let tierIdCounter = 1;
 
-const photoUrl = (src) => {
-    if (!src) return null;
-    if (src.startsWith('http') || src.startsWith('file://')) return src;
-    return API_BASE + src;
-};
+const photoUrl = (src) => getPhotoUrl(src);
 
 export default function EditBoatScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
@@ -288,8 +284,9 @@ export default function EditBoatScreen({ route, navigation }) {
             payload.append('cancellation_policy', '');
             payload.append('amenities', JSON.stringify(amenities));
 
-            const existingUrls = photos.filter((p) => !p.startsWith('file://'));
-            const newFiles = photos.filter((p) => p.startsWith('file://'));
+            const isLocalUri = (p) => typeof p === 'string' && (p.startsWith('file://') || p.startsWith('content://'));
+            const existingUrls = photos.filter((p) => !isLocalUri(p));
+            const newFiles = photos.filter(isLocalUri);
             payload.append('photo_urls', JSON.stringify(existingUrls));
             newFiles.forEach((uri, i) => {
                 payload.append('photos', { uri, type: 'image/jpeg', name: `photo_${i}.jpg` });
@@ -303,7 +300,13 @@ export default function EditBoatScreen({ route, navigation }) {
                 console.warn('Save boat error', error.response?.status, error.response?.data);
             }
             const d = error.response?.data;
-            const msg = d?.message ?? d?.error ?? (error.code === 'ECONNABORTED' ? 'Превышено время ожидания. Проверьте интернет.' : 'Не удалось сохранить');
+            let msg = d?.message || d?.error;
+            if (!msg) {
+                if (error.code === 'ECONNABORTED') msg = 'Превышено время ожидания. Проверьте интернет.';
+                else if (!error.response && (error.code === 'ERR_NETWORK' || error.message === 'Network Error')) {
+                    msg = 'Нет связи с сервером. Проверьте интернет и доступность сервера (в .env — EXPO_PUBLIC_API_URL).';
+                } else msg = error.message || 'Не удалось сохранить';
+            }
             Alert.alert('Ошибка', String(msg));
         } finally {
             setLoading(false);
