@@ -1,4 +1,4 @@
-package com.anonymous.boatrent
+package com.anonymous.boatrent.owner
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build
