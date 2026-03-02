@@ -8,6 +8,8 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 
 const app = express();
+// За Nginx: доверять X-Forwarded-For (иначе express-rate-limit падает с ERR_ERL_UNEXPECTED_X_FORWARDED_FOR)
+app.set('trust proxy', 1);
 const httpServer = createServer(app);
 
 if (!process.env.JWT_SECRET) {

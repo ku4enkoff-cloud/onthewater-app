@@ -21,7 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
-import { API_BASE } from '../../shared/infrastructure/config';
+import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
 import { AuthContext } from '../../shared/context/AuthContext';
 import { FavoritesContext } from '../../shared/context/FavoritesContext';
 import {
@@ -59,11 +59,7 @@ const { width, height } = Dimensions.get('window');
 const NAVY = '#1B365D';
 const IMAGE_HEIGHT = 300;
 
-const resolvePhotoUri = (src) => {
-    if (!src) return 'https://placehold.co/800x600/png';
-    if (src.startsWith('http') || src.startsWith('file://')) return src;
-    return API_BASE + src;
-};
+const resolvePhotoUri = (src) => getPhotoUrl(src) || 'https://placehold.co/800x600/png';
 
 const DEFAULT_PRICING_TIERS = [
     { hours: 2, multiplier: 2 },

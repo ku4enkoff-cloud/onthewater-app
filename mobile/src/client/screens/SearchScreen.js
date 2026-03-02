@@ -19,17 +19,11 @@ import { Search, Heart, MapPin, Clock, Users, Zap } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
-import { API_BASE } from '../../shared/infrastructure/config';
+import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
 import { FavoritesContext } from '../../shared/context/FavoritesContext';
 import LocationPickerModal from '../components/LocationPickerModal';
 
-const resolvePhotoUri = (src) => {
-    if (!src || typeof src !== 'string') return null;
-    const s = src.trim();
-    if (!s) return null;
-    if (/^https?:\/\//i.test(s)) return s;
-    return API_BASE + (s.startsWith('/') ? s : '/' + s);
-};
+const resolvePhotoUri = (src) => getPhotoUrl(src);
 
 const { width } = Dimensions.get('window');
 const isMapAvailable = NativeModules.yamap != null;
