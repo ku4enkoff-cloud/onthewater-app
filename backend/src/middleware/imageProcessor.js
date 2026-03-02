@@ -16,7 +16,12 @@ function processUploadedImages(req, res, next) {
 
     (async () => {
         for (const file of files) {
-            const inputPath = file.path;
+            // S3: file.location есть, локального path нет — пропускаем
+            if (file.location) continue;
+
+            const inputPath = file.path || (file.destination && file.filename
+                ? path.join(file.destination, file.filename)
+                : null);
             if (!inputPath || !fs.existsSync(inputPath)) continue;
 
             const dir = path.dirname(inputPath);
@@ -32,7 +37,7 @@ function processUploadedImages(req, res, next) {
                 file.path = outputPath;
                 file.filename = path.basename(outputPath);
             } catch (err) {
-                console.warn('[imageProcessor]', file.originalname, err.message);
+                console.error('[imageProcessor] Ошибка WebP:', file.originalname, err.message, err.stack);
             }
         }
         next();
