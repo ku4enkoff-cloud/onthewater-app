@@ -22,6 +22,19 @@ const photoUrl = (src) => {
     return API_BASE + src;
 };
 
+const DURATION_LABELS = {
+    30: '30 мин', 60: '1 час', 120: '2 часа', 180: '3 часа', 240: '4 часа', 300: '5 часов',
+};
+const getDurationLabel = (minutes) => {
+    const m = Number(minutes) || 60;
+    if (DURATION_LABELS[m]) return DURATION_LABELS[m];
+    if (m < 60) return `${m} мин`;
+    const h = Math.floor(m / 60);
+    if (h === 1) return '1 час';
+    if (h >= 2 && h <= 4) return `${h} часа`;
+    return `${h} часов`;
+};
+
 export default function MyBoatsScreen({ navigation }) {
     const insets = useSafeAreaInsets();
     const [boats, setBoats] = useState([]);
@@ -66,7 +79,11 @@ export default function MyBoatsScreen({ navigation }) {
                         {item.price_weekend != null && String(item.price_weekend).trim() !== ''
                             ? `${item.price_per_hour ?? '—'} ₽ будни · ${item.price_weekend} ₽ вых.`
                             : item.price_per_hour ? `${item.price_per_hour} ₽` : '—'}
-                        <Text style={s.cardPriceUnit}> / час</Text>
+                        <Text style={s.cardPriceUnit}>
+                            {item.price_per_hour != null || item.price_weekend != null
+                                ? ` / ${getDurationLabel(item.schedule_min_duration ?? 60)}`
+                                : ''}
+                        </Text>
                     </Text>
                     <TouchableOpacity
                         style={s.editBtn}
