@@ -205,21 +205,30 @@ sudo systemctl status boatrent-api
 
 ### 7. Nginx как обратный прокси (опционально)
 
-Чтобы отдавать API по 80/443 и подмешивать статику `uploads/`:
+Чтобы отдавать API по 80/443 (и по IP) и подмешивать статику `uploads/`:
+
+**Шаг 1.** Установите Nginx (если ещё не установлен) и отключите дефолтный сайт (иначе будет открываться «Welcome to nginx!» по IP):
 
 ```bash
 sudo apt install nginx
+sudo rm -f /etc/nginx/sites-enabled/default
+```
+
+**Шаг 2.** Создайте конфиг для API:
+
+```bash
 sudo nano /etc/nginx/sites-available/boatrent-api
 ```
 
-Пример конфига:
+Вставьте (путь к `uploads` замените на свой, если backend не в `/opt/boatrent/backend`):
 
 ```nginx
 server {
-    listen 80;
-    server_name your-domain.com;
+    listen 80 default_server;
+    server_name _;
 
     location / {
+        # Важно: без слэша и без пути в конце (не http://127.0.0.1:3000/api/)
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -236,10 +245,38 @@ server {
 }
 ```
 
+- `listen 80 default_server` — этот сервер обрабатывает все запросы на порт 80, в том числе по IP.
+- `server_name _` — «любой хост» (IP или домен). Когда появится домен, можно добавить: `server_name your-domain.com 94.241.175.236;`.
+
+**Шаг 3.** Включите конфиг и перезагрузите Nginx:
+
 ```bash
-sudo ln -s /etc/nginx/sites-available/boatrent-api /etc/nginx/sites-enabled/
+sudo ln -sf /etc/nginx/sites-available/boatrent-api /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
+
+После этого по адресу `http://94.241.175.236/` должен открываться ответ API (JSON), а не страница Nginx.
+
+**Если видите 502 Bad Gateway** — Nginx не может достучаться до бэкенда (он не запущен или не слушает порт 3000). На сервере выполните:
+
+```bash
+# Запущен ли сервис бэкенда?
+sudo systemctl status boatrent-api
+
+# Слушает ли что-то порт 3000?
+sudo ss -tlnp | grep 3000
+
+# Ответ бэкенда с самого сервера (должен быть JSON)
+curl -s http://127.0.0.1:3000/
+
+# Если сервис не запущен — запустить и посмотреть логи
+sudo systemctl start boatrent-api
+sudo journalctl -u boatrent-api -n 80 --no-pager
+```
+
+Если `boatrent-api` не найден — проверьте имя юнита (`ls /etc/systemd/system/boatrent*.service`) и раздел про systemd выше (WorkingDirectory, путь к `node`, `.env`). Если при запуске падает с ошибкой БД или Redis — исправьте `DATABASE_URL` / `REDIS_URL` в `.env` и перезапустите: `sudo systemctl restart boatrent-api`.
+
+**Если видите «Cannot GET»** — запрос доходит до бэкенда, но путь не совпадает с маршрутами. Частая причина: в Nginx в `proxy_pass` указан лишний путь (например `http://127.0.0.1:3000/api/`). Должно быть ровно: `proxy_pass http://127.0.0.1:3000;` (без слэша и без `/api/`). Откройте в браузере именно корень и health: `http://IP_СЕРВЕРА/` и `http://IP_СЕРВЕРА/health`. Если обновить бэкенд с репозитория и перезапустить, на неизвестных путях будет возвращаться JSON с полем `path` — по нему видно, какой путь пришёл (и при необходимости поправить Nginx).
 
 В мобильном приложении тогда укажите `EXPO_PUBLIC_API_URL=https://your-domain.com` (или `http://IP_СЕРВЕРА` без Nginx).
 
