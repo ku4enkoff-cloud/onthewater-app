@@ -284,8 +284,9 @@ export default function EditBoatScreen({ route, navigation }) {
             payload.append('cancellation_policy', '');
             payload.append('amenities', JSON.stringify(amenities));
 
-            const existingUrls = photos.filter((p) => !p.startsWith('file://'));
-            const newFiles = photos.filter((p) => p.startsWith('file://'));
+            const isLocalUri = (p) => typeof p === 'string' && (p.startsWith('file://') || p.startsWith('content://'));
+            const existingUrls = photos.filter((p) => !isLocalUri(p));
+            const newFiles = photos.filter(isLocalUri);
             payload.append('photo_urls', JSON.stringify(existingUrls));
             newFiles.forEach((uri, i) => {
                 payload.append('photos', { uri, type: 'image/jpeg', name: `photo_${i}.jpg` });
@@ -299,7 +300,7 @@ export default function EditBoatScreen({ route, navigation }) {
                 console.warn('Save boat error', error.response?.status, error.response?.data);
             }
             const d = error.response?.data;
-            const msg = d?.message ?? d?.error ?? (error.code === 'ECONNABORTED' ? 'Превышено время ожидания. Проверьте интернет.' : 'Не удалось сохранить');
+            const msg = (d?.message || d?.error || (error.code === 'ECONNABORTED' ? 'Превышено время ожидания. Проверьте интернет.' : error.message || 'Не удалось сохранить'));
             Alert.alert('Ошибка', String(msg));
         } finally {
             setLoading(false);

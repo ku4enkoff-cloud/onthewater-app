@@ -226,6 +226,7 @@ sudo nano /etc/nginx/sites-available/boatrent-api
 server {
     listen 80 default_server;
     server_name _;
+    client_max_body_size 11M;   # загрузка фото катеров (multer limit 10M)
 
     location / {
         # Важно: без слэша и без пути в конце (не http://127.0.0.1:3000/api/)

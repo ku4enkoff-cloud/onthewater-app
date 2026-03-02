@@ -9,8 +9,10 @@ const router = express.Router();
 router.use(optionalAuth);
 
 function getPhotoUrl(file) {
+    if (!file) return null;
     if (file.location) return file.location;
-    return '/uploads/' + path.basename(file.filename);
+    if (file.filename) return '/uploads/' + path.basename(file.filename);
+    return null;
 }
 
 router.get('/', async (req, res, next) => {
@@ -186,7 +188,7 @@ router.patch('/:id', authenticate, requireRole(['owner']), (req, res, next) => {
             try { existingPhotos = JSON.parse(body.photo_urls); } catch (_) {}
         }
         if (!Array.isArray(existingPhotos)) existingPhotos = [];
-        const newFiles = (req.files || []).map(getPhotoUrl);
+        const newFiles = (req.files || []).map(getPhotoUrl).filter(Boolean);
         const combinedPhotos = [...existingPhotos, ...newFiles];
 
         const sets = [];
