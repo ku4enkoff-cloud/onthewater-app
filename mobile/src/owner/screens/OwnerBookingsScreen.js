@@ -1,12 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, FlatList, TouchableOpacity,
-    RefreshControl, ScrollView,
+    RefreshControl, ScrollView, Modal, Alert, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Calendar, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, Pencil, ChevronLeft, ChevronRight, X } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
+
+const DURATION_OPTIONS = [30, 60, 90, 120, 180, 240];
+
+const WEEKDAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+const getWeekdayKey = (d) => WEEKDAY_KEYS[d.getDay()];
+const toDateKey = (d) => d.toISOString().split('T')[0];
+const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
+const getCalendarGrid = (monthDate) => {
+    const y = monthDate.getFullYear();
+    const m = monthDate.getMonth();
+    const first = new Date(y, m, 1);
+    let start = new Date(first);
+    const dow = first.getDay();
+    const toMonday = dow === 0 ? 6 : dow - 1;
+    start.setDate(start.getDate() - toMonday);
+    const grid = [];
+    for (let row = 0; row < 6; row++) {
+        for (let col = 0; col < 7; col++) {
+            const cell = new Date(start);
+            cell.setDate(start.getDate() + row * 7 + col);
+            grid.push({ date: cell, isCurrentMonth: cell.getMonth() === m });
+        }
+    }
+    return grid;
+};
 
 let LinearGradient;
 try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
@@ -42,6 +70,14 @@ export default function OwnerBookingsScreen() {
     const [bookings, setBookings] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
     const [activeTab, setActiveTab] = useState('pending');
+    const [editModalVisible, setEditModalVisible] = useState(false);
+    const [editingBooking, setEditingBooking] = useState(null);
+    const [editDate, setEditDate] = useState(new Date());
+    const [editTime, setEditTime] = useState(new Date());
+    const [editDuration, setEditDuration] = useState(60);
+    const [showCalendarModal, setShowCalendarModal] = useState(false);
+    const [calendarMonth, setCalendarMonth] = useState(() => new Date());
+    const [showTimePicker, setShowTimePicker] = useState(false);
 
     useEffect(() => { fetchBookings(); }, []);
 
@@ -72,6 +108,42 @@ export default function OwnerBookingsScreen() {
         } catch (_) {}
     };
 
+    const openEditModal = (item) => {
+        const startAt = item.start_at || item.date_start;
+        const d = startAt ? new Date(startAt) : new Date();
+        setEditingBooking(item);
+        setEditDate(d);
+        setEditTime(d);
+        setEditDuration(Number(item.hours) || 60);
+        setCalendarMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+        setEditModalVisible(true);
+    };
+
+    const closeEditModal = () => {
+        setEditModalVisible(false);
+        setEditingBooking(null);
+        setShowCalendarModal(false);
+        setShowTimePicker(false);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingBooking) return;
+        try {
+            const dateStr = editDate.toISOString().split('T')[0];
+            const timeStr = `${String(editTime.getHours()).padStart(2, '0')}:${String(editTime.getMinutes()).padStart(2, '0')}`;
+            const start_at = `${dateStr}T${timeStr}:00`;
+            const res = await api.patch(`/owner/bookings/${editingBooking.id}`, {
+                start_at,
+                hours: editDuration,
+            });
+            const updated = res.data;
+            setBookings(prev => prev.map(b => b.id === editingBooking.id ? { ...b, ...updated } : b));
+            closeEditModal();
+        } catch (e) {
+            Alert.alert('Ошибка', e.response?.data?.error || 'Не удалось сохранить изменения');
+        }
+    };
+
     const getStatusColor = (status) => ({
         pending: '#E8A838', confirmed: TEAL, completed: theme.colors.gray500,
         cancelled: theme.colors.error, declined: theme.colors.error,
@@ -96,6 +168,20 @@ export default function OwnerBookingsScreen() {
         return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
     };
 
+    const formatDuration = (mins) => {
+        if (mins == null || mins === '' || Number.isNaN(Number(mins))) return '—';
+        const m = Number(mins);
+        if (m < 60) return `${m} мин`;
+        const h = Math.floor(m / 60);
+        const min = m % 60;
+        if (min === 0) {
+            if (h === 1) return '1 час';
+            if (h >= 2 && h <= 4) return `${h} часа`;
+            return `${h} часов`;
+        }
+        return `${h} ч ${min} мин`;
+    };
+
     const renderCard = ({ item }) => {
         const StatusIcon = getStatusIcon(item.status);
         const color = getStatusColor(item.status);
@@ -117,20 +203,26 @@ export default function OwnerBookingsScreen() {
                     </View>
                     <View style={s.detailRow}>
                         <Clock size={14} color={theme.colors.gray400} />
-                        <Text style={s.detailText}>{item.hours || '—'} ч</Text>
+                        <Text style={s.detailText}>{formatDuration(item.hours)}</Text>
                     </View>
                     <Text style={s.detailText}>
                         Гостей: {item.passengers || item.guests_count || '—'} • Капитан: {(item.captain || item.captain_requested) ? 'Да' : 'Нет'}
                     </Text>
                 </View>
                 {item.status === 'pending' && (
-                    <View style={s.actions}>
-                        <TouchableOpacity style={s.acceptBtn} onPress={() => handleAction(item.id, 'accept')} activeOpacity={0.8}>
-                            <Text style={s.acceptText}>Подтвердить</Text>
+                    <View style={s.actionsWrap}>
+                        <TouchableOpacity style={s.editBtn} onPress={() => openEditModal(item)} activeOpacity={0.8}>
+                            <Pencil size={14} color={TEAL} />
+                            <Text style={s.editBtnText}>Изменить</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={s.declineBtn} onPress={() => handleAction(item.id, 'decline')} activeOpacity={0.8}>
-                            <Text style={s.declineText}>Отклонить</Text>
-                        </TouchableOpacity>
+                        <View style={s.actions}>
+                            <TouchableOpacity style={s.acceptBtn} onPress={() => handleAction(item.id, 'accept')} activeOpacity={0.8}>
+                                <Text style={s.acceptText}>Подтвердить</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={s.declineBtn} onPress={() => handleAction(item.id, 'decline')} activeOpacity={0.8}>
+                                <Text style={s.declineText}>Отклонить</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 )}
             </View>
@@ -175,6 +267,150 @@ export default function OwnerBookingsScreen() {
                     })}
                 </ScrollView>
             </View>
+
+            {/* Edit modal */}
+            <Modal visible={editModalVisible} animationType="fade" transparent>
+                <TouchableOpacity
+                    style={[s.modalOverlay, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
+                    activeOpacity={1}
+                    onPress={closeEditModal}
+                >
+                    <TouchableOpacity style={s.modalContent} activeOpacity={1} onPress={() => {}}>
+                        <Text style={s.modalTitle}>Изменить бронирование</Text>
+                        {editingBooking && (
+                            <Text style={s.modalBoat}>{editingBooking.boat_title}</Text>
+                        )}
+                        <View style={s.modalRow}>
+                            <Text style={s.modalLabel}>Дата</Text>
+                            <TouchableOpacity style={s.modalValueBtn} onPress={() => setShowCalendarModal(true)}>
+                                <Text style={s.modalValue}>{editDate.toLocaleDateString('ru-RU')}</Text>
+                            </TouchableOpacity>
+                        </View>
+                        {showCalendarModal && editingBooking && (() => {
+                            let wd = editingBooking.schedule_work_days;
+                            if (typeof wd === 'string') try { wd = JSON.parse(wd); } catch { wd = null; }
+                            const workDays = wd && typeof wd === 'object'
+                                ? { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true, ...wd }
+                                : { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true };
+                            const isWorkingDay = (d) => workDays[getWeekdayKey(d)] === true;
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            const grid = getCalendarGrid(calendarMonth);
+                            const monthTitle = calendarMonth.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+                            const prevMonth = () => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1));
+                            const nextMonth = () => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1));
+                            return (
+                                <Modal visible transparent animationType="fade">
+                                    <View style={s.calOverlay}>
+                                        <View style={s.calSheet}>
+                                            <View style={s.calHeader}>
+                                                <TouchableOpacity onPress={() => setShowCalendarModal(false)} hitSlop={12}>
+                                                    <X size={22} color={NAVY} />
+                                                </TouchableOpacity>
+                                                <Text style={s.calHeaderTitle}>Выберите дату</Text>
+                                                <View style={{ width: 22 }} />
+                                            </View>
+                                            <View style={s.calMonthRow}>
+                                                <TouchableOpacity onPress={prevMonth} style={s.calArrowBtn}>
+                                                    <ChevronLeft size={24} color={NAVY} />
+                                                </TouchableOpacity>
+                                                <Text style={s.calMonthTitle}>{monthTitle}</Text>
+                                                <TouchableOpacity onPress={nextMonth} style={s.calArrowBtn}>
+                                                    <ChevronRight size={24} color={NAVY} />
+                                                </TouchableOpacity>
+                                            </View>
+                                            <View style={s.calWeekdayRow}>
+                                                {WEEKDAY_LABELS.map((label, i) => (
+                                                    <Text key={label} style={[s.calWeekdayText, (i === 5 || i === 6) && s.calWeekdayWeekend]}>
+                                                        {label}
+                                                    </Text>
+                                                ))}
+                                            </View>
+                                            <View style={s.calGrid}>
+                                                {grid.map(({ date, isCurrentMonth }, idx) => {
+                                                    const key = toDateKey(date);
+                                                    const isPast = date < today;
+                                                    const working = isWorkingDay(date);
+                                                    const unavailable = !working || isPast;
+                                                    const selectable = isCurrentMonth && !unavailable;
+                                                    const selected = sameDay(date, editDate);
+                                                    return (
+                                                        <TouchableOpacity
+                                                            key={idx}
+                                                            style={[
+                                                                s.calDayCell,
+                                                                !isCurrentMonth && s.calDayOtherMonth,
+                                                                selectable && s.calDayAvailable,
+                                                                unavailable && isCurrentMonth && s.calDayUnavailable,
+                                                                selected && s.calDaySelected,
+                                                            ]}
+                                                            onPress={() => {
+                                                                if (selectable) {
+                                                                    setEditDate(date);
+                                                                    setShowCalendarModal(false);
+                                                                }
+                                                            }}
+                                                            disabled={!selectable}
+                                                            activeOpacity={selectable ? 0.7 : 1}
+                                                        >
+                                                            <Text style={[
+                                                                s.calDayNum,
+                                                                !isCurrentMonth && s.calDayNumOther,
+                                                                selectable && s.calDayNumAvailable,
+                                                                unavailable && isCurrentMonth && s.calDayNumUnavailable,
+                                                                selected && s.calDayNumSelected,
+                                                            ]}>
+                                                                {date.getDate()}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    );
+                                                })}
+                                            </View>
+                                        </View>
+                                    </View>
+                                </Modal>
+                            );
+                        })()}
+                        <View style={s.modalRow}>
+                            <Text style={s.modalLabel}>Время</Text>
+                            <TouchableOpacity style={s.modalValueBtn} onPress={() => setShowTimePicker(true)}>
+                                <Text style={s.modalValue}>
+                                    {String(editTime.getHours()).padStart(2, '0')}:{String(editTime.getMinutes()).padStart(2, '0')}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                        {showTimePicker && (
+                            <DateTimePicker
+                                value={editTime}
+                                mode="time"
+                                onChange={(_, t) => { setEditTime(t || editTime); if (Platform.OS === 'android') setShowTimePicker(false); }}
+                            />
+                        )}
+                        <Text style={s.modalLabel}>Длительность</Text>
+                        <View style={s.durationChips}>
+                            {DURATION_OPTIONS.map((mins) => (
+                                <TouchableOpacity
+                                    key={mins}
+                                    style={[s.durationChip, editDuration === mins && s.durationChipActive]}
+                                    onPress={() => setEditDuration(mins)}
+                                >
+                                    <Text style={[s.durationChipText, editDuration === mins && s.durationChipTextActive]}>
+                                        {formatDuration(mins)}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                        <View style={s.modalActions}>
+                            <TouchableOpacity style={s.modalCancelBtn} onPress={closeEditModal}>
+                                <Text style={s.modalCancelText}>Отмена</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={s.modalSaveBtn} onPress={handleSaveEdit}>
+                                <Text style={s.modalSaveText}>Сохранить</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </TouchableOpacity>
+                </TouchableOpacity>
+            </Modal>
 
             {/* List */}
             <FlatList
@@ -243,7 +479,14 @@ const s = StyleSheet.create({
     detailRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
     detailText: { fontSize: 13, fontFamily: theme.fonts.regular, color: theme.colors.gray500, marginLeft: 6 },
 
-    actions: { flexDirection: 'row', marginTop: 14, gap: 10 },
+    actionsWrap: { marginTop: 14 },
+    editBtn: {
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 12,
+        marginBottom: 10,
+    },
+    editBtnText: { fontSize: 14, fontFamily: theme.fonts.semiBold, color: TEAL },
+    actions: { flexDirection: 'row', gap: 10 },
     acceptBtn: {
         flex: 1, backgroundColor: TEAL, paddingVertical: 12,
         borderRadius: 10, alignItems: 'center',
@@ -258,4 +501,67 @@ const s = StyleSheet.create({
 
     empty: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 160 },
     emptyText: { fontSize: 15, fontFamily: theme.fonts.regular, color: theme.colors.gray400, textAlign: 'center' },
+
+    /* Edit modal */
+    modalOverlay: {
+        flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', paddingHorizontal: 24,
+    },
+    modalContent: {
+        backgroundColor: '#fff', borderRadius: 16, padding: 20,
+    },
+    modalTitle: { fontSize: 18, fontFamily: theme.fonts.bold, color: NAVY, marginBottom: 4 },
+    modalBoat: { fontSize: 14, fontFamily: theme.fonts.regular, color: theme.colors.gray500, marginBottom: 16 },
+    modalRow: { marginBottom: 12 },
+    modalLabel: { fontSize: 13, fontFamily: theme.fonts.medium, color: theme.colors.gray500, marginBottom: 6 },
+    modalValueBtn: { paddingVertical: 10, paddingHorizontal: 14, backgroundColor: '#F3F4F6', borderRadius: 10 },
+    modalValue: { fontSize: 15, fontFamily: theme.fonts.medium, color: NAVY },
+    durationChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
+    durationChip: {
+        paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10,
+        borderWidth: 1.5, borderColor: '#D1D5DB', backgroundColor: '#fff',
+    },
+    durationChipActive: { borderColor: TEAL, backgroundColor: 'rgba(13,92,92,0.08)' },
+    durationChipText: { fontSize: 14, fontFamily: theme.fonts.medium, color: theme.colors.gray600 },
+    durationChipTextActive: { fontFamily: theme.fonts.semiBold, color: TEAL },
+    modalActions: { flexDirection: 'row', marginTop: 20, gap: 12 },
+    modalCancelBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 10 },
+    modalCancelText: { fontSize: 15, fontFamily: theme.fonts.semiBold, color: theme.colors.gray600 },
+    modalSaveBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', backgroundColor: TEAL, borderRadius: 10 },
+    modalSaveText: { fontSize: 15, fontFamily: theme.fonts.semiBold, color: '#fff' },
+
+    /* Calendar modal */
+    calOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+    calSheet: {
+        width: '100%', maxWidth: 400,
+        backgroundColor: '#fff', borderRadius: 20, paddingBottom: 24, paddingHorizontal: 20,
+    },
+    calHeader: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB',
+    },
+    calHeaderTitle: { fontSize: 18, fontFamily: theme.fonts.bold, color: NAVY },
+    calMonthRow: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        paddingVertical: 20,
+    },
+    calArrowBtn: { padding: 8 },
+    calMonthTitle: { fontSize: 20, fontFamily: theme.fonts.bold, color: NAVY, textTransform: 'capitalize' },
+    calWeekdayRow: { flexDirection: 'row', marginBottom: 8 },
+    calWeekdayText: {
+        flex: 1, textAlign: 'center', fontSize: 13, fontFamily: theme.fonts.medium, color: theme.colors.gray500,
+    },
+    calWeekdayWeekend: { color: theme.colors.primary || TEAL },
+    calGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+    calDayCell: {
+        width: '14.28%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center', marginVertical: 2,
+    },
+    calDayOtherMonth: { opacity: 0.35 },
+    calDayAvailable: { backgroundColor: '#ECFDF5' },
+    calDayUnavailable: { backgroundColor: '#FEF2F2' },
+    calDaySelected: { backgroundColor: NAVY, borderRadius: 999 },
+    calDayNum: { fontSize: 16, fontFamily: theme.fonts.medium, color: NAVY },
+    calDayNumOther: { color: theme.colors.gray400 },
+    calDayNumAvailable: { color: '#10B981' },
+    calDayNumUnavailable: { color: theme.colors.error },
+    calDayNumSelected: { color: '#fff', fontFamily: theme.fonts.bold },
 });

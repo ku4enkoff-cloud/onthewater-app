@@ -1,197 +1,264 @@
 const express = require('express');
+const path = require('path');
 const { pool } = require('../db');
-const validate = require('../middleware/validate');
-const { authenticate, requireRole } = require('../middleware/auth');
+const { authenticate, requireRole, optionalAuth } = require('../middleware/auth');
 const { upload } = require('../middleware/upload');
-const { boatCreateSchema, boatSearchSchema } = require('../schemas');
 
 const router = express.Router();
 
-// ПОИСК (с использованием PostGIS ST_DWithin)
-router.get('/', validate(boatSearchSchema), async (req, res, next) => {
-    try {
-        const {
-            lat, lng, radius, city, type_id,
-            min_price, max_price, capacity,
-            limit, offset
-        } = req.query;
+router.use(optionalAuth);
 
-        let query = `
-      SELECT id, title, description, capacity, price_per_hour, price_per_day,
-             location_city, photos, rating, reviews_count
-      FROM boats
-      WHERE status = 'active'
-    `;
-        const params = [];
-        let paramIndex = 1;
-
-        // Временный гео-поиск без PostGIS (очень грубый расчет по градусам)
-        if (lat && lng) {
-            // 1 градус ~ 111 км. Радиус в км делим на 111
-            const radiusDeg = (radius || 50) / 111;
-            query += ` AND POWER(lat - $${paramIndex}, 2) + POWER(lng - $${paramIndex + 1}, 2) <= POWER($${paramIndex + 2}, 2)`;
-            params.push(lat, lng, radiusDeg);
-            paramIndex += 3;
-        }
-
-        if (city) {
-            query += ` AND location_city ILIKE $${paramIndex}`;
-            params.push(`%${city}%`);
-            paramIndex++;
-        }
-
-        if (type_id) {
-            query += ` AND type_id = $${paramIndex}`;
-            params.push(type_id);
-            paramIndex++;
-        }
-
-        if (capacity) {
-            query += ` AND capacity >= $${paramIndex}`;
-            params.push(capacity);
-            paramIndex++;
-        }
-
-        query += ` ORDER BY rating DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-        params.push(limit || 20, offset || 0);
-
-        const result = await pool.query(query, params);
-        res.json(result.rows);
-    } catch (err) {
-        next(err);
-    }
-});
-
-// СОЗДАНИЕ (Только Owner)
-router.post('/', authenticate, requireRole(['owner', 'admin']), upload.array('photos', 10), validate(boatCreateSchema), async (req, res, next) => {
-    try {
-        const {
-            title, description, year, length_m, capacity,
-            location_city, location_address, lat, lng, type_id,
-            price_per_hour, price_per_day, captain_included, has_captain_option, rules
-        } = req.body;
-
-        // Сбор ссылок на загруженные в S3 фотографии
-        const photoUrls = req.files ? req.files.map(file => file.location) : [];
-
-        const result = await pool.query(`
-      INSERT INTO boats (
-        owner_id, type_id, title, description, year, length_m, capacity,
-        location_city, location_address, lat, lng, price_per_hour, price_per_day,
-        captain_included, has_captain_option, rules, photos, status
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
-        $12, $13, $14, $15, $16, $17, 'moderation'
-      ) RETURNING id, title, status, photos
-    `, [
-            req.user.id, type_id, title, description, year, length_m, capacity,
-            location_city, location_address, lat, lng,
-            price_per_hour, price_per_day, captain_included, has_captain_option,
-            rules, JSON.stringify(photoUrls)
-        ]);
-
-        res.status(201).json(result.rows[0]);
-    } catch (err) {
-        next(err);
-    }
-});
-
-// СПИСОК ГОРОДОВ С КАТЕРАМИ
-router.get('/cities', async (req, res, next) => {
-    try {
-        const result = await pool.query(
-            `SELECT DISTINCT location_city AS city FROM boats 
-             WHERE location_city IS NOT NULL 
-             AND TRIM(COALESCE(location_city, '')) <> ''
-             ORDER BY location_city`,
-        );
-        res.json(result.rows.map((r) => (r?.city ? String(r.city).trim() : null)).filter(Boolean));
-    } catch (err) {
-        next(err);
-    }
-});
-
-// ДЕТАЛИ КАЕТРА
-router.get('/:id', async (req, res, next) => {
-    try {
-        const result = await pool.query(`
-      SELECT b.*, u.name as owner_name, u.avatar as owner_avatar
-      FROM boats b
-      JOIN users u ON b.owner_id = u.id
-      WHERE b.id = $1
-    `, [req.params.id]);
-
-        if (result.rows.length === 0) return res.status(404).json({ error: 'Катер не найден' });
-        res.json(result.rows[0]);
-    } catch (err) {
-        next(err);
-    }
-});
-
-// Приведение типов из form/multipart для PATCH
-function parseBoatBody(body) {
-    const out = { ...body };
-    if (out.year !== undefined && out.year !== '') out.year = parseInt(out.year, 10) || null;
-    if (out.length_m !== undefined && out.length_m !== '') out.length_m = parseFloat(out.length_m) || null;
-    if (out.capacity !== undefined && out.capacity !== '') out.capacity = parseInt(out.capacity, 10) || null;
-    if (out.lat !== undefined && out.lat !== '') out.lat = parseFloat(out.lat) || null;
-    if (out.lng !== undefined && out.lng !== '') out.lng = parseFloat(out.lng) || null;
-    if (out.type_id !== undefined && out.type_id !== '') out.type_id = parseInt(out.type_id, 10) || null;
-    if (out.price_per_hour !== undefined && out.price_per_hour !== '') out.price_per_hour = parseFloat(out.price_per_hour) || null;
-    if (out.price_per_day !== undefined && out.price_per_day !== '') out.price_per_day = parseFloat(out.price_per_day) || null;
-    if (out.captain_included !== undefined) out.captain_included = out.captain_included === '1' || out.captain_included === true;
-    if (out.has_captain_option !== undefined) out.has_captain_option = out.has_captain_option === '1' || out.has_captain_option === true;
-    return out;
+function getPhotoUrl(file) {
+    if (file.location) return file.location;
+    return '/uploads/' + path.basename(file.filename);
 }
 
-// ОБНОВЛЕНИЕ КАТЕРА (только владелец): добавление/замена фото и полей
-router.patch('/:id', authenticate, requireRole(['owner', 'admin']), upload.array('photos', 10), async (req, res, next) => {
+router.get('/', async (req, res, next) => {
     try {
-        const boatId = req.params.id;
-        const check = await pool.query('SELECT id, owner_id, photos FROM boats WHERE id = $1', [boatId]);
-        if (check.rows.length === 0) return res.status(404).json({ error: 'Катер не найден' });
-        if (check.rows[0].owner_id !== req.user.id && req.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Нет прав на редактирование' });
+        const { lat, lng, radius, popular, limit } = req.query;
+        const user = req.user || null;
+
+        let query, params;
+        if (user && user.role === 'owner' && lat == null && lng == null && !popular) {
+            query = 'SELECT * FROM boats WHERE status != $1 AND owner_id = $2 ORDER BY id';
+            params = ['deleted', user.id];
+        } else if (popular) {
+            const lim = Math.min(50, Math.max(1, parseInt(limit, 10) || 10));
+            query = `SELECT * FROM boats WHERE status != 'deleted' ORDER BY COALESCE(bookings_count, 0) DESC, id LIMIT $1`;
+            params = [lim];
+        } else if (lat != null && lng != null) {
+            const latF = parseFloat(lat);
+            const lngF = parseFloat(lng);
+            const rad = radius ? parseFloat(radius) : 50;
+            query = `SELECT * FROM boats WHERE status != 'deleted' AND lat IS NOT NULL AND lng IS NOT NULL AND (|/ ((lat - $1)^2 + (lng - $2)^2)) * 111 <= $3 ORDER BY id`;
+            params = [latF, lngF, rad];
+        } else {
+            query = `SELECT * FROM boats WHERE status != 'deleted' ORDER BY id`;
+            params = [];
         }
 
-        let existingPhotos = check.rows[0].photos || [];
-        if (req.body.photo_urls !== undefined && req.body.photo_urls !== '') {
+        const { rows } = await pool.query(query, params);
+        res.json(rows);
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.get('/cities', async (req, res, next) => {
+    try {
+        const { rows } = await pool.query(
+            `SELECT DISTINCT location_city AS city FROM boats WHERE location_city IS NOT NULL AND TRIM(COALESCE(location_city, '')) <> '' ORDER BY location_city`
+        );
+        res.json(rows.map((r) => (r?.city ? String(r.city).trim() : null)).filter(Boolean));
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.get('/:id', async (req, res, next) => {
+    try {
+        const { rows } = await pool.query('SELECT * FROM boats WHERE id = $1', [parseInt(req.params.id, 10)]);
+        if (rows.length === 0) return res.status(404).json({ error: 'Катер не найден' });
+        const boat = rows[0];
+        res.json({
+            manufacturer: '', model: '', year: '', location_country: '',
+            location_address: '', location_yacht_club: '', rules: '', cancellation_policy: '',
+            schedule_work_days: null, schedule_weekday_hours: null,
+            schedule_weekend_hours: null, schedule_min_duration: 60,
+            price_tiers: [], video_uris: [],
+            ...boat,
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.get('/:id/reviews', async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const { rows } = await pool.query('SELECT * FROM reviews WHERE boat_id = $1 ORDER BY created_at DESC', [id]);
+        res.json(rows);
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.post('/:id/reviews', authenticate, async (req, res, next) => {
+    try {
+        const boatId = parseInt(req.params.id, 10);
+        const { rating, text } = req.body || {};
+        const r = Math.min(5, Math.max(1, parseInt(rating, 10) || 5));
+        const textStr = typeof text === 'string' ? text.trim() : '';
+
+        const { rows: boatRows } = await pool.query('SELECT id FROM boats WHERE id = $1', [boatId]);
+        if (boatRows.length === 0) return res.status(404).json({ error: 'Катер не найден' });
+
+        const { rows: existing } = await pool.query('SELECT id FROM reviews WHERE boat_id = $1 AND user_id = $2', [boatId, req.user.id]);
+        if (existing.length > 0) return res.status(400).json({ error: 'Вы уже оставили отзыв на этот катер' });
+
+        const { rows: inserted } = await pool.query(
+            'INSERT INTO reviews (boat_id, user_id, user_name, rating, text) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [boatId, req.user.id, req.user.name || 'Гость', r, textStr || null]
+        );
+
+        await pool.query(
+            `UPDATE boats SET rating = (SELECT ROUND(AVG(rating)::numeric, 2) FROM reviews WHERE boat_id = $1), reviews_count = (SELECT COUNT(*) FROM reviews WHERE boat_id = $1) WHERE id = $1`,
+            [boatId]
+        );
+
+        res.status(201).json(inserted[0]);
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.post('/', authenticate, requireRole(['owner']), upload.array('photos', 10), async (req, res, next) => {
+    try {
+        const body = req.body || {};
+        const photoFiles = (req.files || []).map(getPhotoUrl);
+        const photos = photoFiles.length ? photoFiles : ['https://placehold.co/400x300/png'];
+
+        let amenities = [];
+        if (body.amenities) {
+            try { amenities = typeof body.amenities === 'string' ? JSON.parse(body.amenities) : body.amenities; } catch (_) {}
+        }
+        if (!Array.isArray(amenities)) amenities = [];
+
+        const safeJson = (val, def) => {
+            if (!val) return def;
             try {
-                existingPhotos = JSON.parse(req.body.photo_urls);
-            } catch (_) {}
+                const parsed = typeof val === 'string' ? JSON.parse(val) : val;
+                return typeof parsed === 'object' ? parsed : def;
+            } catch (_) { return def; }
+        };
+        const scheduleWorkDays = safeJson(body.schedule_work_days, null);
+        const scheduleWeekdayHours = safeJson(body.schedule_weekday_hours, null);
+        const scheduleWeekendHours = safeJson(body.schedule_weekend_hours, null);
+        const priceTiers = safeJson(body.price_tiers, '[]');
+        const videoUris = safeJson(body.video_uris, '[]');
+
+        const { rows } = await pool.query(`
+            INSERT INTO boats (owner_id, owner_name, title, description, type_id, type_name, manufacturer, model, year, length_m, capacity, location_country, location_city, location_address, location_yacht_club, lat, lng, price_per_hour, price_per_day, captain_included, has_captain_option, rules, cancellation_policy, photos, amenities, schedule_work_days, schedule_weekday_hours, schedule_weekend_hours, schedule_min_duration, price_tiers, price_weekend, video_uris, status, rating, reviews_count, bookings_count)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36)
+            RETURNING *
+        `, [
+            req.user.id, req.user.name, body.title || 'Без названия', body.description || '',
+            body.type_id || '1', body.type_name || 'Катер', body.manufacturer || '', body.model || '',
+            body.year || '', body.length_m || '', body.capacity || '0',
+            body.location_country || '', body.location_city || 'Москва', body.location_address || '', body.location_yacht_club || '',
+            parseFloat(body.lat) || 55.75, parseFloat(body.lng) || 37.62,
+            body.price_per_hour || '0', body.price_per_day || '',
+            body.captain_included === '1', body.has_captain_option === '1',
+            body.rules || '', body.cancellation_policy || '',
+            JSON.stringify(photos), JSON.stringify(amenities),
+            scheduleWorkDays, scheduleWeekdayHours, scheduleWeekendHours,
+            body.schedule_min_duration ? parseInt(body.schedule_min_duration, 10) : 60,
+            typeof priceTiers === 'string' ? priceTiers : JSON.stringify(priceTiers),
+            body.price_weekend !== undefined ? String(body.price_weekend).trim() : '',
+            typeof videoUris === 'string' ? videoUris : JSON.stringify(videoUris),
+            'moderation', 0, 0, 0,
+        ]);
+
+        res.status(201).json(rows[0]);
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.patch('/:id', authenticate, requireRole(['owner']), (req, res, next) => {
+    upload.array('photos', 10)(req, res, (err) => {
+        if (err) {
+            return res.status(400).json({ error: err.message || 'Ошибка загрузки файлов' });
+        }
+        next();
+    });
+}, async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const { rows: existing } = await pool.query('SELECT * FROM boats WHERE id = $1', [id]);
+        if (existing.length === 0) return res.status(404).json({ error: 'Катер не найден' });
+        const boat = existing[0];
+        if (boat.owner_id !== req.user.id) return res.status(403).json({ error: 'Нет прав на редактирование' });
+
+        const body = req.body || {};
+        let existingPhotos = boat.photos || [];
+        if (body.photo_urls) {
+            try { existingPhotos = JSON.parse(body.photo_urls); } catch (_) {}
         }
         if (!Array.isArray(existingPhotos)) existingPhotos = [];
-        const newUrls = req.files ? req.files.map(f => f.location) : [];
-        const photos = [...existingPhotos, ...newUrls];
+        const newFiles = (req.files || []).map(getPhotoUrl);
+        const combinedPhotos = [...existingPhotos, ...newFiles];
 
-        const body = parseBoatBody(req.body);
-        const updates = [];
-        const params = [];
-        let paramIndex = 1;
-        const fields = [
-            'title', 'description', 'year', 'length_m', 'capacity', 'location_city', 'location_address',
-            'lat', 'lng', 'type_id', 'price_per_hour', 'price_per_day', 'captain_included', 'has_captain_option', 'rules', 'amenities'
-        ];
-        fields.forEach(f => {
+        const sets = [];
+        const vals = [];
+        let idx = 1;
+        const textFields = ['title', 'description', 'type_id', 'type_name', 'manufacturer', 'model', 'year', 'length_m', 'capacity', 'location_country', 'location_city', 'location_address', 'location_yacht_club', 'price_per_hour', 'price_per_day', 'price_weekend', 'rules', 'cancellation_policy'];
+        for (const f of textFields) {
             if (body[f] !== undefined) {
-                updates.push(`${f} = $${paramIndex}`);
-                params.push(f === 'amenities' ? (typeof body[f] === 'string' ? body[f] : JSON.stringify(body[f] || [])) : body[f]);
-                paramIndex++;
+                sets.push(`${f} = $${idx++}`);
+                vals.push(body[f]);
             }
-        });
-        updates.push(`photos = $${paramIndex}`);
-        params.push(JSON.stringify(photos));
-        paramIndex++;
+        }
+        if (body.lat !== undefined) { sets.push(`lat = $${idx++}`); vals.push(parseFloat(body.lat) || boat.lat); }
+        if (body.lng !== undefined) { sets.push(`lng = $${idx++}`); vals.push(parseFloat(body.lng) || boat.lng); }
+        if (body.captain_included !== undefined) { sets.push(`captain_included = $${idx++}`); vals.push(body.captain_included === '1' || body.captain_included === true); }
+        if (body.has_captain_option !== undefined) { sets.push(`has_captain_option = $${idx++}`); vals.push(body.has_captain_option === '1' || body.has_captain_option === true); }
+        if (combinedPhotos.length > 0) {
+            sets.push(`photos = $${idx++}`);
+            vals.push(JSON.stringify(combinedPhotos));
+        }
+        if (body.amenities !== undefined) {
+            let am = [];
+            try { am = typeof body.amenities === 'string' ? JSON.parse(body.amenities) : body.amenities; } catch (_) {}
+            if (!Array.isArray(am)) am = [];
+            sets.push(`amenities = $${idx++}`);
+            vals.push(JSON.stringify(am));
+        }
+        const jsonFields = ['schedule_work_days', 'schedule_weekday_hours', 'schedule_weekend_hours', 'price_tiers', 'video_uris'];
+        for (const f of jsonFields) {
+            if (body[f] !== undefined) {
+                sets.push(`${f} = $${idx++}`);
+                let parsed = body[f];
+                if (typeof parsed === 'string') { try { parsed = JSON.parse(parsed); } catch (_) {} }
+                vals.push(JSON.stringify(parsed));
+            }
+        }
+        if (body.schedule_min_duration !== undefined) {
+            sets.push(`schedule_min_duration = $${idx++}`);
+            vals.push(parseInt(body.schedule_min_duration, 10) || boat.schedule_min_duration);
+        }
 
-        params.push(boatId);
-        const result = await pool.query(
-            `UPDATE boats SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, title, photos, status`,
-            params
-        );
-        res.json(result.rows[0]);
+        if (sets.length === 0) return res.json(boat);
+
+        vals.push(id);
+        const { rows } = await pool.query(`UPDATE boats SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`, vals);
+        res.json(rows[0]);
     } catch (err) {
-        console.error('PATCH /boats/:id error', err);
-        res.status(500).json({ error: err.message || 'Не удалось сохранить' });
+        console.error('PATCH /boats/:id error', err.message, err.stack);
+        const msg = err.message || 'Внутренняя ошибка сервера';
+        return res.status(500).json({ error: 'Не удалось сохранить', message: msg });
+    }
+});
+
+router.delete('/:id', authenticate, requireRole(['owner']), async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const { rows } = await pool.query('SELECT * FROM boats WHERE id = $1', [id]);
+        if (rows.length === 0) return res.status(404).json({ error: 'Катер не найден' });
+        if (rows[0].owner_id !== req.user.id) return res.status(403).json({ error: 'Нет прав на удаление' });
+
+        const { rows: active } = await pool.query(
+            `SELECT COUNT(*) FROM bookings WHERE boat_id = $1 AND status IN ('confirmed','pending')`,
+            [id]
+        );
+        if (parseInt(active[0].count, 10) > 0) {
+            return res.status(400).json({ error: 'Невозможно удалить катер с активными бронированиями.' });
+        }
+
+        await pool.query(`UPDATE boats SET status = 'deleted' WHERE id = $1`, [id]);
+        res.json({ success: true });
+    } catch (err) {
+        next(err);
     }
 });
 

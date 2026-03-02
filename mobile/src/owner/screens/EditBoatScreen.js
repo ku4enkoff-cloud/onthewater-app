@@ -161,17 +161,22 @@ export default function EditBoatScreen({ route, navigation }) {
     const pickImages = async () => {
         if (photos.length >= 10) { Alert.alert('Лимит', 'Максимум 10 фотографий'); return; }
         try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Доступ к фото', 'Разрешите доступ к галерее в настройках устройства.');
+                return;
+            }
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: ['images'],
                 quality: 0.8,
                 allowsMultipleSelection: true,
             });
-            if (!result.canceled && result.assets) {
+            if (!result.canceled && result.assets && result.assets.length > 0) {
                 const remaining = 10 - photos.length;
                 setPhotos((prev) => [...prev, ...result.assets.slice(0, remaining).map((a) => a.uri)]);
             }
-        } catch (_) {
-            Alert.alert('Ошибка', 'Не удалось выбрать изображения');
+        } catch (e) {
+            Alert.alert('Ошибка', e?.message || 'Не удалось выбрать изображения');
         }
     };
 
@@ -280,6 +285,7 @@ export default function EditBoatScreen({ route, navigation }) {
             payload.append('captain_included', '0');
             payload.append('has_captain_option', '0');
             payload.append('rules', rules.trim());
+            payload.append('cancellation_policy', '');
             payload.append('amenities', JSON.stringify(amenities));
 
             const existingUrls = photos.filter((p) => !p.startsWith('file://'));
@@ -289,11 +295,15 @@ export default function EditBoatScreen({ route, navigation }) {
                 payload.append('photos', { uri, type: 'image/jpeg', name: `photo_${i}.jpg` });
             });
 
-            await api.patch(`/boats/${boatId}`, payload);
+            await api.patch(`/boats/${boatId}`, payload, { timeout: 30000 });
             Alert.alert('Готово', 'Изменения сохранены');
             navigation.goBack();
         } catch (error) {
-            const msg = error.response?.data?.error || error.response?.data?.message || 'Не удалось сохранить';
+            if (__DEV__ && error.response) {
+                console.warn('Save boat error', error.response?.status, error.response?.data);
+            }
+            const d = error.response?.data;
+            const msg = d?.message ?? d?.error ?? (error.code === 'ECONNABORTED' ? 'Превышено время ожидания. Проверьте интернет.' : 'Не удалось сохранить');
             Alert.alert('Ошибка', String(msg));
         } finally {
             setLoading(false);

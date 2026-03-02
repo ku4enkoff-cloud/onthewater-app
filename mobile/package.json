@@ -9,7 +9,11 @@
     "start:owner": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner expo start",
     "start:owner:clear": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner expo start --clear",
     "android": "expo run:android",
+    "android:client": "npx cross-env EXPO_PUBLIC_APP_VARIANT=client expo run:android",
+    "android:owner": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner expo run:android",
+    "prebuild:owner": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner expo prebuild --platform android --clean",
     "ios": "expo run:ios",
+    "ios:owner": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner expo run:ios",
     "web": "expo start --web"
   },
   "dependencies": {

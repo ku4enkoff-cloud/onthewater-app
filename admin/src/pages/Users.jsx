@@ -22,7 +22,12 @@ export default function Users() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: '', email: '', role: 'client' });
+  const emptyForm = () => ({
+    name: '', first_name: '', last_name: '', email: '', phone: '',
+    birthdate: '', about: '', address_line: '', address_city: '', address_country: '',
+    role: 'client',
+  });
+  const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -38,7 +43,19 @@ export default function Users() {
 
   const openEdit = (u) => {
     setEditing(u);
-    setForm({ name: u.name || '', email: u.email || '', role: u.role || 'client' });
+    setForm({
+      name: u.name || '',
+      first_name: u.first_name || '',
+      last_name: u.last_name || '',
+      email: u.email || '',
+      phone: u.phone || '',
+      birthdate: u.birthdate || '',
+      about: u.about || '',
+      address_line: u.address_line || '',
+      address_city: u.address_city || '',
+      address_country: u.address_country || '',
+      role: u.role || 'client',
+    });
     setError('');
   };
 
@@ -62,7 +79,7 @@ export default function Users() {
   return (
     <>
       <h1 className={styles.title}>Пользователи</h1>
-      <p className={styles.desc}>Клиенты и владельцы приложений. Редактирование: имя, email, роль.</p>
+      <p className={styles.desc}>Клиенты и владельцы приложений. Редактирование профиля.</p>
       <div className={styles.tabs}>
         {TABS.map((tab) => (
           <button
@@ -107,14 +124,33 @@ export default function Users() {
 
       {editing && (
         <Modal title="Редактировать пользователя" onClose={() => setEditing(null)}>
-          <form onSubmit={handleSave}>
+          <form onSubmit={handleSave} >
             {error && <p className={modalStyles.error}>{error}</p>}
             <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Имя</label>
+              <label className={modalStyles.label}>Отображаемое имя</label>
               <input
                 className={modalStyles.input}
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Краткое имя"
+              />
+            </div>
+            <div className={modalStyles.formRow}>
+              <label className={modalStyles.label}>Имя</label>
+              <input
+                className={modalStyles.input}
+                value={form.first_name}
+                onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+                placeholder="Имя"
+              />
+            </div>
+            <div className={modalStyles.formRow}>
+              <label className={modalStyles.label}>Фамилия</label>
+              <input
+                className={modalStyles.input}
+                value={form.last_name}
+                onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+                placeholder="Фамилия"
               />
             </div>
             <div className={modalStyles.formRow}>
@@ -124,6 +160,62 @@ export default function Users() {
                 className={modalStyles.input}
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
+            </div>
+            <div className={modalStyles.formRow}>
+              <label className={modalStyles.label}>Телефон</label>
+              <input
+                type="tel"
+                className={modalStyles.input}
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                placeholder="+7 ..."
+              />
+            </div>
+            <div className={modalStyles.formRow}>
+              <label className={modalStyles.label}>Дата рождения</label>
+              <input
+                type="date"
+                className={modalStyles.input}
+                value={form.birthdate}
+                onChange={(e) => setForm({ ...form, birthdate: e.target.value })}
+              />
+            </div>
+            <div className={modalStyles.formRow}>
+              <label className={modalStyles.label}>О себе</label>
+              <textarea
+                className={modalStyles.input}
+                rows={3}
+                value={form.about}
+                onChange={(e) => setForm({ ...form, about: e.target.value })}
+                placeholder="О пользователе"
+              />
+            </div>
+            <div className={modalStyles.formRow}>
+              <label className={modalStyles.label}>Адрес (строка)</label>
+              <input
+                className={modalStyles.input}
+                value={form.address_line}
+                onChange={(e) => setForm({ ...form, address_line: e.target.value })}
+                placeholder="Улица, дом"
+              />
+            </div>
+            <div className={modalStyles.formRow}>
+              <label className={modalStyles.label}>Город</label>
+              <input
+                className={modalStyles.input}
+                value={form.address_city}
+                onChange={(e) => setForm({ ...form, address_city: e.target.value })}
+                placeholder="Город"
+              />
+            </div>
+            <div className={modalStyles.formRow}>
+              <label className={modalStyles.label}>Страна</label>
+              <input
+                className={modalStyles.input}
+                value={form.address_country}
+                onChange={(e) => setForm({ ...form, address_country: e.target.value })}
+                placeholder="Страна"
               />
             </div>
             <div className={modalStyles.formRow}>
