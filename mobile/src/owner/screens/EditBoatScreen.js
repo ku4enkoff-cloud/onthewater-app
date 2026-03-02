@@ -300,7 +300,13 @@ export default function EditBoatScreen({ route, navigation }) {
                 console.warn('Save boat error', error.response?.status, error.response?.data);
             }
             const d = error.response?.data;
-            const msg = (d?.message || d?.error || (error.code === 'ECONNABORTED' ? 'Превышено время ожидания. Проверьте интернет.' : error.message || 'Не удалось сохранить'));
+            let msg = d?.message || d?.error;
+            if (!msg) {
+                if (error.code === 'ECONNABORTED') msg = 'Превышено время ожидания. Проверьте интернет.';
+                else if (!error.response && (error.code === 'ERR_NETWORK' || error.message === 'Network Error')) {
+                    msg = 'Нет связи с сервером. Проверьте интернет и доступность сервера (в .env — EXPO_PUBLIC_API_URL).';
+                } else msg = error.message || 'Не удалось сохранить';
+            }
             Alert.alert('Ошибка', String(msg));
         } finally {
             setLoading(false);
