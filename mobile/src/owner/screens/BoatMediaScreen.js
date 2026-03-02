@@ -32,18 +32,28 @@ export default function BoatMediaScreen({ navigation, route }) {
             return;
         }
         try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert(
+                    'Доступ к фото',
+                    'Разрешите доступ к галерее в настройках устройства, чтобы добавить фотографии.',
+                    [{ text: 'OK' }]
+                );
+                return;
+            }
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: ['images'],
                 quality: 0.8,
                 allowsMultipleSelection: true,
             });
-            if (!result.canceled && result.assets) {
+            if (!result.canceled && result.assets && result.assets.length > 0) {
                 const remaining = MAX_PHOTOS - photos.length;
                 const newUris = result.assets.slice(0, remaining).map((a) => a.uri);
                 setPhotos((prev) => [...prev, ...newUris]);
             }
-        } catch (_) {
-            Alert.alert('Ошибка', 'Не удалось выбрать фотографии');
+        } catch (e) {
+            const msg = e?.message || 'Не удалось выбрать фотографии';
+            Alert.alert('Ошибка', msg);
         }
     };
 
@@ -53,18 +63,28 @@ export default function BoatMediaScreen({ navigation, route }) {
             return;
         }
         try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert(
+                    'Доступ к медиатеке',
+                    'Разрешите доступ к галерее в настройках устройства, чтобы добавить видео.',
+                    [{ text: 'OK' }]
+                );
+                return;
+            }
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+                mediaTypes: ['videos'],
                 quality: 0.7,
                 allowsMultipleSelection: true,
             });
-            if (!result.canceled && result.assets) {
+            if (!result.canceled && result.assets && result.assets.length > 0) {
                 const remaining = MAX_VIDEOS - videos.length;
                 const newUris = result.assets.slice(0, remaining).map((a) => a.uri);
                 setVideos((prev) => [...prev, ...newUris]);
             }
-        } catch (_) {
-            Alert.alert('Ошибка', 'Не удалось выбрать видео');
+        } catch (e) {
+            const msg = e?.message || 'Не удалось выбрать видео';
+            Alert.alert('Ошибка', msg);
         }
     };
 

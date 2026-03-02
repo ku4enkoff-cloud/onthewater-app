@@ -1,0 +1,332 @@
+const express = require('express');
+const path = require('path');
+const { pool } = require('../db');
+const { authenticate, adminMiddleware } = require('../middleware/auth');
+const { upload } = require('../middleware/upload');
+
+const router = express.Router();
+router.use(authenticate);
+router.use(adminMiddleware);
+
+function getPhotoUrl(file) {
+    if (file && file.location) return file.location;
+    if (file && file.filename) return '/uploads/' + path.basename(file.filename);
+    return '';
+}
+
+router.get('/users', async (req, res, next) => {
+    try {
+        const { rows } = await pool.query('SELECT id, email, name, first_name, last_name, phone, role, created_at FROM users ORDER BY id');
+        res.json(rows.map((u) => ({ ...u, password_hash: undefined })));
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.get('/boats', async (req, res, next) => {
+    try {
+        const { rows } = await pool.query(`SELECT * FROM boats WHERE status != 'deleted' ORDER BY id`);
+        res.json(rows);
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.patch('/boats/:id', async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const { status } = req.body || {};
+        if (status !== undefined) {
+            const { rows } = await pool.query('UPDATE boats SET status = $1 WHERE id = $2 RETURNING *', [status, id]);
+            if (rows.length === 0) return res.status(404).json({ error: 'Катер не найден' });
+            return res.json(rows[0]);
+        }
+        const { rows } = await pool.query('SELECT * FROM boats WHERE id = $1', [id]);
+        if (rows.length === 0) return res.status(404).json({ error: 'Катер не найден' });
+        res.json(rows[0]);
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.put('/boats/:id', upload.array('photos', 10), async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const { rows: existing } = await pool.query('SELECT * FROM boats WHERE id = $1', [id]);
+        if (existing.length === 0) return res.status(404).json({ error: 'Катер не найден' });
+        const boat = existing[0];
+        const body = req.body || {};
+
+        const sets = [];
+        const vals = [];
+        let idx = 1;
+
+        if (body.photo_urls !== undefined || (req.files && req.files.length > 0)) {
+            let ep = [];
+            try { ep = JSON.parse(body.photo_urls || '[]'); } catch (_) {}
+            if (!Array.isArray(ep)) ep = [];
+            const newPaths = (req.files || []).map((f) => (f.location ? f.location : '/uploads/' + path.basename(f.filename)));
+            const combined = [...ep, ...newPaths];
+            const finalPhotos = combined.length ? combined : (boat.photos && boat.photos.length ? boat.photos : ['https://placehold.co/400x300?text=No+photo']);
+            sets.push(`photos = $${idx++}`);
+            vals.push(JSON.stringify(finalPhotos));
+        }
+
+        const textFields = ['title', 'description', 'type_id', 'type_name', 'manufacturer', 'model', 'year', 'length_m', 'capacity', 'location_country', 'location_city', 'location_address', 'location_yacht_club', 'price_per_hour', 'price_per_day', 'price_weekend', 'rules', 'cancellation_policy', 'status'];
+        for (const f of textFields) {
+            if (body[f] !== undefined) { sets.push(`${f} = $${idx++}`); vals.push(body[f]); }
+        }
+        if (body.lat !== undefined) { sets.push(`lat = $${idx++}`); vals.push(parseFloat(body.lat) || boat.lat); }
+        if (body.lng !== undefined) { sets.push(`lng = $${idx++}`); vals.push(parseFloat(body.lng) || boat.lng); }
+        if (body.captain_included !== undefined) { sets.push(`captain_included = $${idx++}`); vals.push(body.captain_included === true || body.captain_included === '1' || body.captain_included === 'true'); }
+        if (body.has_captain_option !== undefined) { sets.push(`has_captain_option = $${idx++}`); vals.push(body.has_captain_option === true || body.has_captain_option === '1' || body.has_captain_option === 'true'); }
+        if (body.instant_booking !== undefined) { sets.push(`instant_booking = $${idx++}`); vals.push(body.instant_booking === true || body.instant_booking === '1' || body.instant_booking === 'true'); }
+        if (body.amenities !== undefined) {
+            let am = [];
+            try { am = typeof body.amenities === 'string' ? JSON.parse(body.amenities || '[]') : (body.amenities || []); } catch (_) {}
+            sets.push(`amenities = $${idx++}`);
+            vals.push(JSON.stringify(am));
+        }
+        const jsonFields = ['schedule_work_days', 'schedule_weekday_hours', 'schedule_weekend_hours', 'price_tiers', 'video_uris'];
+        for (const f of jsonFields) {
+            if (body[f] !== undefined) {
+                sets.push(`${f} = $${idx++}`);
+                let parsed = body[f];
+                if (typeof parsed === 'string') { try { parsed = JSON.parse(parsed); } catch (_) { parsed = []; } }
+                vals.push(JSON.stringify(parsed || []));
+            }
+        }
+        if (body.schedule_min_duration !== undefined) {
+            sets.push(`schedule_min_duration = $${idx++}`);
+            vals.push(parseInt(body.schedule_min_duration, 10) || boat.schedule_min_duration || 60);
+        }
+
+        if (sets.length === 0) return res.json(boat);
+
+        vals.push(id);
+        const { rows } = await pool.query(`UPDATE boats SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`, vals);
+        res.json(rows[0]);
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.get('/bookings', async (req, res, next) => {
+    try {
+        const { rows: rawRows } = await pool.query('SELECT * FROM bookings ORDER BY created_at DESC');
+        const userIds = [...new Set([...rawRows.map((r) => r.user_id), ...rawRows.map((r) => r.owner_id)])].filter(Boolean);
+        const usersMap = {};
+        if (userIds.length > 0) {
+            const { rows: userRows } = await pool.query(
+                'SELECT id, name, first_name, last_name, email, phone FROM users WHERE id = ANY($1)',
+                [userIds]
+            );
+            userRows.forEach((u) => {
+                const displayName = (u.name && String(u.name).trim()) || (u.first_name || u.last_name ? [u.first_name, u.last_name].filter(Boolean).join(' ').trim() : null) || u.email;
+                usersMap[u.id] = { name: displayName || null, phone: (u.phone && String(u.phone).trim()) || null };
+            });
+        }
+        const boatIds = [...new Set(rawRows.map((r) => r.boat_id).filter(Boolean))];
+        const boatsMap = {};
+        if (boatIds.length > 0) {
+            const { rows: boatRows } = await pool.query('SELECT id, title FROM boats WHERE id = ANY($1)', [boatIds]);
+            boatRows.forEach((b) => { boatsMap[b.id] = b.title; });
+        }
+        const rows = rawRows.map((b) => {
+            const client = usersMap[b.user_id];
+            const owner = usersMap[b.owner_id];
+            return {
+                ...b,
+                client_name: (client && client.name) || null,
+                client_phone: (client && client.phone) || null,
+                owner_name: (owner && owner.name) || null,
+                owner_phone: (owner && owner.phone) || null,
+                boat_title_display: boatsMap[b.boat_id] || b.boat_title || null,
+            };
+        });
+        res.json(rows);
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.patch('/bookings/:id', async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const { status, start_at, end_at } = req.body || {};
+        const sets = [];
+        const vals = [];
+        let idx = 1;
+        if (status !== undefined) { sets.push(`status = $${idx++}`); vals.push(status); }
+        if (start_at !== undefined) { sets.push(`start_at = $${idx++}`); vals.push(start_at); }
+        if (end_at !== undefined) { sets.push(`end_at = $${idx++}`); vals.push(end_at); }
+
+        if (sets.length === 0) {
+            const { rows } = await pool.query('SELECT * FROM bookings WHERE id = $1', [id]);
+            if (rows.length === 0) return res.status(404).json({ error: 'Бронирование не найдено' });
+            return res.json(rows[0]);
+        }
+        vals.push(id);
+        const { rows } = await pool.query(`UPDATE bookings SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`, vals);
+        if (rows.length === 0) return res.status(404).json({ error: 'Бронирование не найдено' });
+        res.json(rows[0]);
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.get('/boat-types', async (req, res, next) => {
+    try {
+        let { rows } = await pool.query('SELECT * FROM boat_types ORDER BY sort_order ASC, id ASC');
+        if (rows.length === 0) {
+            const def = [['Парусная яхта','https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400',0],['Яхта','https://images.unsplash.com/photo-1567894340315-735d7c361db0?w=400',1],['Понтон','https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400',2],['Катер','https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400',3],['Буксировщик','https://images.unsplash.com/photo-1567894340315-735d7c361db0?w=400',4],['Гидроцикл','https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400',5]];
+            for (const [n,i,s] of def) await pool.query('INSERT INTO boat_types (name, image, sort_order) VALUES ($1,$2,$3)', [n,i,s]);
+            const r = await pool.query('SELECT * FROM boat_types ORDER BY sort_order ASC, id ASC');
+            rows = r.rows;
+        }
+        res.json(rows);
+    } catch (err) { next(err); }
+});
+
+router.post('/boat-types', upload.single('photo'), async (req, res, next) => {
+    try {
+        const name = (req.body?.name != null) ? String(req.body.name).trim() : '';
+        if (!name) return res.status(400).json({ error: 'Укажите название типа' });
+        const image = (req.file && (req.file.location || req.file.filename)) ? (req.file.location || '/uploads/' + path.basename(req.file.filename)) : '';
+        const { rows } = await pool.query('INSERT INTO boat_types (name, image, sort_order) VALUES ($1,$2,COALESCE((SELECT MAX(sort_order) FROM boat_types),0)+1) RETURNING *', [name, image]);
+        res.status(201).json(rows[0]);
+    } catch (err) { next(err); }
+});
+
+router.put('/boat-types/:id', upload.single('photo'), async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const { rows: ex } = await pool.query('SELECT * FROM boat_types WHERE id = $1', [id]);
+        if (ex.length === 0) return res.status(404).json({ error: 'Тип не найден' });
+        const name = (req.body?.name != null) ? String(req.body.name).trim() : (ex[0].name || '');
+        let image = ex[0].image || '';
+        if (req.file) image = req.file.location || '/uploads/' + path.basename(req.file.filename) || image;
+        await pool.query('UPDATE boat_types SET name = $1, image = $2 WHERE id = $3', [name, image, id]);
+        const { rows } = await pool.query('SELECT * FROM boat_types WHERE id = $1', [id]);
+        res.json(rows[0]);
+    } catch (err) { next(err); }
+});
+
+router.delete('/boat-types/:id', async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const { rowCount } = await pool.query('DELETE FROM boat_types WHERE id = $1', [id]);
+        if (rowCount === 0) return res.status(404).json({ error: 'Тип не найден' });
+        res.json({ ok: true });
+    } catch (err) { next(err); }
+});
+
+router.patch('/boat-types/reorder', async (req, res, next) => {
+    try {
+        const ids = Array.isArray(req.body?.ids) ? req.body.ids.map((x) => parseInt(x, 10)).filter((x) => !isNaN(x)) : [];
+        if (ids.length === 0) return res.status(400).json({ error: 'Укажите порядок типов' });
+        for (let i = 0; i < ids.length; i++) await pool.query('UPDATE boat_types SET sort_order = $1 WHERE id = $2', [i, ids[i]]);
+        const { rows } = await pool.query('SELECT * FROM boat_types ORDER BY sort_order ASC, id ASC');
+        res.json(rows);
+    } catch (err) { next(err); }
+});
+
+router.get('/destinations', async (req, res, next) => {
+    try {
+        let { rows } = await pool.query('SELECT * FROM destinations ORDER BY sort_order ASC, id ASC');
+        if (rows.length === 0) {
+            const def = [['Москва','https://images.unsplash.com/photo-1513326738677-9646ab0f3b3b?w=400',0],['Санкт-Петербург','https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400',1],['Сочи','https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=400',2],['Крым','https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=400',3],['Казань','https://images.unsplash.com/photo-1596484552834-6a58f850e0a1?w=400',4]];
+            for (const [n,i,s] of def) await pool.query('INSERT INTO destinations (name, image, sort_order) VALUES ($1,$2,$3)', [n,i,s]);
+            const r = await pool.query('SELECT * FROM destinations ORDER BY sort_order ASC, id ASC');
+            rows = r.rows;
+        }
+        res.json(rows);
+    } catch (err) { next(err); }
+});
+
+router.post('/destinations', upload.single('photo'), async (req, res, next) => {
+    try {
+        const name = (req.body?.name != null) ? String(req.body.name).trim() : '';
+        if (!name) return res.status(400).json({ error: 'Укажите название направления' });
+        const image = (req.file && (req.file.location || req.file.filename)) ? (req.file.location || '/uploads/' + path.basename(req.file.filename)) : '';
+        const { rows } = await pool.query('INSERT INTO destinations (name, image, sort_order) VALUES ($1,$2,COALESCE((SELECT MAX(sort_order) FROM destinations),0)+1) RETURNING *', [name, image]);
+        res.status(201).json(rows[0]);
+    } catch (err) { next(err); }
+});
+
+router.put('/destinations/:id', upload.single('photo'), async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const { rows: ex } = await pool.query('SELECT * FROM destinations WHERE id = $1', [id]);
+        if (ex.length === 0) return res.status(404).json({ error: 'Направление не найдено' });
+        const name = (req.body?.name != null) ? String(req.body.name).trim() : (ex[0].name || '');
+        let image = ex[0].image || '';
+        if (req.file) image = req.file.location || '/uploads/' + path.basename(req.file.filename) || image;
+        await pool.query('UPDATE destinations SET name = $1, image = $2 WHERE id = $3', [name, image, id]);
+        const { rows } = await pool.query('SELECT * FROM destinations WHERE id = $1', [id]);
+        res.json(rows[0]);
+    } catch (err) { next(err); }
+});
+
+router.delete('/destinations/:id', async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const { rowCount } = await pool.query('DELETE FROM destinations WHERE id = $1', [id]);
+        if (rowCount === 0) return res.status(404).json({ error: 'Направление не найдено' });
+        res.json({ ok: true });
+    } catch (err) { next(err); }
+});
+
+router.patch('/destinations/reorder', async (req, res, next) => {
+    try {
+        const ids = Array.isArray(req.body?.ids) ? req.body.ids.map((x) => parseInt(x, 10)).filter((x) => !isNaN(x)) : [];
+        if (ids.length === 0) return res.status(400).json({ error: 'Укажите порядок направлений' });
+        for (let i = 0; i < ids.length; i++) await pool.query('UPDATE destinations SET sort_order = $1 WHERE id = $2', [i, ids[i]]);
+        const { rows } = await pool.query('SELECT * FROM destinations ORDER BY sort_order ASC, id ASC');
+        res.json(rows);
+    } catch (err) { next(err); }
+});
+
+router.patch('/users/:id', async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const { name, first_name, last_name, email, phone, birthdate, about, address_line, address_city, address_street, address_zip, address_country, role } = req.body || {};
+
+        const { rows: existing } = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+        if (existing.length === 0) return res.status(404).json({ error: 'Пользователь не найден' });
+        const user = existing[0];
+
+        const sets = [];
+        const vals = [];
+        let idx = 1;
+        if (email !== undefined && email !== user.email) {
+            const { rows: dup } = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+            if (dup.length > 0) return res.status(400).json({ error: 'Такой email уже занят' });
+            sets.push(`email = $${idx++}`);
+            vals.push(email);
+        }
+        if (name !== undefined) { sets.push(`name = $${idx++}`); vals.push(name); }
+        if (first_name !== undefined) { sets.push(`first_name = $${idx++}`); vals.push(first_name); }
+        if (last_name !== undefined) { sets.push(`last_name = $${idx++}`); vals.push(last_name); }
+        if (phone !== undefined) { sets.push(`phone = $${idx++}`); vals.push(phone); }
+        if (birthdate !== undefined) { sets.push(`birthdate = $${idx++}`); vals.push(birthdate); }
+        if (about !== undefined) { sets.push(`about = $${idx++}`); vals.push(about); }
+        if (address_line !== undefined) { sets.push(`address_line = $${idx++}`); vals.push(address_line); }
+        if (address_city !== undefined) { sets.push(`address_city = $${idx++}`); vals.push(address_city); }
+        if (address_street !== undefined) { sets.push(`address_street = $${idx++}`); vals.push(address_street); }
+        if (address_zip !== undefined) { sets.push(`address_zip = $${idx++}`); vals.push(address_zip); }
+        if (address_country !== undefined) { sets.push(`address_country = $${idx++}`); vals.push(address_country); }
+        if (role !== undefined && ['client', 'owner', 'admin'].includes(role)) { sets.push(`role = $${idx++}`); vals.push(role); }
+
+        if (sets.length === 0) return res.json(user);
+
+        vals.push(id);
+        const { rows } = await pool.query(`UPDATE users SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`, vals);
+        const { password_hash, ...safe } = rows[0];
+        res.json(safe);
+    } catch (err) {
+        next(err);
+    }
+});
+
+module.exports = router;

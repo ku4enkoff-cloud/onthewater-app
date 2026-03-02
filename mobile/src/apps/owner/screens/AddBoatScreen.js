@@ -54,14 +54,19 @@ export default function AddBoatScreen({ navigation }) {
 
     const pickImages = async () => {
         try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Доступ к фото', 'Разрешите доступ к галерее в настройках устройства.');
+                return;
+            }
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: ['images'],
                 quality: 0.8,
                 allowsEditing: false,
                 allowsMultipleSelection: true,
             });
 
-            if (!result.canceled && result.assets) {
+            if (!result.canceled && result.assets && result.assets.length > 0) {
                 setFormData({
                     ...formData,
                     photos: [...formData.photos, ...result.assets.map(asset => asset.uri)]
@@ -69,7 +74,7 @@ export default function AddBoatScreen({ navigation }) {
             }
         } catch (error) {
             console.log('Image picker error:', error);
-            Alert.alert('Ошибка', 'Не удалось выбрать изображения');
+            Alert.alert('Ошибка', error?.message || 'Не удалось выбрать изображения');
         }
     };
 
