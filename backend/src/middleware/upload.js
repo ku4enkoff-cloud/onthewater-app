@@ -1,11 +1,13 @@
-const multer = require('multer');
+const multerModule = require('multer');
+const multer = typeof multerModule === 'function' ? multerModule : (multerModule.default || multerModule);
+const diskStorage = multer.diskStorage || multerModule.diskStorage;
 const path = require('path');
 const fs = require('fs');
 
 const uploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-let storage = multer.diskStorage({
+let storage = diskStorage({
     destination: (req, file, cb) => cb(null, uploadsDir),
     filename: (req, file, cb) => {
         const ext = path.extname(file.originalname) || '.jpg';
