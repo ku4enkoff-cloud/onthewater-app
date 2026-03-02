@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useCallback } from 'react';
-import { Platform, View, ActivityIndicator } from 'react-native';
+import { Platform, View, ActivityIndicator, Text } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -26,6 +26,23 @@ if (Platform.OS === 'android' || Platform.OS === 'ios') {
   } catch (_) {}
 }
 
+class ErrorBoundary extends React.Component {
+  state = { error: null };
+  static getDerivedStateFromError(e) { return { error: e }; }
+  componentDidCatch(e, info) { console.error('App error', e, info); }
+  render() {
+    if (this.state.error) {
+      return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <Text style={{ color: '#c00', textAlign: 'center' }}>Ошибка загрузки. Перезапустите приложение.</Text>
+          <Text style={{ marginTop: 8, fontSize: 12, color: '#666' }}>{String(this.state.error.message)}</Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function OwnerRoot() {
   const { user, loading } = useContext(AuthContext);
   if (loading) {
@@ -46,6 +63,10 @@ export default function App() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+    const fallback = setTimeout(() => {
+      if (!cancelled) setFontsLoaded(true);
+    }, 5000);
     Font.loadAsync({
       Jost_300Light,
       Jost_400Regular,
@@ -53,24 +74,43 @@ export default function App() {
       Jost_600SemiBold,
       Jost_700Bold,
     })
-      .then(() => setFontsLoaded(true))
-      .catch((e) => console.warn('Font load error', e));
+      .then(() => !cancelled && setFontsLoaded(true))
+      .catch((e) => {
+        console.warn('Font load error', e);
+        if (!cancelled) setFontsLoaded(true);
+      })
+      .finally(() => clearTimeout(fallback));
+    return () => { cancelled = true; clearTimeout(fallback); };
+  }, []);
+
+  // Скрыть overlay "Bundling/Reloading" сразу при монтировании
+  useEffect(() => {
+    SplashScreen.hideAsync().catch(() => {});
   }, []);
 
   const onLayoutRootView = useCallback(async () => {
-    if (fontsLoaded) await SplashScreen.hideAsync();
-  }, [fontsLoaded]);
+    await SplashScreen.hideAsync().catch(() => {});
+  }, []);
 
-  if (!fontsLoaded) return null;
+  // Первый кадр без зависимостей от theme — чтобы гарантированно отрисоваться после "Bundling 100%"
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }} onLayout={onLayoutRootView}>
+        <ActivityIndicator size="large" color="#2196F3" />
+      </View>
+    );
+  }
 
   return (
-    <SafeAreaProvider>
-      <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-        <AuthProvider>
-          <OwnerRoot />
-          <StatusBar style="light" />
-        </AuthProvider>
-      </View>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+          <AuthProvider>
+            <OwnerRoot />
+            <StatusBar style="light" />
+          </AuthProvider>
+        </View>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }

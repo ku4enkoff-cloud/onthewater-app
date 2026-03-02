@@ -10,9 +10,10 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         let cancelled = false;
+        // Показываем экран входа не дольше чем через 3 сек (если API недоступен с эмулятора — не висим на спиннере)
         const maxWait = setTimeout(() => {
             if (!cancelled) setLoading(false);
-        }, 12000);
+        }, 3000);
         (async () => {
             try {
                 await loadUser();
@@ -33,7 +34,7 @@ export const AuthProvider = ({ children }) => {
         try {
             const token = await AsyncStorage.getItem('@token');
             if (token) {
-                const res = await api.get('/auth/me');
+                const res = await api.get('/auth/me', { timeout: 5000 });
                 setUser(res.data);
             }
         } catch (e) {
