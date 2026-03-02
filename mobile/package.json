@@ -14,7 +14,8 @@
     "prebuild:owner": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner expo prebuild --platform android --clean",
     "ios": "expo run:ios",
     "ios:owner": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "log:android": "node scripts/adb-logcat.js"
   },
   "dependencies": {
     "@expo-google-fonts/jost": "^0.4.2",

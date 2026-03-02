@@ -2,14 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, RefreshControl } from 'react-native';
 import { theme } from '../../../theme';
 import { api } from '../../../infrastructure/api';
-import { API_BASE } from '../../../infrastructure/config';
+import { getPhotoUrl } from '../../../shared/infrastructure/config';
 import { Calendar, Clock, MapPin } from 'lucide-react-native';
 
-const resolvePhotoUri = (src) => {
-    if (!src) return 'https://placehold.co/400x200';
-    if (src.startsWith('http') || src.startsWith('file://')) return src;
-    return API_BASE + (src.startsWith('/') ? src : '/' + src);
-};
+const resolvePhotoUri = (src) => getPhotoUrl(src) || 'https://placehold.co/400x200';
 
 export default function BookingsScreen({ navigation }) {
     const [bookings, setBookings] = useState([]);

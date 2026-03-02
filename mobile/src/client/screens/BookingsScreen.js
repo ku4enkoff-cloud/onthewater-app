@@ -3,16 +3,12 @@ import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, RefreshContr
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
-import { API_BASE } from '../../shared/infrastructure/config';
+import { getPhotoUrl } from '../../shared/infrastructure/config';
 import { AuthContext } from '../../shared/context/AuthContext';
 import UnauthorizedCard from '../../shared/components/UnauthorizedCard';
 import { Calendar, Clock, MapPin } from 'lucide-react-native';
 
-const resolvePhotoUri = (src) => {
-    if (!src) return 'https://placehold.co/400x200';
-    if (src.startsWith('http') || src.startsWith('file://')) return src;
-    return API_BASE + (src.startsWith('/') ? src : '/' + src);
-};
+const resolvePhotoUri = (src) => getPhotoUrl(src) || 'https://placehold.co/400x200';
 
 export default function BookingsScreen({ navigation }) {
     const insets = useSafeAreaInsets();

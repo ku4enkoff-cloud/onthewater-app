@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingVi
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthContext } from '../../shared/context/AuthContext';
 import { theme } from '../../shared/theme';
+import { API_BASE } from '../../shared/infrastructure/config';
 
 export default function LoginScreen({ navigation, route }) {
     const { login } = useContext(AuthContext);
@@ -23,8 +24,20 @@ export default function LoginScreen({ navigation, route }) {
                 navigation.goBack();
             }
         } catch (e) {
-            const msg = e.response?.data?.error
-                || (e.message?.includes('Network') ? 'Нет связи с сервером. Проверьте подключение.' : 'Неверный логин или пароль');
+            const status = e.response?.status;
+            let msg = e.response?.data?.error || e.response?.data?.message;
+            if (Array.isArray(e.response?.data?.details)) {
+                msg = (msg || 'Ошибка валидации') + '\n' + e.response.data.details.map(d => d.message).join('\n');
+            }
+            if (!msg) {
+                if (status === 502) {
+                    msg = 'Сервер недоступен (502). На удалённом сервере проверьте: systemctl status boatrent-api, перезапустите бэкенд.';
+                } else if (e.code === 'ERR_NETWORK' || e.message?.includes('Network')) {
+                    msg = `Нет связи с сервером. Проверьте интернет и адрес API: ${API_BASE}`;
+                } else {
+                    msg = status === 401 ? 'Неверный email или пароль.' : (e.message || 'Неверный логин или пароль');
+                }
+            }
             Alert.alert('Ошибка авторизации', msg);
         } finally {
             setLoading(false);
