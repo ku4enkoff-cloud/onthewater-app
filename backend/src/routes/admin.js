@@ -3,6 +3,7 @@ const path = require('path');
 const { pool } = require('../db');
 const { authenticate, adminMiddleware } = require('../middleware/auth');
 const { upload } = require('../middleware/upload');
+const { processUploadedImages } = require('../middleware/imageProcessor');
 
 const router = express.Router();
 router.use(authenticate);
@@ -49,7 +50,7 @@ router.patch('/boats/:id', async (req, res, next) => {
     }
 });
 
-router.put('/boats/:id', upload.array('photos', 10), async (req, res, next) => {
+router.put('/boats/:id', upload.array('photos', 10), processUploadedImages, async (req, res, next) => {
     try {
         const id = parseInt(req.params.id, 10);
         const { rows: existing } = await pool.query('SELECT * FROM boats WHERE id = $1', [id]);
