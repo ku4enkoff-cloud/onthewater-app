@@ -73,14 +73,18 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '0.0.0.0';
 
 function tryListen(port, maxAttempts = 3) {
     if (port - PORT >= maxAttempts) {
         console.error(`Не удалось запустить сервер. Порты ${PORT}-${port - 1} заняты.`);
         process.exit(1);
     }
-    const server = httpServer.listen(port, () => {
-        console.log(`BoatRent API запущено на http://localhost:${port}`);
+    const server = httpServer.listen(port, HOST, () => {
+        console.log(`BoatRent API: http://localhost:${port}`);
+        if (HOST === '0.0.0.0') {
+            console.log('Доступен в сети. Для телефона используйте в .env адрес: http://IP_ЭТОГО_ПК:' + port);
+        }
         if (port !== PORT) {
             console.warn(`Порт ${PORT} занят, использован порт ${port}.`);
         }
