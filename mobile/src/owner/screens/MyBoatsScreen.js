@@ -71,16 +71,28 @@ export default function MyBoatsScreen({ navigation }) {
                     <Text style={s.cardInfoText}>{item.location_city || 'Не указан'}</Text>
                 </View>
                 <View style={s.cardFooter}>
-                    <Text style={s.cardPrice}>
-                        {item.price_weekend != null && String(item.price_weekend).trim() !== ''
-                            ? `${item.price_per_hour ?? '—'} ₽ будни · ${item.price_weekend} ₽ вых.`
-                            : item.price_per_hour ? `${item.price_per_hour} ₽` : '—'}
+                    <View>
+                        {item.price_per_hour != null && String(item.price_per_hour).trim() !== '' && (
+                            <Text style={s.cardPrice}>
+                                {item.price_per_hour} ₽ будни
+                            </Text>
+                        )}
+                        {item.price_weekend != null && String(item.price_weekend).trim() !== '' && (
+                            <Text style={s.cardPrice}>
+                                {item.price_weekend} ₽ вых.
+                            </Text>
+                        )}
+                        {(item.price_per_hour == null || String(item.price_per_hour).trim() === '') &&
+                         (item.price_weekend == null || String(item.price_weekend).trim() === '') && (
+                            <Text style={s.cardPrice}>—</Text>
+                        )}
                         <Text style={s.cardPriceUnit}>
-                            {item.price_per_hour != null || item.price_weekend != null
-                                ? ` / ${getDurationLabel(item.schedule_min_duration ?? 60)}`
+                            {(item.price_per_hour != null && String(item.price_per_hour).trim() !== '') ||
+                             (item.price_weekend != null && String(item.price_weekend).trim() !== '')
+                                ? getDurationLabel(item.schedule_min_duration ?? 60)
                                 : ''}
                         </Text>
-                    </Text>
+                    </View>
                     <TouchableOpacity
                         style={s.editBtn}
                         onPress={() => navigation.navigate('EditBoat', { boatId: item.id })}
