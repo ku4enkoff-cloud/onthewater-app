@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, NativeModules, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, NativeModules, ActivityIndicator, InteractionManager } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
@@ -85,7 +85,11 @@ export default function CityMapScreen({ route, navigation }) {
                     <Marker
                         key={boat.id}
                         point={{ lat: boat.lat, lon: boat.lng }}
-                        onPress={() => navigation.navigate('BoatDetail', { boatId: boat.id })}
+                        onPress={() => {
+                            InteractionManager.runAfterInteractions(() => {
+                                setTimeout(() => navigation.navigate('BoatDetail', { boatId: boat.id }), 150);
+                            });
+                        }}
                     />
                 ))}
             </YaMap>
