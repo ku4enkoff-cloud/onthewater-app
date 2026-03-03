@@ -28,6 +28,11 @@ router.post('/', authenticate, async (req, res, next) => {
 
 router.get('/', authenticate, async (req, res, next) => {
     try {
+        await pool.query(
+            `UPDATE bookings SET status = 'completed'
+             WHERE status = 'confirmed' AND start_at IS NOT NULL
+             AND (start_at + (COALESCE(hours, 0)::int * interval '1 minute')) < NOW()`
+        );
         const { rows } = await pool.query(
             `SELECT b.*, boat.location_city, boat.location_address, boat.location_yacht_club
              FROM bookings b
