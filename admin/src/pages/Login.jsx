@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import api, { setAuth } from '../api';
 import styles from './Login.module.css';
 
 export default function Login() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -21,7 +19,7 @@ export default function Login() {
         return;
       }
       setAuth(data.token, data.user);
-      navigate('/admin');
+      window.location.href = '/panel/admin';
     } catch (err) {
       setError(err.response?.data?.error || 'Ошибка входа');
     } finally {
