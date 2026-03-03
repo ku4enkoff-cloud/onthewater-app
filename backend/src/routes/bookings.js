@@ -74,14 +74,20 @@ router.post('/:id/cancel', authenticate, async (req, res, next) => {
 router.patch('/:id', authenticate, async (req, res, next) => {
     try {
         const id = parseInt(req.params.id, 10);
-        const ownerId = parseInt(req.user.id, 10);
+        const ownerId = parseInt(req.user?.id, 10);
         if (isNaN(id) || isNaN(ownerId)) return res.status(400).json({ error: 'Invalid id' });
         const { start_at, hours } = req.body || {};
         const { rows: existing } = await pool.query(
             'SELECT * FROM bookings WHERE id = $1 AND owner_id = $2',
             [id, ownerId]
         );
-        if (existing.length === 0) return res.status(404).json({ error: 'Not found' });
+        if (existing.length === 0) {
+            const { rows: anyBooking } = await pool.query('SELECT id, owner_id FROM bookings WHERE id = $1', [id]);
+            if (anyBooking.length === 0) {
+                return res.status(404).json({ error: 'Бронирование не найдено' });
+            }
+            return res.status(403).json({ error: 'Нет прав на редактирование этого бронирования' });
+        }
         const booking = existing[0];
         if (booking.status !== 'pending' && booking.status !== 'confirmed') {
             return res.status(400).json({ error: 'Редактировать можно только ожидающие и подтверждённые бронирования' });

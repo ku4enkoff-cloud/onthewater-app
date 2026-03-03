@@ -145,7 +145,10 @@ export default function OwnerBookingsScreen() {
             setBookings(prev => prev.map(b => b.id === editingBooking.id ? { ...b, ...updated } : b));
             closeEditModal();
         } catch (e) {
-            Alert.alert('Ошибка', e.response?.data?.error || 'Не удалось сохранить изменения');
+            const status = e.response?.status;
+            const msg = e.response?.data?.error || e.message || 'Не удалось сохранить изменения';
+            const hint = status === 404 ? ' Проверьте, что бэкенд обновлён (git pull) и перезапущен.' : '';
+            Alert.alert('Ошибка', msg + hint);
         }
     };
 
