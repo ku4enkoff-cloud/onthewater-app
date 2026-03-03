@@ -19,7 +19,7 @@ function photoUrl(photo) {
 const defaultForm = () => ({
   title: '', description: '', type_id: '1', type_name: 'Катер', manufacturer: '', model: '',
   year: '', length_m: '', capacity: '',
-  location_country: '', location_city: '', location_address: '', location_yacht_club: '',
+  location_country: '', location_region: '', location_city: '', location_address: '', location_yacht_club: '',
   lat: '', lng: '', price_per_hour: '', price_per_day: '', price_weekend: '',
   captain_included: false, has_captain_option: false, instant_booking: false,
   rules: '', cancellation_policy: '', status: 'active', amenities: [],
@@ -73,6 +73,7 @@ export default function Boats() {
       length_m: b.length_m ?? '',
       capacity: b.capacity ?? '',
       location_country: b.location_country ?? '',
+      location_region: b.location_region ?? '',
       location_city: b.location_city || '',
       location_address: b.location_address || '',
       location_yacht_club: b.location_yacht_club ?? '',
@@ -140,6 +141,7 @@ export default function Boats() {
       formData.append('length_m', form.length_m);
       formData.append('capacity', form.capacity);
       formData.append('location_city', form.location_city);
+      formData.append('location_region', form.location_region);
       formData.append('location_address', form.location_address);
       formData.append('lat', form.lat === '' ? '' : form.lat);
       formData.append('lng', form.lng === '' ? '' : form.lng);
@@ -252,11 +254,15 @@ export default function Boats() {
               <input className={modalStyles.input} value={form.location_country} onChange={(e) => setForm({ ...form, location_country: e.target.value })} placeholder="Россия" />
             </div>
             <div className={modalStyles.formRow}>
+              <label className={modalStyles.label}>Область</label>
+              <input className={modalStyles.input} value={form.location_region} onChange={(e) => setForm({ ...form, location_region: e.target.value })} placeholder="Московская" />
+            </div>
+            <div className={modalStyles.formRow}>
               <label className={modalStyles.label}>Город</label>
               <input className={modalStyles.input} value={form.location_city} onChange={(e) => setForm({ ...form, location_city: e.target.value })} />
             </div>
             <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Адрес стоянки</label>
+              <label className={modalStyles.label}>Улица, дом</label>
               <input className={modalStyles.input} value={form.location_address} onChange={(e) => setForm({ ...form, location_address: e.target.value })} />
             </div>
             <div className={modalStyles.formRow}>

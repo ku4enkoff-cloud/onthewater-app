@@ -815,7 +815,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                         <View style={styles.locationAddressBlock}>
                             <MapPin size={18} color={NAVY} />
                             <Text style={styles.locationCity}>
-                                {[boat.location_country, boat.location_city, boat.location_address].filter(Boolean).join(', ') || '—'}
+                                {[boat.location_country, boat.location_region, boat.location_city, boat.location_address].filter(Boolean).join(', ') || '—'}
                             </Text>
                         </View>
                         {boat.location_yacht_club ? (

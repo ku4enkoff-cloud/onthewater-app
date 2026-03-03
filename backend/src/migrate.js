@@ -66,6 +66,7 @@ async function migrate() {
                 length_m VARCHAR(20) DEFAULT '',
                 capacity VARCHAR(20) DEFAULT '0',
                 location_country VARCHAR(255) DEFAULT '',
+                location_region VARCHAR(255) DEFAULT '',
                 location_city VARCHAR(255) DEFAULT '',
                 location_address TEXT DEFAULT '',
                 location_yacht_club TEXT DEFAULT '',
@@ -196,6 +197,9 @@ async function migrate() {
                 await client.query('INSERT INTO destinations (name, image, sort_order) VALUES ($1, $2, $3)', [name, image, sort_order]);
             }
         }
+
+        // Добавить location_region для существующих БД
+        await client.query(`ALTER TABLE boats ADD COLUMN IF NOT EXISTS location_region VARCHAR(255) DEFAULT ''`).catch(() => {});
 
         console.log('Миграция успешно завершена!');
     } catch (err) {
