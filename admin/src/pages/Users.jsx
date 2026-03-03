@@ -25,7 +25,7 @@ export default function Users() {
   const emptyForm = () => ({
     name: '', first_name: '', last_name: '', email: '', phone: '',
     birthdate: '', about: '', address_line: '', address_city: '', address_country: '',
-    role: 'client',
+    role: 'client', new_password: '',
   });
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
@@ -55,6 +55,7 @@ export default function Users() {
       address_city: u.address_city || '',
       address_country: u.address_country || '',
       role: u.role || 'client',
+      new_password: '',
     });
     setError('');
   };
@@ -64,7 +65,9 @@ export default function Users() {
     setError('');
     setSaving(true);
     try {
-      await api.patch(`/admin/users/${editing.id}`, form);
+      const payload = { ...form };
+      if (!payload.new_password?.trim()) delete payload.new_password;
+      await api.patch(`/admin/users/${editing.id}`, payload);
       setEditing(null);
       load();
     } catch (err) {
@@ -216,6 +219,17 @@ export default function Users() {
                 value={form.address_country}
                 onChange={(e) => setForm({ ...form, address_country: e.target.value })}
                 placeholder="Страна"
+              />
+            </div>
+            <div className={modalStyles.formRow}>
+              <label className={modalStyles.label}>Новый пароль</label>
+              <input
+                type="password"
+                className={modalStyles.input}
+                value={form.new_password}
+                onChange={(e) => setForm({ ...form, new_password: e.target.value })}
+                placeholder="Оставьте пустым, чтобы не менять"
+                autoComplete="new-password"
               />
             </div>
             <div className={modalStyles.formRow}>
