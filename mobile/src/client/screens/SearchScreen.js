@@ -8,7 +8,6 @@ import {
     Image,
     TouchableOpacity,
     Dimensions,
-    NativeModules,
     ScrollView,
     RefreshControl,
     AppState,
@@ -26,16 +25,6 @@ import LocationPickerModal from '../components/LocationPickerModal';
 const resolvePhotoUri = (src) => getPhotoUrl(src);
 
 const { width } = Dimensions.get('window');
-const isMapAvailable = NativeModules.yamap != null;
-let YaMap = null;
-let Marker = null;
-if (isMapAvailable) {
-    try {
-        const yamap = require('react-native-yamap');
-        YaMap = yamap.default;
-        Marker = yamap.Marker;
-    } catch (_) {}
-}
 
 const NAVY = '#1B365D';
 const HERO_IMAGE = require('../../shared/assets/hero.png');
@@ -86,7 +75,6 @@ export default function SearchScreen({ navigation }) {
     const [boats, setBoats] = useState([]);
     const [boatCategories, setBoatCategories] = useState([]);
     const [destinations, setDestinations] = useState([]);
-    const [region] = useState({ latitude: 55.751244, longitude: 37.618423 });
     const [refreshing, setRefreshing] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
     const [locationModalVisible, setLocationModalVisible] = useState(false);
@@ -122,19 +110,12 @@ export default function SearchScreen({ navigation }) {
 
     const fetchBoats = useCallback(async () => {
         try {
-            if (isMapAvailable && YaMap) {
-                const res = await api.get('/boats', {
-                    params: { lat: region.latitude, lng: region.longitude, radius: 20 },
-                });
-                setBoats(res.data);
-            } else {
-                const res = await api.get('/boats', { params: { popular: 1, limit: 10 } });
-                setBoats(res.data);
-            }
+            const res = await api.get('/boats', { params: { popular: 1, limit: 20 } });
+            setBoats(res.data);
         } catch (e) {
             console.log('Search Error:', e);
         }
-    }, [region.latitude, region.longitude]);
+    }, []);
 
     useEffect(() => {
         fetchBoats();
@@ -356,66 +337,7 @@ export default function SearchScreen({ navigation }) {
         </ScrollView>
     );
 
-    if (isMapAvailable && YaMap) {
-        return (
-            <View style={styles.container}>
-                <YaMap
-                    style={StyleSheet.absoluteFillObject}
-                    initialRegion={{
-                        lat: region.latitude,
-                        lon: region.longitude,
-                        zoom: 12,
-                    }}
-                    onCameraPositionChangeEnd={(event) => {
-                        fetchBoats();
-                    }}
-                >
-                    {boats.map((boat) => (
-                        <Marker
-                            key={boat.id}
-                            point={{
-                                lat: boat.lat ?? region.latitude,
-                                lon: boat.lng ?? region.longitude,
-                            }}
-                        />
-                    ))}
-                </YaMap>
-                <View style={[styles.bottomListContainer, { paddingBottom: Math.max(insets.bottom, 10) }]}>
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.horizontalList}
-                    >
-                        {boats.map((item) => (
-                            <View key={item.id} style={styles.miniCard}>
-                                <TouchableOpacity
-                                    onPress={() => navigation.navigate('BoatDetail', { boatId: item.id })}
-                                >
-                                    <Image
-                                        source={{
-                                            uri: resolvePhotoUri(item.photos?.[0]) || 'https://placehold.co/400x300',
-                                        }}
-                                        style={styles.miniCardImage}
-                                    />
-                                    <View style={styles.miniCardInfo}>
-                                        <Text style={styles.miniCardTitle} numberOfLines={1}>
-                                            {item.title || 'Катер'}
-                                        </Text>
-                                        <Text style={styles.miniCardPrice}>
-                                            {item.price_weekend != null && String(item.price_weekend).trim() !== ''
-                                                ? `от ${formatPrice(item.price_per_hour)} ₽ · ${formatPrice(item.price_weekend)} ₽ вых.`
-                                                : `от ${formatPrice(item.price_per_hour)} ₽/час`}
-                                        </Text>
-                                    </View>
-                                </TouchableOpacity>
-                            </View>
-                        ))}
-                    </ScrollView>
-                </View>
-            </View>
-        );
-    }
-
+    // Главный экран — hero, катера, направления, категории (без карты; карта в CityMapScreen)
     return (
         <View style={styles.container}>
             <StatusBar style="dark" />

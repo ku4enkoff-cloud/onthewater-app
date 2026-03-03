@@ -2,6 +2,9 @@ import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../infrastructure/api';
 
+const appVariant = process.env.EXPO_PUBLIC_APP_VARIANT || 'client';
+const requiredRole = appVariant === 'owner' ? 'owner' : 'client';
+
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
@@ -35,7 +38,14 @@ export const AuthProvider = ({ children }) => {
             const token = await AsyncStorage.getItem('@token');
             if (token) {
                 const res = await api.get('/auth/me', { timeout: 5000 });
-                setUser(res.data);
+                const user = res.data;
+                // Разделение: владельческое приложение — только owner, клиентское — только client
+                if (user?.role !== requiredRole) {
+                    await AsyncStorage.removeItem('@token');
+                    setUser(null);
+                    return;
+                }
+                setUser(user);
             }
         } catch (e) {
             console.log('Load user error', e);
@@ -52,12 +62,19 @@ export const AuthProvider = ({ children }) => {
         if (!token || !user) {
             throw new Error('Сервер вернул неверный ответ. Ожидаются token и user.');
         }
+        if (user.role !== requiredRole) {
+            throw new Error(requiredRole === 'owner'
+                ? 'Это приложение только для владельцев судов. Используйте клиентское приложение BoatRent.'
+                : 'Это приложение для клиентов. Владельцам нужно приложение BoatRent для владельцев.');
+        }
         await AsyncStorage.setItem('@token', token);
         setUser(user);
     };
 
     const register = async (regData) => {
-        const res = await api.post('/auth/register', regData);
+        const data = { ...regData };
+        if (requiredRole === 'owner') data.role = 'owner';
+        const res = await api.post('/auth/register', data);
         await AsyncStorage.setItem('@token', res.data.token);
         setUser(res.data.user);
     };
