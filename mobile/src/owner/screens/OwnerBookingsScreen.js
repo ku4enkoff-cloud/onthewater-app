@@ -44,32 +44,26 @@ const TEAL = '#0D5C5C';
 const NAVY = '#1B365D';
 
 const TABS = [
-    { key: 'pending',    label: 'Ожидают',       status: 'pending' },
-    { key: 'editing',    label: 'На изменении',  status: 'editing' },
-    { key: 'aboard',     label: 'На борту',      status: 'aboard' },
-    { key: 'confirmed',  label: 'Одобренные',    status: 'confirmed' },
-    { key: 'completed',  label: 'Завершённые',   status: 'completed' },
-    { key: 'declined',   label: 'Отклонённые',   status: 'declined' },
-    { key: 'cancelled',  label: 'Отменённые',    status: 'cancelled' },
-    { key: 'expired',    label: 'Истёкшие',      status: 'expired' },
+    { key: 'all',       label: 'Все',           status: null },
+    { key: 'pending',   label: 'Ожидают',       status: 'pending' },
+    { key: 'confirmed', label: 'Подтверждены',  status: 'confirmed' },
+    { key: 'completed', label: 'Завершены',     status: 'completed' },
+    { key: 'cancelled', label: 'Отменены',      status: 'cancelled' },
 ];
 
 const EMPTY_MESSAGES = {
+    all:       'Нет бронирований.',
     pending:   'Нет бронирований, ожидающих подтверждения.',
-    editing:   'Нет бронирований на изменении.',
-    aboard:    'Нет активных бронирований на борту.',
-    confirmed: 'Нет одобренных бронирований.',
+    confirmed: 'Нет подтверждённых бронирований.',
     completed: 'Нет завершённых бронирований.',
-    declined:  'Нет отклонённых бронирований.',
     cancelled: 'Нет отменённых бронирований.',
-    expired:   'Нет истёкших бронирований.',
 };
 
 export default function OwnerBookingsScreen() {
     const insets = useSafeAreaInsets();
     const [bookings, setBookings] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
-    const [activeTab, setActiveTab] = useState('pending');
+    const [activeTab, setActiveTab] = useState('all');
     const [editModalVisible, setEditModalVisible] = useState(false);
     const [editingBooking, setEditingBooking] = useState(null);
     const [editDate, setEditDate] = useState(new Date());
@@ -94,7 +88,17 @@ export default function OwnerBookingsScreen() {
 
     const onRefresh = () => { setRefreshing(true); fetchBookings(); };
 
-    const filtered = bookings.filter(b => b.status === activeTab);
+    const VISIBLE_STATUSES = ['pending', 'confirmed', 'completed', 'cancelled'];
+    const filtered = bookings.filter((b) => {
+        if (!VISIBLE_STATUSES.includes(b.status)) return false;
+        if (activeTab === 'all') return true;
+        return b.status === activeTab;
+    });
+
+    const getTabCount = (key) => {
+        if (key === 'all') return bookings.filter((b) => VISIBLE_STATUSES.includes(b.status)).length;
+        return bookings.filter((b) => b.status === key).length;
+    };
 
     const handleAction = async (id, action) => {
         try {
@@ -103,7 +107,8 @@ export default function OwnerBookingsScreen() {
                 setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'confirmed' } : b));
             } else {
                 await api.post(`/owner/bookings/${id}/decline`);
-                setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'declined' } : b));
+                // На бэкенде бронирование удаляется, поэтому убираем его и из локального списка
+                setBookings(prev => prev.filter(b => b.id !== id));
             }
         } catch (_) {}
     };
@@ -145,21 +150,24 @@ export default function OwnerBookingsScreen() {
     };
 
     const getStatusColor = (status) => ({
-        pending: '#E8A838', confirmed: TEAL, completed: theme.colors.gray500,
-        cancelled: theme.colors.error, declined: theme.colors.error,
-        aboard: '#2196F3', editing: '#FF9800', expired: theme.colors.gray400,
+        pending: '#E8A838',
+        confirmed: TEAL,
+        completed: theme.colors.gray500,
+        cancelled: theme.colors.error,
     }[status] || theme.colors.gray400);
 
     const getStatusIcon = (status) => ({
-        pending: Clock, confirmed: CheckCircle, completed: CheckCircle,
-        cancelled: XCircle, declined: XCircle, aboard: CheckCircle,
-        editing: AlertCircle, expired: AlertCircle,
+        pending: Clock,
+        confirmed: CheckCircle,
+        completed: CheckCircle,
+        cancelled: XCircle,
     }[status] || AlertCircle);
 
     const getStatusLabel = (status) => ({
-        pending: 'Ожидает', confirmed: 'Одобрено', completed: 'Завершено',
-        cancelled: 'Отменено', declined: 'Отклонено', aboard: 'На борту',
-        editing: 'На изменении', expired: 'Истекло',
+        pending: 'Ожидает подтверждения',
+        confirmed: 'Подтверждено',
+        completed: 'Завершено',
+        cancelled: 'Отменено',
     }[status] || status);
 
     const formatDate = (d) => {
@@ -209,20 +217,22 @@ export default function OwnerBookingsScreen() {
                         Гостей: {item.passengers || item.guests_count || '—'} • Капитан: {(item.captain || item.captain_requested) ? 'Да' : 'Нет'}
                     </Text>
                 </View>
-                {item.status === 'pending' && (
+                {(item.status === 'pending' || item.status === 'confirmed') && (
                     <View style={s.actionsWrap}>
                         <TouchableOpacity style={s.editBtn} onPress={() => openEditModal(item)} activeOpacity={0.8}>
                             <Pencil size={14} color={TEAL} />
                             <Text style={s.editBtnText}>Изменить</Text>
                         </TouchableOpacity>
-                        <View style={s.actions}>
-                            <TouchableOpacity style={s.acceptBtn} onPress={() => handleAction(item.id, 'accept')} activeOpacity={0.8}>
-                                <Text style={s.acceptText}>Подтвердить</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={s.declineBtn} onPress={() => handleAction(item.id, 'decline')} activeOpacity={0.8}>
-                                <Text style={s.declineText}>Отклонить</Text>
-                            </TouchableOpacity>
-                        </View>
+                        {item.status === 'pending' && (
+                            <View style={s.actions}>
+                                <TouchableOpacity style={s.acceptBtn} onPress={() => handleAction(item.id, 'accept')} activeOpacity={0.8}>
+                                    <Text style={s.acceptText}>Подтвердить</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={s.declineBtn} onPress={() => handleAction(item.id, 'decline')} activeOpacity={0.8}>
+                                    <Text style={s.declineText}>Отклонить</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
                     </View>
                 )}
             </View>
@@ -252,6 +262,7 @@ export default function OwnerBookingsScreen() {
                 >
                     {TABS.map((tab) => {
                         const isActive = activeTab === tab.key;
+                        const count = getTabCount(tab.key);
                         return (
                             <TouchableOpacity
                                 key={tab.key}
@@ -260,7 +271,7 @@ export default function OwnerBookingsScreen() {
                                 activeOpacity={0.7}
                             >
                                 <Text style={[s.tabText, isActive && s.tabTextActive]}>
-                                    {tab.label}
+                                    {tab.label} ({count})
                                 </Text>
                             </TouchableOpacity>
                         );

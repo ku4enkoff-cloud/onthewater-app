@@ -62,6 +62,39 @@ router.post('/bookings/:id/decline', authenticate, async (req, res, next) => {
     }
 });
 
+router.patch('/bookings/:id', authenticate, async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const ownerId = parseInt(req.user.id, 10);
+        if (isNaN(id) || isNaN(ownerId)) return res.status(400).json({ error: 'Invalid id' });
+        const { start_at, hours } = req.body || {};
+        const { rows: existing } = await pool.query(
+            'SELECT * FROM bookings WHERE id = $1 AND owner_id = $2',
+            [id, ownerId]
+        );
+        if (existing.length === 0) return res.status(404).json({ error: 'Not found' });
+        const booking = existing[0];
+        if (booking.status !== 'pending' && booking.status !== 'confirmed') {
+            return res.status(400).json({ error: 'Редактировать можно только ожидающие и подтверждённые бронирования' });
+        }
+        const updates = [];
+        const vals = [];
+        let idx = 1;
+        if (start_at != null) { updates.push(`start_at = $${idx++}`); vals.push(start_at); }
+        if (hours != null) { updates.push(`hours = $${idx++}`); vals.push(hours); }
+        if (updates.length === 0) return res.json(booking);
+        vals.push(id, ownerId);
+        const { rows } = await pool.query(
+            `UPDATE bookings SET ${updates.join(', ')} WHERE id = $${idx} AND owner_id = $${idx + 1} RETURNING *`,
+            vals
+        );
+        if (rows.length === 0) return res.status(404).json({ error: 'Not found' });
+        res.json(rows[0]);
+    } catch (err) {
+        next(err);
+    }
+});
+
 router.get('/chats', authenticate, async (req, res, next) => {
     try {
         const { rows } = await pool.query('SELECT * FROM chats WHERE owner_id = $1 ORDER BY created_at DESC', [req.user.id]);

@@ -98,10 +98,18 @@ export default function OwnerDashboardScreen({ navigation }) {
                                 <Text style={s.statValue}>{stats.completed}</Text>
                                 <Text style={s.statCaption}>Завершённых{'\n'}бронирований</Text>
                             </View>
-                            <View style={s.statCard}>
-                                <Text style={s.statValue}>
-                                    {stats.earnings > 0 ? `${(stats.earnings / 1000).toFixed(0)}K` : '0'} ₽
-                                </Text>
+                            <View style={[s.statCard, s.statCardRight]}>
+                                <View style={s.statValueRow}>
+                                    <Text
+                                        style={s.statValue}
+                                        numberOfLines={1}
+                                        adjustsFontSizeToFit
+                                        minimumFontScale={0.5}
+                                    >
+                                        {Math.round(stats.earnings || 0).toLocaleString('ru-RU')}
+                                    </Text>
+                                    <Text style={s.statValue}> ₽</Text>
+                                </View>
                                 <Text style={s.statCaption}>Общий{'\n'}доход</Text>
                             </View>
                         </View>
@@ -187,7 +195,9 @@ const s = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.15)',
         paddingHorizontal: 14,
     },
-    statValue: { fontSize: 22, fontFamily: theme.fonts.bold, color: '#fff' },
+    statCardRight: { paddingLeft: 14 },
+    statValueRow: { flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap' },
+    statValue: { fontSize: 20, fontFamily: theme.fonts.bold, color: '#fff' },
     statCaption: {
         fontSize: 12, fontFamily: theme.fonts.regular, color: 'rgba(255,255,255,0.7)',
         marginTop: 2, lineHeight: 16,
