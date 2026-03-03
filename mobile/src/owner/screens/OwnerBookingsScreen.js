@@ -152,6 +152,30 @@ export default function OwnerBookingsScreen() {
         }
     };
 
+    const handleCancelBooking = () => {
+        if (!editingBooking) return;
+        Alert.alert(
+            'Отменить бронирование',
+            'Вы уверены, что хотите отменить это бронирование?',
+            [
+                { text: 'Нет', style: 'cancel' },
+                {
+                    text: 'Да, отменить',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await api.post(`/bookings/${editingBooking.id}/cancel`);
+                            setBookings(prev => prev.map(b => b.id === editingBooking.id ? { ...b, status: 'cancelled' } : b));
+                            closeEditModal();
+                        } catch (e) {
+                            Alert.alert('Ошибка', e.response?.data?.error || 'Не удалось отменить бронирование');
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     const getStatusColor = (status) => ({
         pending: '#E8A838',
         confirmed: TEAL,
@@ -414,9 +438,12 @@ export default function OwnerBookingsScreen() {
                                 </TouchableOpacity>
                             ))}
                         </View>
+                        <TouchableOpacity style={s.cancelBookingBtn} onPress={handleCancelBooking}>
+                            <Text style={s.cancelBookingText}>Отменить бронирование</Text>
+                        </TouchableOpacity>
                         <View style={s.modalActions}>
                             <TouchableOpacity style={s.modalCancelBtn} onPress={closeEditModal}>
-                                <Text style={s.modalCancelText}>Отмена</Text>
+                                <Text style={s.modalCancelText}>Закрыть</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={s.modalSaveBtn} onPress={handleSaveEdit}>
                                 <Text style={s.modalSaveText}>Сохранить</Text>
@@ -542,6 +569,11 @@ const s = StyleSheet.create({
     modalCancelText: { fontSize: 15, fontFamily: theme.fonts.semiBold, color: theme.colors.gray600 },
     modalSaveBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', backgroundColor: TEAL, borderRadius: 10 },
     modalSaveText: { fontSize: 15, fontFamily: theme.fonts.semiBold, color: '#fff' },
+    cancelBookingBtn: {
+        marginTop: 20, paddingVertical: 12, alignItems: 'center',
+        borderWidth: 1.2, borderColor: theme.colors.error, borderRadius: 10,
+    },
+    cancelBookingText: { fontSize: 14, fontFamily: theme.fonts.semiBold, color: theme.colors.error },
 
     /* Calendar modal */
     calOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', padding: 20 },
