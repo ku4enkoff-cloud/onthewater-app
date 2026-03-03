@@ -832,7 +832,9 @@ export default function BoatDetailScreen({ route, navigation }) {
                             <View style={styles.crewTop}>
                                 <View style={{ flex: 1 }}>
                                     <Text style={styles.crewName}>
-                                        {boat.owner_name || '—'}
+                                        {user && boat.owner_id === user.id
+                                            ? (user.name || user.email || 'Владелец')
+                                            : (boat.owner_name || '—')}
                                     </Text>
                                     <View style={styles.crewBadgeRow}>
                                         {rating >= 4.8 && (

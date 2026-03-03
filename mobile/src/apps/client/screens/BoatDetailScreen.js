@@ -274,7 +274,11 @@ export default function BoatDetailScreen({ route, navigation }) {
                                 <User size={28} color={theme.colors.textMuted} />
                             </View>
                             <View style={styles.ownerInfo}>
-                                <Text style={styles.ownerName}>{boat.owner_name || 'Владелец'}</Text>
+                                <Text style={styles.ownerName}>
+                                {user && boat.owner_id === user.id
+                                    ? (user.name || user.email || 'Владелец')
+                                    : (boat.owner_name || 'Владелец')}
+                            </Text>
                                 <View style={styles.ownerMeta}>
                                     <Star size={14} color={theme.colors.primary} fill={theme.colors.primary} />
                                     <Text style={styles.ownerRating}>{rating}</Text>

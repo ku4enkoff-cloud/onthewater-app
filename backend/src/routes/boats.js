@@ -63,6 +63,12 @@ router.get('/:id', async (req, res, next) => {
         const { rows } = await pool.query('SELECT * FROM boats WHERE id = $1', [parseInt(req.params.id, 10)]);
         if (rows.length === 0) return res.status(404).json({ error: 'Катер не найден' });
         const boat = rows[0];
+        if (boat.owner_id && (!boat.owner_name || String(boat.owner_name).trim() === '')) {
+            const { rows: userRows } = await pool.query('SELECT name FROM users WHERE id = $1', [boat.owner_id]);
+            if (userRows.length > 0 && userRows[0].name) {
+                boat.owner_name = userRows[0].name;
+            }
+        }
         res.json({
             manufacturer: '', model: '', year: '', location_country: '',
             location_address: '', location_yacht_club: '', rules: '', cancellation_policy: '',
@@ -230,6 +236,8 @@ router.patch('/:id', authenticate, requireRole(['owner']), (req, res, next) => {
             sets.push(`schedule_min_duration = $${idx++}`);
             vals.push(parseInt(body.schedule_min_duration, 10) || boat.schedule_min_duration);
         }
+        sets.push(`owner_name = $${idx++}`);
+        vals.push(req.user.name || boat.owner_name || '');
 
         if (sets.length === 0) return res.json(boat);
 
