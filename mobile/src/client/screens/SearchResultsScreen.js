@@ -29,6 +29,7 @@ const NAVY = '#1B365D';
 
 const CITY_COORDS = {
     'Москва': { lat: 55.751244, lon: 37.618423 },
+    'Московская область': { lat: 55.5, lon: 38.0 },
     'Санкт-Петербург': { lat: 59.93428, lon: 30.335099 },
     'Сочи': { lat: 43.585472, lon: 39.723098 },
     'Крым': { lat: 44.952117, lon: 34.102417 },
@@ -85,6 +86,8 @@ export default function SearchResultsScreen({ route, navigation }) {
     const [mapBoats, setMapBoats] = useState([]);
     const [mapLoading, setMapLoading] = useState(false);
     const [mapCenter, setMapCenter] = useState(DEFAULT_MAP_CENTER);
+    const [mapZoom, setMapZoom] = useState(12);
+    const [selectedMapBoat, setSelectedMapBoat] = useState(null);
     const userLocationRef = useRef(null);
     const mapRef = useRef(null);
     const mapPollRef = useRef(null);
@@ -156,14 +159,20 @@ export default function SearchResultsScreen({ route, navigation }) {
         fetchBoats();
     }, [fetchBoats]);
 
-    const fetchBoatsForMap = useCallback(async (lat, lng, cityFilter = null) => {
+    const fetchBoatsForMap = useCallback(async (opts = {}) => {
+        const { lat, lng, cityFilter = null, regionFilter = null } = opts;
         setMapLoading(true);
         try {
-            const res = await api.get('/boats', { params: { lat, lng, radius: 50 } });
-            let list = Array.isArray(res.data) ? res.data : [];
-            if (cityFilter) {
-                const city = (cityFilter || '').trim().toLowerCase();
-                list = list.filter((b) => (b.location_city || '').trim().toLowerCase() === city);
+            let list = [];
+            if (regionFilter && isRegion(regionFilter)) {
+                const res = await api.get('/boats', { params: { region: regionFilter } });
+                list = Array.isArray(res.data) ? res.data : [];
+            } else if (cityFilter && String(cityFilter).trim()) {
+                const res = await api.get('/boats', { params: { city: cityFilter } });
+                list = Array.isArray(res.data) ? res.data : [];
+            } else if (lat != null && lng != null) {
+                const res = await api.get('/boats', { params: { lat, lng, radius: 50 } });
+                list = Array.isArray(res.data) ? res.data : [];
             }
             setMapBoats(list);
         } catch (_) {
@@ -175,10 +184,12 @@ export default function SearchResultsScreen({ route, navigation }) {
 
     const openMapModal = useCallback(() => {
         let center;
+        let zoom = 12;
         if (useMyLocation && userLocationRef.current) {
             center = { lat: userLocationRef.current.lat, lon: userLocationRef.current.lon };
         } else if (cityName && CITY_COORDS[cityName]) {
             center = CITY_COORDS[cityName];
+            if (isRegion(cityName)) zoom = 9;
         } else if (boats.length > 0) {
             const withCoords = boats.filter((b) => b.lat != null && b.lng != null);
             if (withCoords.length > 0) {
@@ -192,13 +203,19 @@ export default function SearchResultsScreen({ route, navigation }) {
             center = DEFAULT_MAP_CENTER;
         }
         setMapCenter(center);
+        setMapZoom(zoom);
         setMapBoats(boats);
+        setSelectedMapBoat(null);
         setMapModalVisible(true);
         lastMapCenterRef.current = { lat: center.lat, lon: center.lon };
     }, [boats, cityName, useMyLocation]);
 
     useEffect(() => {
         if (!mapModalVisible || !YaMap || !mapRef.current) return;
+        if (cityName && isRegion(cityName)) {
+            fetchBoatsForMap({ regionFilter: cityName });
+            return;
+        }
         const poll = () => {
             try {
                 mapRef.current?.getCameraPosition?.((pos) => {
@@ -209,7 +226,13 @@ export default function SearchResultsScreen({ route, navigation }) {
                     const same = last && Math.abs(last.lat - lat) < 0.01 && Math.abs(last.lon - lon) < 0.01;
                     if (!same) {
                         lastMapCenterRef.current = { lat, lon };
-                        fetchBoatsForMap(lat, lon, !useMyLocation && cityName ? cityName : null);
+                        if (useMyLocation) {
+                            fetchBoatsForMap({ lat, lng: lon });
+                        } else if (cityName) {
+                            fetchBoatsForMap({ cityFilter: cityName });
+                        } else {
+                            fetchBoatsForMap({ lat, lng: lon });
+                        }
                     }
                 });
             } catch (_) {}
@@ -703,24 +726,94 @@ export default function SearchResultsScreen({ route, navigation }) {
                                     initialRegion={{
                                         lat: mapCenter.lat,
                                         lon: mapCenter.lon,
-                                        zoom: 12,
+                                        zoom: mapZoom,
                                     }}
                                 >
-                                    {mapBoats.filter((b) => b.lat != null && b.lng != null).map((boat) => (
-                                        <Marker
-                                            key={boat.id}
-                                            point={{ lat: boat.lat, lon: boat.lng }}
-                                            onPress={() => {
-                                                setMapModalVisible(false);
-                                                navigation.navigate('BoatDetail', { boatId: boat.id });
-                                            }}
-                                        />
-                                    ))}
+                                    {mapBoats.filter((b) => b.lat != null && b.lng != null).map((boat) => {
+                                        const isSelected = selectedMapBoat?.id === boat.id;
+                                        const price = (Number(boat.price_per_hour) || 0).toLocaleString('ru-RU');
+                                        const instantBook = boat.instant_booking !== false;
+                                        return (
+                                            <Marker
+                                                key={boat.id}
+                                                point={{ lat: boat.lat, lon: boat.lng }}
+                                                anchor={{ x: 0.5, y: 1 }}
+                                                zIndex={isSelected ? 100 : 1}
+                                                onPress={() => setSelectedMapBoat(isSelected ? null : boat)}
+                                            >
+                                                <View
+                                                    style={[
+                                                        styles.mapPriceMarker,
+                                                        isSelected && styles.mapPriceMarkerSelected,
+                                                    ]}
+                                                >
+                                                    {instantBook && (
+                                                        <Zap
+                                                            size={12}
+                                                            color={isSelected ? '#fff' : '#10B981'}
+                                                            fill={isSelected ? '#fff' : '#10B981'}
+                                                            style={{ marginRight: 4 }}
+                                                        />
+                                                    )}
+                                                    <Text
+                                                        style={[
+                                                            styles.mapPriceMarkerText,
+                                                            isSelected && styles.mapPriceMarkerTextSelected,
+                                                        ]}
+                                                    >
+                                                        от {price} ₽
+                                                    </Text>
+                                                </View>
+                                            </Marker>
+                                        );
+                                    })}
                                 </YaMap>
                                 {mapLoading && (
                                     <View style={styles.mapLoadingOverlay}>
                                         <ActivityIndicator size="large" color={NAVY} />
                                     </View>
+                                )}
+                                <TouchableOpacity
+                                    style={[styles.mapListButton, { bottom: selectedMapBoat ? 180 : 24 }]}
+                                    onPress={() => setMapModalVisible(false)}
+                                    activeOpacity={0.9}
+                                >
+                                    <Text style={styles.mapListButtonText}>Список</Text>
+                                </TouchableOpacity>
+                                {selectedMapBoat && (
+                                    <TouchableOpacity
+                                        style={[styles.mapBoatSheet, { paddingBottom: insets.bottom + 16 }]}
+                                        onPress={() => {
+                                            setMapModalVisible(false);
+                                            navigation.navigate('BoatDetail', { boatId: selectedMapBoat.id });
+                                        }}
+                                        activeOpacity={1}
+                                    >
+                                        <Image
+                                            source={{ uri: resolvePhotoUri(selectedMapBoat.photos?.[0]) }}
+                                            style={styles.mapBoatSheetImage}
+                                        />
+                                        <View style={styles.mapBoatSheetInfo}>
+                                            <Text style={styles.mapBoatSheetTitle} numberOfLines={1}>
+                                                {selectedMapBoat.title || 'Катер'}
+                                            </Text>
+                                            <View style={styles.mapBoatSheetMeta}>
+                                                <Star size={14} color={theme.colors.star} fill={theme.colors.star} />
+                                                <Text style={styles.mapBoatSheetRating}>
+                                                    {selectedMapBoat.rating ?? 0} ({selectedMapBoat.bookings_count ?? 0}{' '}
+                                                    {pluralizeBookings(selectedMapBoat.bookings_count ?? 0)})
+                                                </Text>
+                                            </View>
+                                            <View style={styles.mapBoatSheetPriceRow}>
+                                                {selectedMapBoat.instant_booking !== false && (
+                                                    <Zap size={14} color="#10B981" fill="#10B981" />
+                                                )}
+                                                <Text style={styles.mapBoatSheetPrice}>
+                                                    от {(Number(selectedMapBoat.price_per_hour) || 0).toLocaleString('ru-RU')} ₽/час
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
                                 )}
                             </View>
                         )}
@@ -1131,6 +1224,101 @@ const styles = StyleSheet.create({
     mapContainer: {
         flex: 1,
         position: 'relative',
+    },
+    mapPriceMarker: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#E8E5E0',
+        paddingVertical: 6,
+        paddingHorizontal: 10,
+        borderRadius: 8,
+        borderWidth: 2,
+        borderColor: 'transparent',
+    },
+    mapPriceMarkerSelected: {
+        backgroundColor: NAVY,
+        borderColor: NAVY,
+    },
+    mapPriceMarkerText: {
+        fontSize: 14,
+        fontFamily: theme.fonts.bold,
+        color: NAVY,
+    },
+    mapPriceMarkerTextSelected: {
+        color: '#fff',
+    },
+    mapListButton: {
+        position: 'absolute',
+        left: 16,
+        right: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: NAVY,
+        paddingVertical: 14,
+        borderRadius: 28,
+        gap: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+        elevation: 4,
+    },
+    mapListButtonText: {
+        fontSize: 16,
+        fontFamily: theme.fonts.bold,
+        color: '#fff',
+    },
+    mapBoatSheet: {
+        position: 'absolute',
+        left: 16,
+        right: 16,
+        bottom: 0,
+        flexDirection: 'row',
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        padding: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 8,
+    },
+    mapBoatSheetImage: {
+        width: 100,
+        height: 80,
+        borderRadius: 10,
+        backgroundColor: theme.colors.gray100,
+    },
+    mapBoatSheetInfo: {
+        flex: 1,
+        marginLeft: 12,
+        justifyContent: 'space-between',
+    },
+    mapBoatSheetTitle: {
+        fontSize: 15,
+        fontFamily: theme.fonts.semiBold,
+        color: NAVY,
+    },
+    mapBoatSheetMeta: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    mapBoatSheetRating: {
+        fontSize: 13,
+        fontFamily: theme.fonts.regular,
+        color: theme.colors.textMuted,
+    },
+    mapBoatSheetPriceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    mapBoatSheetPrice: {
+        fontSize: 15,
+        fontFamily: theme.fonts.bold,
+        color: NAVY,
     },
     mapLoadingOverlay: {
         ...StyleSheet.absoluteFillObject,

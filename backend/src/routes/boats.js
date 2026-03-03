@@ -27,7 +27,11 @@ router.get('/', async (req, res, next) => {
             params = ['deleted', user.id];
         } else if (region && String(region).trim()) {
             const regionVal = String(region).trim();
-            query = `SELECT * FROM boats WHERE status != 'deleted' AND LOWER(TRIM(COALESCE(location_region, ''))) = LOWER($1) ORDER BY COALESCE(bookings_count, 0) DESC, id`;
+            if (regionVal.toLowerCase() === 'московская область') {
+                query = `SELECT * FROM boats WHERE status != 'deleted' AND LOWER(TRIM(COALESCE(location_region, ''))) = LOWER($1) AND LOWER(TRIM(COALESCE(location_city, ''))) != 'москва' ORDER BY COALESCE(bookings_count, 0) DESC, id`;
+            } else {
+                query = `SELECT * FROM boats WHERE status != 'deleted' AND LOWER(TRIM(COALESCE(location_region, ''))) = LOWER($1) ORDER BY COALESCE(bookings_count, 0) DESC, id`;
+            }
             params = [regionVal];
         } else if (city && String(city).trim()) {
             const cityVal = String(city).trim();
