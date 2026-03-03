@@ -11,8 +11,9 @@ router.post('/', authenticate, async (req, res, next) => {
         if (boatRows.length === 0) return res.status(404).json({ error: 'Катер не найден' });
         const boat = boatRows[0];
 
-        const photos = boat.photos && Array.isArray(boat.photos) ? boat.photos : (boat.photos ? JSON.parse(boat.photos || '[]') : []);
-        const boatPhoto = photos[0] || '';
+        const photos = boat.photos && Array.isArray(boat.photos) ? boat.photos : (typeof boat.photos === 'string' ? JSON.parse(boat.photos || '[]') : []);
+        const first = photos[0];
+        const boatPhoto = typeof first === 'string' ? first : (first?.location || first?.url || first?.filename || '') || '';
 
         const { rows } = await pool.query(
             `INSERT INTO bookings (user_id, owner_id, boat_id, boat_title, boat_photo, start_at, hours, passengers, captain, total_price, status)
@@ -39,30 +40,41 @@ router.get('/', authenticate, async (req, res, next) => {
              )) < NOW()`
         );
         const { rows } = await pool.query(
-            `SELECT b.*, boat.location_city, boat.location_address, boat.location_yacht_club
+            `SELECT b.*, boat.location_city, boat.location_address, boat.location_yacht_club, boat.photos AS boat_photos
              FROM bookings b
              LEFT JOIN boats boat ON boat.id = b.boat_id
              WHERE b.user_id = $1
              ORDER BY b.created_at DESC`,
             [req.user.id]
         );
-        res.json(rows);
+        res.json(rows.map(enrichBookingPhoto));
     } catch (err) {
         next(err);
     }
 });
 
+function enrichBookingPhoto(r) {
+    let photo = r.boat_photo;
+    if (!photo || String(photo).trim() === '') {
+        const pics = r.boat_photos && Array.isArray(r.boat_photos) ? r.boat_photos : (typeof r.boat_photos === 'string' ? (() => { try { return JSON.parse(r.boat_photos || '[]'); } catch (_) { return []; } })() : []);
+        const first = pics[0];
+        photo = typeof first === 'string' ? first : (first?.location || first?.url || first?.filename || '') || '';
+    }
+    const { boat_photos, ...rest } = r;
+    return { ...rest, boat_photo: photo };
+}
+
 router.get('/:id', authenticate, async (req, res, next) => {
     try {
         const { rows } = await pool.query(
-            `SELECT b.*, boat.location_city, boat.location_address, boat.location_yacht_club
+            `SELECT b.*, boat.location_city, boat.location_address, boat.location_yacht_club, boat.photos AS boat_photos
              FROM bookings b
              LEFT JOIN boats boat ON boat.id = b.boat_id
              WHERE b.id = $1 AND b.user_id = $2`,
             [parseInt(req.params.id, 10), req.user.id]
         );
         if (rows.length === 0) return res.status(404).json({ error: 'Not found' });
-        res.json(rows[0]);
+        res.json(enrichBookingPhoto(rows[0]));
     } catch (err) {
         next(err);
     }

@@ -87,7 +87,8 @@ export default function BookingsScreen({ navigation }) {
     const renderBookingCard = ({ item }) => {
         const start = startAt(item);
         const end = endAt(item);
-        const photoUri = resolvePhotoUri(item.boat_photo || item.boat_image);
+        const photoSrc = item.boat_photo || item.boat_image;
+        const photoUri = resolvePhotoUri(typeof photoSrc === 'string' ? photoSrc : (photoSrc?.location || photoSrc?.url)) || 'https://placehold.co/400x200?text=Фото';
         return (
         <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('BookingDetail', { bookingId: item.id })} activeOpacity={0.8}>
             <Image source={{ uri: photoUri }} style={styles.cardImage} />

@@ -12,6 +12,7 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path, Text as SvgText } from 'react-native-svg';
 import { ChevronLeft, ChevronDown, Heart, Zap, MapPin, Star, SlidersHorizontal, X } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
@@ -46,6 +47,29 @@ if (isMapAvailable) {
         YaMap = yamap.default;
         Marker = yamap.Marker;
     } catch (_) {}
+}
+const USE_CUSTOM_PRICE_MARKERS = true;
+
+function MapPriceBubble({ price, selected }) {
+    const color = selected ? NAVY : '#2563EB';
+    return (
+        <Svg width={80} height={44} viewBox="0 0 80 44">
+            <Path
+                d="M16,0 L64,0 Q80,0 80,16 L80,26 Q80,32 64,32 L46,32 L40,44 L34,32 L16,32 Q0,32 0,26 L0,16 Q0,0 16,0 Z"
+                fill={color}
+            />
+            <SvgText
+                x={40}
+                y={22}
+                fill="#fff"
+                fontSize={13}
+                fontWeight="bold"
+                textAnchor="middle"
+            >
+                {price}
+            </SvgText>
+        </Svg>
+    );
 }
 
 const DEFAULT_FILTERS = {
@@ -731,8 +755,16 @@ export default function SearchResultsScreen({ route, navigation }) {
                                 >
                                     {mapBoats.filter((b) => b.lat != null && b.lng != null).map((boat) => {
                                         const isSelected = selectedMapBoat?.id === boat.id;
-                                        const price = (Number(boat.price_per_hour) || 0).toLocaleString('ru-RU');
-                                        const instantBook = boat.instant_booking !== false;
+                                        if (!USE_CUSTOM_PRICE_MARKERS) {
+                                            return (
+                                                <Marker
+                                                    key={boat.id}
+                                                    point={{ lat: boat.lat, lon: boat.lng }}
+                                                    onPress={() => setSelectedMapBoat(isSelected ? null : boat)}
+                                                />
+                                            );
+                                        }
+                                        const price = (Number(boat.price_per_hour) || 0).toLocaleString('ru-RU') + ' ₽';
                                         return (
                                             <Marker
                                                 key={boat.id}
@@ -741,29 +773,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                                                 zIndex={isSelected ? 100 : 1}
                                                 onPress={() => setSelectedMapBoat(isSelected ? null : boat)}
                                             >
-                                                <View
-                                                    style={[
-                                                        styles.mapPriceMarker,
-                                                        isSelected && styles.mapPriceMarkerSelected,
-                                                    ]}
-                                                >
-                                                    {instantBook && (
-                                                        <Zap
-                                                            size={12}
-                                                            color={isSelected ? '#fff' : '#10B981'}
-                                                            fill={isSelected ? '#fff' : '#10B981'}
-                                                            style={{ marginRight: 4 }}
-                                                        />
-                                                    )}
-                                                    <Text
-                                                        style={[
-                                                            styles.mapPriceMarkerText,
-                                                            isSelected && styles.mapPriceMarkerTextSelected,
-                                                        ]}
-                                                    >
-                                                        от {price} ₽
-                                                    </Text>
-                                                </View>
+                                                <MapPriceBubble price={price} selected={isSelected} />
                                             </Marker>
                                         );
                                     })}
@@ -1225,26 +1235,20 @@ const styles = StyleSheet.create({
         flex: 1,
         position: 'relative',
     },
-    mapPriceMarker: {
-        flexDirection: 'row',
+    mapBubbleWrap: {
+        width: 80,
+        height: 44,
         alignItems: 'center',
-        backgroundColor: '#E8E5E0',
-        paddingVertical: 6,
-        paddingHorizontal: 10,
-        borderRadius: 8,
-        borderWidth: 2,
-        borderColor: 'transparent',
+        justifyContent: 'center',
     },
-    mapPriceMarkerSelected: {
-        backgroundColor: NAVY,
-        borderColor: NAVY,
+    mapBubbleTextWrap: {
+        ...StyleSheet.absoluteFillObject,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    mapPriceMarkerText: {
+    mapBubbleText: {
         fontSize: 14,
         fontFamily: theme.fonts.bold,
-        color: NAVY,
-    },
-    mapPriceMarkerTextSelected: {
         color: '#fff',
     },
     mapListButton: {
