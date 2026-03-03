@@ -18,13 +18,21 @@ function getPhotoUrl(file) {
 
 router.get('/', async (req, res, next) => {
     try {
-        const { lat, lng, radius, popular, limit } = req.query;
+        const { lat, lng, radius, popular, limit, region, city } = req.query;
         const user = req.user || null;
 
         let query, params;
-        if (user && user.role === 'owner' && lat == null && lng == null && !popular) {
+        if (user && user.role === 'owner' && lat == null && lng == null && !popular && !region && !city) {
             query = 'SELECT * FROM boats WHERE status != $1 AND owner_id = $2 ORDER BY id';
             params = ['deleted', user.id];
+        } else if (region && String(region).trim()) {
+            const regionVal = String(region).trim();
+            query = `SELECT * FROM boats WHERE status != 'deleted' AND LOWER(TRIM(COALESCE(location_region, ''))) = LOWER($1) ORDER BY COALESCE(bookings_count, 0) DESC, id`;
+            params = [regionVal];
+        } else if (city && String(city).trim()) {
+            const cityVal = String(city).trim();
+            query = `SELECT * FROM boats WHERE status != 'deleted' AND LOWER(TRIM(COALESCE(location_city, ''))) = LOWER($1) ORDER BY COALESCE(bookings_count, 0) DESC, id`;
+            params = [cityVal];
         } else if (popular) {
             const lim = Math.min(50, Math.max(1, parseInt(limit, 10) || 10));
             query = `SELECT * FROM boats WHERE status != 'deleted' ORDER BY COALESCE(bookings_count, 0) DESC, id LIMIT $1`;

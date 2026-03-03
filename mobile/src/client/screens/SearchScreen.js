@@ -31,6 +31,7 @@ const HERO_IMAGE = require('../../shared/assets/hero.png');
 
 const FALLBACK_DESTINATIONS = [
     { id: 'moscow', name: 'Москва', image: 'https://images.unsplash.com/photo-1513326738677-9646ab0f3b3b?w=400' },
+    { id: 'mo_region', name: 'Московская область', image: 'https://images.unsplash.com/photo-1513326738677-9646ab0f3b3b?w=400' },
     { id: 'spb', name: 'Санкт-Петербург', image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400' },
     { id: 'sochi', name: 'Сочи', image: 'https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=400' },
     { id: 'crimea', name: 'Крым', image: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=400' },

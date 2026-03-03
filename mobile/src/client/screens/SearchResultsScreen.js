@@ -99,12 +99,15 @@ export default function SearchResultsScreen({ route, navigation }) {
 
     const displayCity = useMyLocation ? 'Рядом со мной' : (cityName || 'Москва');
 
+    const isRegion = (name) => name && (String(name).includes('область') || String(name).trim().toLowerCase() === 'московская область');
+
     const fetchBoats = useCallback(async () => {
         setLoading(true);
         try {
-            let lat = 55.751244;
-            let lng = 37.618423;
+            let list = [];
             if (useMyLocation) {
+                let lat = 55.751244;
+                let lng = 37.618423;
                 try {
                     const expoLocation = require('expo-location');
                     const { status } =
@@ -120,17 +123,19 @@ export default function SearchResultsScreen({ route, navigation }) {
                 } catch (_) {
                     userLocationRef.current = null;
                 }
-            } else userLocationRef.current = null;
-            const res = await api.get('/boats', { params: { lat, lng, radius: 50 } });
-            const list = Array.isArray(res.data) ? res.data : [];
-            let filtered =
-                useMyLocation || !cityName
-                    ? list
-                    : list.filter(
-                          (b) =>
-                              (b.location_city || '').trim().toLowerCase() ===
-                              (cityName || '').toLowerCase(),
-                      );
+                const res = await api.get('/boats', { params: { lat, lng, radius: 50 } });
+                list = Array.isArray(res.data) ? res.data : [];
+            } else if (cityName && isRegion(cityName)) {
+                const res = await api.get('/boats', { params: { region: cityName } });
+                list = Array.isArray(res.data) ? res.data : [];
+            } else if (cityName) {
+                const res = await api.get('/boats', { params: { city: cityName } });
+                list = Array.isArray(res.data) ? res.data : [];
+            } else {
+                const res = await api.get('/boats', { params: { lat: 55.751244, lng: 37.618423, radius: 50 } });
+                list = Array.isArray(res.data) ? res.data : [];
+            }
+            let filtered = list;
             if (boatTypeId) {
                 filtered = filtered.filter(
                     (b) =>
