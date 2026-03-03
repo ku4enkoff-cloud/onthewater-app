@@ -10,6 +10,7 @@ import {
     Modal,
     NativeModules,
     ActivityIndicator,
+    InteractionManager,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Text as SvgText } from 'react-native-svg';
@@ -41,11 +42,13 @@ const DEFAULT_MAP_CENTER = { lat: 55.751244, lon: 37.618423 };
 const isMapAvailable = NativeModules.yamap != null;
 let YaMap = null;
 let Marker = null;
+let ClusteredYamap = null;
 if (isMapAvailable) {
     try {
         const yamap = require('react-native-yamap');
         YaMap = yamap.default;
         Marker = yamap.Marker;
+        ClusteredYamap = yamap.ClusteredYamap;
     } catch (_) {}
 }
 const USE_CUSTOM_PRICE_MARKERS = true;
@@ -110,7 +113,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     const [mapBoats, setMapBoats] = useState([]);
     const [mapLoading, setMapLoading] = useState(false);
     const [mapCenter, setMapCenter] = useState(DEFAULT_MAP_CENTER);
-    const [mapZoom, setMapZoom] = useState(12);
+    const [mapZoom, setMapZoom] = useState(10);
     const [selectedMapBoat, setSelectedMapBoat] = useState(null);
     const userLocationRef = useRef(null);
     const mapRef = useRef(null);
@@ -208,12 +211,12 @@ export default function SearchResultsScreen({ route, navigation }) {
 
     const openMapModal = useCallback(() => {
         let center;
-        let zoom = 12;
+        let zoom = 10;
         if (useMyLocation && userLocationRef.current) {
             center = { lat: userLocationRef.current.lat, lon: userLocationRef.current.lon };
         } else if (cityName && CITY_COORDS[cityName]) {
             center = CITY_COORDS[cityName];
-            if (isRegion(cityName)) zoom = 9;
+            if (isRegion(cityName)) zoom = 8;
         } else if (boats.length > 0) {
             const withCoords = boats.filter((b) => b.lat != null && b.lng != null);
             if (withCoords.length > 0) {
@@ -235,7 +238,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     }, [boats, cityName, useMyLocation]);
 
     useEffect(() => {
-        if (!mapModalVisible || !YaMap || !mapRef.current) return;
+        if (!mapModalVisible || !ClusteredYamap || !mapRef.current) return;
         if (cityName && isRegion(cityName)) {
             fetchBoatsForMap({ regionFilter: cityName });
             return;
@@ -418,30 +421,18 @@ export default function SearchResultsScreen({ route, navigation }) {
                         </View>
                     )}
                     <View style={styles.priceBadge}>
-                        {item.price_weekend != null && String(item.price_weekend).trim() !== '' ? (
-                            <>
-                                <Text style={styles.priceBadgeText}>от {(Number(item.price_per_hour) || 0).toLocaleString('ru-RU')} ₽</Text>
-                                <Text style={styles.priceUnit}> будни</Text>
-                                <Text style={styles.priceSep}> · </Text>
-                                <Text style={styles.priceBadgeText}>{(Number(item.price_weekend) || 0).toLocaleString('ru-RU')} ₽</Text>
-                                <Text style={styles.priceUnit}> вых.</Text>
-                            </>
-                        ) : (
-                            <>
-                                <Text style={styles.priceBadgeText}>от {(Number(item.price_per_hour) || 0).toLocaleString('ru-RU')} ₽</Text>
-                                <Text style={styles.priceUnit}>
-                                    /{(() => {
-                                        const m = Number(item.schedule_min_duration) || 60;
-                                        if (m === 60) return 'час';
-                                        if (m < 60) return `${m} мин`;
-                                        const h = Math.floor(m / 60);
-                                        const min = m % 60;
-                                        if (min === 0) return h === 1 ? 'час' : `${h} ч`;
-                                        return `${h} ч ${min} мин`;
-                                    })()}
-                                </Text>
-                            </>
-                        )}
+                        <Text style={styles.priceBadgeText}>от {(Number(item.price_per_hour) || 0).toLocaleString('ru-RU')} ₽</Text>
+                        <Text style={styles.priceUnit}>
+                            /{(() => {
+                                const m = Number(item.schedule_min_duration) || 60;
+                                if (m === 60) return 'час';
+                                if (m < 60) return `${m} мин`;
+                                const h = Math.floor(m / 60);
+                                const min = m % 60;
+                                if (min === 0) return h === 1 ? 'час' : `${h} ч`;
+                                return `${h} ч ${min} мин`;
+                            })()}
+                        </Text>
                     </View>
                 </View>
 
@@ -736,7 +727,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                             </Text>
                             <View style={{ width: 36 }} />
                         </View>
-                        {!isMapAvailable || !YaMap ? (
+                        {!isMapAvailable || !ClusteredYamap || !Marker ? (
                             <View style={styles.mapPlaceholder}>
                                 <Text style={styles.mapPlaceholderText}>
                                     Карта доступна в полной сборке приложения (expo run:android / expo run:ios)
@@ -744,7 +735,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                             </View>
                         ) : (
                             <View style={styles.mapContainer}>
-                                <YaMap
+                                <ClusteredYamap
                                     ref={mapRef}
                                     style={StyleSheet.absoluteFillObject}
                                     initialRegion={{
@@ -752,32 +743,27 @@ export default function SearchResultsScreen({ route, navigation }) {
                                         lon: mapCenter.lon,
                                         zoom: mapZoom,
                                     }}
-                                >
-                                    {mapBoats.filter((b) => b.lat != null && b.lng != null).map((boat) => {
-                                        const isSelected = selectedMapBoat?.id === boat.id;
-                                        if (!USE_CUSTOM_PRICE_MARKERS) {
-                                            return (
-                                                <Marker
-                                                    key={boat.id}
-                                                    point={{ lat: boat.lat, lon: boat.lng }}
-                                                    onPress={() => setSelectedMapBoat(isSelected ? null : boat)}
-                                                />
-                                            );
-                                        }
-                                        const price = (Number(boat.price_per_hour) || 0).toLocaleString('ru-RU') + ' ₽';
+                                    clusterColor={NAVY}
+                                    clusteredMarkers={mapBoats
+                                        .filter((b) => b.lat != null && b.lng != null)
+                                        .map((b) => ({ point: { lat: b.lat, lon: b.lng }, data: b }))}
+                                    renderMarker={(info, index) => {
+                                        const boat = info.data;
+                                        const isSelected = selectedMapBoat?.id === boat?.id;
+                                        const price = boat ? (Number(boat.price_per_hour) || 0).toLocaleString('ru-RU') + ' ₽' : '';
                                         return (
                                             <Marker
-                                                key={boat.id}
-                                                point={{ lat: boat.lat, lon: boat.lng }}
+                                                key={boat?.id ?? index}
+                                                point={info.point}
                                                 anchor={{ x: 0.5, y: 1 }}
                                                 zIndex={isSelected ? 100 : 1}
-                                                onPress={() => setSelectedMapBoat(isSelected ? null : boat)}
+                                                onPress={() => boat && setSelectedMapBoat(isSelected ? null : boat)}
                                             >
                                                 <MapPriceBubble price={price} selected={isSelected} />
                                             </Marker>
                                         );
-                                    })}
-                                </YaMap>
+                                    }}
+                                />
                                 {mapLoading && (
                                     <View style={styles.mapLoadingOverlay}>
                                         <ActivityIndicator size="large" color={NAVY} />
@@ -794,8 +780,13 @@ export default function SearchResultsScreen({ route, navigation }) {
                                     <TouchableOpacity
                                         style={[styles.mapBoatSheet, { paddingBottom: insets.bottom + 16 }]}
                                         onPress={() => {
+                                            const boatId = selectedMapBoat.id;
                                             setMapModalVisible(false);
-                                            navigation.navigate('BoatDetail', { boatId: selectedMapBoat.id });
+                                            InteractionManager.runAfterInteractions(() => {
+                                                setTimeout(() => {
+                                                    navigation.navigate('BoatDetail', { boatId });
+                                                }, 300);
+                                            });
                                         }}
                                         activeOpacity={1}
                                     >
