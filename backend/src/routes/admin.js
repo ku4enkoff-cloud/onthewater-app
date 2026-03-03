@@ -74,7 +74,7 @@ router.put('/boats/:id', upload.array('photos', 10), processUploadedImages, asyn
             vals.push(JSON.stringify(finalPhotos));
         }
 
-        const textFields = ['title', 'description', 'type_id', 'type_name', 'manufacturer', 'model', 'year', 'length_m', 'capacity', 'location_country', 'location_city', 'location_address', 'location_yacht_club', 'price_per_hour', 'price_per_day', 'price_weekend', 'rules', 'cancellation_policy', 'status'];
+        const textFields = ['title', 'description', 'type_id', 'type_name', 'manufacturer', 'model', 'year', 'length_m', 'capacity', 'location_country', 'location_region', 'location_city', 'location_address', 'location_yacht_club', 'price_per_hour', 'price_per_day', 'price_weekend', 'rules', 'cancellation_policy', 'status'];
         for (const f of textFields) {
             if (body[f] !== undefined) { sets.push(`${f} = $${idx++}`); vals.push(body[f]); }
         }

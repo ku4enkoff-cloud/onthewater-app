@@ -69,6 +69,7 @@ export default function EditBoatScreen({ route, navigation }) {
     const [capacity, setCapacity] = useState('');
     const [lengthM, setLengthM] = useState('');
     const [locationCity, setLocationCity] = useState('');
+    const [locationRegion, setLocationRegion] = useState('');
     const [locationAddress, setLocationAddress] = useState('');
     const [locationCountry, setLocationCountry] = useState('');
     const [locationYachtClub, setLocationYachtClub] = useState('');
@@ -110,6 +111,7 @@ export default function EditBoatScreen({ route, navigation }) {
             setCapacity(b.capacity ? String(b.capacity) : '');
             setLengthM(b.length_m ? String(b.length_m) : '');
             setLocationCity(b.location_city || '');
+            setLocationRegion(b.location_region || '');
             setLocationAddress(b.location_address || '');
             setLocationCountry(b.location_country || '');
             setLocationYachtClub(b.location_yacht_club || '');
@@ -262,6 +264,7 @@ export default function EditBoatScreen({ route, navigation }) {
             payload.append('length_m', lengthM);
             payload.append('capacity', capacity);
             payload.append('location_city', locationCity);
+            payload.append('location_region', locationRegion);
             payload.append('location_address', locationAddress);
             payload.append('location_country', locationCountry);
             payload.append('location_yacht_club', locationYachtClub);
@@ -454,12 +457,21 @@ export default function EditBoatScreen({ route, navigation }) {
                         </View>
                         <View style={{ width: 10 }} />
                         <View style={{ flex: 1 }}>
+                            <Text style={s.smallLabel}>Область</Text>
+                            <TextInput style={s.input} value={locationRegion} onChangeText={setLocationRegion} placeholder="Московская" placeholderTextColor="#9CA3AF" />
+                        </View>
+                    </View>
+                    <View style={s.row}>
+                        <View style={{ flex: 1 }}>
                             <Text style={s.smallLabel}>Город</Text>
                             <TextInput style={s.input} value={locationCity} onChangeText={setLocationCity} placeholder="Москва" placeholderTextColor="#9CA3AF" />
                         </View>
+                        <View style={{ width: 10 }} />
+                        <View style={{ flex: 1 }}>
+                            <Text style={s.smallLabel}>Улица, дом</Text>
+                            <TextInput style={s.input} value={locationAddress} onChangeText={setLocationAddress} placeholder="Адрес причала" placeholderTextColor="#9CA3AF" />
+                        </View>
                     </View>
-                    <Text style={s.smallLabel}>Адрес</Text>
-                    <TextInput style={s.input} value={locationAddress} onChangeText={setLocationAddress} placeholder="Адрес причала" placeholderTextColor="#9CA3AF" />
                     <Text style={s.smallLabel}>Яхт-клуб</Text>
                     <TextInput style={s.input} value={locationYachtClub} onChangeText={setLocationYachtClub} placeholder="Название яхт-клуба (необязательно)" placeholderTextColor="#9CA3AF" />
 

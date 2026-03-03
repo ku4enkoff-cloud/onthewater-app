@@ -70,7 +70,7 @@ router.get('/:id', async (req, res, next) => {
             }
         }
         res.json({
-            manufacturer: '', model: '', year: '', location_country: '',
+            manufacturer: '', model: '', year: '', location_country: '', location_region: '',
             location_address: '', location_yacht_club: '', rules: '', cancellation_policy: '',
             schedule_work_days: null, schedule_weekday_hours: null,
             schedule_weekend_hours: null, schedule_min_duration: 60,
@@ -147,14 +147,14 @@ router.post('/', authenticate, requireRole(['owner']), upload.array('photos', 10
         const videoUris = safeJson(body.video_uris, '[]');
 
         const { rows } = await pool.query(`
-            INSERT INTO boats (owner_id, owner_name, title, description, type_id, type_name, manufacturer, model, year, length_m, capacity, location_country, location_city, location_address, location_yacht_club, lat, lng, price_per_hour, price_per_day, captain_included, has_captain_option, rules, cancellation_policy, photos, amenities, schedule_work_days, schedule_weekday_hours, schedule_weekend_hours, schedule_min_duration, price_tiers, price_weekend, video_uris, status, rating, reviews_count, bookings_count)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36)
+            INSERT INTO boats (owner_id, owner_name, title, description, type_id, type_name, manufacturer, model, year, length_m, capacity, location_country, location_region, location_city, location_address, location_yacht_club, lat, lng, price_per_hour, price_per_day, captain_included, has_captain_option, rules, cancellation_policy, photos, amenities, schedule_work_days, schedule_weekday_hours, schedule_weekend_hours, schedule_min_duration, price_tiers, price_weekend, video_uris, status, rating, reviews_count, bookings_count)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37)
             RETURNING *
         `, [
             req.user.id, req.user.name, body.title || 'Без названия', body.description || '',
             body.type_id || '1', body.type_name || 'Катер', body.manufacturer || '', body.model || '',
             body.year || '', body.length_m || '', body.capacity || '0',
-            body.location_country || '', body.location_city || 'Москва', body.location_address || '', body.location_yacht_club || '',
+            body.location_country || '', body.location_region || '', body.location_city || 'Москва', body.location_address || '', body.location_yacht_club || '',
             parseFloat(body.lat) || 55.75, parseFloat(body.lng) || 37.62,
             body.price_per_hour || '0', body.price_per_day || '',
             body.captain_included === '1', body.has_captain_option === '1',
@@ -201,7 +201,7 @@ router.patch('/:id', authenticate, requireRole(['owner']), (req, res, next) => {
         const sets = [];
         const vals = [];
         let idx = 1;
-        const textFields = ['title', 'description', 'type_id', 'type_name', 'manufacturer', 'model', 'year', 'length_m', 'capacity', 'location_country', 'location_city', 'location_address', 'location_yacht_club', 'price_per_hour', 'price_per_day', 'price_weekend', 'rules', 'cancellation_policy'];
+        const textFields = ['title', 'description', 'type_id', 'type_name', 'manufacturer', 'model', 'year', 'length_m', 'capacity', 'location_country', 'location_region', 'location_city', 'location_address', 'location_yacht_club', 'price_per_hour', 'price_per_day', 'price_weekend', 'rules', 'cancellation_policy'];
         for (const f of textFields) {
             if (body[f] !== undefined) {
                 sets.push(`${f} = $${idx++}`);
