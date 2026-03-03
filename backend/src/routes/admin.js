@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const bcrypt = require('bcryptjs');
 const { pool } = require('../db');
 const { authenticate, adminMiddleware } = require('../middleware/auth');
 const { upload } = require('../middleware/upload');
@@ -291,7 +292,7 @@ router.patch('/destinations/reorder', async (req, res, next) => {
 router.patch('/users/:id', async (req, res, next) => {
     try {
         const id = parseInt(req.params.id, 10);
-        const { name, first_name, last_name, email, phone, birthdate, about, address_line, address_city, address_street, address_zip, address_country, role } = req.body || {};
+        const { name, first_name, last_name, email, phone, birthdate, about, address_line, address_city, address_street, address_zip, address_country, role, new_password } = req.body || {};
 
         const { rows: existing } = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
         if (existing.length === 0) return res.status(404).json({ error: 'Пользователь не найден' });
@@ -318,6 +319,12 @@ router.patch('/users/:id', async (req, res, next) => {
         if (address_zip !== undefined) { sets.push(`address_zip = $${idx++}`); vals.push(address_zip); }
         if (address_country !== undefined) { sets.push(`address_country = $${idx++}`); vals.push(address_country); }
         if (role !== undefined && ['client', 'owner', 'admin'].includes(role)) { sets.push(`role = $${idx++}`); vals.push(role); }
+        if (new_password !== undefined && String(new_password).trim()) {
+            if (new_password.length < 3) return res.status(400).json({ error: 'Пароль минимум 3 символа' });
+            const hash = await bcrypt.hash(new_password, 10);
+            sets.push(`password_hash = $${idx++}`);
+            vals.push(hash);
+        }
 
         if (sets.length === 0) return res.json(user);
 
