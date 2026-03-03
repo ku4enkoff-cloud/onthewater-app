@@ -7,10 +7,11 @@ const { upload } = require('../middleware/upload');
 const router = express.Router();
 const DEFAULT = [
     ['Москва', 'https://images.unsplash.com/photo-1513326738677-9646ab0f3b3b?w=400', 0],
-    ['Санкт-Петербург', 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400', 1],
-    ['Сочи', 'https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=400', 2],
-    ['Крым', 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=400', 3],
-    ['Казань', 'https://images.unsplash.com/photo-1596484552834-6a58f850e0a1?w=400', 4],
+    ['Московская область', 'https://images.unsplash.com/photo-1513326738677-9646ab0f3b3b?w=400', 1],
+    ['Санкт-Петербург', 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400', 2],
+    ['Сочи', 'https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=400', 3],
+    ['Крым', 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=400', 4],
+    ['Казань', 'https://images.unsplash.com/photo-1596484552834-6a58f850e0a1?w=400', 5],
 ];
 
 router.get('/', async (req, res, next) => {

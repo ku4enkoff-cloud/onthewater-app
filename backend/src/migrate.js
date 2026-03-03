@@ -188,13 +188,24 @@ async function migrate() {
         if (parseInt(destCount[0].count, 10) === 0) {
             const defaultDests = [
                 ['Москва', 'https://images.unsplash.com/photo-1513326738677-9646ab0f3b3b?w=400', 0],
-                ['Санкт-Петербург', 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400', 1],
-                ['Сочи', 'https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=400', 2],
-                ['Крым', 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=400', 3],
-                ['Казань', 'https://images.unsplash.com/photo-1596484552834-6a58f850e0a1?w=400', 4],
+                ['Московская область', 'https://images.unsplash.com/photo-1513326738677-9646ab0f3b3b?w=400', 1],
+                ['Санкт-Петербург', 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400', 2],
+                ['Сочи', 'https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=400', 3],
+                ['Крым', 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=400', 4],
+                ['Казань', 'https://images.unsplash.com/photo-1596484552834-6a58f850e0a1?w=400', 5],
             ];
             for (const [name, image, sort_order] of defaultDests) {
                 await client.query('INSERT INTO destinations (name, image, sort_order) VALUES ($1, $2, $3)', [name, image, sort_order]);
+            }
+        } else {
+            const { rows: hasMO } = await client.query("SELECT id FROM destinations WHERE LOWER(TRIM(name)) = 'московская область'");
+            if (hasMO.length === 0) {
+                const { rows: maxSort } = await client.query('SELECT COALESCE(MAX(sort_order), -1) + 1 AS next_sort FROM destinations');
+                const nextSort = (maxSort[0]?.next_sort ?? 1);
+                await client.query(
+                    "INSERT INTO destinations (name, image, sort_order) VALUES ('Московская область', 'https://images.unsplash.com/photo-1513326738677-9646ab0f3b3b?w=400', $1)",
+                    [nextSort]
+                );
             }
         }
 

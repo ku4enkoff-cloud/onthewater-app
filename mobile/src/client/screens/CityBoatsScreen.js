@@ -18,6 +18,7 @@ const NAVY = '#1B365D';
 const CITIES = [
     { id: 'my_location', name: 'Моё местоположение', isLocation: true },
     { id: 'moscow', name: 'Москва' },
+    { id: 'mo_region', name: 'Московская область' },
     { id: 'spb', name: 'Санкт-Петербург' },
     { id: 'sochi', name: 'Сочи' },
     { id: 'crimea', name: 'Крым' },
