@@ -6,6 +6,11 @@ const router = express.Router();
 
 router.get('/bookings', authenticate, async (req, res, next) => {
     try {
+        await pool.query(
+            `UPDATE bookings SET status = 'completed'
+             WHERE status = 'confirmed' AND start_at IS NOT NULL
+             AND (start_at + (COALESCE(hours, 0)::int * interval '1 minute')) < NOW()`
+        );
         const { rows: rawRows } = await pool.query(
             `SELECT b.*, boat.schedule_work_days as boat_schedule_work_days
              FROM bookings b
