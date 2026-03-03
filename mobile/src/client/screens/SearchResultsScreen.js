@@ -42,13 +42,11 @@ const DEFAULT_MAP_CENTER = { lat: 55.751244, lon: 37.618423 };
 const isMapAvailable = NativeModules.yamap != null;
 let YaMap = null;
 let Marker = null;
-let ClusteredYamap = null;
 if (isMapAvailable) {
     try {
         const yamap = require('react-native-yamap');
         YaMap = yamap.default;
         Marker = yamap.Marker;
-        ClusteredYamap = yamap.ClusteredYamap;
     } catch (_) {}
 }
 const USE_CUSTOM_PRICE_MARKERS = true;
@@ -238,7 +236,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     }, [boats, cityName, useMyLocation]);
 
     useEffect(() => {
-        if (!mapModalVisible || !ClusteredYamap || !mapRef.current) return;
+        if (!mapModalVisible || !YaMap || !mapRef.current) return;
         if (cityName && isRegion(cityName)) {
             fetchBoatsForMap({ regionFilter: cityName });
             return;
@@ -727,7 +725,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                             </Text>
                             <View style={{ width: 36 }} />
                         </View>
-                        {!isMapAvailable || !ClusteredYamap || !Marker ? (
+                        {!isMapAvailable || !YaMap || !Marker ? (
                             <View style={styles.mapPlaceholder}>
                                 <Text style={styles.mapPlaceholderText}>
                                     Карта доступна в полной сборке приложения (expo run:android / expo run:ios)
@@ -735,7 +733,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                             </View>
                         ) : (
                             <View style={styles.mapContainer}>
-                                <ClusteredYamap
+                                <YaMap
                                     ref={mapRef}
                                     style={StyleSheet.absoluteFillObject}
                                     initialRegion={{
@@ -743,27 +741,23 @@ export default function SearchResultsScreen({ route, navigation }) {
                                         lon: mapCenter.lon,
                                         zoom: mapZoom,
                                     }}
-                                    clusterColor={NAVY}
-                                    clusteredMarkers={mapBoats
-                                        .filter((b) => b.lat != null && b.lng != null)
-                                        .map((b) => ({ point: { lat: b.lat, lon: b.lng }, data: b }))}
-                                    renderMarker={(info, index) => {
-                                        const boat = info.data;
-                                        const isSelected = selectedMapBoat?.id === boat?.id;
-                                        const price = boat ? (Number(boat.price_per_hour) || 0).toLocaleString('ru-RU') + ' ₽' : '';
+                                >
+                                    {mapBoats.filter((b) => b.lat != null && b.lng != null).map((boat) => {
+                                        const isSelected = selectedMapBoat?.id === boat.id;
+                                        const price = (Number(boat.price_per_hour) || 0).toLocaleString('ru-RU') + ' ₽';
                                         return (
                                             <Marker
-                                                key={boat?.id ?? index}
-                                                point={info.point}
+                                                key={boat.id}
+                                                point={{ lat: boat.lat, lon: boat.lng }}
                                                 anchor={{ x: 0.5, y: 1 }}
                                                 zIndex={isSelected ? 100 : 1}
-                                                onPress={() => boat && setSelectedMapBoat(isSelected ? null : boat)}
+                                                onPress={() => setSelectedMapBoat(isSelected ? null : boat)}
                                             >
                                                 <MapPriceBubble price={price} selected={isSelected} />
                                             </Marker>
                                         );
-                                    }}
-                                />
+                                    })}
+                                </YaMap>
                                 {mapLoading && (
                                     <View style={styles.mapLoadingOverlay}>
                                         <ActivityIndicator size="large" color={NAVY} />
