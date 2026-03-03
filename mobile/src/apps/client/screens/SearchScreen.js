@@ -36,11 +36,7 @@ export default function SearchScreen({ navigation }) {
             <View style={styles.cardInfo}>
                 <View style={styles.cardHeader}>
                     <Text style={theme.typography.h3} numberOfLines={1}>{item.title || 'Катер'}</Text>
-                    {item.price_weekend != null && String(item.price_weekend).trim() !== '' ? (
-                        <Text style={styles.priceText}>{Number(item.price_per_hour || 0).toLocaleString('ru-RU')} ₽ будни · {Number(item.price_weekend).toLocaleString('ru-RU')} ₽ вых.</Text>
-                    ) : (
-                        <Text style={styles.priceText}>от {Number(item.price_per_hour || 0).toLocaleString('ru-RU')} ₽/час</Text>
-                    )}
+                    <Text style={styles.priceText}>от {Number(item.price_per_hour || 0).toLocaleString('ru-RU')} ₽/час</Text>
                 </View>
                 <View style={{ marginTop: 4 }}>
                     <Text style={theme.typography.bodySm}>{item.location_city}</Text>

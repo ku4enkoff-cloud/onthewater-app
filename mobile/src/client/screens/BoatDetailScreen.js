@@ -708,31 +708,14 @@ export default function BoatDetailScreen({ route, navigation }) {
                                             {formatDuration(tier.durationMin)}
                                         </Text>
                                         <View style={styles.pricingPriceWrap}>
-                                            {tier.priceWeekend != null ? (
-                                                <>
-                                                    <Text
-                                                        style={[
-                                                            styles.pricingPriceBudni,
-                                                            isFirst && styles.pricingPriceBudniBase,
-                                                            sel && styles.pricingPriceBudniActive,
-                                                        ]}
-                                                    >
-                                                        {tier.price.toLocaleString('ru-RU')} ₽ будни
-                                                    </Text>
-                                                    <Text style={styles.pricingPriceWeekend}>
-                                                        {tier.priceWeekend.toLocaleString('ru-RU')} ₽ вых.
-                                                    </Text>
-                                                </>
-                                            ) : (
-                                                <Text
-                                                    style={[
-                                                        isFirst ? styles.pricingPriceBase : styles.pricingPrice,
-                                                        sel && styles.pricingTextActive,
-                                                    ]}
-                                                >
-                                                    {tier.price.toLocaleString('ru-RU')} ₽
-                                                </Text>
-                                            )}
+                                            <Text
+                                                style={[
+                                                    isFirst ? styles.pricingPriceBase : styles.pricingPrice,
+                                                    sel && styles.pricingTextActive,
+                                                ]}
+                                            >
+                                                {tier.price.toLocaleString('ru-RU')} ₽
+                                            </Text>
                                         </View>
                                     </TouchableOpacity>
                                 );
@@ -913,9 +896,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                                             </TouchableOpacity>
                                             <View style={styles.similarPriceBadge}>
                                                 <Text style={styles.similarPriceText}>
-                                                    {sb.price_weekend != null && String(sb.price_weekend).trim() !== ''
-                                                        ? `${sb.price_per_hour} ₽ будни · ${sb.price_weekend} ₽ вых.`
-                                                        : `от ${sb.price_per_hour} ₽`}
+                                                    от {sb.price_per_hour} ₽
                                                 </Text>
                                             </View>
                                             {(sb.photos?.length || 0) > 0 && (
