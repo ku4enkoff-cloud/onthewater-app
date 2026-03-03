@@ -22,7 +22,7 @@ api.interceptors.response.use(
     if (err.response?.status === 401) {
       localStorage.removeItem('admin_token');
       localStorage.removeItem('admin_user');
-      window.location.href = '/';
+      window.location.href = '/panel/';
     }
     return Promise.reject(err);
   }
