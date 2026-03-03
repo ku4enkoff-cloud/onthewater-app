@@ -137,7 +137,7 @@ export default function OwnerBookingsScreen() {
             const dateStr = editDate.toISOString().split('T')[0];
             const timeStr = `${String(editTime.getHours()).padStart(2, '0')}:${String(editTime.getMinutes()).padStart(2, '0')}`;
             const start_at = `${dateStr}T${timeStr}:00`;
-            const res = await api.patch(`/owner/bookings/${editingBooking.id}`, {
+            const res = await api.patch(`/bookings/${editingBooking.id}`, {
                 start_at,
                 hours: editDuration,
             });
