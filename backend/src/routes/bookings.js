@@ -60,12 +60,14 @@ router.get('/:id', authenticate, async (req, res, next) => {
 
 router.post('/:id/cancel', authenticate, async (req, res, next) => {
     try {
+        const id = parseInt(req.params.id, 10);
+        const userId = parseInt(req.user.id, 10);
         const { rows } = await pool.query(
-            `UPDATE bookings SET status = 'cancelled' WHERE id = $1 AND user_id = $2 RETURNING *`,
-            [parseInt(req.params.id, 10), req.user.id]
+            `UPDATE bookings SET status = 'cancelled' WHERE id = $1 AND (user_id = $2 OR owner_id = $2) RETURNING *`,
+            [id, userId]
         );
         if (rows.length === 0) return res.status(404).json({ error: 'Not found' });
-        res.json({ ok: true });
+        res.json(rows[0]);
     } catch (err) {
         next(err);
     }
