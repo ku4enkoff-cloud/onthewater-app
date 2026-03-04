@@ -27,6 +27,17 @@ function RangeSlider({ low, high, min, max, onChange }) {
     const trackRef = useRef(null);
     const layoutX = useRef(0);
     const layoutW = useRef(DEFAULT_TRACK_W);
+    const lowRef = useRef(low);
+    const highRef = useRef(high);
+    lowRef.current = low;
+    highRef.current = high;
+
+    const measureTrack = () => {
+        trackRef.current?.measureInWindow?.((x, _y, w) => {
+            layoutX.current = x;
+            if (w > 0) layoutW.current = w;
+        });
+    };
 
     /** Эффективная ширина трека: минус места под бегунки по краям */
     const effectiveW = () => Math.max(0, layoutW.current - THUMB_R * 2);
@@ -46,16 +57,20 @@ function RangeSlider({ low, high, min, max, onChange }) {
         PanResponder.create({
             onStartShouldSetPanResponder: () => true,
             onMoveShouldSetPanResponder: () => true,
-            onPanResponderGrant: () => {},
+            onPanResponderGrant: () => {
+                measureTrack();
+            },
             onPanResponderMove: (_, g) => {
                 const rawX = g.moveX - layoutX.current;
                 const x = clamp(rawX, THUMB_R, layoutW.current - THUMB_R);
                 const val = toVal(x);
                 const step = Math.max(100, Math.round((max - min) / 50));
+                const currentLow = lowRef.current;
+                const currentHigh = highRef.current;
                 if (isHigh) {
-                    onChange(low, Math.max(val, low + step));
+                    onChange(currentLow, Math.max(val, currentLow + step));
                 } else {
-                    onChange(Math.min(val, high - step), high);
+                    onChange(Math.min(val, currentHigh - step), currentHigh);
                 }
             },
         });
@@ -66,9 +81,7 @@ function RangeSlider({ low, high, min, max, onChange }) {
     const onLayout = (e) => {
         const w = e.nativeEvent.layout.width;
         if (w > 0) layoutW.current = w;
-        trackRef.current?.measureInWindow?.((x) => {
-            layoutX.current = x;
-        });
+        measureTrack();
     };
 
     const lowX = toX(low);

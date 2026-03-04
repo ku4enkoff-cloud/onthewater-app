@@ -19,12 +19,15 @@ const SLIDER_H_PAD = 24;
 const TRACK_W = SCREEN_W - SLIDER_H_PAD * 2 - 48;
 const THUMB_R = 12;
 
-const DURATIONS = [2, 3, 4, 6, 8];
-const CAPTAIN_OPTIONS = ['С капитаном', 'Без капитана'];
-const ACTIVITIES = ['Прогулка', 'Рыбалка', 'Вечеринка', 'Спорт', 'Закат'];
-
-const PRICE_MIN = 0;
-const PRICE_MAX = 50000;
+function formatDurationLabel(mins) {
+    if (mins < 60) return `${mins} мин`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (m > 0) return `${h} ч ${m} мин`;
+    if (h === 1) return '1 час';
+    if (h >= 2 && h <= 4) return `${h} часа`;
+    return `${h} часов`;
+}
 
 function clamp(v, min, max) {
     'worklet';
@@ -124,37 +127,51 @@ const sliderStyles = StyleSheet.create({
     },
 });
 
-export default function FiltersModal({ visible, onClose, filters, onApply, totalResults }) {
+export default function FiltersModal({
+    visible,
+    onClose,
+    filters,
+    onApply,
+    totalResults,
+    priceMin = 0,
+    priceMax = 50000,
+    durationOptions = [30, 60, 120, 180, 240, 360, 480],
+}) {
     const insets = useSafeAreaInsets();
-    const [priceLow, setPriceLow] = useState(filters?.priceLow ?? PRICE_MIN);
-    const [priceHigh, setPriceHigh] = useState(filters?.priceHigh ?? PRICE_MAX);
+    const min = priceMin;
+    const max = priceMax > min ? priceMax : min + 1000;
+    const [priceLow, setPriceLow] = useState(filters?.priceLow ?? min);
+    const [priceHigh, setPriceHigh] = useState(filters?.priceHigh ?? max);
     const [passengers, setPassengers] = useState(filters?.passengers ?? 1);
     const [duration, setDuration] = useState(filters?.duration ?? null);
-    const [captain, setCaptain] = useState(filters?.captain ?? null);
-    const [activity, setActivity] = useState(filters?.activity ?? null);
 
     const handlePriceChange = useCallback((low, high) => {
         setPriceLow(low);
         setPriceHigh(high);
     }, []);
 
+    const filtersPriceLow = filters?.priceLow;
+    const filtersPriceHigh = filters?.priceHigh;
+
+    React.useEffect(() => {
+        if (!visible) return;
+        setPriceLow(filtersPriceLow ?? min);
+        setPriceHigh(filtersPriceHigh ?? max);
+    }, [visible, filtersPriceLow, filtersPriceHigh, min, max]);
+
     const countActive = () => {
         let n = 0;
-        if (priceLow > PRICE_MIN || priceHigh < PRICE_MAX) n++;
+        if (priceLow > min || priceHigh < max) n++;
         if (passengers !== 1) n++;
         if (duration) n++;
-        if (captain) n++;
-        if (activity) n++;
         return n;
     };
 
     const handleClear = () => {
-        setPriceLow(PRICE_MIN);
-        setPriceHigh(PRICE_MAX);
+        setPriceLow(min);
+        setPriceHigh(max);
         setPassengers(1);
         setDuration(null);
-        setCaptain(null);
-        setActivity(null);
     };
 
     const handleApply = () => {
@@ -163,8 +180,6 @@ export default function FiltersModal({ visible, onClose, filters, onApply, total
             priceHigh,
             passengers,
             duration,
-            captain,
-            activity,
         });
         onClose();
     };
@@ -201,10 +216,10 @@ export default function FiltersModal({ visible, onClose, filters, onApply, total
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={styles.scrollContent}
                     >
-                        {/* Price per hour */}
+                        {/* Price */}
                         <View style={styles.section}>
                             <View style={styles.sectionHeaderRow}>
-                                <Text style={styles.sectionTitle}>Цена за час</Text>
+                                <Text style={styles.sectionTitle}>Цена</Text>
                                 <Text style={styles.priceRange}>
                                     {formatPrice(priceLow)} – {formatPrice(priceHigh)} ₽
                                 </Text>
@@ -212,8 +227,8 @@ export default function FiltersModal({ visible, onClose, filters, onApply, total
                             <RangeSlider
                                 low={priceLow}
                                 high={priceHigh}
-                                min={PRICE_MIN}
-                                max={PRICE_MAX}
+                                min={min}
+                                max={max}
                                 onChange={handlePriceChange}
                             />
                         </View>
@@ -248,28 +263,28 @@ export default function FiltersModal({ visible, onClose, filters, onApply, total
 
                         <View style={styles.divider} />
 
-                        {/* Duration */}
+                        {/* Duration — варианты из катеров категории */}
                         <View style={styles.section}>
                             <Text style={styles.sectionTitle}>Длительность</Text>
                             <View style={styles.chipGrid}>
-                                {DURATIONS.map((d) => (
+                                {durationOptions.map((mins) => (
                                     <TouchableOpacity
-                                        key={d}
+                                        key={mins}
                                         style={[
                                             styles.optionChip,
-                                            duration === d && styles.optionChipActive,
+                                            duration === mins && styles.optionChipActive,
                                         ]}
                                         onPress={() =>
-                                            setDuration(duration === d ? null : d)
+                                            setDuration(duration === mins ? null : mins)
                                         }
                                     >
                                         <Text
                                             style={[
                                                 styles.optionChipText,
-                                                duration === d && styles.optionChipTextActive,
+                                                duration === mins && styles.optionChipTextActive,
                                             ]}
                                         >
-                                            {d} часа
+                                            {formatDurationLabel(mins)}
                                         </Text>
                                     </TouchableOpacity>
                                 ))}
@@ -279,66 +294,7 @@ export default function FiltersModal({ visible, onClose, filters, onApply, total
                         <View style={styles.divider} />
 
                         {/* Captain options */}
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Капитан</Text>
-                            <Text style={styles.sectionHint}>
-                                Выберите катера с лицензированным капитаном или для самостоятельного управления.
-                            </Text>
-                            <View style={styles.chipGrid}>
-                                {CAPTAIN_OPTIONS.map((opt) => (
-                                    <TouchableOpacity
-                                        key={opt}
-                                        style={[
-                                            styles.optionChip,
-                                            styles.optionChipWide,
-                                            captain === opt && styles.optionChipActive,
-                                        ]}
-                                        onPress={() =>
-                                            setCaptain(captain === opt ? null : opt)
-                                        }
-                                    >
-                                        <Text
-                                            style={[
-                                                styles.optionChipText,
-                                                captain === opt && styles.optionChipTextActive,
-                                            ]}
-                                        >
-                                            {opt}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        </View>
-
-                        <View style={styles.divider} />
-
                         {/* Activities */}
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Активности</Text>
-                            <View style={styles.chipGrid}>
-                                {ACTIVITIES.map((a) => (
-                                    <TouchableOpacity
-                                        key={a}
-                                        style={[
-                                            styles.optionChip,
-                                            activity === a && styles.optionChipActive,
-                                        ]}
-                                        onPress={() =>
-                                            setActivity(activity === a ? null : a)
-                                        }
-                                    >
-                                        <Text
-                                            style={[
-                                                styles.optionChipText,
-                                                activity === a && styles.optionChipTextActive,
-                                            ]}
-                                        >
-                                            {a}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        </View>
                     </ScrollView>
 
                     {/* Footer */}

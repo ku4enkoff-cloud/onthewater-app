@@ -81,6 +81,15 @@ const formatDuration = (minutes) => {
     return `${hrs} ч ${mins} мин`;
 };
 
+const formatDurationCompact = (minutes) => {
+    const hrs = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hrs === 0) return `${mins} мин`;
+    if (mins === 0) return `${hrs} ч`;
+    if (mins === 30) return `${hrs},5 ч`;
+    return formatDuration(minutes);
+};
+
 const AMENITY_ICONS = {
     gps: ShieldCheck, wifi: Wifi, bluetooth: Bluetooth, audio: Music, tv: Tv,
     shower: Droplets, kitchen: UtensilsCrossed, sunroof: Sun, anchor: Anchor, lifevest: LifeBuoy,
@@ -276,15 +285,19 @@ export default function BoatDetailScreen({ route, navigation }) {
 
     const submitReview = async () => {
         if (!user) return;
+        const textClean = (reviewText || '').trim();
+        if (textClean.length < 50) {
+            Alert.alert('Слишком короткий отзыв', 'Пожалуйста, напишите хотя бы 50 символов.');
+            return;
+        }
         setReviewSubmitting(true);
         try {
-            await api.post(`/boats/${boatId}/reviews`, { rating: reviewRating, text: reviewText });
+            await api.post(`/boats/${boatId}/reviews`, { rating: reviewRating, text: textClean });
+            Alert.alert('Отправлено', 'Отзыв отправлен и появится после модерации.');
             setWriteReviewVisible(false);
             setReviewText('');
             setReviewRating(5);
-            await fetchReviewsData();
-            const boatRes = await api.get(`/boats/${boatId}`);
-            setBoat(boatRes.data);
+            // Не обновляем список сразу: отзыв появится после утверждения модератором
         } catch (err) {
             const msg = err.response?.data?.error || 'Не удалось отправить отзыв';
             Alert.alert('Ошибка', msg);
@@ -989,7 +1002,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                                         onPress={() => setBookHours(tier.durationMin)}
                                     >
                                         <Text style={[bk.chipNum, bookHours === tier.durationMin && bk.chipNumActive]}>
-                                            {formatDuration(tier.durationMin)}
+                                            {formatDurationCompact(tier.durationMin)}
                                         </Text>
                                     </TouchableOpacity>
                                 ))}

@@ -34,6 +34,68 @@ router.get('/boats', async (req, res, next) => {
     }
 });
 
+router.get('/reviews', async (req, res, next) => {
+    try {
+        const { status = 'pending' } = req.query || {};
+        const { rows } = await pool.query(
+            `SELECT r.*, b.title AS boat_title
+             FROM reviews r
+             LEFT JOIN boats b ON b.id = r.boat_id
+             WHERE ($1::text IS NULL OR r.status = $1)
+             ORDER BY r.created_at DESC
+             LIMIT 200`,
+            [status || null]
+        );
+        res.json(rows);
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.patch('/reviews/:id', async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const { status, spam } = req.body || {};
+        const sets = [];
+        const vals = [];
+        let idx = 1;
+        if (status) {
+            sets.push(`status = $${idx++}`);
+            vals.push(status);
+        }
+        if (spam !== undefined) {
+            sets.push(`spam = $${idx++}`);
+            vals.push(!!spam);
+        }
+        if (sets.length === 0) {
+            const { rows } = await pool.query('SELECT * FROM reviews WHERE id = $1', [id]);
+            if (rows.length === 0) return res.status(404).json({ error: 'Отзыв не найден' });
+            return res.json(rows[0]);
+        }
+        vals.push(id);
+        const { rows } = await pool.query(
+            `UPDATE reviews SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`,
+            vals
+        );
+        if (rows.length === 0) return res.status(404).json({ error: 'Отзыв не найден' });
+
+        const review = rows[0];
+        if (status === 'approved') {
+            await pool.query(
+                `UPDATE boats
+                 SET rating = (SELECT ROUND(AVG(rating)::numeric, 2) FROM reviews WHERE boat_id = $1 AND status = 'approved' AND COALESCE(spam,false) = false),
+                     reviews_count = (SELECT COUNT(*) FROM reviews WHERE boat_id = $1 AND status = 'approved' AND COALESCE(spam,false) = false)
+                 WHERE id = $1`,
+                [review.boat_id]
+            );
+        }
+
+        res.json(review);
+    } catch (err) {
+        next(err);
+    }
+});
+
 router.patch('/boats/:id', async (req, res, next) => {
     try {
         const id = parseInt(req.params.id, 10);

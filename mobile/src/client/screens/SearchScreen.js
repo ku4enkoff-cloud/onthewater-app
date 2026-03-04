@@ -294,7 +294,13 @@ export default function SearchScreen({ navigation }) {
                     <TouchableOpacity
                         key={d.id}
                         style={styles.destCard}
-                        onPress={() => navigation.navigate('CityBoats', { cityName: d.name })}
+                        onPress={() =>
+                            navigation.navigate('SearchResults', {
+                                cityName: d.name,
+                                useMyLocation: false,
+                                dateISO: new Date().toISOString(),
+                            })
+                        }
                         activeOpacity={0.9}
                     >
                         <DestinationImage uri={d.image} style={styles.destImage} refreshKey={refreshKey} />

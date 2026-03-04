@@ -13,7 +13,7 @@ import {
     InteractionManager,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path, Text as SvgText } from 'react-native-svg';
+import Svg, { Rect, Text as SvgText } from 'react-native-svg';
 import { ChevronLeft, ChevronDown, Heart, Zap, MapPin, Star, SlidersHorizontal, X } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
@@ -42,29 +42,42 @@ const DEFAULT_MAP_CENTER = { lat: 55.751244, lon: 37.618423 };
 const isMapAvailable = NativeModules.yamap != null;
 let YaMap = null;
 let Marker = null;
+let ClusteredYamap = null;
 if (isMapAvailable) {
     try {
         const yamap = require('react-native-yamap');
         YaMap = yamap.default;
         Marker = yamap.Marker;
+        ClusteredYamap = yamap.ClusteredYamap;
     } catch (_) {}
 }
 const USE_CUSTOM_PRICE_MARKERS = true;
 
 function MapPriceBubble({ price, selected }) {
-    const color = selected ? NAVY : '#2563EB';
+    const color = NAVY;
+    const w = 88;
+    const h = 32;
+    const radius = 8;
     return (
-        <Svg width={80} height={44} viewBox="0 0 80 44">
-            <Path
-                d="M16,0 L64,0 Q80,0 80,16 L80,26 Q80,32 64,32 L46,32 L40,44 L34,32 L16,32 Q0,32 0,26 L0,16 Q0,0 16,0 Z"
+        <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+            <Rect
+                x={1}
+                y={1}
+                width={w - 2}
+                height={h - 2}
+                rx={radius}
+                ry={radius}
                 fill={color}
+                stroke="rgba(255,255,255,0.5)"
+                strokeWidth={1.5}
             />
             <SvgText
-                x={40}
-                y={22}
+                x={w / 2}
+                y={h / 2 + 5}
                 fill="#fff"
-                fontSize={13}
-                fontWeight="bold"
+                fontSize={14}
+                fontWeight="700"
+                fontFamily={theme.fonts.bold}
                 textAnchor="middle"
             >
                 {price}
@@ -79,7 +92,6 @@ const DEFAULT_FILTERS = {
     passengers: 1,
     duration: null,
     captain: null,
-    activity: null,
     boatTypeId: null,
     boatTypeName: null,
 };
@@ -236,7 +248,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     }, [boats, cityName, useMyLocation]);
 
     useEffect(() => {
-        if (!mapModalVisible || !YaMap || !mapRef.current) return;
+        if (!mapModalVisible || !ClusteredYamap || !mapRef.current) return;
         if (cityName && isRegion(cityName)) {
             fetchBoatsForMap({ regionFilter: cityName });
             return;
@@ -303,16 +315,37 @@ export default function SearchResultsScreen({ route, navigation }) {
     }, [allBoats]);
 
     const boatTypes = useMemo(() => {
-        const seen = new Map();
+        const seenByName = new Map();
         for (const b of allBoats) {
-            const id = b.type_id ?? b.type_name;
-            const name = b.type_name || 'Без типа';
-            if (id != null && id !== '' && !seen.has(String(id))) {
-                seen.set(String(id), { id, name });
+            const rawName = b.type_name || 'Без типа';
+            const key = rawName.trim().toLowerCase();
+            if (!key) continue;
+            if (!seenByName.has(key)) {
+                const id = b.type_id ?? rawName;
+                seenByName.set(key, { id, name: rawName });
             }
         }
-        return [...seen.values()].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        return [...seenByName.values()].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     }, [allBoats]);
+
+    // При переходе с главного экрана по категории сразу отмечаем тип катера в фильтрах
+    useEffect(() => {
+        if (!boatTypeId && !boatTypeName) return;
+        setFilters((prev) => {
+            const sameId =
+                (boatTypeId == null && prev.boatTypeId == null) ||
+                String(prev.boatTypeId) === String(boatTypeId);
+            const sameName =
+                (boatTypeName == null && prev.boatTypeName == null) ||
+                (prev.boatTypeName || '').toLowerCase() === (boatTypeName || '').toLowerCase();
+            if (sameId && sameName) return prev;
+            return {
+                ...prev,
+                boatTypeId: boatTypeId ?? prev.boatTypeId,
+                boatTypeName: boatTypeName ?? prev.boatTypeName,
+            };
+        });
+    }, [boatTypeId, boatTypeName]);
 
     useEffect(() => {
         if (priceRange.min === 0 && priceRange.max === 50000) return;
@@ -372,7 +405,6 @@ export default function SearchResultsScreen({ route, navigation }) {
         if (filters.duration) n++;
         if (filters.boatTypeId || filters.boatTypeName) n++;
         if (filters.captain) n++;
-        if (filters.activity) n++;
         return n;
     }, [filters, priceRange.min, priceRange.max]);
 
@@ -629,6 +661,9 @@ export default function SearchResultsScreen({ route, navigation }) {
                 filters={filters}
                 onApply={setFilters}
                 totalResults={boats.length}
+                priceMin={priceRange.min}
+                priceMax={priceRange.max}
+                durationOptions={durationOptions}
             />
             <PriceFilterModal
                 visible={priceModalVisible}
@@ -725,7 +760,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                             </Text>
                             <View style={{ width: 36 }} />
                         </View>
-                        {!isMapAvailable || !YaMap || !Marker ? (
+                        {!isMapAvailable || !ClusteredYamap || !Marker ? (
                             <View style={styles.mapPlaceholder}>
                                 <Text style={styles.mapPlaceholderText}>
                                     Карта доступна в полной сборке приложения (expo run:android / expo run:ios)
@@ -733,7 +768,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                             </View>
                         ) : (
                             <View style={styles.mapContainer}>
-                                <YaMap
+                                <ClusteredYamap
                                     ref={mapRef}
                                     style={StyleSheet.absoluteFillObject}
                                     initialRegion={{
@@ -741,23 +776,27 @@ export default function SearchResultsScreen({ route, navigation }) {
                                         lon: mapCenter.lon,
                                         zoom: mapZoom,
                                     }}
-                                >
-                                    {mapBoats.filter((b) => b.lat != null && b.lng != null).map((boat) => {
-                                        const isSelected = selectedMapBoat?.id === boat.id;
-                                        const price = (Number(boat.price_per_hour) || 0).toLocaleString('ru-RU') + ' ₽';
+                                    clusterColor={NAVY}
+                                    clusteredMarkers={mapBoats
+                                        .filter((b) => b.lat != null && b.lng != null)
+                                        .map((b) => ({ point: { lat: b.lat, lon: b.lng }, data: b }))}
+                                    renderMarker={(info, index) => {
+                                        const boat = info.data;
+                                        const isSelected = selectedMapBoat?.id === boat?.id;
+                                        const price = boat ? (Number(boat.price_per_hour) || 0).toLocaleString('ru-RU') + ' ₽' : '';
                                         return (
                                             <Marker
-                                                key={boat.id}
-                                                point={{ lat: boat.lat, lon: boat.lng }}
+                                                key={boat?.id ?? index}
+                                                point={info.point}
                                                 anchor={{ x: 0.5, y: 1 }}
                                                 zIndex={isSelected ? 100 : 1}
-                                                onPress={() => setSelectedMapBoat(isSelected ? null : boat)}
+                                                onPress={() => boat && setSelectedMapBoat(isSelected ? null : boat)}
                                             >
                                                 <MapPriceBubble price={price} selected={isSelected} />
                                             </Marker>
                                         );
-                                    })}
-                                </YaMap>
+                                    }}
+                                />
                                 {mapLoading && (
                                     <View style={styles.mapLoadingOverlay}>
                                         <ActivityIndicator size="large" color={NAVY} />
