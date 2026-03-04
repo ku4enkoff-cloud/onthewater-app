@@ -7,6 +7,17 @@ const { v4: uuidv4 } = require('uuid');
 const MAX_WIDTH = 1920;
 const WEBP_QUALITY = 82;
 
+function getAbsoluteInputPath(file) {
+    if (file.path && path.isAbsolute(file.path) && fs.existsSync(file.path)) return file.path;
+    if (file.path && fs.existsSync(file.path)) return path.resolve(file.path);
+    if (file.destination != null && file.filename) {
+        const joined = path.join(file.destination, file.filename);
+        const absolute = path.isAbsolute(joined) ? joined : path.join(process.cwd(), joined);
+        if (fs.existsSync(absolute)) return absolute;
+    }
+    return null;
+}
+
 /**
  * Сжимает все загруженные фото, конвертирует в WebP и присваивает уникальное имя.
  * Удаляет оригиналы и обновляет file.path / file.filename.
@@ -17,13 +28,10 @@ function processUploadedImages(req, res, next) {
 
     (async () => {
         for (const file of files) {
-            // S3: file.location есть, локального path нет — пропускаем
             if (file.location) continue;
 
-            const inputPath = file.path || (file.destination && file.filename
-                ? path.join(file.destination, file.filename)
-                : null);
-            if (!inputPath || !fs.existsSync(inputPath)) continue;
+            const inputPath = getAbsoluteInputPath(file);
+            if (!inputPath) continue;
 
             const dir = path.dirname(inputPath);
             const uniqueName = `${uuidv4()}.webp`;
@@ -34,11 +42,12 @@ function processUploadedImages(req, res, next) {
                     .resize(MAX_WIDTH, null, { withoutEnlargement: true })
                     .webp({ quality: WEBP_QUALITY })
                     .toFile(outputPath);
-                fs.unlinkSync(inputPath);
+                try { fs.unlinkSync(inputPath); } catch (_) {}
                 file.path = outputPath;
                 file.filename = uniqueName;
             } catch (err) {
-                console.error('[imageProcessor] Ошибка WebP:', file.originalname, err.message, err.stack);
+                console.error('[imageProcessor] Ошибка WebP:', file.originalname, err.message);
+                return next(Object.assign(err, { message: `Ошибка конвертации фото в WebP: ${err.message}` }));
             }
         }
         next();
