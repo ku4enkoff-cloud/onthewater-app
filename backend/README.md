@@ -73,6 +73,11 @@ sudo apt update && sudo apt upgrade -y
 sudo apt install -y nodejs npm postgresql redis-server
 ```
 
+**Для конвертации фото (sharp → WebP)** установите зависимости сборки и библиотеки для sharp:
+```bash
+sudo apt install -y build-essential pkg-config libvips-dev
+```
+
 Если Node.js старый, установите LTS через NodeSource:
 ```bash
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
