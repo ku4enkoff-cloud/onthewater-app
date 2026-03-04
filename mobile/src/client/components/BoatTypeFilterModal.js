@@ -33,7 +33,9 @@ export default function BoatTypeFilterModal({
     }, [visible, boatTypeId, boatTypeName]);
 
     const handleSelect = (item) => {
-        const isSame = String(item.id) === String(selectedId);
+        const isSame =
+            String(item.id) === String(selectedId) ||
+            (item.typeId != null && String(item.typeId) === String(selectedId) && (item.name || '') === (selectedName || ''));
         setSelectedId(isSame ? null : item.id);
         setSelectedName(isSame ? null : item.name);
     };
@@ -69,11 +71,13 @@ export default function BoatTypeFilterModal({
                         showsVerticalScrollIndicator={false}
                     >
                         <View style={styles.chipGrid}>
-                            {boatTypes.map((item) => {
-                                const isActive = String(item.id) === String(selectedId);
+                            {boatTypes.map((item, idx) => {
+                                const isActive =
+                                    String(item.id) === String(selectedId) ||
+                                    (item.typeId != null && String(item.typeId) === String(selectedId) && (item.name || '') === (selectedName || ''));
                                 return (
                                     <TouchableOpacity
-                                        key={String(item.id)}
+                                        key={`type-${item.id}-${idx}`}
                                         style={[
                                             styles.optionChip,
                                             isActive && styles.optionChipActive,

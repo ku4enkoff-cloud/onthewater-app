@@ -751,7 +751,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                         {reviews.length > 0 ? (
                             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                                 {reviews.slice(0, 5).map((r, i) => (
-                                    <View key={r.id || i} style={styles.reviewCard}>
+                                    <View key={`review-${r.id}-${i}`} style={styles.reviewCard}>
                                         <View style={styles.reviewCardHeader}>
                                             <View style={styles.reviewAvatar}>
                                                 <Text style={styles.reviewAvatarText}>
@@ -836,7 +836,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                                         {rating >= 4.8 && (
                                             <View style={styles.topOwnerBadge}>
                                                 <Text style={styles.topOwnerIcon}>🏆</Text>
-                                                <Text style={styles.topOwnerText}>TOP OWNER</Text>
+                                                <Text style={styles.topOwnerText}>Владелец</Text>
                                             </View>
                                         )}
                                         <Star size={14} color={theme.colors.star} fill={theme.colors.star} />
@@ -885,9 +885,9 @@ export default function BoatDetailScreen({ route, navigation }) {
                         <View style={styles.section}>
                             <Text style={styles.sectionTitle}>Похожие катера</Text>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                {similarBoats.map((sb) => (
+                                {similarBoats.map((sb, idx) => (
                                     <TouchableOpacity
-                                        key={sb.id}
+                                        key={`sb-${sb.id}-${idx}`}
                                         style={styles.similarCard}
                                         onPress={() => navigation.push('BoatDetail', { boatId: sb.id })}
                                         activeOpacity={0.9}
@@ -924,7 +924,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                                             {sb.rating >= 4.8 && (
                                                 <View style={styles.topOwnerBadgeSmall}>
                                                     <Text style={{ fontSize: 10 }}>🏆</Text>
-                                                    <Text style={styles.topOwnerTextSmall}>TOP OWNER</Text>
+                                                    <Text style={styles.topOwnerTextSmall}>Владелец</Text>
                                                 </View>
                                             )}
                                             <View style={styles.similarTitleRow}>

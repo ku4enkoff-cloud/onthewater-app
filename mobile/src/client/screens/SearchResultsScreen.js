@@ -321,8 +321,10 @@ export default function SearchResultsScreen({ route, navigation }) {
             const key = rawName.trim().toLowerCase();
             if (!key) continue;
             if (!seenByName.has(key)) {
-                const id = b.type_id ?? rawName;
-                seenByName.set(key, { id, name: rawName });
+                const typeId = b.type_id ?? rawName;
+                // Уникальный id: type_id + name, чтобы разные типы с одним type_id не выделялись вместе
+                const id = `${typeId}|${rawName}`;
+                seenByName.set(key, { id, typeId, name: rawName });
             }
         }
         return [...seenByName.values()].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
@@ -377,12 +379,18 @@ export default function SearchResultsScreen({ route, navigation }) {
         } else if (captain === 'Без капитана') {
             list = list.filter((b) => !b.captain_included);
         }
-        if (filters.boatTypeId) {
-            list = list.filter(
-                (b) =>
-                    String(b.type_id) === String(filters.boatTypeId) ||
-                    ((b.type_name || '').toLowerCase() === (filters.boatTypeName || '').toLowerCase()),
-            );
+        if (filters.boatTypeId || filters.boatTypeName) {
+            const byName = (filters.boatTypeName || '').trim();
+            const typeIdRaw = String(filters.boatTypeId || '');
+            const typeIdPart = typeIdRaw.includes('|') ? typeIdRaw.split('|')[0] : typeIdRaw;
+            list = list.filter((b) => {
+                // При выборе типа по имени — фильтруем только по названию (type_id может совпадать у разных типов)
+                if (byName) {
+                    return (b.type_name || '').toLowerCase() === byName.toLowerCase();
+                }
+                if (typeIdPart) return String(b.type_id) === typeIdPart;
+                return false;
+            });
         }
         return list;
     }, [allBoats, filters, priceRange.min, priceRange.max]);
@@ -471,7 +479,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                         {hasTopOwner && (
                             <View style={styles.topOwnerBadge}>
                                 <Text style={styles.topOwnerIcon}>🏆</Text>
-                                <Text style={styles.topOwnerText}>TOP OWNER</Text>
+                                <Text style={styles.topOwnerText}>Владелец</Text>
                             </View>
                         )}
                         <Text style={styles.locationText}>
@@ -707,7 +715,7 @@ export default function SearchResultsScreen({ route, navigation }) {
             <FlatList
                 data={boats}
                 renderItem={renderBoatCard}
-                keyExtractor={(item) => String(item.id)}
+                keyExtractor={(item, index) => `boat-${item.id}-${index}`}
                 contentContainerStyle={[
                     styles.list,
                     { paddingBottom: insets.bottom + 80 },
@@ -792,7 +800,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                                         const price = boat ? (Number(boat.price_per_hour) || 0).toLocaleString('ru-RU') + ' ₽' : '';
                                         return (
                                             <Marker
-                                                key={boat?.id ?? index}
+                                                key={`map-${boat?.id ?? index}-${index}`}
                                                 point={info.point}
                                                 anchor={{ x: 0.5, y: 1 }}
                                                 zIndex={isSelected ? 100 : 1}
