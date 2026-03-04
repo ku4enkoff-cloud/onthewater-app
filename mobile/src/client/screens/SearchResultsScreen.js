@@ -521,7 +521,13 @@ export default function SearchResultsScreen({ route, navigation }) {
 
                 <TouchableOpacity
                     style={styles.headerBubble}
-                    onPress={() => navigation.goBack()}
+                    onPress={() => navigation.navigate('CityBoats', {
+                        cityName: cityName || undefined,
+                        dateISO,
+                        useMyLocation: !!useMyLocation,
+                        boatTypeId,
+                        boatTypeName,
+                    })}
                     activeOpacity={0.8}
                 >
                     <View>

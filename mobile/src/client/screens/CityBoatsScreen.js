@@ -28,13 +28,13 @@ const CITIES = [
 
 export default function CityBoatsScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
-    const { cityName: initialCity, useMyLocation: initialUseLocation, boatTypeId, boatTypeName } = route.params || {};
+    const { cityName: initialCity, useMyLocation: initialUseLocation, boatTypeId, boatTypeName, dateISO: initialDateISO } = route.params || {};
 
     const [selectedCity, setSelectedCity] = useState(
         initialUseLocation ? 'Моё местоположение' : (initialCity || 'Москва'),
     );
     const [isMyLocation, setIsMyLocation] = useState(!!initialUseLocation);
-    const [date, setDate] = useState(() => new Date());
+    const [date, setDate] = useState(() => (initialDateISO ? new Date(initialDateISO) : new Date()));
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showCityPicker, setShowCityPicker] = useState(false);
 
