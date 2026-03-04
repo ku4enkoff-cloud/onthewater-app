@@ -127,8 +127,13 @@ router.post('/:id/reviews', authenticate, async (req, res, next) => {
         const { rows: boatRows } = await pool.query('SELECT id FROM boats WHERE id = $1', [boatId]);
         if (boatRows.length === 0) return res.status(404).json({ error: 'Катер не найден' });
 
-        const { rows: existing } = await pool.query('SELECT id FROM reviews WHERE boat_id = $1 AND user_id = $2', [boatId, userId]);
-        if (existing.length > 0) return res.status(400).json({ error: 'Вы уже оставили отзыв на этот катер' });
+        const { rows: existing } = await pool.query(
+            'SELECT id, status FROM reviews WHERE boat_id = $1 AND user_id = $2',
+            [boatId, userId]
+        );
+        const activeStatuses = ['approved', 'pending'];
+        const isActive = existing.length > 0 && activeStatuses.includes((existing[0].status || '').toLowerCase());
+        if (isActive) return res.status(400).json({ error: 'Вы уже оставили отзыв на этот катер' });
 
         const { rows: recent } = await pool.query(
             `SELECT COUNT(*) FROM reviews WHERE user_id = $1 AND created_at > NOW() - INTERVAL '5 minutes'`,
@@ -136,6 +141,15 @@ router.post('/:id/reviews', authenticate, async (req, res, next) => {
         );
         if (parseInt(recent[0].count, 10) > 0) {
             return res.status(429).json({ error: 'Вы слишком часто оставляете отзывы. Попробуйте чуть позже.' });
+        }
+
+        if (existing.length > 0) {
+            // Отзыв был отклонён или удалён — обновляем запись и отправляем на модерацию снова
+            const { rows: updated } = await pool.query(
+                `UPDATE reviews SET user_name = $1, rating = $2, text = $3, status = 'pending', spam = false WHERE id = $4 RETURNING *`,
+                [userDisplayName, r, textStr || null, existing[0].id]
+            );
+            return res.status(201).json({ ok: true, review: updated[0] });
         }
 
         const { rows: inserted } = await pool.query(
