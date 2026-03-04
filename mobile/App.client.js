@@ -145,11 +145,16 @@ export default function App() {
     return () => clearTimeout(t);
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) return null;
+  // Не показывать чёрный экран: пока грузятся шрифты — фон как у сплэша
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.colors.waveDark }} onLayout={onLayoutRootView} />
+    );
+  }
 
   return (
     <SafeAreaProvider>
-      <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+      <View style={{ flex: 1, backgroundColor: theme.colors.waveDark }} onLayout={onLayoutRootView}>
         <ErrorBoundary>
           <AuthProvider>
             <FavoritesProvider>
