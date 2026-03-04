@@ -75,10 +75,16 @@ router.get('/:id', async (req, res, next) => {
         const { rows } = await pool.query('SELECT * FROM boats WHERE id = $1', [parseInt(req.params.id, 10)]);
         if (rows.length === 0) return res.status(404).json({ error: 'Катер не найден' });
         const boat = rows[0];
-        if (boat.owner_id && (!boat.owner_name || String(boat.owner_name).trim() === '')) {
-            const { rows: userRows } = await pool.query('SELECT name FROM users WHERE id = $1', [boat.owner_id]);
-            if (userRows.length > 0 && userRows[0].name) {
-                boat.owner_name = userRows[0].name;
+        // Всегда подставляем актуальное имя владельца из users (name/first_name+last_name/email)
+        if (boat.owner_id) {
+            const { rows: userRows } = await pool.query(
+                'SELECT name, first_name, last_name, email FROM users WHERE id = $1',
+                [boat.owner_id]
+            );
+            if (userRows.length > 0) {
+                const u = userRows[0];
+                const full = [u.name, [u.first_name, u.last_name].filter(Boolean).join(' ').trim()].find(Boolean);
+                boat.owner_name = full && full.trim() ? full.trim() : (u.email || 'Владелец');
             }
         }
         res.json({
