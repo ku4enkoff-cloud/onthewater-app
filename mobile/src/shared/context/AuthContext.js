@@ -13,13 +13,17 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         let cancelled = false;
-        // Показываем экран входа не дольше чем через 3 сек (если API недоступен с эмулятора — не висим на спиннере)
+        // Не висим на спиннере: максимум 4 сек, затем показываем экран входа
         const maxWait = setTimeout(() => {
-            if (!cancelled) setLoading(false);
-        }, 3000);
+            if (!cancelled) {
+                setLoading(false);
+            }
+        }, 4000);
         (async () => {
             try {
                 await loadUser();
+            } catch (e) {
+                if (!cancelled) setLoading(false);
             } finally {
                 if (!cancelled) {
                     clearTimeout(maxWait);
