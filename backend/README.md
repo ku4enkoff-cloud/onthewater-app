@@ -299,7 +299,52 @@ sudo journalctl -u boatrent-api -n 80 --no-pager
 
 В мобильном приложении тогда укажите `EXPO_PUBLIC_API_URL=https://your-domain.com` (или `http://IP_СЕРВЕРА` без Nginx).
 
-### 8. Обновление с Git
+### 8. SSL (HTTPS) через Let's Encrypt
+
+Нужен **домен**, указывающий на сервер (A-запись). По IP сертификат Let's Encrypt не выдаётся.
+
+**Шаг 1.** Установите Certbot и плагин для Nginx:
+
+```bash
+sudo apt update
+sudo apt install -y certbot python3-certbot-nginx
+```
+
+**Шаг 2.** В конфиге Nginx укажите домен в `server_name` (вместо `_`). Например:
+
+```bash
+sudo nano /etc/nginx/sites-available/boatrent-api
+```
+
+В начале блока `server` должно быть:
+```nginx
+server_name api.ваш-домен.com;   # или ваш-домен.com
+```
+
+Проверьте конфиг и перезагрузите Nginx:
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+**Шаг 3.** Получите сертификат (Certbot сам поправит конфиг Nginx для HTTPS):
+
+```bash
+sudo certbot --nginx -d api.ваш-домен.com
+```
+
+Укажите email, согласитесь с условиями. Certbot добавит редирект с HTTP на HTTPS и привязку сертификатов.
+
+**Шаг 4.** Проверка продления (сертификат выдаётся на 90 дней):
+
+```bash
+sudo certbot renew --dry-run
+```
+
+Продление по таймеру обычно уже настроено (`systemctl status certbot.timer`).
+
+**Итог:** API будет доступен по `https://api.ваш-домен.com`. В мобильном приложении и админке укажите этот URL в `EXPO_PUBLIC_API_URL` и `VITE_API_URL`.
+
+### 9. Обновление с Git
 
 ```bash
 cd /opt/boatrent

@@ -38,10 +38,16 @@ const uploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 app.use(helmet());
-app.use(cors());
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
+    : null;
+app.use(cors(allowedOrigins ? { origin: allowedOrigins } : {}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(uploadsDir));
+
+const { apiLimiter } = require('./middleware/rateLimiter');
+app.use(apiLimiter);
 
 app.get('/', (req, res) => res.json({
     name: 'BoatRent API',
