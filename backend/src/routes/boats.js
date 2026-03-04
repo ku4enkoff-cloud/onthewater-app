@@ -118,8 +118,8 @@ router.post('/:id/reviews', authenticate, async (req, res, next) => {
         const { rating, text } = req.body || {};
         const r = Math.min(5, Math.max(1, parseInt(rating, 10) || 5));
         const textStr = typeof text === 'string' ? text.trim() : '';
-        if (textStr.length < 50) {
-            return res.status(400).json({ error: 'Текст отзыва должен быть не короче 50 символов' });
+        if (textStr.length < 20) {
+            return res.status(400).json({ error: 'Текст отзыва должен быть не короче 20 символов' });
         }
 
         const userDisplayName = [req.user.name, req.user.first_name, req.user.last_name].filter(Boolean).join(' ').trim() || 'Гость';

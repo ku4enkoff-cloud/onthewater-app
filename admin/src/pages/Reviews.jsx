@@ -68,6 +68,16 @@ export default function Reviews() {
 
       <div className={styles.tableWrap}>
         <table className={styles.table}>
+          <colgroup>
+            <col style={{ width: 48 }} />
+            <col style={{ width: '16%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: 64 }} />
+            <col style={{ width: '28%' }} />
+            <col style={{ width: 110 }} />
+            <col style={{ width: 130 }} />
+            {tab === 'pending' && <col style={{ width: 200 }} />}
+          </colgroup>
           <thead>
             <tr>
               <th>ID</th>
@@ -84,10 +94,10 @@ export default function Reviews() {
             {list.map((r) => (
               <tr key={r.id}>
                 <td>{r.id}</td>
-                <td>{r.boat_title ?? '—'}</td>
-                <td>{r.user_name ?? '—'}</td>
+                <td className={styles.cellTruncate} title={r.boat_title ?? ''}>{r.boat_title ?? '—'}</td>
+                <td className={styles.cellTruncate} title={r.user_name ?? ''}>{r.user_name ?? '—'}</td>
                 <td>{r.rating ?? '—'}</td>
-                <td style={{ maxWidth: 280 }}>{(r.text || '').slice(0, 120)}{(r.text && r.text.length > 120) ? '…' : ''}</td>
+                <td className={styles.cellWrap} title={r.text || ''}>{(r.text || '').slice(0, 150)}{(r.text && r.text.length > 150) ? '…' : ''}</td>
                 <td><span className={getStatusBadgeClass(r.status)}>{STATUS_LABEL[r.status] || r.status || '—'}</span></td>
                 <td>{r.created_at ? new Date(r.created_at).toLocaleString('ru') : '—'}</td>
                 {tab === 'pending' && (

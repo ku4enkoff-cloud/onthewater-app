@@ -286,8 +286,8 @@ export default function BoatDetailScreen({ route, navigation }) {
     const submitReview = async () => {
         if (!user) return;
         const textClean = (reviewText || '').trim();
-        if (textClean.length < 50) {
-            Alert.alert('Слишком короткий отзыв', 'Пожалуйста, напишите хотя бы 50 символов.');
+        if (textClean.length < 20) {
+            Alert.alert('Слишком короткий отзыв', 'Пожалуйста, напишите хотя бы 20 символов.');
             return;
         }
         setReviewSubmitting(true);

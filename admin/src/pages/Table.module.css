@@ -54,8 +54,10 @@
 
 .table {
   width: 100%;
+  min-width: 800px;
   border-collapse: collapse;
   font-size: 0.9rem;
+  table-layout: fixed;
 }
 
 .table th,
@@ -63,6 +65,18 @@
   padding: 0.75rem 1rem;
   text-align: left;
   border-bottom: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.table td.cellTruncate {
+  max-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table td.cellWrap {
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .table th {
