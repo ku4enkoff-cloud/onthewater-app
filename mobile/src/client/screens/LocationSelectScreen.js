@@ -1,19 +1,42 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, MapPin, ChevronRight } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
-
-const CITIES = [
-    { id: 'moscow', name: 'Москва' },
-    { id: 'spb', name: 'Санкт-Петербург' },
-    { id: 'sochi', name: 'Сочи' },
-    { id: 'crimea', name: 'Крым' },
-    { id: 'kazan', name: 'Казань' },
-];
+import { api } from '../../shared/infrastructure/api';
 
 export default function LocationSelectScreen({ navigation }) {
     const insets = useSafeAreaInsets();
+    const [cities, setCities] = useState([]);
+
+    useEffect(() => {
+        let isMounted = true;
+        (async () => {
+            try {
+                const res = await api.get('/destinations');
+                const items = (res.data || []).map((d, idx) => ({
+                    id: String(d.id ?? idx),
+                    name: d.name || '—',
+                }));
+                if (isMounted) setCities(items);
+            } catch (e) {
+                console.log('LocationSelect destinations error', e);
+                if (isMounted) {
+                    setCities([
+                        { id: 'moscow', name: 'Москва' },
+                        { id: 'mo_region', name: 'Московская область' },
+                        { id: 'spb', name: 'Санкт-Петербург' },
+                        { id: 'sochi', name: 'Сочи' },
+                        { id: 'crimea', name: 'Крым' },
+                        { id: 'kazan', name: 'Казань' },
+                    ]);
+                }
+            }
+        })();
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     return (
         <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
@@ -28,10 +51,16 @@ export default function LocationSelectScreen({ navigation }) {
                 <Text style={styles.title}>Выберите место</Text>
             </View>
 
-            <View style={styles.list}>
+            <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
                 <TouchableOpacity
                     style={styles.row}
-                    onPress={() => navigation.navigate('CityBoats', { useMyLocation: true })}
+                    onPress={() =>
+                        navigation.navigate('SearchResults', {
+                            useMyLocation: true,
+                            cityName: null,
+                            dateISO: new Date().toISOString(),
+                        })
+                    }
                     activeOpacity={0.7}
                 >
                     <View style={styles.rowIcon}>
@@ -41,18 +70,24 @@ export default function LocationSelectScreen({ navigation }) {
                     <ChevronRight size={20} color={theme.colors.textMuted} />
                 </TouchableOpacity>
 
-                {CITIES.map((city) => (
+                {cities.map((city) => (
                     <TouchableOpacity
                         key={city.id}
                         style={styles.row}
-                        onPress={() => navigation.navigate('CityBoats', { cityName: city.name })}
+                        onPress={() =>
+                            navigation.navigate('SearchResults', {
+                                cityName: city.name,
+                                useMyLocation: false,
+                                dateISO: new Date().toISOString(),
+                            })
+                        }
                         activeOpacity={0.7}
                     >
                         <Text style={styles.rowTitle}>{city.name}</Text>
                         <ChevronRight size={20} color={theme.colors.textMuted} />
                     </TouchableOpacity>
                 ))}
-            </View>
+            </ScrollView>
         </View>
     );
 }

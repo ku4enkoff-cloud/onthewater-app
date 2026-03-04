@@ -105,9 +105,14 @@ async function migrate() {
                 user_name VARCHAR(255),
                 rating INT NOT NULL,
                 text TEXT,
+                status VARCHAR(20) DEFAULT 'pending',
                 created_at TIMESTAMPTZ DEFAULT NOW()
             )
         `);
+
+        await client.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'pending'`);
+        await client.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS spam BOOLEAN DEFAULT FALSE`);
+        await client.query(`UPDATE reviews SET status = 'approved' WHERE status IS NULL`);
 
         await client.query(`
             CREATE TABLE IF NOT EXISTS bookings (
