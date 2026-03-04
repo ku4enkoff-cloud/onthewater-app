@@ -8,6 +8,7 @@
     "start": "node src/index.js",
     "db:migrate": "node src/migrate.js",
     "db:seed": "node src/seed.js",
+    "ensure-admin": "node src/ensure-admin.js",
     "test": "vitest run"
   },
   "dependencies": {
