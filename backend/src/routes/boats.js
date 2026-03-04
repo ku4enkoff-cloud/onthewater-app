@@ -110,6 +110,11 @@ router.get('/:id/reviews', async (req, res, next) => {
 router.post('/:id/reviews', authenticate, async (req, res, next) => {
     try {
         const boatId = parseInt(req.params.id, 10);
+        if (Number.isNaN(boatId)) return res.status(400).json({ error: 'Неверный идентификатор катера' });
+
+        const userId = parseInt(req.user.id, 10);
+        if (Number.isNaN(userId)) return res.status(401).json({ error: 'Ошибка авторизации' });
+
         const { rating, text } = req.body || {};
         const r = Math.min(5, Math.max(1, parseInt(rating, 10) || 5));
         const textStr = typeof text === 'string' ? text.trim() : '';
@@ -117,15 +122,17 @@ router.post('/:id/reviews', authenticate, async (req, res, next) => {
             return res.status(400).json({ error: 'Текст отзыва должен быть не короче 50 символов' });
         }
 
+        const userDisplayName = [req.user.name, req.user.first_name, req.user.last_name].filter(Boolean).join(' ').trim() || 'Гость';
+
         const { rows: boatRows } = await pool.query('SELECT id FROM boats WHERE id = $1', [boatId]);
         if (boatRows.length === 0) return res.status(404).json({ error: 'Катер не найден' });
 
-        const { rows: existing } = await pool.query('SELECT id FROM reviews WHERE boat_id = $1 AND user_id = $2', [boatId, req.user.id]);
+        const { rows: existing } = await pool.query('SELECT id FROM reviews WHERE boat_id = $1 AND user_id = $2', [boatId, userId]);
         if (existing.length > 0) return res.status(400).json({ error: 'Вы уже оставили отзыв на этот катер' });
 
         const { rows: recent } = await pool.query(
             `SELECT COUNT(*) FROM reviews WHERE user_id = $1 AND created_at > NOW() - INTERVAL '5 minutes'`,
-            [req.user.id]
+            [userId]
         );
         if (parseInt(recent[0].count, 10) > 0) {
             return res.status(429).json({ error: 'Вы слишком часто оставляете отзывы. Попробуйте чуть позже.' });
@@ -133,11 +140,18 @@ router.post('/:id/reviews', authenticate, async (req, res, next) => {
 
         const { rows: inserted } = await pool.query(
             'INSERT INTO reviews (boat_id, user_id, user_name, rating, text, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-            [boatId, req.user.id, req.user.name || 'Гость', r, textStr || null, 'pending']
+            [boatId, userId, userDisplayName, r, textStr || null, 'pending']
         );
 
         res.status(201).json({ ok: true, review: inserted[0] });
     } catch (err) {
+        console.error('POST /boats/:id/reviews error:', err.message || err);
+        if (err.code === '23503') {
+            return res.status(400).json({ error: 'Катер или пользователь не найден' });
+        }
+        if (err.code === '23505') {
+            return res.status(400).json({ error: 'Вы уже оставили отзыв на этот катер' });
+        }
         next(err);
     }
 });
