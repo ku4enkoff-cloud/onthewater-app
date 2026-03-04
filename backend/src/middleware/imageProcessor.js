@@ -1,13 +1,14 @@
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
 
 /** Макс. ширина изображения, качество WebP */
 const MAX_WIDTH = 1920;
 const WEBP_QUALITY = 82;
 
 /**
- * Сжимает и конвертирует загруженные изображения в WebP.
+ * Сжимает все загруженные фото, конвертирует в WebP и присваивает уникальное имя.
  * Удаляет оригиналы и обновляет file.path / file.filename.
  */
 function processUploadedImages(req, res, next) {
@@ -25,8 +26,8 @@ function processUploadedImages(req, res, next) {
             if (!inputPath || !fs.existsSync(inputPath)) continue;
 
             const dir = path.dirname(inputPath);
-            const base = path.basename(inputPath, path.extname(inputPath));
-            const outputPath = path.join(dir, `${base}.webp`);
+            const uniqueName = `${uuidv4()}.webp`;
+            const outputPath = path.join(dir, uniqueName);
 
             try {
                 await sharp(inputPath)
@@ -35,7 +36,7 @@ function processUploadedImages(req, res, next) {
                     .toFile(outputPath);
                 fs.unlinkSync(inputPath);
                 file.path = outputPath;
-                file.filename = path.basename(outputPath);
+                file.filename = uniqueName;
             } catch (err) {
                 console.error('[imageProcessor] Ошибка WebP:', file.originalname, err.message, err.stack);
             }
