@@ -283,9 +283,9 @@ export default function SearchScreen({ navigation }) {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.destList}
             >
-                {(destinations.length ? destinations : FALLBACK_DESTINATIONS).map((d) => (
+                {(destinations.length ? destinations : FALLBACK_DESTINATIONS).map((d, i) => (
                     <TouchableOpacity
-                        key={d.id}
+                        key={`dest-${d.id}-${i}`}
                         style={styles.destCard}
                         onPress={() =>
                             navigation.navigate('SearchResults', {
@@ -305,9 +305,9 @@ export default function SearchScreen({ navigation }) {
             {/* Top boating categories */}
             <Text style={styles.sectionTitle}>Категории катеров</Text>
             <View style={styles.catGrid}>
-                {(boatCategories.length ? boatCategories : FALLBACK_CATEGORIES).map((c) => (
+                {(boatCategories.length ? boatCategories : FALLBACK_CATEGORIES).map((c, i) => (
                     <TouchableOpacity
-                        key={c.id}
+                        key={`cat-${c.id}-${i}`}
                         style={styles.catCard}
                         activeOpacity={0.9}
                         onPress={() => {
