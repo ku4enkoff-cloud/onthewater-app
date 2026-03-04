@@ -53,7 +53,22 @@ function ClientRoot() {
   const [onboardingDone, setOnboardingDone] = useState(null);
 
   useEffect(() => {
-    AsyncStorage.getItem(ONBOARDING_KEY).then((v) => setOnboardingDone(v === '1'));
+    let cancelled = false;
+    const t = setTimeout(() => {
+      if (!cancelled) setOnboardingDone(false); // таймаут: не зависать, показать онбординг
+    }, 3000);
+    AsyncStorage.getItem(ONBOARDING_KEY).then((v) => {
+      if (!cancelled) {
+        clearTimeout(t);
+        setOnboardingDone(v === '1');
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        clearTimeout(t);
+        setOnboardingDone(false);
+      }
+    });
+    return () => { cancelled = true; clearTimeout(t); };
   }, []);
 
   const finishOnboarding = () => {
@@ -101,7 +116,10 @@ export default function App() {
       Jost_700Bold,
     })
       .then(() => setFontsLoaded(true))
-      .catch((e) => console.warn('Font load error', e));
+      .catch((e) => {
+        console.warn('Font load error', e);
+        setFontsLoaded(true); // чтобы не зависнуть на сплэше при ошибке шрифтов
+      });
   }, []);
 
   const onLayoutRootView = useCallback(async () => {
