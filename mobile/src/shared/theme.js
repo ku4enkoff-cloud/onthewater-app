@@ -28,6 +28,7 @@ export const theme = {
         gray900: '#111827',
         textMain: '#1B365D',
         textMuted: '#6B7280',
+        waveDark: '#1B365D', // фон сплэша и загрузки
         border: '#E5E7EB',
         success: '#10B981',
         error: '#EF4444',

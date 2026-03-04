@@ -16,6 +16,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { AuthProvider, AuthContext } from './src/shared/context/AuthContext';
 import { FavoritesProvider } from './src/shared/context/FavoritesContext';
 import { theme } from './src/shared/theme';
+import AppSplashScreen from './src/shared/components/AppSplashScreen';
 import ClientNavigator from './src/client/navigation/ClientNavigator';
 import OnboardingScreen from './src/client/screens/OnboardingScreen';
 
@@ -51,25 +52,35 @@ class ErrorBoundary extends React.Component {
 function ClientRoot() {
   const { loading } = useContext(AuthContext);
   const [onboardingDone, setOnboardingDone] = useState(null);
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    const t = setTimeout(() => {
-      if (!cancelled) setOnboardingDone(false); // таймаут: не зависать, показать онбординг
-    }, 3000);
-    AsyncStorage.getItem(ONBOARDING_KEY).then((v) => {
-      if (!cancelled) {
+    const setDone = (value) => {
+      if (!cancelled) setOnboardingDone(value);
+    };
+    const t = setTimeout(() => setDone(false), 2000);
+    AsyncStorage.getItem(ONBOARDING_KEY)
+      .then((v) => {
         clearTimeout(t);
-        setOnboardingDone(v === '1');
-      }
-    }).catch(() => {
-      if (!cancelled) {
+        setDone(v === '1');
+      })
+      .catch(() => {
         clearTimeout(t);
-        setOnboardingDone(false);
-      }
-    });
+        setDone(false);
+      });
     return () => { cancelled = true; clearTimeout(t); };
   }, []);
+
+  // Страховка: если "Загрузка..." висит дольше 5 сек — показываем приложение (хуки всегда в одном порядке)
+  useEffect(() => {
+    if (!loading) return;
+    const t = setTimeout(() => setLoadingTimedOut(true), 5000);
+    return () => clearTimeout(t);
+  }, [loading]);
+  useEffect(() => {
+    if (!loading) setLoadingTimedOut(false);
+  }, [loading]);
 
   const finishOnboarding = () => {
     AsyncStorage.setItem(ONBOARDING_KEY, '1');
@@ -77,18 +88,14 @@ function ClientRoot() {
   };
 
   if (onboardingDone === null) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.waveDark }}>
-        <ActivityIndicator size="large" color="#fff" />
-      </View>
-    );
+    return <AppSplashScreen />;
   }
 
   if (!onboardingDone) {
     return <OnboardingScreen onFinish={finishOnboarding} />;
   }
 
-  if (loading) {
+  if (loading && !loadingTimedOut) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.surface }}>
         <ActivityIndicator size="large" color={theme.colors.primary} />

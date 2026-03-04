@@ -13,22 +13,21 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         let cancelled = false;
-        // Не висим на спиннере: максимум 4 сек, затем показываем экран входа
-        const maxWait = setTimeout(() => {
-            if (!cancelled) {
-                setLoading(false);
-            }
-        }, 4000);
+        const setDone = () => {
+            if (!cancelled) setLoading(false);
+        };
+        const maxWait = setTimeout(setDone, 3000);
         (async () => {
             try {
-                await loadUser();
-            } catch (e) {
-                if (!cancelled) setLoading(false);
+                await Promise.race([
+                    loadUser(),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
+                ]);
+            } catch (_) {
+                setDone();
             } finally {
-                if (!cancelled) {
-                    clearTimeout(maxWait);
-                    setLoading(false);
-                }
+                clearTimeout(maxWait);
+                setDone();
             }
         })();
         return () => {
