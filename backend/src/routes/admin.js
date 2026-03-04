@@ -80,17 +80,39 @@ router.patch('/reviews/:id', async (req, res, next) => {
         if (rows.length === 0) return res.status(404).json({ error: 'Отзыв не найден' });
 
         const review = rows[0];
-        if (status === 'approved') {
-            await pool.query(
-                `UPDATE boats
-                 SET rating = (SELECT ROUND(AVG(rating)::numeric, 2) FROM reviews WHERE boat_id = $1 AND status = 'approved' AND COALESCE(spam,false) = false),
-                     reviews_count = (SELECT COUNT(*) FROM reviews WHERE boat_id = $1 AND status = 'approved' AND COALESCE(spam,false) = false)
-                 WHERE id = $1`,
-                [review.boat_id]
-            );
-        }
+        // При любом изменении отзыва пересчитываем рейтинг и количество отзывов катера
+        await pool.query(
+            `UPDATE boats
+             SET rating = COALESCE((SELECT ROUND(AVG(rating)::numeric, 2) FROM reviews WHERE boat_id = $1 AND status = 'approved' AND COALESCE(spam,false) = false), 0),
+                 reviews_count = COALESCE((SELECT COUNT(*)::int FROM reviews WHERE boat_id = $1 AND status = 'approved' AND COALESCE(spam,false) = false), 0)
+             WHERE id = $1`,
+            [review.boat_id]
+        );
 
         res.json(review);
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.delete('/reviews/:id', async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const { rows } = await pool.query('SELECT boat_id FROM reviews WHERE id = $1', [id]);
+        if (rows.length === 0) return res.status(404).json({ error: 'Отзыв не найден' });
+        const boatId = rows[0].boat_id;
+
+        await pool.query('DELETE FROM reviews WHERE id = $1', [id]);
+
+        await pool.query(
+            `UPDATE boats
+             SET rating = COALESCE((SELECT ROUND(AVG(rating)::numeric, 2) FROM reviews WHERE boat_id = $1 AND status = 'approved' AND COALESCE(spam,false) = false), 0),
+                 reviews_count = COALESCE((SELECT COUNT(*)::int FROM reviews WHERE boat_id = $1 AND status = 'approved' AND COALESCE(spam,false) = false), 0)
+             WHERE id = $1`,
+            [boatId]
+        );
+
+        res.status(204).send();
     } catch (err) {
         next(err);
     }
