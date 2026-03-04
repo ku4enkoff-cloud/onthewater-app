@@ -50,20 +50,14 @@ const BOAT_CARD_W = width * 0.78;
 
 const PLACEHOLDER_IMG = 'https://placehold.co/400x300/e2e8f0/64748b?text=';
 
-function DestinationImage({ uri, style, refreshKey }) {
+function DestinationImage({ uri, style, refreshKey: _ }) {
     const [failed, setFailed] = React.useState(false);
-    const src = !uri ? null : uri.includes('/uploads/') ? `${uri}${uri.includes('?') ? '&' : '?'}_=${refreshKey}` : uri;
+    const src = !uri ? null : uri;
     React.useEffect(() => setFailed(false), [uri]);
     const displayUri = failed || !src ? PLACEHOLDER_IMG + encodeURIComponent('Фото') : src;
     return (
         <Image
-            key={`${displayUri}-${refreshKey}`}
-            source={{
-                uri: displayUri,
-                ...(src?.includes('/uploads/') && !failed && {
-                    headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
-                }),
-            }}
+            source={{ uri: displayUri }}
             style={style}
             onError={() => setFailed(true)}
         />
@@ -77,7 +71,7 @@ export default function SearchScreen({ navigation }) {
     const [boatCategories, setBoatCategories] = useState([]);
     const [destinations, setDestinations] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
-    const [refreshKey, setRefreshKey] = useState(0);
+    const refreshKey = 0; // оставлено для совместимости (не меняем — без моргания картинок)
     const [locationModalVisible, setLocationModalVisible] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState(null);
 
@@ -128,7 +122,7 @@ export default function SearchScreen({ navigation }) {
         useCallback(() => {
             fetchBoats();
             fetchBoatCategories();
-            fetchDestinations().then(() => setRefreshKey((k) => k + 1));
+            fetchDestinations();
         }, [fetchBoats, fetchBoatCategories, fetchDestinations])
     );
 
@@ -137,7 +131,7 @@ export default function SearchScreen({ navigation }) {
             if (state === 'active') {
                 fetchBoats();
                 fetchBoatCategories();
-                fetchDestinations().then(() => setRefreshKey((k) => k + 1));
+                fetchDestinations();
             }
         });
         return () => sub.remove();
@@ -146,7 +140,6 @@ export default function SearchScreen({ navigation }) {
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
         await Promise.all([fetchBoats(), fetchBoatCategories(), fetchDestinations()]);
-        setRefreshKey((k) => k + 1);
         setRefreshing(false);
     }, [fetchBoats, fetchBoatCategories, fetchDestinations]);
 

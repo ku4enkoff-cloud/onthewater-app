@@ -126,6 +126,18 @@ export default function App() {
     if (fontsLoaded) await SplashScreen.hideAsync();
   }, [fontsLoaded]);
 
+  // Гарантированно скрыть сплэш после загрузки шрифтов (onLayout иногда не срабатывает — остаётся "Bundling 100%")
+  useEffect(() => {
+    if (!fontsLoaded) return;
+    const hide = async () => {
+      try {
+        await SplashScreen.hideAsync();
+      } catch (_) {}
+    };
+    const t = setTimeout(hide, 100);
+    return () => clearTimeout(t);
+  }, [fontsLoaded]);
+
   if (!fontsLoaded) return null;
 
   return (
