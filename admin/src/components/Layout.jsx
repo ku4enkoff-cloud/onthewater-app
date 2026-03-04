@@ -35,6 +35,9 @@ export default function Layout() {
           <NavLink to="/admin/bookings" className={({ isActive }) => (isActive ? styles.linkActive : styles.link)}>
             Бронирования
           </NavLink>
+          <NavLink to="/admin/reviews" className={({ isActive }) => (isActive ? styles.linkActive : styles.link)}>
+            Отзывы
+          </NavLink>
         </nav>
         <button type="button" className={styles.logout} onClick={handleLogout}>
           Выйти

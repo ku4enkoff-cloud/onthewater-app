@@ -9,6 +9,7 @@ import Boats from './pages/Boats';
 import BoatTypes from './pages/BoatTypes';
 import Destinations from './pages/Destinations';
 import Bookings from './pages/Bookings';
+import Reviews from './pages/Reviews';
 
 function RequireAuth({ children }) {
   const token = getToken();
@@ -37,6 +38,7 @@ export default function App() {
         <Route path="boat-types" element={<BoatTypes />} />
         <Route path="destinations" element={<Destinations />} />
         <Route path="bookings" element={<Bookings />} />
+        <Route path="reviews" element={<Reviews />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
