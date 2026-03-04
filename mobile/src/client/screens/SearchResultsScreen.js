@@ -26,6 +26,7 @@ import PriceFilterModal from '../components/PriceFilterModal';
 import PassengersFilterModal from '../components/PassengersFilterModal';
 import DurationFilterModal from '../components/DurationFilterModal';
 import BoatTypeFilterModal from '../components/BoatTypeFilterModal';
+import LocationDateModal from '../components/LocationDateModal';
 
 const NAVY = '#1B365D';
 
@@ -118,6 +119,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     const [passengersModalVisible, setPassengersModalVisible] = useState(false);
     const [durationModalVisible, setDurationModalVisible] = useState(false);
     const [boatTypeModalVisible, setBoatTypeModalVisible] = useState(false);
+    const [locationDateModalVisible, setLocationDateModalVisible] = useState(false);
     const [filters, setFilters] = useState(DEFAULT_FILTERS);
     const [mapModalVisible, setMapModalVisible] = useState(false);
     const [mapBoats, setMapBoats] = useState([]);
@@ -529,13 +531,7 @@ export default function SearchResultsScreen({ route, navigation }) {
 
                 <TouchableOpacity
                     style={styles.headerBubble}
-                    onPress={() => navigation.navigate('CityBoats', {
-                        cityName: cityName || undefined,
-                        dateISO,
-                        useMyLocation: !!useMyLocation,
-                        boatTypeId,
-                        boatTypeName,
-                    })}
+                    onPress={() => setLocationDateModalVisible(true)}
                     activeOpacity={0.8}
                 >
                     <View>
@@ -545,6 +541,51 @@ export default function SearchResultsScreen({ route, navigation }) {
                     <ChevronDown size={20} color={NAVY} />
                 </TouchableOpacity>
             </View>
+
+            {/* Boat types row (под городом и датой) */}
+            {boatTypes.length > 0 && (
+                <View style={styles.boatTypesRow}>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.boatTypesContent}
+                    >
+                        {boatTypes.map((t) => {
+                            const isSelected =
+                                String(filters.boatTypeId) === String(t.id) ||
+                                (filters.boatTypeName && (filters.boatTypeName || '').toLowerCase() === (t.name || '').toLowerCase());
+                            return (
+                                <TouchableOpacity
+                                    key={t.id}
+                                    style={[styles.boatTypeCard, isSelected && styles.boatTypeCardSelected]}
+                                    onPress={() =>
+                                        setFilters((prev) =>
+                                            isSelected
+                                                ? { ...prev, boatTypeId: null, boatTypeName: null }
+                                                : {
+                                                      ...prev,
+                                                      boatTypeId: t.id,
+                                                      boatTypeName: t.name,
+                                                  }
+                                        )
+                                    }
+                                    activeOpacity={0.7}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.boatTypeCardText,
+                                            isSelected && styles.boatTypeCardTextSelected,
+                                        ]}
+                                        numberOfLines={1}
+                                    >
+                                        {t.name}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                </View>
+            )}
 
             {/* Filter chips row */}
             <View style={styles.filtersContainer}>
@@ -641,31 +682,6 @@ export default function SearchResultsScreen({ route, navigation }) {
                     ) : (
                         <FilterChip label="Длительность" onPress={() => setDurationModalVisible(true)} />
                     )}
-                    {isBoatTypeFilterActive ? (
-                        <TouchableOpacity
-                            style={styles.priceChipActive}
-                            activeOpacity={0.7}
-                            onPress={() => setBoatTypeModalVisible(true)}
-                        >
-                            <Text style={styles.priceChipActiveText} numberOfLines={1}>
-                                {filters.boatTypeName || 'Тип'}
-                            </Text>
-                            <TouchableOpacity
-                                hitSlop={8}
-                                onPress={(e) => {
-                                    e.stopPropagation();
-                                    setFilters((prev) => ({ ...prev, boatTypeId: null, boatTypeName: null }));
-                                }}
-                            >
-                                <X size={14} color={NAVY} />
-                            </TouchableOpacity>
-                        </TouchableOpacity>
-                    ) : (
-                        <FilterChip
-                            label="Тип катера"
-                            onPress={() => setBoatTypeModalVisible(true)}
-                        />
-                    )}
                 </ScrollView>
             </View>
 
@@ -709,6 +725,22 @@ export default function SearchResultsScreen({ route, navigation }) {
                 boatTypeName={filters.boatTypeName}
                 boatTypes={boatTypes}
                 onApply={(p) => setFilters((prev) => ({ ...prev, ...p }))}
+            />
+            <LocationDateModal
+                visible={locationDateModalVisible}
+                onClose={() => setLocationDateModalVisible(false)}
+                initialCity={cityName || 'Москва'}
+                initialUseLocation={!!useMyLocation}
+                initialDateISO={dateISO}
+                onApply={({ cityName: newCity, useMyLocation: newUseLoc, dateISO: newDateISO }) => {
+                    navigation.replace('SearchResults', {
+                        cityName: newUseLoc ? null : newCity,
+                        useMyLocation: newUseLoc,
+                        dateISO: newDateISO,
+                        boatTypeId,
+                        boatTypeName,
+                    });
+                }}
             />
 
             {/* Boat list */}
@@ -924,6 +956,39 @@ const styles = StyleSheet.create({
         fontFamily: theme.fonts.regular,
         color: theme.colors.textMuted,
         marginTop: 1,
+    },
+
+    /* ---- Boat types row (под городом и датой) ---- */
+    boatTypesRow: {
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.border,
+    },
+    boatTypesContent: {
+        paddingHorizontal: theme.spacing.md,
+        paddingVertical: 8,
+        paddingRight: theme.spacing.lg,
+    },
+    boatTypeCard: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#F3F4F6',
+        borderRadius: 12,
+        paddingVertical: 8,
+        paddingHorizontal: 14,
+        marginRight: 10,
+    },
+    boatTypeCardSelected: {
+        backgroundColor: NAVY,
+    },
+    boatTypeCardText: {
+        fontSize: 13,
+        fontFamily: theme.fonts.medium,
+        color: theme.colors.gray700,
+        textAlign: 'center',
+    },
+    boatTypeCardTextSelected: {
+        color: '#fff',
     },
 
     /* ---- Filter chips ---- */

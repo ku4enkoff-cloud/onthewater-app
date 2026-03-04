@@ -240,7 +240,7 @@ export default function SearchScreen({ navigation }) {
                 <View style={styles.searchBarWrap}>
                     <TouchableOpacity
                         style={styles.searchBar}
-                        onPress={() => navigation.navigate('LocationSelect')}
+                        onPress={() => setLocationModalVisible(true)}
                         activeOpacity={0.9}
                     >
                         <Search size={20} color={NAVY} />
