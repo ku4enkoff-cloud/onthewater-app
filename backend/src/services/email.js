@@ -46,6 +46,7 @@ async function sendVerificationEmail(to, userName, token) {
             text,
             html,
         });
+        console.log('[email] Письмо подтверждения отправлено на', to);
         return true;
     } catch (err) {
         console.error('[email] Ошибка отправки письма:', err.message);
