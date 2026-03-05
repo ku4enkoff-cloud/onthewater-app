@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     guestTitle: { fontSize: 28, fontFamily: theme.fonts.bold, color: theme.colors.gray900, marginBottom: 8 },
     guestSubtitle: { ...theme.typography.body, color: theme.colors.gray500, textAlign: 'center' },
     loginButton: { backgroundColor: theme.colors.primary, paddingVertical: 14, borderRadius: theme.borderRadius.xl, alignItems: 'center', marginBottom: theme.spacing.sm },
-    loginButtonText: { color: theme.colors.dark, fontSize: 16, fontFamily: theme.fonts.bold },
+    loginButtonText: { color: '#fff', fontSize: 16, fontFamily: theme.fonts.bold },
     registerButton: { backgroundColor: 'transparent', paddingVertical: 14, borderRadius: theme.borderRadius.xl, alignItems: 'center', borderWidth: 1, borderColor: theme.colors.primary, marginBottom: theme.spacing.xl },
     registerButtonText: { color: theme.colors.primary, fontSize: 16, fontFamily: theme.fonts.semiBold },
 });
