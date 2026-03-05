@@ -1,4 +1,4 @@
-// WaveRentals — Boatsetter-style palette
+// ONTHEWATER — Boatsetter-style palette
 const fonts = {
     light: 'Jost_300Light',
     regular: 'Jost_400Regular',

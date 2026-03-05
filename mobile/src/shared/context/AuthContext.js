@@ -67,8 +67,8 @@ export const AuthProvider = ({ children }) => {
         }
         if (user.role !== requiredRole) {
             throw new Error(requiredRole === 'owner'
-                ? 'Это приложение только для владельцев судов. Используйте клиентское приложение BoatRent.'
-                : 'Это приложение для клиентов. Владельцам нужно приложение BoatRent для владельцев.');
+                ? 'Это приложение только для владельцев судов. Используйте клиентское приложение ONTHEWATER.'
+                : 'Это приложение для клиентов. Владельцам нужно приложение ONTHEWATER для владельцев.');
         }
         await AsyncStorage.setItem('@token', token);
         setUser(user);
