@@ -7,6 +7,8 @@ const transporter = nodemailer.createTransport({
     auth: process.env.SMTP_USER && process.env.SMTP_PASS
         ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
         : undefined,
+    connectionTimeout: parseInt(process.env.SMTP_CONNECTION_TIMEOUT, 10) || 20000,
+    greetingTimeout: 10000,
 });
 
 const FROM = process.env.MAIL_FROM || process.env.SMTP_USER || 'noreply@onthewater.ru';
