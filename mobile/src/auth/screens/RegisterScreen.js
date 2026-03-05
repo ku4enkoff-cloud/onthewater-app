@@ -104,8 +104,9 @@ export default function RegisterScreen({ navigation, route }) {
                 [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
             );
         } catch (e) {
-            const msg = e.response?.data?.error
-                || (e.message?.includes('Network') ? 'Нет связи с сервером. Проверьте подключение.' : 'Произошла ошибка');
+            const data = e.response?.data || {};
+            let msg = data.error || (e.message?.includes('Network') ? 'Нет связи с сервером. Проверьте подключение.' : 'Произошла ошибка');
+            if (data.detail && typeof data.detail === 'string') msg += '\n\n' + data.detail;
             Alert.alert('Ошибка регистрации', msg);
         } finally {
             setLoading(false);
