@@ -42,7 +42,7 @@ export default function RegisterScreen({ navigation, route }) {
                 <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
                     <Text style={[theme.typography.h1, { marginBottom: 8 }]}>Создать аккаунт</Text>
                     <Text style={[theme.typography.body, { color: theme.colors.textMuted, marginBottom: 32 }]}>
-                        {appVariant === 'owner' ? 'Регистрация для владельцев судов' : 'Присоединяйтесь к BoatRent'}
+                        {appVariant === 'owner' ? 'Регистрация для владельцев судов' : 'Присоединяйтесь к ONTHEWATER'}
                     </Text>
                     <View style={styles.inputContainer}>
                         <Text style={styles.label}>Имя</Text>

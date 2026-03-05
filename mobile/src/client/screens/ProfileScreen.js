@@ -32,7 +32,7 @@ export default function ProfileScreen({ navigation }) {
                 <TouchableOpacity style={styles.registerButton} onPress={() => navigation.navigate('Register', { fromProfile: true })}>
                     <Text style={styles.registerButtonText}>Регистрация</Text>
                 </TouchableOpacity>
-                <View style={styles.versionContainer}><Text style={styles.versionText}>WaveRentals v1.0.0</Text></View>
+                <View style={styles.versionContainer}><Text style={styles.versionText}>ONTHEWATER v1.0.0</Text></View>
             </ScrollView>
         );
     }
@@ -98,7 +98,7 @@ export default function ProfileScreen({ navigation }) {
                 <LogOut size={20} color={theme.colors.error} />
                 <Text style={styles.logoutText}>Выйти</Text>
             </TouchableOpacity>
-            <View style={styles.versionContainer}><Text style={styles.versionText}>WaveRentals v1.0.0</Text></View>
+            <View style={styles.versionContainer}><Text style={styles.versionText}>ONTHEWATER v1.0.0</Text></View>
         </ScrollView>
     );
 }

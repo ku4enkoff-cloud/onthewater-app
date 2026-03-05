@@ -27,7 +27,7 @@
       "permissions": [
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.anonymous.boatrent"
+      "package": "com.anonymous.onthewater"
     },
     "web": {
       "favicon": "./assets/favicon.png"

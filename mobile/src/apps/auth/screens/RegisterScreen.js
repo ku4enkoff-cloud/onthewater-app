@@ -39,7 +39,7 @@ export default function RegisterScreen({ navigation }) {
                 <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
                     <Text style={[theme.typography.h1, { marginBottom: 8 }]}>Создать аккаунт</Text>
                     <Text style={[theme.typography.body, { color: theme.colors.textMuted, marginBottom: 32 }]}>
-                        Присоединяйтесь к сообществу BoatRent
+                        Присоединяйтесь к сообществу ONTHEWATER
                     </Text>
 
                     <View style={styles.inputContainer}>

@@ -9,7 +9,7 @@ export default function AppSplashScreen() {
     <View style={styles.container}>
       <View style={styles.content}>
         <Image source={logo} style={styles.logo} resizeMode="contain" />
-        <Text style={styles.title}>BoatRent</Text>
+        <Text style={styles.title}>ONTHEWATER</Text>
         <Text style={styles.subtitle}>Аренда яхт и катеров</Text>
       </View>
       <ActivityIndicator size="large" color="#FFFFFF" style={styles.loader} />

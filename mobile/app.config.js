@@ -6,7 +6,7 @@ const isOwner = variant === 'owner';
 
 export default {
   expo: {
-    name: isOwner ? 'BoatRent для владельцев' : 'BoatRent',
+    name: isOwner ? 'ONTHEWATER для владельцев' : 'ONTHEWATER',
     slug: isOwner ? 'boatrent-owner' : 'boatrent',
     version: '1.0.0',
     orientation: 'portrait',
@@ -23,7 +23,7 @@ export default {
         foregroundImage: './assets/adaptive-icon.png',
         backgroundColor: '#ffffff',
       },
-      package: isOwner ? 'com.anonymous.boatrent.owner' : 'com.anonymous.boatrent',
+      package: isOwner ? 'com.anonymous.onthewater.owner' : 'com.anonymous.onthewater',
     },
     config: {
       googleMaps: { apiKey: 'YOUR_YANDEX_MAPS_OR_GOOGLE_MAPS_API_KEY_HERE' },

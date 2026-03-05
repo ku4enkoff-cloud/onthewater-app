@@ -139,7 +139,7 @@ export default function ProfileScreen() {
             {/* Версия приложения */}
             <View style={styles.versionContainer}>
                 <Text style={[theme.typography.caption, { color: theme.colors.textMuted }]}>
-                    BoatRent v1.0.0
+                    ONTHEWATER v1.0.0
                 </Text>
             </View>
         </ScrollView>
