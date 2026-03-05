@@ -10,7 +10,7 @@
  */
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
-const { sendVerificationEmail } = require('../src/services/email');
+const { sendVerificationEmail, verifyConnection } = require('../src/services/email');
 
 const to = process.argv[2] || process.env.SMTP_USER;
 if (!to) {
@@ -19,6 +19,17 @@ if (!to) {
 }
 
 async function run() {
+    console.log('SMTP:', process.env.SMTP_HOST || 'smtp.gmail.com', ':', process.env.SMTP_PORT || 587);
+    console.log('Подключение к SMTP...');
+    try {
+        await verifyConnection();
+        console.log('Подключение к SMTP успешно.');
+    } catch (e) {
+        console.error('Ошибка подключения к SMTP:', e.message);
+        if (e.code) console.error('Код:', e.code);
+        if (e.response) console.error('Ответ:', e.response);
+        process.exit(1);
+    }
     console.log('Отправка тестового письма на', to, '...');
     const token = 'test-token-' + Date.now();
     const sent = await sendVerificationEmail(to, 'Тестовый пользователь', token);
