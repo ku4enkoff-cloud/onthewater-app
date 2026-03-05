@@ -30,6 +30,10 @@ async function migrate() {
                 UPDATE users SET password_hash = crypt(password, gen_salt('bf')) WHERE password IS NOT NULL
             `).catch(() => {});
         }
+        // Чтобы регистрация работала только с password_hash: колонка password может быть NULL
+        if (hasPass) {
+            await client.query(`ALTER TABLE users ALTER COLUMN password DROP NOT NULL`).catch(() => {});
+        }
 
         await client.query(`
             CREATE TABLE IF NOT EXISTS users (
