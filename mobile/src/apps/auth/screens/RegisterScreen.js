@@ -4,25 +4,89 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthContext } from '../../../context/AuthContext';
 import { theme } from '../../../theme';
 
+function formatPhoneRu(value) {
+    const digits = (value || '').replace(/\D/g, '');
+    let d = digits;
+    if (d.startsWith('8')) d = '7' + d.slice(1);
+    else if (d && !d.startsWith('7')) d = '7' + d;
+    if (d.length <= 1) return d ? '+7' + (d.length > 1 ? ' (' : '') : '';
+    if (d.length <= 4) return '+7 (' + d.slice(1);
+    if (d.length <= 7) return '+7 (' + d.slice(1, 4) + ') ' + d.slice(4);
+    if (d.length <= 9) return '+7 (' + d.slice(1, 4) + ') ' + d.slice(4, 7) + '-' + d.slice(7);
+    return '+7 (' + d.slice(1, 4) + ') ' + d.slice(4, 7) + '-' + d.slice(7, 9) + '-' + d.slice(9, 11);
+}
+function getPhoneDigits(phone) {
+    let d = (phone || '').replace(/\D/g, '');
+    if (d.startsWith('8')) d = '7' + d.slice(1);
+    else if (d && !d.startsWith('7')) d = '7' + d;
+    return d;
+}
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function isValidEmail(str) {
+    return typeof str === 'string' && EMAIL_REGEX.test(str.trim());
+}
+
 export default function RegisterScreen({ navigation }) {
     const { register } = useContext(AuthContext);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
-    const [role, setRole] = useState('client'); // client или owner
+    const [passwordRepeat, setPasswordRepeat] = useState('');
+    const [role, setRole] = useState('client');
     const [loading, setLoading] = useState(false);
 
-    const handleRegister = async () => {
-        if (!name || !email || !phone || !password) {
-            Alert.alert('Ошибка', 'Заполните все поля');
-            return;
-        }
+    const handlePhoneChange = (text) => setPhone(formatPhoneRu(text));
 
+    const validate = () => {
+        const nameTrim = (name || '').trim();
+        if (!nameTrim) {
+            Alert.alert('Ошибка', 'Введите имя');
+            return false;
+        }
+        if (nameTrim.length < 2) {
+            Alert.alert('Ошибка', 'Имя должно содержать не менее 2 символов');
+            return false;
+        }
+        if (!email.trim()) {
+            Alert.alert('Ошибка', 'Введите email');
+            return false;
+        }
+        if (!isValidEmail(email)) {
+            Alert.alert('Ошибка', 'Введите корректный email (например, name@example.com)');
+            return false;
+        }
+        const digits = getPhoneDigits(phone);
+        if (digits.length < 11) {
+            Alert.alert('Ошибка', 'Введите полный номер телефона (+7 XXX XXX-XX-XX)');
+            return false;
+        }
+        if (!password) {
+            Alert.alert('Ошибка', 'Введите пароль');
+            return false;
+        }
+        if (password.length < 6) {
+            Alert.alert('Ошибка', 'Пароль должен быть не менее 6 символов');
+            return false;
+        }
+        if (password !== passwordRepeat) {
+            Alert.alert('Ошибка', 'Пароли не совпадают');
+            return false;
+        }
+        return true;
+    };
+
+    const handleRegister = async () => {
+        if (!validate()) return;
         setLoading(true);
         try {
-            await register({ name, email, phone, password, role });
-            // После успешной регистрации RootNavigator сам переключит интерфейс
+            await register({
+                name: name.trim(),
+                email: email.trim().toLowerCase(),
+                phone: getPhoneDigits(phone),
+                password,
+                role,
+            });
         } catch (e) {
             Alert.alert('Ошибка регистрации', e.response?.data?.error || 'Произошла неизвестная ошибка');
         } finally {
@@ -56,11 +120,12 @@ export default function RegisterScreen({ navigation }) {
                         <Text style={styles.label}>Email</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="Ваш email"
+                            placeholder="example@mail.ru"
                             value={email}
                             onChangeText={setEmail}
                             autoCapitalize="none"
                             keyboardType="email-address"
+                            autoComplete="email"
                         />
                     </View>
 
@@ -68,10 +133,11 @@ export default function RegisterScreen({ navigation }) {
                         <Text style={styles.label}>Телефон</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="Ваш номер телефона"
+                            placeholder="+7 (999) 123-45-67"
                             value={phone}
-                            onChangeText={setPhone}
+                            onChangeText={handlePhoneChange}
                             keyboardType="phone-pad"
+                            maxLength={18}
                         />
                     </View>
 
@@ -83,6 +149,19 @@ export default function RegisterScreen({ navigation }) {
                             value={password}
                             onChangeText={setPassword}
                             secureTextEntry
+                            autoComplete="new-password"
+                        />
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Повторите пароль</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Повторите пароль"
+                            value={passwordRepeat}
+                            onChangeText={setPasswordRepeat}
+                            secureTextEntry
+                            autoComplete="new-password"
                         />
                     </View>
 
