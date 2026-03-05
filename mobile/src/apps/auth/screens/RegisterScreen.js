@@ -80,13 +80,22 @@ export default function RegisterScreen({ navigation }) {
         if (!validate()) return;
         setLoading(true);
         try {
-            await register({
+            const res = await register({
                 name: name.trim(),
                 email: email.trim().toLowerCase(),
                 phone: getPhoneDigits(phone),
                 password,
                 role,
             });
+            const data = res?.data || {};
+            if (data.token && data.user) {
+                return;
+            }
+            Alert.alert(
+                'Регистрация выполнена',
+                data.message || 'На указанный email отправлено письмо со ссылкой для подтверждения. После перехода по ссылке войдите в приложение.',
+                [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+            );
         } catch (e) {
             Alert.alert('Ошибка регистрации', e.response?.data?.error || 'Произошла неизвестная ошибка');
         } finally {
