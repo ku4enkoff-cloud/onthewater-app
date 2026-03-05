@@ -22,7 +22,8 @@ export default function Login() {
       window.location.href = '/panel/admin';
     } catch (err) {
       const msg = err.response?.data?.error || (err.response ? 'Ошибка входа' : 'Нет связи с сервером. Проверьте адрес API (VITE_API_URL).');
-      setError(msg);
+      const status = err.response?.status;
+      setError(status ? `${msg} (${status})` : msg);
     } finally {
       setLoading(false);
     }
