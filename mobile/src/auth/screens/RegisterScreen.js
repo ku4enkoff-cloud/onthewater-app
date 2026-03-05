@@ -100,7 +100,7 @@ export default function RegisterScreen({ navigation, route }) {
             }
             Alert.alert(
                 'Регистрация выполнена',
-                data.message || 'На указанный email отправлено письмо со ссылкой для подтверждения. После перехода по ссылке войдите в приложение.',
+                data.message || 'Аккаунт создан. Войдите в приложение.',
                 [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
             );
         } catch (e) {

@@ -1,4 +1,3 @@
-const crypto = require('crypto');
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const { pool } = require('../db');
@@ -7,11 +6,8 @@ const { authLimiter } = require('../middleware/rateLimiter');
 const { registerSchema, loginSchema } = require('../schemas');
 const { generateToken } = require('../utils/jwt');
 const { authenticate } = require('../middleware/auth');
-const { sendVerificationEmail } = require('../services/email');
 
 const router = express.Router();
-
-const VERIFY_TOKEN_EXPIRES_HOURS = 24;
 
 router.post('/register', authLimiter, validate(registerSchema), async (req, res, next) => {
     const { email, phone, password, name, role } = req.body;
@@ -26,32 +22,27 @@ router.post('/register', authLimiter, validate(registerSchema), async (req, res,
 
             const salt = await bcrypt.genSalt(10);
             const hash = await bcrypt.hash(password, salt);
-            const verifyToken = crypto.randomBytes(32).toString('hex');
-            const expiresAt = new Date(Date.now() + VERIFY_TOKEN_EXPIRES_HOURS * 60 * 60 * 1000);
 
             const result = await client.query(
                 `INSERT INTO users (email, phone, password_hash, name, role, email_verified, email_verify_token, email_verify_expires_at) 
-                 VALUES ($1, $2, $3, $4, $5, FALSE, $6, $7) 
-                 RETURNING id, email, name, role`,
-                [email, phone || null, hash, name || email.split('@')[0], role || 'client', verifyToken, expiresAt]
+                 VALUES ($1, $2, $3, $4, $5, TRUE, NULL, NULL) 
+                 RETURNING id, email, name, role, first_name, last_name, phone`,
+                [email, phone || null, hash, name || email.split('@')[0], role || 'client']
             );
 
             const user = result.rows[0];
-            const sent = await sendVerificationEmail(user.email, user.name, verifyToken);
-            if (!sent) {
-                console.warn('[auth] Не удалось отправить письмо подтверждения на', user.email);
-            }
+            const token = generateToken({ id: user.id, role: user.role });
 
             res.status(201).json({
-                message: 'Аккаунт создан. Подтвердите почту — на указанный email отправлено письмо со ссылкой.',
-                email: user.email,
+                message: 'Аккаунт создан.',
+                token,
+                user,
             });
         } finally {
             client.release();
         }
     } catch (err) {
         console.error('[auth/register]', err.code, err.message, err.detail || '');
-        // Колонки email_verified, email_verify_token, email_verify_expires_at добавляются миграцией
         const code = err.code || '';
         const msg = (err.message || '').toLowerCase();
         if (code === '42703' || msg.includes('email_verified') || msg.includes('email_verify_token')) {
@@ -118,13 +109,6 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res, next)
 
         if (!isMatch) {
             return res.status(401).json({ error: 'Неверный логин или пароль' });
-        }
-
-        if (user.email_verified === false) {
-            return res.status(403).json({
-                error: 'Подтвердите почту. На указанный при регистрации email отправлено письмо со ссылкой для активации аккаунта.',
-                code: 'EMAIL_NOT_VERIFIED',
-            });
         }
 
         const token = generateToken({ id: user.id, role: user.role });
