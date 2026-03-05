@@ -49,9 +49,16 @@ async function sendVerificationEmail(to, userName, token) {
         console.log('[email] Письмо подтверждения отправлено на', to);
         return true;
     } catch (err) {
-        console.error('[email] Ошибка отправки письма:', err.message);
+        const detail = err.response || err.responseCode || err.code || '';
+        console.error('[email] Ошибка отправки письма:', err.message, detail ? String(detail) : '');
+        if (err.response) console.error('[email] Ответ сервера:', err.response);
         return false;
     }
 }
 
-module.exports = { sendVerificationEmail };
+/** Проверить подключение к SMTP (для отладки). Возвращает true или бросает ошибку. */
+async function verifyConnection() {
+    await transporter.verify();
+}
+
+module.exports = { sendVerificationEmail, verifyConnection };
