@@ -72,7 +72,15 @@ function ClientRoot() {
     return () => { cancelled = true; clearTimeout(t); };
   }, []);
 
-  // Страховка: если "Загрузка..." висит дольше 5 сек — показываем приложение (хуки всегда в одном порядке)
+  // Если дольше 2.5 сек висим на экране ONTHEWATER — принудительно переходим дальше
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setOnboardingDone((prev) => (prev === null ? false : prev));
+    }, 2500);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Страховка: если "Загрузка..." висит дольше 5 сек — показываем приложение
   useEffect(() => {
     if (!loading) return;
     const t = setTimeout(() => setLoadingTimedOut(true), 5000);
@@ -87,6 +95,7 @@ function ClientRoot() {
     setOnboardingDone(true);
   };
 
+  // Ожидание чтения onboarding из AsyncStorage (макс. 2.5 сек), иначе не скрыть сплэш в эмуляторе
   if (onboardingDone === null) {
     return <AppSplashScreen />;
   }
@@ -111,10 +120,17 @@ function ClientRoot() {
   );
 }
 
+const FONT_LOAD_TIMEOUT_MS = 6000;
+
 export default function App() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+    const done = () => {
+      if (!cancelled) setFontsLoaded(true);
+    };
+    const timeout = setTimeout(done, FONT_LOAD_TIMEOUT_MS);
     Font.loadAsync({
       Jost_300Light,
       Jost_400Regular,
@@ -122,18 +138,26 @@ export default function App() {
       Jost_600SemiBold,
       Jost_700Bold,
     })
-      .then(() => setFontsLoaded(true))
+      .then(done)
       .catch((e) => {
         console.warn('Font load error', e);
-        setFontsLoaded(true); // чтобы не зависнуть на сплэше при ошибке шрифтов
+        done();
       });
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
   }, []);
 
   const onLayoutRootView = useCallback(async () => {
-    if (fontsLoaded) await SplashScreen.hideAsync();
+    if (fontsLoaded) {
+      try {
+        await SplashScreen.hideAsync();
+      } catch (_) {}
+    }
   }, [fontsLoaded]);
 
-  // Гарантированно скрыть сплэш после загрузки шрифтов (onLayout иногда не срабатывает — остаётся "Bundling 100%")
+  // Скрыть нативный сплэш после загрузки шрифтов или по таймауту (в эмуляторе загрузка может зависнуть)
   useEffect(() => {
     if (!fontsLoaded) return;
     const hide = async () => {
@@ -141,9 +165,19 @@ export default function App() {
         await SplashScreen.hideAsync();
       } catch (_) {}
     };
-    const t = setTimeout(hide, 100);
+    const t = setTimeout(hide, 150);
     return () => clearTimeout(t);
   }, [fontsLoaded]);
+
+  // Принудительно скрыть нативный сплэш через 2.5 сек (в эмуляторе часто зависает на "Bundling 100%")
+  useEffect(() => {
+    const t = setTimeout(async () => {
+      try {
+        await SplashScreen.hideAsync();
+      } catch (_) {}
+    }, 2500);
+    return () => clearTimeout(t);
+  }, []);
 
   // Не показывать чёрный экран: пока грузятся шрифты — фон как у сплэша
   if (!fontsLoaded) {

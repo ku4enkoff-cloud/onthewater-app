@@ -15,7 +15,8 @@
     "ios": "expo run:ios",
     "ios:owner": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner expo run:ios",
     "web": "expo start --web",
-    "log:android": "node scripts/adb-logcat.js"
+    "log:android": "node scripts/adb-logcat.js",
+    "apk": "cd android && .\\gradlew assembleRelease"
   },
   "dependencies": {
     "@expo-google-fonts/jost": "^0.4.2",
