@@ -81,7 +81,12 @@ app.use((req, res) => {
 
 app.use((err, req, res, next) => {
     console.error('[Global Error]', err.stack);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    const showDetail = process.env.NODE_ENV !== 'production' || process.env.EXPOSE_ERROR_DETAIL === '1';
+    const detail = showDetail && err.message ? err.message : null;
+    res.status(500).json({
+        error: 'Внутренняя ошибка сервера',
+        ...(detail && { detail }),
+    });
 });
 
 const PORT = process.env.PORT || 3000;

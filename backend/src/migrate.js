@@ -52,10 +52,12 @@ async function migrate() {
             )
         `);
 
-        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE`).catch(() => {});
-        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verify_token VARCHAR(255)`).catch(() => {});
-        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verify_expires_at TIMESTAMPTZ`).catch(() => {});
+        console.log('Добавление колонок подтверждения email...');
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE`);
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verify_token VARCHAR(255)`);
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verify_expires_at TIMESTAMPTZ`);
         await client.query(`UPDATE users SET email_verified = TRUE WHERE email_verified IS NULL`).catch(() => {});
+        console.log('Колонки email_verified добавлены.');
 
         await client.query(`
             CREATE TABLE IF NOT EXISTS boats (

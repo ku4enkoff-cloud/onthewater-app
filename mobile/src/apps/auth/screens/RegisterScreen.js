@@ -97,7 +97,10 @@ export default function RegisterScreen({ navigation }) {
                 [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
             );
         } catch (e) {
-            Alert.alert('Ошибка регистрации', e.response?.data?.error || 'Произошла неизвестная ошибка');
+            const data = e.response?.data || {};
+            let msg = data.error || 'Произошла неизвестная ошибка';
+            if (data.detail && typeof data.detail === 'string') msg += '\n\n' + data.detail;
+            Alert.alert('Ошибка регистрации', msg);
         } finally {
             setLoading(false);
         }
