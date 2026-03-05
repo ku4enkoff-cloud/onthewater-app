@@ -78,8 +78,11 @@ export const AuthProvider = ({ children }) => {
         const data = { ...regData };
         if (requiredRole === 'owner') data.role = 'owner';
         const res = await api.post('/auth/register', data);
-        await AsyncStorage.setItem('@token', res.data.token);
-        setUser(res.data.user);
+        if (res.data?.token && res.data?.user) {
+            await AsyncStorage.setItem('@token', res.data.token);
+            setUser(res.data.user);
+        }
+        return res;
     };
 
     const logout = async () => {

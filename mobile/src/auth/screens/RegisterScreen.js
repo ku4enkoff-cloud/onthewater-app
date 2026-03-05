@@ -86,16 +86,23 @@ export default function RegisterScreen({ navigation, route }) {
         setLoading(true);
         try {
             const phoneDigits = getPhoneDigits(phone);
-            await register({
+            const res = await register({
                 name: name.trim(),
                 email: email.trim().toLowerCase(),
                 phone: phoneDigits,
                 password,
                 role,
             });
-            if (navigation.canGoBack()) {
-                navigation.goBack();
+            const data = res?.data || {};
+            if (data.token && data.user) {
+                if (navigation.canGoBack()) navigation.goBack();
+                return;
             }
+            Alert.alert(
+                'Регистрация выполнена',
+                data.message || 'На указанный email отправлено письмо со ссылкой для подтверждения. После перехода по ссылке войдите в приложение.',
+                [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+            );
         } catch (e) {
             const msg = e.response?.data?.error
                 || (e.message?.includes('Network') ? 'Нет связи с сервером. Проверьте подключение.' : 'Произошла ошибка');
