@@ -50,6 +50,15 @@ router.post('/register', authLimiter, validate(registerSchema), async (req, res,
             client.release();
         }
     } catch (err) {
+        // Колонки email_verified, email_verify_token, email_verify_expires_at добавляются миграцией
+        const code = err.code || '';
+        const msg = (err.message || '').toLowerCase();
+        if (code === '42703' || msg.includes('email_verified') || msg.includes('email_verify_token')) {
+            console.error('[auth/register] Вероятно не выполнена миграция БД. Запустите: node src/migrate.js', err.message);
+            return res.status(500).json({
+                error: 'Ошибка настройки сервера. Администратору: выполните миграцию БД (node src/migrate.js).',
+            });
+        }
         next(err);
     }
 });
