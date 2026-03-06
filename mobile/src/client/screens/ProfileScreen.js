@@ -1,17 +1,18 @@
 import React, { useContext, useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert, Modal, FlatList, TextInput, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthContext } from '../../shared/context/AuthContext';
 import { FavoritesContext } from '../../shared/context/FavoritesContext';
+import * as ImagePicker from 'expo-image-picker';
 import { api } from '../../shared/infrastructure/api';
+import { getPhotoUrl } from '../../shared/infrastructure/config';
 import { theme } from '../../shared/theme';
 import { User, Settings, Heart, HelpCircle, LogOut, ChevronRight, Calendar, Star, Shield, FileText, Bell, X, Pencil, Trash2 } from 'lucide-react-native';
 
 export default function ProfileScreen({ navigation }) {
     const insets = useSafeAreaInsets();
-    const { user, logout } = useContext(AuthContext);
+    const { user, logout, refreshUser } = useContext(AuthContext);
     const { favoriteBoats } = useContext(FavoritesContext);
     const [loading, setLoading] = useState(false);
     const [completedTrips, setCompletedTrips] = useState(0);
@@ -23,6 +24,38 @@ export default function ProfileScreen({ navigation }) {
     const [editRating, setEditRating] = useState(5);
     const [editText, setEditText] = useState('');
     const [savingReview, setSavingReview] = useState(false);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+    const handlePickAvatar = useCallback(async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Доступ', 'Разрешите доступ к галерее для выбора фото.');
+            return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+        if (result.canceled || !result.assets?.[0]?.uri) return;
+        setUploadingAvatar(true);
+        try {
+            const uri = result.assets[0].uri;
+            const formData = new FormData();
+            formData.append('avatar', {
+                uri,
+                type: 'image/jpeg',
+                name: 'avatar.jpg',
+            });
+            await api.post('/auth/avatar', formData);
+            await refreshUser();
+        } catch (e) {
+            Alert.alert('Ошибка', e.response?.data?.error || 'Не удалось загрузить фото');
+        } finally {
+            setUploadingAvatar(false);
+        }
+    }, [refreshUser]);
 
     const handleLogout = async () => {
         Alert.alert('Выход', 'Вы действительно хотите выйти из аккаунта?', [
@@ -162,11 +195,18 @@ export default function ProfileScreen({ navigation }) {
 
     return (
         <>
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
-            <LinearGradient colors={['#1B365D', '#0F2341']} style={[styles.profileGradient, { height: 140 + insets.top }]} />
-            <View style={[styles.profileCard, { marginTop: -64 }]}>
+        <ScrollView style={styles.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingTop: insets.top + 16 }}>
+            <View style={styles.profileCard}>
                 <View style={styles.profileRow}>
-                    {user?.avatar ? <Image source={{ uri: user.avatar }} style={styles.avatar} /> : <View style={styles.avatarPlaceholder}><User size={40} color={theme.colors.gray500} /></View>}
+                    <TouchableOpacity onPress={handlePickAvatar} disabled={uploadingAvatar} style={styles.avatarTouch} activeOpacity={0.8}>
+                        {user?.avatar ? (
+                            <Image source={{ uri: getPhotoUrl(user.avatar) || user.avatar }} style={styles.avatar} />
+                        ) : (
+                            <View style={styles.avatarPlaceholder}>
+                                {uploadingAvatar ? <ActivityIndicator size="small" color={theme.colors.gray500} /> : <User size={40} color={theme.colors.gray500} />}
+                            </View>
+                        )}
+                    </TouchableOpacity>
                     <View style={styles.profileInfo}>
                         <Text style={styles.profileName}>{user?.name || 'Пользователь'}</Text>
                         <Text style={styles.profileEmail}>{user?.email || ''}</Text>
@@ -296,7 +336,6 @@ export default function ProfileScreen({ navigation }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.gray50 },
-    profileGradient: { width: '100%' },
     profileCard: {
         marginHorizontal: theme.spacing.md,
         backgroundColor: '#fff',
@@ -305,6 +344,7 @@ const styles = StyleSheet.create({
         ...theme.shadows.card,
     },
     profileRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
+    avatarTouch: { marginRight: 0 },
     avatarPlaceholder: { width: 80, height: 80, borderRadius: 40, backgroundColor: theme.colors.gray100, justifyContent: 'center', alignItems: 'center' },
     avatar: { width: 80, height: 80, borderRadius: 40 },
     profileInfo: { flex: 1 },

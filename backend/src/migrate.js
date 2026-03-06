@@ -62,6 +62,7 @@ async function migrate() {
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verify_expires_at TIMESTAMPTZ`);
         await client.query(`UPDATE users SET email_verified = TRUE WHERE email_verified IS NULL`).catch(() => {});
         console.log('Колонки email_verified добавлены.');
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT`).catch(() => {});
 
         await client.query(`
             CREATE TABLE IF NOT EXISTS boats (

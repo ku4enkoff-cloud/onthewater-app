@@ -12,7 +12,7 @@ const authenticate = async (req, res, next) => {
         const decoded = verifyToken(token);
 
         const { rows } = await pool.query(
-            'SELECT id, email, name, first_name, last_name, phone, role, birthdate, about, address_line, address_city, address_zip, address_country, created_at FROM users WHERE id = $1',
+            'SELECT id, email, name, first_name, last_name, phone, role, birthdate, about, address_line, address_city, address_zip, address_country, avatar, created_at FROM users WHERE id = $1',
             [decoded.id]
         );
         if (rows.length === 0) {
