@@ -27,11 +27,16 @@ export default function OwnerDashboardScreen({ navigation }) {
 
     const loadStats = async () => {
         try {
-            const res = await api.get('/owner/bookings');
-            const list = Array.isArray(res.data) ? res.data : [];
-            const completed = list.filter(b => b.status === 'completed').length;
-            const earnings = list.reduce((s, b) => s + (b.total_price || 0), 0);
+            const [bookingsRes, reviewsRes] = await Promise.all([
+                api.get('/owner/bookings'),
+                api.get('/owner/reviews-count').catch(() => ({ data: { count: 0 } })),
+            ]);
+            const list = Array.isArray(bookingsRes.data) ? bookingsRes.data : [];
+            const completedList = list.filter(b => b.status === 'completed');
+            const completed = completedList.length;
+            const earnings = completedList.reduce((s, b) => s + (Number(b.total_price) || 0), 0);
             setStats({ completed, earnings, responseRate: null });
+            setReviews(reviewsRes.data?.count ?? 0);
         } catch (_) {}
     };
 

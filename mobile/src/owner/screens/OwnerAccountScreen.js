@@ -1,12 +1,15 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useCallback } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert,
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     User, Bell, Settings, Plus, ChevronRight,
 } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthContext } from '../../shared/context/AuthContext';
+import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
 import { theme } from '../../shared/theme';
 
 let LinearGradient;
@@ -19,11 +22,52 @@ const GOLD = '#E8A838';
 
 export default function OwnerAccountScreen({ navigation }) {
     const insets = useSafeAreaInsets();
-    const { user, logout } = useContext(AuthContext);
+    const { user, logout, refreshUser } = useContext(AuthContext);
     const [loggingOut, setLoggingOut] = useState(false);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
     const initial = (user?.name || user?.email || 'O')[0].toUpperCase();
     const displayName = user?.name || user?.email?.split('@')[0] || 'Владелец';
+
+    const handlePickAvatar = useCallback(async () => {
+        try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Доступ', 'Разрешите доступ к галерее для выбора фото.');
+                return;
+            }
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images'],
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
+            });
+            if (result.canceled || !result.assets?.[0]?.uri) return;
+            setUploadingAvatar(true);
+            try {
+                const uri = result.assets[0].uri;
+                const formData = new FormData();
+                formData.append('avatar', { uri, type: 'image/jpeg', name: 'avatar.jpg' });
+                const token = await AsyncStorage.getItem('@token');
+                const res = await fetch(`${API_BASE}/auth/avatar`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token || ''}` },
+                    body: formData,
+                });
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    throw new Error(data.error || `Ошибка ${res.status}`);
+                }
+                await refreshUser();
+            } catch (e) {
+                Alert.alert('Ошибка', e?.message || 'Не удалось загрузить фото');
+            } finally {
+                setUploadingAvatar(false);
+            }
+        } catch (err) {
+            Alert.alert('Ошибка', err?.message || 'Не удалось открыть галерею');
+        }
+    }, [refreshUser]);
 
     const handleLogout = () => {
         Alert.alert('Выход', 'Вы действительно хотите выйти?', [
@@ -69,14 +113,30 @@ export default function OwnerAccountScreen({ navigation }) {
 
                         {/* Avatar */}
                         <View style={s.avatarBlock}>
-                            <View style={s.avatarOuter}>
-                                <View style={s.avatar}>
-                                    <Text style={s.avatarLetter}>{initial}</Text>
-                                </View>
+                            <TouchableOpacity
+                                style={s.avatarOuter}
+                                onPress={handlePickAvatar}
+                                disabled={uploadingAvatar}
+                                activeOpacity={0.8}
+                            >
+                                {user?.avatar ? (
+                                    <Image
+                                        source={{ uri: getPhotoUrl(user.avatar) || user.avatar }}
+                                        style={s.avatarImage}
+                                    />
+                                ) : (
+                                    <View style={s.avatar}>
+                                        {uploadingAvatar ? (
+                                            <ActivityIndicator size="small" color="#fff" />
+                                        ) : (
+                                            <Text style={s.avatarLetter}>{initial}</Text>
+                                        )}
+                                    </View>
+                                )}
                                 <View style={s.avatarBadge}>
                                     <Plus size={14} color="#fff" strokeWidth={3} />
                                 </View>
-                            </View>
+                            </TouchableOpacity>
                             <Text style={s.displayName}>{displayName}</Text>
                             <Text style={s.joinedText}>
                                 Зарегистрирован в {user?.created_at ? new Date(user.created_at).getFullYear() : new Date().getFullYear()} году
@@ -135,6 +195,7 @@ const s = StyleSheet.create({
 
     avatarBlock: { alignItems: 'center' },
     avatarOuter: { position: 'relative', marginBottom: 12 },
+    avatarImage: { width: 80, height: 80, borderRadius: 40 },
     avatar: {
         width: 80, height: 80, borderRadius: 40,
         backgroundColor: '#E8E8E8',
