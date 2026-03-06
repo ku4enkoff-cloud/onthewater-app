@@ -122,6 +122,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     const [locationDateModalVisible, setLocationDateModalVisible] = useState(false);
     const [filters, setFilters] = useState(DEFAULT_FILTERS);
     const [mapModalVisible, setMapModalVisible] = useState(false);
+    const [mapViewReady, setMapViewReady] = useState(false);
     const [mapBoats, setMapBoats] = useState([]);
     const [mapLoading, setMapLoading] = useState(false);
     const [mapCenter, setMapCenter] = useState(DEFAULT_MAP_CENTER);
@@ -246,11 +247,21 @@ export default function SearchResultsScreen({ route, navigation }) {
         setMapBoats(boats);
         setSelectedMapBoat(null);
         setMapModalVisible(true);
+        setMapViewReady(false);
         lastMapCenterRef.current = { lat: center.lat, lon: center.lon };
     }, [boats, cityName, useMyLocation]);
 
     useEffect(() => {
-        if (!mapModalVisible || !ClusteredYamap || !mapRef.current) return;
+        if (!mapModalVisible) {
+            setMapViewReady(false);
+            return;
+        }
+        const t = setTimeout(() => setMapViewReady(true), 400);
+        return () => clearTimeout(t);
+    }, [mapModalVisible]);
+
+    useEffect(() => {
+        if (!mapModalVisible || !mapViewReady || !ClusteredYamap || !mapRef.current) return;
         if (cityName && isRegion(cityName)) {
             fetchBoatsForMap({ regionFilter: cityName });
             return;
@@ -814,6 +825,13 @@ export default function SearchResultsScreen({ route, navigation }) {
                             </View>
                         ) : (
                             <View style={styles.mapContainer}>
+                                {!mapViewReady ? (
+                                    <View style={styles.mapLoadingOverlay}>
+                                        <ActivityIndicator size="large" color={NAVY} />
+                                        <Text style={styles.mapPlaceholderText}>Загрузка карты...</Text>
+                                    </View>
+                                ) : (
+                                    <>
                                 <ClusteredYamap
                                     ref={mapRef}
                                     style={StyleSheet.absoluteFillObject}
@@ -843,6 +861,8 @@ export default function SearchResultsScreen({ route, navigation }) {
                                         );
                                     }}
                                 />
+                                    </>
+                                )}
                                 {mapLoading && (
                                     <View style={styles.mapLoadingOverlay}>
                                         <ActivityIndicator size="large" color={NAVY} />

@@ -40,6 +40,15 @@ if (__DEV__) {
     console.log('[API] Base URL:', API_BASE);
 }
 
-/** Yandex Geosuggest API key for city search. Get at https://developer.tech.yandex.com/ */
+/** Yandex Geosuggest API key for city search (suggest-maps.yandex.ru). В консоли developer.tech.yandex.com включите «Геословарь» или «Suggest API» для ключа. */
 export const YANDEX_GEO_SUGGEST_API_KEY =
-    (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_YANDEX_GEO_SUGGEST_API_KEY) || '';
+    (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_YANDEX_GEO_SUGGEST_API_KEY) ||
+    (typeof Constants !== 'undefined' && Constants.expoConfig?.extra?.yandexGeosuggestApiKey) ||
+    (typeof Constants !== 'undefined' && Constants.expoConfig?.extra?.yandexMapkitApiKey) ||
+    '84448445-01d9-454b-8398-9adaaf19ad61';
+
+/** Yandex MapKit API key for map tiles. Get at https://developer.tech.yandex.com/ — включите «MapKit» для ключа и укажите пакет com.anonymous.onthewater. */
+export const YANDEX_MAPKIT_API_KEY =
+    (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_YANDEX_MAPKIT_API_KEY) ||
+    (typeof Constants !== 'undefined' && Constants.expoConfig?.extra?.yandexMapkitApiKey) ||
+    '84448445-01d9-454b-8398-9adaaf19ad61';
