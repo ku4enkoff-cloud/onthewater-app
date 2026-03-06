@@ -104,15 +104,6 @@ function ClientRoot() {
     return <OnboardingScreen onFinish={finishOnboarding} />;
   }
 
-  if (loading && !loadingTimedOut) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.surface }}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={{ marginTop: 16, fontSize: 16, color: theme.colors.textMuted }}>Загрузка...</Text>
-      </View>
-    );
-  }
-
   return (
     <NavigationContainer>
       <ClientNavigator />

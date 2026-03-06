@@ -125,6 +125,16 @@ router.get('/me', authenticate, (req, res) => {
     res.json(req.user);
 });
 
+// Количество отзывов, оставленных текущим пользователем (для блока «Отзывы» в профиле)
+router.get('/reviews-count', authenticate, async (req, res, next) => {
+    try {
+        const { rows } = await pool.query('SELECT COUNT(*)::int AS count FROM reviews WHERE user_id = $1', [req.user.id]);
+        res.json({ count: rows[0]?.count ?? 0 });
+    } catch (err) {
+        next(err);
+    }
+});
+
 router.patch('/profile', authenticate, async (req, res, next) => {
     try {
         const userId = req.user.id;
