@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl,
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -9,6 +9,7 @@ import {
 } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
+import { getPhotoUrl } from '../../shared/infrastructure/config';
 import { AuthContext } from '../../shared/context/AuthContext';
 
 let LinearGradient;
@@ -18,18 +19,28 @@ const GRADIENT = ['#0A3D3D', '#0D5C5C', '#1A7A6E', '#3A9E7A'];
 const TEAL = '#0D5C5C';
 const NAVY = '#1B365D';
 
+function reviewsLabel(n) {
+    if (n <= 0) return 'НЕТ ОТЗЫВОВ';
+    const mod100 = n % 100;
+    const mod10 = mod100 % 10;
+    const word = mod10 === 1 && mod100 !== 11 ? 'отзыв' : mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20) ? 'отзыва' : 'отзывов';
+    return `${n} ${word}`;
+}
+
 export default function OwnerDashboardScreen({ navigation }) {
     const insets = useSafeAreaInsets();
     const { user } = useContext(AuthContext);
     const [stats, setStats] = useState({ completed: 0, earnings: 0, responseRate: null });
     const [reviews, setReviews] = useState(0);
+    const [unreadMessages, setUnreadMessages] = useState(0);
     const [refreshing, setRefreshing] = useState(false);
 
     const loadStats = async () => {
         try {
-            const [bookingsRes, reviewsRes] = await Promise.all([
+            const [bookingsRes, reviewsRes, unreadRes] = await Promise.all([
                 api.get('/owner/bookings'),
                 api.get('/owner/reviews-count').catch(() => ({ data: { count: 0 } })),
+                api.get('/owner/unread-messages-count').catch(() => ({ data: { count: 0 } })),
             ]);
             const list = Array.isArray(bookingsRes.data) ? bookingsRes.data : [];
             const completedList = list.filter(b => b.status === 'completed');
@@ -37,6 +48,7 @@ export default function OwnerDashboardScreen({ navigation }) {
             const earnings = completedList.reduce((s, b) => s + (Number(b.total_price) || 0), 0);
             setStats({ completed, earnings, responseRate: null });
             setReviews(reviewsRes.data?.count ?? 0);
+            setUnreadMessages(unreadRes.data?.count ?? 0);
         } catch (_) {}
     };
 
@@ -76,15 +88,22 @@ export default function OwnerDashboardScreen({ navigation }) {
 
                         {/* Avatar + name */}
                         <View style={s.profileRow}>
-                            <View style={s.avatar}>
-                                <Text style={s.avatarLetter}>{initial}</Text>
-                            </View>
+                            {user?.avatar ? (
+                                <Image
+                                    source={{ uri: getPhotoUrl(user.avatar) || user.avatar }}
+                                    style={s.avatarImage}
+                                />
+                            ) : (
+                                <View style={s.avatar}>
+                                    <Text style={s.avatarLetter}>{initial}</Text>
+                                </View>
+                            )}
                             <View>
                                 <Text style={s.profileName}>{displayName}</Text>
                                 <View style={s.reviewsBadge}>
                                     <Star size={12} color="#F5A623" fill="#F5A623" />
                                     <Text style={s.reviewsText}>
-                                        {reviews > 0 ? `${reviews} отзывов` : 'НЕТ ОТЗЫВОВ'}
+                                        {reviewsLabel(reviews)}
                                     </Text>
                                 </View>
                             </View>
@@ -128,7 +147,16 @@ export default function OwnerDashboardScreen({ navigation }) {
                         onPress={() => navigation.navigate('Chat')}
                         activeOpacity={0.7}
                     >
-                        <Mail size={22} color={TEAL} strokeWidth={1.8} />
+                        <View style={s.actionCardInner}>
+                            <Mail size={22} color={TEAL} strokeWidth={1.8} />
+                            {unreadMessages > 0 && (
+                                <View style={s.unreadBadge}>
+                                    <Text style={s.unreadBadgeText}>
+                                        {unreadMessages > 99 ? '99+' : unreadMessages}
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
                         <Text style={s.actionLabel}>Сообщения</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -181,6 +209,9 @@ const s = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center',
         alignItems: 'center', marginRight: 14,
     },
+    avatarImage: {
+        width: 56, height: 56, borderRadius: 28, marginRight: 14,
+    },
     avatarLetter: { fontSize: 24, fontFamily: theme.fonts.bold, color: '#fff' },
     profileName: { fontSize: 20, fontFamily: theme.fonts.semiBold, color: '#fff' },
     reviewsBadge: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
@@ -219,6 +250,14 @@ const s = StyleSheet.create({
         shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.06, shadowRadius: 8, elevation: 3,
     },
+    actionCardInner: { position: 'relative', alignSelf: 'flex-start' },
+    unreadBadge: {
+        position: 'absolute', top: -6, right: -6,
+        minWidth: 18, height: 18, borderRadius: 9,
+        backgroundColor: '#E53935', justifyContent: 'center', alignItems: 'center',
+        paddingHorizontal: 4,
+    },
+    unreadBadgeText: { color: '#fff', fontSize: 11, fontFamily: theme.fonts.bold },
     actionLabel: {
         fontSize: 15, fontFamily: theme.fonts.medium, color: NAVY, marginTop: 10,
     },
