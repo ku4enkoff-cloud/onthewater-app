@@ -230,6 +230,9 @@ async function migrate() {
         // Добавить location_region для существующих БД
         await client.query(`ALTER TABLE boats ADD COLUMN IF NOT EXISTS location_region VARCHAR(255) DEFAULT ''`).catch(() => {});
 
+        // Непрочитанные сообщения в чатах (для владельца: сообщения от клиента)
+        await client.query(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS read BOOLEAN DEFAULT false`).catch(() => {});
+
         console.log('Миграция успешно завершена!');
     } catch (err) {
         console.error('Ошибка миграции:', err);

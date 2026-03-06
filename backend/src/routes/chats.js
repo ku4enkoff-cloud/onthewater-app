@@ -77,6 +77,13 @@ router.get('/:id/messages', authenticate, async (req, res, next) => {
     try {
         const id = parseInt(req.params.id, 10);
         if (Number.isNaN(id)) return res.status(400).json({ error: 'Неверный id чата' });
+        const { rows: chatRows } = await pool.query('SELECT owner_id FROM chats WHERE id = $1', [id]);
+        if (chatRows.length > 0 && parseInt(chatRows[0].owner_id, 10) === parseInt(req.user.id, 10)) {
+            await pool.query(
+                `UPDATE messages SET read = true WHERE chat_id = $1 AND sender = 'me' AND (read = false OR read IS NULL)`,
+                [id]
+            );
+        }
         const { rows } = await pool.query(
             'SELECT * FROM messages WHERE chat_id = $1 ORDER BY created_at',
             [id]

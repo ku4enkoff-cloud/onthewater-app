@@ -132,6 +132,21 @@ router.get('/reviews-count', authenticate, async (req, res, next) => {
     }
 });
 
+router.get('/unread-messages-count', authenticate, async (req, res, next) => {
+    try {
+        const { rows } = await pool.query(
+            `SELECT COUNT(*)::int AS count
+             FROM messages m
+             JOIN chats c ON c.id = m.chat_id AND c.owner_id = $1
+             WHERE m.sender = 'me' AND (m.read = false OR m.read IS NULL)`,
+            [req.user.id]
+        );
+        res.json({ count: rows[0]?.count ?? 0 });
+    } catch (err) {
+        next(err);
+    }
+});
+
 router.get('/chats', authenticate, async (req, res, next) => {
     try {
         const { rows } = await pool.query('SELECT * FROM chats WHERE owner_id = $1 ORDER BY created_at DESC', [req.user.id]);
