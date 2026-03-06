@@ -1,15 +1,20 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthContext } from '../../shared/context/AuthContext';
+import { FavoritesContext } from '../../shared/context/FavoritesContext';
+import { api } from '../../shared/infrastructure/api';
 import { theme } from '../../shared/theme';
-import { User, Settings, Heart, CreditCard, HelpCircle, LogOut, ChevronRight, Calendar, Star, Shield, FileText, Bell } from 'lucide-react-native';
+import { User, Settings, Heart, HelpCircle, LogOut, ChevronRight, Calendar, Star, Shield, FileText, Bell } from 'lucide-react-native';
 
 export default function ProfileScreen({ navigation }) {
     const insets = useSafeAreaInsets();
     const { user, logout } = useContext(AuthContext);
+    const { favoriteBoats } = useContext(FavoritesContext);
     const [loading, setLoading] = useState(false);
+    const [completedTrips, setCompletedTrips] = useState(0);
+    const [reviewsCount, setReviewsCount] = useState(0);
 
     const handleLogout = async () => {
         Alert.alert('Выход', 'Вы действительно хотите выйти из аккаунта?', [
@@ -17,6 +22,22 @@ export default function ProfileScreen({ navigation }) {
             { text: 'Выйти', style: 'destructive', onPress: async () => { setLoading(true); try { await logout(); } finally { setLoading(false); } } },
         ]);
     };
+
+    useEffect(() => {
+        if (!user) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await api.get('/bookings');
+                const list = Array.isArray(res.data) ? res.data : [];
+                const completed = list.filter((b) => b.status === 'completed').length;
+                if (!cancelled) setCompletedTrips(completed);
+            } catch (_) {
+                if (!cancelled) setCompletedTrips(0);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [user]);
 
     if (!user) {
         return (
@@ -39,7 +60,6 @@ export default function ProfileScreen({ navigation }) {
 
     const menuItems = [
         { id: 'bookings', icon: Calendar, title: 'Мои брони', onPress: () => navigation.navigate('Bookings') },
-        { id: 'payments', icon: CreditCard, title: 'Оплата', onPress: () => {} },
         { id: 'notifications', icon: Bell, title: 'Уведомления', onPress: () => {} },
         { id: 'settings', icon: Settings, title: 'Настройки', onPress: () => {} },
         { id: 'help', icon: HelpCircle, title: 'Помощь', onPress: () => {} },
@@ -48,9 +68,9 @@ export default function ProfileScreen({ navigation }) {
     ];
 
     const stats = [
-        { label: 'Поездки', value: '0', icon: Calendar },
-        { label: 'Отзывы', value: '—', icon: Star },
-        { label: 'Избранное', value: '0', icon: Heart },
+        { label: 'Поездки', value: String(completedTrips), icon: Calendar, onPress: () => navigation.navigate('Bookings') },
+        { label: 'Отзывы', value: String(reviewsCount), icon: Star },
+        { label: 'Избранное', value: String(favoriteBoats?.length ?? 0), icon: Heart, onPress: () => navigation.navigate('Favorites') },
     ];
 
     return (
@@ -70,14 +90,21 @@ export default function ProfileScreen({ navigation }) {
                 <View style={styles.statsRow}>
                     {stats.map((s, i) => {
                         const Icon = s.icon;
-                        return (
-                            <View key={s.label} style={styles.statBlock}>
+                        const content = (
+                            <>
                                 <View style={styles.statIconWrap}>
                                     <Icon size={20} color={theme.colors.primary} />
                                 </View>
                                 <Text style={styles.statValue}>{s.value}</Text>
                                 <Text style={styles.statLabel}>{s.label}</Text>
-                            </View>
+                            </>
+                        );
+                        return s.onPress ? (
+                            <TouchableOpacity key={s.label} style={styles.statBlock} onPress={s.onPress} activeOpacity={0.7}>
+                                {content}
+                            </TouchableOpacity>
+                        ) : (
+                            <View key={s.label} style={styles.statBlock}>{content}</View>
                         );
                     })}
                 </View>
