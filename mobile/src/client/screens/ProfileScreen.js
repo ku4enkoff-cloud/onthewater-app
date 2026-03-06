@@ -1,12 +1,13 @@
 import React, { useContext, useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert, Modal, FlatList, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, Image, ScrollView, Alert, Modal, FlatList, TextInput, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthContext } from '../../shared/context/AuthContext';
 import { FavoritesContext } from '../../shared/context/FavoritesContext';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../../shared/infrastructure/api';
-import { getPhotoUrl } from '../../shared/infrastructure/config';
+import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
 import { theme } from '../../shared/theme';
 import { User, Settings, Heart, HelpCircle, LogOut, ChevronRight, Calendar, Star, Shield, FileText, Bell, X, Pencil, Trash2 } from 'lucide-react-native';
 
@@ -27,33 +28,46 @@ export default function ProfileScreen({ navigation }) {
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
     const handlePickAvatar = useCallback(async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-            Alert.alert('Доступ', 'Разрешите доступ к галерее для выбора фото.');
-            return;
-        }
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaType.Images,
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.8,
-        });
-        if (result.canceled || !result.assets?.[0]?.uri) return;
-        setUploadingAvatar(true);
         try {
-            const uri = result.assets[0].uri;
-            const formData = new FormData();
-            formData.append('avatar', {
-                uri,
-                type: 'image/jpeg',
-                name: 'avatar.jpg',
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Доступ', 'Разрешите доступ к галерее для выбора фото.');
+                return;
+            }
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images'],
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
             });
-            await api.post('/auth/avatar', formData);
-            await refreshUser();
-        } catch (e) {
-            Alert.alert('Ошибка', e.response?.data?.error || 'Не удалось загрузить фото');
-        } finally {
-            setUploadingAvatar(false);
+            if (result.canceled || !result.assets?.[0]?.uri) return;
+            setUploadingAvatar(true);
+            try {
+                const uri = result.assets[0].uri;
+                const formData = new FormData();
+                formData.append('avatar', {
+                    uri,
+                    type: 'image/jpeg',
+                    name: 'avatar.jpg',
+                });
+                const token = await AsyncStorage.getItem('@token');
+                const res = await fetch(`${API_BASE}/auth/avatar`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token || ''}` },
+                    body: formData,
+                });
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    throw new Error(data.error || `Ошибка ${res.status}`);
+                }
+                await refreshUser();
+            } catch (e) {
+                Alert.alert('Ошибка', e?.message || 'Не удалось загрузить фото');
+            } finally {
+                setUploadingAvatar(false);
+            }
+        } catch (err) {
+            Alert.alert('Ошибка', err?.message || 'Не удалось открыть галерею');
         }
     }, [refreshUser]);
 
@@ -195,10 +209,10 @@ export default function ProfileScreen({ navigation }) {
 
     return (
         <>
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingTop: insets.top + 16 }}>
+        <ScrollView style={styles.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingTop: insets.top + 16 }} keyboardShouldPersistTaps="handled">
             <View style={styles.profileCard}>
                 <View style={styles.profileRow}>
-                    <TouchableOpacity onPress={handlePickAvatar} disabled={uploadingAvatar} style={styles.avatarTouch} activeOpacity={0.8} hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}>
+                    <Pressable onPress={handlePickAvatar} disabled={uploadingAvatar} style={({ pressed }) => [styles.avatarTouch, pressed && styles.avatarTouchPressed]} android_ripple={null}>
                         {user?.avatar ? (
                             <Image source={{ uri: getPhotoUrl(user.avatar) || user.avatar }} style={styles.avatar} />
                         ) : (
@@ -206,7 +220,7 @@ export default function ProfileScreen({ navigation }) {
                                 {uploadingAvatar ? <ActivityIndicator size="small" color={theme.colors.gray500} /> : <User size={40} color={theme.colors.gray500} />}
                             </View>
                         )}
-                    </TouchableOpacity>
+                    </Pressable>
                     <View style={styles.profileInfo}>
                         <Text style={styles.profileName}>{user?.name || 'Пользователь'}</Text>
                         <Text style={styles.profileEmail}>{user?.email || ''}</Text>
@@ -344,7 +358,8 @@ const styles = StyleSheet.create({
         ...theme.shadows.card,
     },
     profileRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
-    avatarTouch: { width: 80, height: 80, marginRight: 0 },
+    avatarTouch: { width: 80, height: 80, marginRight: 0, zIndex: 1, elevation: 2 },
+    avatarTouchPressed: { opacity: 0.8 },
     avatarPlaceholder: { width: 80, height: 80, borderRadius: 40, backgroundColor: theme.colors.gray100, justifyContent: 'center', alignItems: 'center' },
     avatar: { width: 80, height: 80, borderRadius: 40 },
     profileInfo: { flex: 1 },

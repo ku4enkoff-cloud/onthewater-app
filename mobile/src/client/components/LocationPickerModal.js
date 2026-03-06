@@ -11,16 +11,25 @@ import {
     KeyboardAvoidingView,
     Platform,
     Dimensions,
+    NativeModules,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Search, MapPin, Navigation } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
-import { YANDEX_GEO_SUGGEST_API_KEY } from '../../shared/infrastructure/config';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const YANDEX_SUGGEST_URL = 'https://suggest-maps.yandex.ru/v1/suggest';
+const isMapKitSuggestAvailable = NativeModules.YamapSuggests != null;
+let SuggestModule = null;
+let SuggestTypes = null;
+if (isMapKitSuggestAvailable) {
+    try {
+        const yamap = require('react-native-yamap');
+        SuggestModule = yamap.Suggest;
+        SuggestTypes = yamap.SuggestTypes;
+    } catch (_) {}
+}
 
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -31,16 +40,10 @@ function useDebounce(value, delay) {
     return debouncedValue;
 }
 
-function extractCityFromSuggestion(item) {
-    const comp = item?.address?.component;
-    if (Array.isArray(comp)) {
-        const locality = comp.find((c) => c.kind && c.kind.includes('LOCALITY'));
-        if (locality?.name) return locality.name;
-        const province = comp.find((c) => c.kind && c.kind.includes('PROVINCE'));
-        if (province?.name) return province.name;
-    }
-    const title = item?.title?.text || '';
-    return title.split(',')[0]?.trim() || title;
+/** Из ответа MapKit Suggest: title — название (город или "город, регион"), subtitle — доп. строка */
+function cityNameFromMapKitItem(item) {
+    const t = (item?.title || '').trim();
+    return t.split(',')[0]?.trim() || t;
 }
 
 export default function LocationPickerModal({ visible, onClose, onSelect }) {
@@ -74,7 +77,11 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
             fetchCitiesWithBoats();
             setQuery('');
             setSuggestions([]);
+            if (SuggestModule?.reset) SuggestModule.reset().catch(() => {});
         }
+        return () => {
+            if (SuggestModule?.reset) SuggestModule.reset().catch(() => {});
+        };
     }, [visible, fetchCitiesWithBoats]);
 
     useEffect(() => {
@@ -84,36 +91,30 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
             return;
         }
 
-        if (!YANDEX_GEO_SUGGEST_API_KEY) {
-            const q = debouncedQuery.trim().toLowerCase();
+        const q = debouncedQuery.trim().toLowerCase();
+        const fallbackOnlyLocal = () => {
             const cities = citiesWithBoats.filter((c) => (c || '').toLowerCase().includes(q));
             setSuggestions(cities.map((c) => ({ id: c, name: c })));
             setLoadingSuggest(false);
+        };
+
+        if (!SuggestModule?.suggest) {
+            fallbackOnlyLocal();
             return;
         }
 
         setLoadingSuggest(true);
-        const url = `${YANDEX_SUGGEST_URL}?apikey=${encodeURIComponent(YANDEX_GEO_SUGGEST_API_KEY)}&text=${encodeURIComponent(debouncedQuery)}&types=locality,province,country&lang=ru&results=10`;
-        fetch(url)
-            .then(async (r) => {
-                const text = await r.text();
-                if (!text?.trim()) return { results: [] };
-                try {
-                    return JSON.parse(text);
-                } catch (_) {
-                    return { results: [] };
-                }
-            })
-            .then((data) => {
-                const raw = data?.results || [];
+        const options = SuggestTypes ? { suggestTypes: [SuggestTypes.YMKSuggestTypeGeo] } : undefined;
+        SuggestModule.suggest(debouncedQuery.trim(), options)
+            .then((raw) => {
                 const citiesSet = citiesSetRef.current;
-                const filtered = [];
                 const seen = new Set();
-                for (const item of raw) {
-                    const city = extractCityFromSuggestion(item);
+                const filtered = [];
+                for (const item of raw || []) {
+                    const city = cityNameFromMapKitItem(item);
                     const cityNorm = city.trim().toLowerCase();
                     if (!cityNorm || seen.has(cityNorm)) continue;
-                    const matches = Array.from(citiesSet).some(
+                    const matches = citiesSet.size === 0 || Array.from(citiesSet).some(
                         (ourCity) =>
                             ourCity === cityNorm ||
                             (ourCity && cityNorm.includes(ourCity)) ||
@@ -125,7 +126,6 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
                     }
                 }
                 if (filtered.length === 0 && citiesSet.size > 0) {
-                    const q = debouncedQuery.trim().toLowerCase();
                     const local = citiesWithBoats.filter((c) => (c || '').toLowerCase().includes(q));
                     setSuggestions(local.map((c) => ({ id: c, name: c })));
                 } else {
@@ -133,10 +133,8 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
                 }
             })
             .catch((e) => {
-                console.warn('Yandex suggest error:', e);
-                const q = debouncedQuery.trim().toLowerCase();
-                const local = citiesWithBoats.filter((c) => (c || '').toLowerCase().includes(q));
-                setSuggestions(local.map((c) => ({ id: c, name: c })));
+                if (__DEV__) console.warn('MapKit Suggest error:', e);
+                fallbackOnlyLocal();
             })
             .finally(() => setLoadingSuggest(false));
     }, [debouncedQuery, citiesWithBoats]);

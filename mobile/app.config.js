@@ -28,6 +28,12 @@ export default {
     config: {
       googleMaps: { apiKey: 'YOUR_YANDEX_MAPS_OR_GOOGLE_MAPS_API_KEY_HERE' },
     },
+    // Ключи Яндекс: MapKit — карты, Geosuggest — подсказки городов. В developer.tech.yandex.com включите нужные интерфейсы для ключа.
+    extra: {
+      appVariant: variant,
+      yandexMapkitApiKey: process.env.EXPO_PUBLIC_YANDEX_MAPKIT_API_KEY || '84448445-01d9-454b-8398-9adaaf19ad61',
+      yandexGeosuggestApiKey: process.env.EXPO_PUBLIC_YANDEX_GEO_SUGGEST_API_KEY || process.env.EXPO_PUBLIC_YANDEX_MAPKIT_API_KEY || '84448445-01d9-454b-8398-9adaaf19ad61',
+    },
     permissions: ['android.permission.RECORD_AUDIO'],
     web: { favicon: './assets/favicon.png' },
     plugins: [
@@ -41,11 +47,19 @@ export default {
             cropToolbarIconColor: '#1a1a1a',
             cropToolbarActionTextColor: '#1a1a1a',
             cropBackButtonIconColor: '#1a1a1a',
-            cropBackgroundColor: '#f0f0f0',
+            cropBackgroundColor: '#f5f5f5',
+          },
+          dark: {
+            colors: {
+              cropToolbarColor: '#FFFFFF',
+              cropToolbarIconColor: '#1a1a1a',
+              cropToolbarActionTextColor: '#1a1a1a',
+              cropBackButtonIconColor: '#1a1a1a',
+              cropBackgroundColor: '#f5f5f5',
+            },
           },
         },
       ],
     ],
-    extra: { appVariant: variant },
   },
 };
