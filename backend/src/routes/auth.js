@@ -1,6 +1,8 @@
+const path = require('path');
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const { pool } = require('../db');
+const { upload } = require('../middleware/upload');
 const validate = require('../middleware/validate');
 const { authLimiter } = require('../middleware/rateLimiter');
 const { registerSchema, loginSchema } = require('../schemas');
@@ -96,7 +98,7 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res, next)
 
     try {
         const result = await pool.query(
-            'SELECT id, email, password_hash, name, role, first_name, last_name, phone, email_verified FROM users WHERE email = $1 OR phone = $1',
+            'SELECT id, email, password_hash, name, role, first_name, last_name, phone, email_verified, avatar FROM users WHERE email = $1 OR phone = $1',
             [loginValue]
         );
 
@@ -123,6 +125,22 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res, next)
 
 router.get('/me', authenticate, (req, res) => {
     res.json(req.user);
+});
+
+// Загрузка фото профиля (аватар)
+router.post('/avatar', authenticate, upload.single('avatar'), async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const avatarPath = req.file && req.file.filename ? '/uploads/' + path.basename(req.file.filename) : null;
+        if (!avatarPath) return res.status(400).json({ error: 'Файл не выбран' });
+        const { rows } = await pool.query(
+            'UPDATE users SET avatar = $1 WHERE id = $2 RETURNING id, email, name, first_name, last_name, phone, role, birthdate, about, address_line, address_city, address_zip, address_country, avatar, created_at',
+            [avatarPath, userId]
+        );
+        res.json(rows[0]);
+    } catch (err) {
+        next(err);
+    }
 });
 
 // Количество отзывов, оставленных текущим пользователем (для блока «Отзывы» в профиле)
