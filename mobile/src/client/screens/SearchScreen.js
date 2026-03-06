@@ -28,7 +28,7 @@ const { width } = Dimensions.get('window');
 
 const NAVY = '#1B365D';
 // Используем URI вместо require(): hero.png при сборке APK даёт AAPT2 "file failed to compile"
-const HERO_IMAGE = { uri: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1200' };
+const HERO_IMAGE = { uri: 'https://onthewater.ru/app/images/hero.png' };
 
 const FALLBACK_DESTINATIONS = [
     { id: 'moscow', name: 'Москва', image: 'https://images.unsplash.com/photo-1513326738677-9646ab0f3b3b?w=400' },
