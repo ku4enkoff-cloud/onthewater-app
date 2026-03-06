@@ -6,6 +6,12 @@ const router = express.Router();
 
 router.get('/bookings', authenticate, async (req, res, next) => {
     try {
+        // Неподтверждённые бронирования, срок которых уже прошёл — автоматически в отменённые
+        await pool.query(
+            `UPDATE bookings SET status = 'cancelled'
+             WHERE status = 'pending' AND start_at IS NOT NULL AND start_at < NOW()`
+        );
+        // Подтверждённые бронирования, время которых прошло — в завершённые
         await pool.query(
             `UPDATE bookings SET status = 'completed'
              WHERE status = 'confirmed' AND start_at IS NOT NULL
@@ -106,6 +112,21 @@ router.patch('/bookings/:id', authenticate, async (req, res, next) => {
         );
         if (rows.length === 0) return res.status(404).json({ error: 'Not found' });
         res.json(rows[0]);
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.get('/reviews-count', authenticate, async (req, res, next) => {
+    try {
+        const { rows } = await pool.query(
+            `SELECT COUNT(*)::int AS count
+             FROM reviews r
+             JOIN boats b ON b.id = r.boat_id AND b.owner_id = $1
+             WHERE (r.status = 'approved' OR r.status IS NULL) AND COALESCE(r.spam, false) = false`,
+            [req.user.id]
+        );
+        res.json({ count: rows[0]?.count ?? 0 });
     } catch (err) {
         next(err);
     }
