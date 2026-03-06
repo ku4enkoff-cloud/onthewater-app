@@ -219,6 +219,22 @@ export default function BoatDetailScreen({ route, navigation }) {
         if (scrollRef.current) scrollRef.current.scrollToEnd({ animated: true });
     };
 
+    const openChatWithOwner = useCallback(async () => {
+        if (!boatId) return;
+        try {
+            const res = await api.post('/chats', { boat_id: boatId });
+            const chat = res.data;
+            if (chat && chat.id) {
+                navigation.navigate('ChatDetail', { chatId: chat.id });
+            } else {
+                Alert.alert('Ошибка', 'Не удалось открыть чат');
+            }
+        } catch (e) {
+            const msg = e.response?.data?.error || 'Не удалось открыть чат';
+            Alert.alert('Ошибка', msg);
+        }
+    }, [boatId, navigation]);
+
     useEffect(() => {
         if (boatId) fetchBoat();
     }, [boatId]);
@@ -861,7 +877,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                             </View>
                             <TouchableOpacity
                                 style={styles.messageBtn}
-                                onPress={() => navigation.navigate('ChatDetail', { chatId: `boat-${boatId}`, boatId })}
+                                onPress={openChatWithOwner}
                             >
                                 <Text style={styles.messageBtnText}>НАПИСАТЬ ВЛАДЕЛЬЦУ</Text>
                             </TouchableOpacity>
