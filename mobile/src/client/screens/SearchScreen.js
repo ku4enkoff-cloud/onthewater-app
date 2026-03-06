@@ -27,8 +27,8 @@ const resolvePhotoUri = (src) => getPhotoUrl(src);
 const { width } = Dimensions.get('window');
 
 const NAVY = '#1B365D';
-// Используем URI вместо require(): hero.png при сборке APK даёт AAPT2 "file failed to compile"
-const HERO_IMAGE = { uri: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1200' };
+// Фон hero с удалённого хоста проекта
+const HERO_IMAGE = { uri: 'https://onthewater.ru/app/images/hero.webp' };
 
 const FALLBACK_DESTINATIONS = [
     { id: 'moscow', name: 'Москва', image: 'https://images.unsplash.com/photo-1513326738677-9646ab0f3b3b?w=400' },
@@ -226,7 +226,11 @@ export default function SearchScreen({ navigation }) {
         <>
             {/* Hero: full-width image with text overlay (Boatsetter style) */}
             <View style={[styles.heroWrap, { paddingTop: insets.top }]}>
-                <Image source={HERO_IMAGE} style={styles.heroImage} resizeMode="cover" />
+                <Image
+                    source={HERO_IMAGE}
+                    style={styles.heroImage}
+                    resizeMode="cover"
+                />
                 <LinearGradient
                     colors={['rgba(251,248,243,0.85)', 'rgba(251,248,243,0.5)', 'transparent']}
                     style={styles.heroGradient}
@@ -321,14 +325,13 @@ export default function SearchScreen({ navigation }) {
                     </TouchableOpacity>
                 ))}
             </View>
-            <View style={{ height: 24 }} />
         </View>
     );
 
     const listContent = (
         <ScrollView
             style={styles.list}
-            contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 88 }]}
+            contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 24 }]}
             showsVerticalScrollIndicator={false}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >

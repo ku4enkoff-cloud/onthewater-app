@@ -224,5 +224,5 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
         borderRadius: theme.borderRadius.xl,
     },
-    emptyButtonText: { color: theme.colors.dark, fontFamily: theme.fonts.bold, fontSize: 16 },
+    emptyButtonText: { color: '#FFFFFF', fontFamily: theme.fonts.bold, fontSize: 16 },
 });

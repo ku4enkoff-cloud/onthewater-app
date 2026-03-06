@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
 import { AuthContext } from '../../../context/AuthContext';
 import { theme } from '../../../theme';
-import { User, Settings, Heart, CreditCard, HelpCircle, LogOut } from 'lucide-react-native';
+import { User, Settings, Heart, HelpCircle, LogOut } from 'lucide-react-native';
 
 export default function ProfileScreen() {
     const { user, logout } = useContext(AuthContext);
@@ -37,13 +37,6 @@ export default function ProfileScreen() {
             title: 'Избранное',
             subtitle: 'Сохраненные катера',
             onPress: () => console.log('Go to favorites'),
-        },
-        {
-            id: 'payments',
-            icon: CreditCard,
-            title: 'Платежи',
-            subtitle: 'История и карты',
-            onPress: () => console.log('Go to payments'),
         },
         {
             id: 'settings',
