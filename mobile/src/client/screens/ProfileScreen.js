@@ -33,7 +33,7 @@ export default function ProfileScreen({ navigation }) {
             return;
         }
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ImagePicker.MediaType.Images,
             allowsEditing: true,
             aspect: [1, 1],
             quality: 0.8,
@@ -100,34 +100,6 @@ export default function ProfileScreen({ navigation }) {
         }, [user, fetchReviewsCount])
     );
 
-    if (!user) {
-        return (
-            <ScrollView style={styles.container} contentContainerStyle={[styles.guestContainer, { paddingTop: insets.top + 24 }]} showsVerticalScrollIndicator={false}>
-                <View style={styles.guestHeader}>
-                    <View style={styles.avatarPlaceholder}><User size={60} color={theme.colors.gray400} /></View>
-                    <Text style={styles.guestTitle}>Гость</Text>
-                    <Text style={styles.guestSubtitle}>Войдите, чтобы бронировать катера и управлять профилем</Text>
-                </View>
-                <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate('Login', { fromProfile: true })}>
-                    <Text style={styles.loginButtonText}>Войти</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.registerButton} onPress={() => navigation.navigate('Register', { fromProfile: true })}>
-                    <Text style={styles.registerButtonText}>Регистрация</Text>
-                </TouchableOpacity>
-                <View style={styles.versionContainer}><Text style={styles.versionText}>ONTHEWATER v1.0.0</Text></View>
-            </ScrollView>
-        );
-    }
-
-    const menuItems = [
-        { id: 'bookings', icon: Calendar, title: 'Мои брони', onPress: () => navigation.navigate('Bookings') },
-        { id: 'notifications', icon: Bell, title: 'Уведомления', onPress: () => {} },
-        { id: 'settings', icon: Settings, title: 'Настройки', onPress: () => {} },
-        { id: 'help', icon: HelpCircle, title: 'Помощь', onPress: () => {} },
-        { id: 'privacy', icon: Shield, title: 'Политика конфиденциальности', onPress: () => {} },
-        { id: 'terms', icon: FileText, title: 'Условия использования', onPress: () => {} },
-    ];
-
     const openReviewsModal = useCallback(async () => {
         setReviewsModalVisible(true);
         setEditingReviewId(null);
@@ -187,18 +159,46 @@ export default function ProfileScreen({ navigation }) {
         }
     }, [editingReviewId, editRating, editText, fetchReviewsCount]);
 
+    const menuItems = [
+        { id: 'bookings', icon: Calendar, title: 'Мои брони', onPress: () => navigation.navigate('Bookings') },
+        { id: 'notifications', icon: Bell, title: 'Уведомления', onPress: () => {} },
+        { id: 'settings', icon: Settings, title: 'Настройки', onPress: () => {} },
+        { id: 'help', icon: HelpCircle, title: 'Помощь', onPress: () => {} },
+        { id: 'privacy', icon: Shield, title: 'Политика конфиденциальности', onPress: () => {} },
+        { id: 'terms', icon: FileText, title: 'Условия использования', onPress: () => {} },
+    ];
+
     const stats = [
         { label: 'Поездки', value: String(completedTrips), icon: Calendar, onPress: () => navigation.navigate('Bookings') },
         { label: 'Отзывы', value: String(reviewsCount), icon: Star, onPress: openReviewsModal },
         { label: 'Избранное', value: String(favoriteBoats?.length ?? 0), icon: Heart, onPress: () => navigation.navigate('Favorites') },
     ];
 
+    if (!user) {
+        return (
+            <ScrollView style={styles.container} contentContainerStyle={[styles.guestContainer, { paddingTop: insets.top + 24 }]} showsVerticalScrollIndicator={false}>
+                <View style={styles.guestHeader}>
+                    <View style={styles.avatarPlaceholder}><User size={60} color={theme.colors.gray400} /></View>
+                    <Text style={styles.guestTitle}>Гость</Text>
+                    <Text style={styles.guestSubtitle}>Войдите, чтобы бронировать катера и управлять профилем</Text>
+                </View>
+                <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate('Login', { fromProfile: true })}>
+                    <Text style={styles.loginButtonText}>Войти</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.registerButton} onPress={() => navigation.navigate('Register', { fromProfile: true })}>
+                    <Text style={styles.registerButtonText}>Регистрация</Text>
+                </TouchableOpacity>
+                <View style={styles.versionContainer}><Text style={styles.versionText}>ONTHEWATER v1.0.0</Text></View>
+            </ScrollView>
+        );
+    }
+
     return (
         <>
         <ScrollView style={styles.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingTop: insets.top + 16 }}>
             <View style={styles.profileCard}>
                 <View style={styles.profileRow}>
-                    <TouchableOpacity onPress={handlePickAvatar} disabled={uploadingAvatar} style={styles.avatarTouch} activeOpacity={0.8}>
+                    <TouchableOpacity onPress={handlePickAvatar} disabled={uploadingAvatar} style={styles.avatarTouch} activeOpacity={0.8} hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}>
                         {user?.avatar ? (
                             <Image source={{ uri: getPhotoUrl(user.avatar) || user.avatar }} style={styles.avatar} />
                         ) : (
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
         ...theme.shadows.card,
     },
     profileRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
-    avatarTouch: { marginRight: 0 },
+    avatarTouch: { width: 80, height: 80, marginRight: 0 },
     avatarPlaceholder: { width: 80, height: 80, borderRadius: 40, backgroundColor: theme.colors.gray100, justifyContent: 'center', alignItems: 'center' },
     avatar: { width: 80, height: 80, borderRadius: 40 },
     profileInfo: { flex: 1 },

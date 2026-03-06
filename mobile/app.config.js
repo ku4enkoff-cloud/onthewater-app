@@ -32,7 +32,19 @@ export default {
     web: { favicon: './assets/favicon.png' },
     plugins: [
       ['expo-build-properties', { android: { minSdkVersion: 26, usesCleartextTraffic: true } }],
-      ['expo-image-picker', { photosPermission: 'Нам нужен доступ к галерее для загрузки фотографий катера.' }],
+      [
+        'expo-image-picker',
+        {
+          photosPermission: 'Нам нужен доступ к галерее для загрузки фотографий катера.',
+          colors: {
+            cropToolbarColor: '#FFFFFF',
+            cropToolbarIconColor: '#1a1a1a',
+            cropToolbarActionTextColor: '#1a1a1a',
+            cropBackButtonIconColor: '#1a1a1a',
+            cropBackgroundColor: '#f0f0f0',
+          },
+        },
+      ],
     ],
     extra: { appVariant: variant },
   },
