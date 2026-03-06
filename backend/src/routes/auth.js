@@ -128,8 +128,88 @@ router.get('/me', authenticate, (req, res) => {
 // Количество отзывов, оставленных текущим пользователем (для блока «Отзывы» в профиле)
 router.get('/reviews-count', authenticate, async (req, res, next) => {
     try {
-        const { rows } = await pool.query('SELECT COUNT(*)::int AS count FROM reviews WHERE user_id = $1', [req.user.id]);
+        const userId = parseInt(req.user.id, 10);
+        if (Number.isNaN(userId)) return res.json({ count: 0 });
+        const { rows } = await pool.query('SELECT COUNT(*)::int AS count FROM reviews WHERE user_id = $1', [userId]);
         res.json({ count: rows[0]?.count ?? 0 });
+    } catch (err) {
+        next(err);
+    }
+});
+
+// Список отзывов текущего пользователя (для модалки «Мои отзывы»)
+router.get('/reviews', authenticate, async (req, res, next) => {
+    try {
+        const userId = parseInt(req.user.id, 10);
+        if (Number.isNaN(userId)) return res.json([]);
+        const { rows } = await pool.query(
+            `SELECT r.id, r.boat_id, r.rating, r.text, r.status, r.created_at, b.title AS boat_title
+             FROM reviews r
+             LEFT JOIN boats b ON b.id = r.boat_id
+             WHERE r.user_id = $1
+             ORDER BY r.created_at DESC`,
+            [userId]
+        );
+        res.json(rows);
+    } catch (err) {
+        next(err);
+    }
+});
+
+// Редактировать свой отзыв
+router.patch('/reviews/:id', authenticate, async (req, res, next) => {
+    try {
+        const reviewId = parseInt(req.params.id, 10);
+        const userId = parseInt(req.user.id, 10);
+        if (Number.isNaN(reviewId)) return res.status(400).json({ error: 'Неверный id отзыва' });
+        const { rows: existing } = await pool.query('SELECT id, boat_id, user_id FROM reviews WHERE id = $1', [reviewId]);
+        if (existing.length === 0) return res.status(404).json({ error: 'Отзыв не найден' });
+        if (parseInt(existing[0].user_id, 10) !== userId) return res.status(403).json({ error: 'Нельзя редактировать чужой отзыв' });
+        const { rating, text } = req.body || {};
+        const r = rating !== undefined ? Math.min(5, Math.max(1, parseInt(rating, 10) || 5)) : null;
+        const textStr = text !== undefined ? (typeof text === 'string' ? text.trim() : '') : null;
+        if (textStr !== null && textStr.length < 20) return res.status(400).json({ error: 'Текст отзыва должен быть не короче 20 символов' });
+        const updates = [];
+        const vals = [];
+        let idx = 1;
+        if (r !== null) { updates.push(`rating = $${idx++}`); vals.push(r); }
+        if (textStr !== null) { updates.push(`text = $${idx++}`); vals.push(textStr); }
+        if (updates.length === 0) {
+            const { rows: out } = await pool.query('SELECT * FROM reviews WHERE id = $1', [reviewId]);
+            return res.json(out[0]);
+        }
+        vals.push(reviewId);
+        const { rows: updated } = await pool.query(
+            `UPDATE reviews SET ${updates.join(', ')}, status = 'pending' WHERE id = $${idx} RETURNING *`,
+            vals
+        );
+        const boatId = existing[0].boat_id;
+        await pool.query(
+            `UPDATE boats SET rating = COALESCE((SELECT ROUND(AVG(rating)::numeric, 2) FROM reviews WHERE boat_id = $1 AND status = 'approved' AND COALESCE(spam,false) = false), 0), reviews_count = COALESCE((SELECT COUNT(*)::int FROM reviews WHERE boat_id = $1 AND status = 'approved' AND COALESCE(spam,false) = false), 0) WHERE id = $1`,
+            [boatId]
+        );
+        res.json(updated[0]);
+    } catch (err) {
+        next(err);
+    }
+});
+
+// Удалить свой отзыв
+router.delete('/reviews/:id', authenticate, async (req, res, next) => {
+    try {
+        const reviewId = parseInt(req.params.id, 10);
+        const userId = parseInt(req.user.id, 10);
+        if (Number.isNaN(reviewId)) return res.status(400).json({ error: 'Неверный id отзыва' });
+        const { rows: existing } = await pool.query('SELECT id, boat_id, user_id FROM reviews WHERE id = $1', [reviewId]);
+        if (existing.length === 0) return res.status(404).json({ error: 'Отзыв не найден' });
+        if (parseInt(existing[0].user_id, 10) !== userId) return res.status(403).json({ error: 'Нельзя удалить чужой отзыв' });
+        const boatId = existing[0].boat_id;
+        await pool.query('DELETE FROM reviews WHERE id = $1', [reviewId]);
+        await pool.query(
+            `UPDATE boats SET rating = COALESCE((SELECT ROUND(AVG(rating)::numeric, 2) FROM reviews WHERE boat_id = $1 AND status = 'approved' AND COALESCE(spam,false) = false), 0), reviews_count = COALESCE((SELECT COUNT(*)::int FROM reviews WHERE boat_id = $1 AND status = 'approved' AND COALESCE(spam,false) = false), 0) WHERE id = $1`,
+            [boatId]
+        );
+        res.json({ success: true });
     } catch (err) {
         next(err);
     }

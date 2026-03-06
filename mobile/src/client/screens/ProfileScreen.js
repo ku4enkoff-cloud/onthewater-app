@@ -1,12 +1,13 @@
-import React, { useContext, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
+import React, { useContext, useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert, Modal, FlatList, TextInput, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthContext } from '../../shared/context/AuthContext';
 import { FavoritesContext } from '../../shared/context/FavoritesContext';
 import { api } from '../../shared/infrastructure/api';
 import { theme } from '../../shared/theme';
-import { User, Settings, Heart, HelpCircle, LogOut, ChevronRight, Calendar, Star, Shield, FileText, Bell } from 'lucide-react-native';
+import { User, Settings, Heart, HelpCircle, LogOut, ChevronRight, Calendar, Star, Shield, FileText, Bell, X, Pencil, Trash2 } from 'lucide-react-native';
 
 export default function ProfileScreen({ navigation }) {
     const insets = useSafeAreaInsets();
@@ -15,6 +16,13 @@ export default function ProfileScreen({ navigation }) {
     const [loading, setLoading] = useState(false);
     const [completedTrips, setCompletedTrips] = useState(0);
     const [reviewsCount, setReviewsCount] = useState(0);
+    const [reviewsModalVisible, setReviewsModalVisible] = useState(false);
+    const [myReviews, setMyReviews] = useState([]);
+    const [loadingReviews, setLoadingReviews] = useState(false);
+    const [editingReviewId, setEditingReviewId] = useState(null);
+    const [editRating, setEditRating] = useState(5);
+    const [editText, setEditText] = useState('');
+    const [savingReview, setSavingReview] = useState(false);
 
     const handleLogout = async () => {
         Alert.alert('Выход', 'Вы действительно хотите выйти из аккаунта?', [
@@ -38,6 +46,26 @@ export default function ProfileScreen({ navigation }) {
         })();
         return () => { cancelled = true; };
     }, [user]);
+
+    const fetchReviewsCount = useCallback(async () => {
+        if (!user) return;
+        try {
+            const res = await api.get('/auth/reviews-count');
+            setReviewsCount(res.data?.count ?? 0);
+        } catch (_) {
+            setReviewsCount(0);
+        }
+    }, [user]);
+
+    useEffect(() => {
+        fetchReviewsCount();
+    }, [fetchReviewsCount]);
+
+    useFocusEffect(
+        useCallback(() => {
+            if (user) fetchReviewsCount();
+        }, [user, fetchReviewsCount])
+    );
 
     if (!user) {
         return (
@@ -67,13 +95,73 @@ export default function ProfileScreen({ navigation }) {
         { id: 'terms', icon: FileText, title: 'Условия использования', onPress: () => {} },
     ];
 
+    const openReviewsModal = useCallback(async () => {
+        setReviewsModalVisible(true);
+        setEditingReviewId(null);
+        setLoadingReviews(true);
+        try {
+            const res = await api.get('/auth/reviews');
+            setMyReviews(Array.isArray(res.data) ? res.data : []);
+        } catch (_) {
+            setMyReviews([]);
+        } finally {
+            setLoadingReviews(false);
+        }
+    }, []);
+
+    const handleDeleteReview = useCallback((review) => {
+        Alert.alert('Удалить отзыв?', `Отзыв на «${review.boat_title || 'Катер'}» будет удалён.`, [
+            { text: 'Отмена', style: 'cancel' },
+            {
+                text: 'Удалить',
+                style: 'destructive',
+                onPress: async () => {
+                    try {
+                        await api.delete(`/auth/reviews/${review.id}`);
+                        setMyReviews((prev) => prev.filter((r) => r.id !== review.id));
+                        fetchReviewsCount();
+                    } catch (e) {
+                        Alert.alert('Ошибка', e.response?.data?.error || 'Не удалось удалить отзыв');
+                    }
+                },
+            },
+        ]);
+    }, [fetchReviewsCount]);
+
+    const startEditReview = useCallback((review) => {
+        setEditingReviewId(review.id);
+        setEditRating(review.rating ?? 5);
+        setEditText(review.text || '');
+    }, []);
+
+    const saveEditReview = useCallback(async () => {
+        if (!editingReviewId) return;
+        const textTrim = editText.trim();
+        if (textTrim.length < 20) {
+            Alert.alert('Ошибка', 'Текст отзыва должен быть не короче 20 символов');
+            return;
+        }
+        setSavingReview(true);
+        try {
+            await api.patch(`/auth/reviews/${editingReviewId}`, { rating: editRating, text: textTrim });
+            setMyReviews((prev) => prev.map((r) => (r.id === editingReviewId ? { ...r, rating: editRating, text: textTrim } : r)));
+            setEditingReviewId(null);
+            fetchReviewsCount();
+        } catch (e) {
+            Alert.alert('Ошибка', e.response?.data?.error || 'Не удалось сохранить отзыв');
+        } finally {
+            setSavingReview(false);
+        }
+    }, [editingReviewId, editRating, editText, fetchReviewsCount]);
+
     const stats = [
         { label: 'Поездки', value: String(completedTrips), icon: Calendar, onPress: () => navigation.navigate('Bookings') },
-        { label: 'Отзывы', value: String(reviewsCount), icon: Star },
+        { label: 'Отзывы', value: String(reviewsCount), icon: Star, onPress: openReviewsModal },
         { label: 'Избранное', value: String(favoriteBoats?.length ?? 0), icon: Heart, onPress: () => navigation.navigate('Favorites') },
     ];
 
     return (
+        <>
         <ScrollView style={styles.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
             <LinearGradient colors={['#1B365D', '#0F2341']} style={[styles.profileGradient, { height: 140 + insets.top }]} />
             <View style={[styles.profileCard, { marginTop: -64 }]}>
@@ -127,6 +215,82 @@ export default function ProfileScreen({ navigation }) {
             </TouchableOpacity>
             <View style={styles.versionContainer}><Text style={styles.versionText}>ONTHEWATER v1.0.0</Text></View>
         </ScrollView>
+
+        <Modal visible={reviewsModalVisible} animationType="slide" transparent>
+            <View style={styles.modalOverlay}>
+                <View style={[styles.reviewsModal, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16 }]}>
+                    <View style={styles.reviewsModalHeader}>
+                        <Text style={styles.reviewsModalTitle}>Мои отзывы</Text>
+                        <TouchableOpacity onPress={() => { setReviewsModalVisible(false); setEditingReviewId(null); }} hitSlop={12}>
+                            <X size={24} color={theme.colors.gray700} />
+                        </TouchableOpacity>
+                    </View>
+                    {editingReviewId ? (
+                        <View style={styles.editReviewForm}>
+                            <Text style={styles.editReviewLabel}>Оценка</Text>
+                            <View style={styles.starRow}>
+                                {[1, 2, 3, 4, 5].map((n) => (
+                                    <TouchableOpacity key={n} onPress={() => setEditRating(n)} style={styles.starBtn}>
+                                        <Star size={28} color={n <= editRating ? theme.colors.primary : theme.colors.border} fill={n <= editRating ? theme.colors.primary : 'transparent'} />
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                            <Text style={styles.editReviewLabel}>Текст отзыва (не менее 20 символов)</Text>
+                            <TextInput
+                                style={styles.editReviewInput}
+                                value={editText}
+                                onChangeText={setEditText}
+                                placeholder="Ваш отзыв..."
+                                multiline
+                                numberOfLines={4}
+                            />
+                            <View style={styles.editReviewActions}>
+                                <TouchableOpacity style={styles.editReviewCancelBtn} onPress={() => setEditingReviewId(null)}>
+                                    <Text style={styles.editReviewCancelText}>Отмена</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.editReviewSaveBtn} onPress={saveEditReview} disabled={savingReview}>
+                                    {savingReview ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.editReviewSaveText}>Сохранить</Text>}
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    ) : null}
+                    {loadingReviews ? (
+                        <View style={styles.reviewsModalLoading}><ActivityIndicator size="large" color={theme.colors.primary} /></View>
+                    ) : myReviews.length === 0 ? (
+                        <Text style={styles.reviewsModalEmpty}>Вы ещё не оставляли отзывов</Text>
+                    ) : (
+                        <FlatList
+                            data={myReviews}
+                            keyExtractor={(item) => String(item.id)}
+                            contentContainerStyle={styles.reviewsListContent}
+                            renderItem={({ item }) => (
+                                <View style={styles.reviewCard}>
+                                    <Text style={styles.reviewCardBoat}>{item.boat_title || 'Катер'}</Text>
+                                    <View style={styles.reviewCardStars}>
+                                        {[1, 2, 3, 4, 5].map((n) => (
+                                            <Star key={n} size={16} color={n <= (item.rating || 0) ? theme.colors.primary : theme.colors.border} fill={n <= (item.rating || 0) ? theme.colors.primary : 'transparent'} />
+                                        ))}
+                                    </View>
+                                    <Text style={styles.reviewCardText} numberOfLines={4}>{item.text || ''}</Text>
+                                    <Text style={styles.reviewCardDate}>{item.created_at ? new Date(item.created_at).toLocaleDateString('ru-RU') : ''}</Text>
+                                    <View style={styles.reviewCardActions}>
+                                        <TouchableOpacity style={styles.reviewCardEditBtn} onPress={() => startEditReview(item)}>
+                                            <Pencil size={18} color={theme.colors.primary} />
+                                            <Text style={styles.reviewCardEditText}>Редактировать</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.reviewCardDeleteBtn} onPress={() => handleDeleteReview(item)}>
+                                            <Trash2 size={18} color={theme.colors.error} />
+                                            <Text style={styles.reviewCardDeleteText}>Удалить</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            )}
+                        />
+                    )}
+                </View>
+            </View>
+        </Modal>
+    </>
     );
 }
 
@@ -219,4 +383,31 @@ const styles = StyleSheet.create({
     loginButtonText: { color: '#fff', fontSize: 16, fontFamily: theme.fonts.bold },
     registerButton: { backgroundColor: 'transparent', paddingVertical: 14, borderRadius: theme.borderRadius.xl, alignItems: 'center', borderWidth: 1, borderColor: theme.colors.primary, marginBottom: theme.spacing.xl },
     registerButtonText: { color: theme.colors.primary, fontSize: 16, fontFamily: theme.fonts.semiBold },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+    reviewsModal: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '90%', paddingHorizontal: theme.spacing.lg },
+    reviewsModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: theme.spacing.md, borderBottomWidth: 1, borderBottomColor: theme.colors.gray100 },
+    reviewsModalTitle: { fontSize: 20, fontFamily: theme.fonts.bold, color: theme.colors.gray900 },
+    reviewsModalLoading: { paddingVertical: 48, alignItems: 'center' },
+    reviewsModalEmpty: { paddingVertical: 32, fontSize: 16, color: theme.colors.gray500, textAlign: 'center' },
+    reviewsListContent: { paddingVertical: theme.spacing.md, paddingBottom: theme.spacing.xl },
+    reviewCard: { backgroundColor: theme.colors.gray50, borderRadius: 16, padding: theme.spacing.md, marginBottom: theme.spacing.sm },
+    reviewCardBoat: { fontSize: 16, fontFamily: theme.fonts.semiBold, color: theme.colors.gray900, marginBottom: 4 },
+    reviewCardStars: { flexDirection: 'row', gap: 2, marginBottom: 8 },
+    reviewCardText: { fontSize: 14, color: theme.colors.gray700, marginBottom: 4 },
+    reviewCardDate: { fontSize: 12, color: theme.colors.gray400, marginBottom: 12 },
+    reviewCardActions: { flexDirection: 'row', gap: 16 },
+    reviewCardEditBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    reviewCardEditText: { fontSize: 14, color: theme.colors.primary, fontFamily: theme.fonts.medium },
+    reviewCardDeleteBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    reviewCardDeleteText: { fontSize: 14, color: theme.colors.error, fontFamily: theme.fonts.medium },
+    editReviewForm: { paddingVertical: theme.spacing.md, borderBottomWidth: 1, borderBottomColor: theme.colors.gray100 },
+    editReviewLabel: { fontSize: 14, fontFamily: theme.fonts.medium, color: theme.colors.gray700, marginBottom: 8, marginTop: 12 },
+    starRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+    starBtn: { padding: 4 },
+    editReviewInput: { borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, padding: 12, fontSize: 16, minHeight: 100, textAlignVertical: 'top' },
+    editReviewActions: { flexDirection: 'row', gap: 12, marginTop: 16 },
+    editReviewCancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: theme.colors.gray100, alignItems: 'center' },
+    editReviewCancelText: { fontSize: 16, fontFamily: theme.fonts.medium, color: theme.colors.gray700 },
+    editReviewSaveBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: theme.colors.primary, alignItems: 'center', justifyContent: 'center', minHeight: 48 },
+    editReviewSaveText: { fontSize: 16, fontFamily: theme.fonts.semiBold, color: '#fff' },
 });
