@@ -13,11 +13,58 @@ router.get('/', authenticate, async (req, res, next) => {
     }
 });
 
+// Получить или создать чат с владельцем катера (для кнопки «Написать владельцу»)
+router.post('/', authenticate, async (req, res, next) => {
+    try {
+        const boatId = parseInt(req.body && req.body.boat_id, 10);
+        if (!boatId || Number.isNaN(boatId)) {
+            return res.status(400).json({ error: 'Укажите boat_id' });
+        }
+        const userId = req.user.id;
+        const { rows: boatRows } = await pool.query(
+            'SELECT id, owner_id, title FROM boats WHERE id = $1 AND status != $2',
+            [boatId, 'deleted']
+        );
+        if (boatRows.length === 0) {
+            return res.status(404).json({ error: 'Катер не найден' });
+        }
+        const boat = boatRows[0];
+        const ownerId = boat.owner_id;
+        if (userId === ownerId) {
+            return res.status(400).json({ error: 'Нельзя создать чат с самим собой' });
+        }
+        let { rows: existing } = await pool.query(
+            'SELECT * FROM chats WHERE user_id = $1 AND boat_id = $2 LIMIT 1',
+            [userId, boatId]
+        );
+        if (existing.length > 0) {
+            return res.status(200).json(existing[0]);
+        }
+        const { rows: ownerRows } = await pool.query(
+            'SELECT name FROM users WHERE id = $1',
+            [ownerId]
+        );
+        const ownerName = ownerRows[0] && ownerRows[0].name ? ownerRows[0].name : 'Владелец';
+        const userName = req.user.name || req.user.email || 'Гость';
+        const { rows: inserted } = await pool.query(
+            `INSERT INTO chats (user_id, owner_id, boat_id, boat_title, user_name, owner_name)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING *`,
+            [userId, ownerId, boatId, boat.title || '', userName, ownerName]
+        );
+        res.status(201).json(inserted[0]);
+    } catch (err) {
+        next(err);
+    }
+});
+
 router.get('/:id', authenticate, async (req, res, next) => {
     try {
+        const id = parseInt(req.params.id, 10);
+        if (Number.isNaN(id)) return res.status(400).json({ error: 'Неверный id чата' });
         const { rows } = await pool.query(
             'SELECT * FROM chats WHERE id = $1 AND (user_id = $2 OR owner_id = $2)',
-            [parseInt(req.params.id, 10), req.user.id]
+            [id, req.user.id]
         );
         if (rows.length === 0) return res.status(404).json({ error: 'Not found' });
         res.json(rows[0]);
@@ -28,9 +75,18 @@ router.get('/:id', authenticate, async (req, res, next) => {
 
 router.get('/:id/messages', authenticate, async (req, res, next) => {
     try {
+        const id = parseInt(req.params.id, 10);
+        if (Number.isNaN(id)) return res.status(400).json({ error: 'Неверный id чата' });
+        const { rows: chatRows } = await pool.query('SELECT owner_id FROM chats WHERE id = $1', [id]);
+        if (chatRows.length > 0 && parseInt(chatRows[0].owner_id, 10) === parseInt(req.user.id, 10)) {
+            await pool.query(
+                `UPDATE messages SET read = true WHERE chat_id = $1 AND sender = 'me' AND (read = false OR read IS NULL)`,
+                [id]
+            );
+        }
         const { rows } = await pool.query(
             'SELECT * FROM messages WHERE chat_id = $1 ORDER BY created_at',
-            [parseInt(req.params.id, 10)]
+            [id]
         );
         res.json(rows);
     } catch (err) {

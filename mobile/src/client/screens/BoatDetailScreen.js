@@ -170,6 +170,12 @@ const getCalendarGrid = (monthDate) => {
     return grid;
 };
 
+function pluralizeBookings(n) {
+    if (n === 1) return 'бронирование';
+    if (n >= 2 && n <= 4) return 'бронирования';
+    return 'бронирований';
+}
+
 export default function BoatDetailScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
     const { user } = useContext(AuthContext);
@@ -190,6 +196,7 @@ export default function BoatDetailScreen({ route, navigation }) {
     const [photoGalleryVisible, setPhotoGalleryVisible] = useState(false);
     const galleryFlatListRef = useRef(null);
     const [descExpanded, setDescExpanded] = useState(false);
+    const [rulesExpanded, setRulesExpanded] = useState(false);
     const [specsOpen, setSpecsOpen] = useState(false);
     const [featuresExpanded, setFeaturesExpanded] = useState(false);
     const [similarBoats, setSimilarBoats] = useState([]);
@@ -211,6 +218,22 @@ export default function BoatDetailScreen({ route, navigation }) {
     const scrollToCancellationPolicy = () => {
         if (scrollRef.current) scrollRef.current.scrollToEnd({ animated: true });
     };
+
+    const openChatWithOwner = useCallback(async () => {
+        if (!boatId) return;
+        try {
+            const res = await api.post('/chats', { boat_id: boatId });
+            const chat = res.data;
+            if (chat && chat.id) {
+                navigation.navigate('ChatDetail', { chatId: chat.id });
+            } else {
+                Alert.alert('Ошибка', 'Не удалось открыть чат');
+            }
+        } catch (e) {
+            const msg = e.response?.data?.error || 'Не удалось открыть чат';
+            Alert.alert('Ошибка', msg);
+        }
+    }, [boatId, navigation]);
 
     useEffect(() => {
         if (boatId) fetchBoat();
@@ -326,6 +349,8 @@ export default function BoatDetailScreen({ route, navigation }) {
     const photos = boat.photos?.length ? boat.photos.map(resolvePhotoUri) : ['https://placehold.co/800x600/png'];
     const description = boat.description || '';
     const descShort = description.length > 160 ? description.slice(0, 160) + '...' : description;
+    const rulesText = boat.rules || '';
+    const rulesShort = rulesText.length > 160 ? rulesText.slice(0, 160) + '...' : rulesText;
     const amenities = boat.amenities?.length ? boat.amenities : [];
     const rating = boat.rating ?? 0;
     const reviewsCount = boat.reviews_count ?? 0;
@@ -571,14 +596,17 @@ export default function BoatDetailScreen({ route, navigation }) {
                 </Modal>
 
                 <View style={styles.content}>
-                    {/* ============ TYPE + CITY + TITLE + RATING ============ */}
+                    {/* ============ TITLE + TYPE + CITY + RATING ============ */}
+                    <Text style={styles.title}>{boat.title}</Text>
                     {boat.type_name ? (
                         <Text style={styles.typeLabel}>Тип судна: {boat.type_name}</Text>
                     ) : null}
                     <Text style={styles.cityLabel}>
                         {(boat.location_city || '').toUpperCase()}
                     </Text>
-                    <Text style={styles.title}>{boat.title}</Text>
+                    <Text style={styles.bookingsCountTop}>
+                        {boat.bookings_count ?? 0} {pluralizeBookings(boat.bookings_count ?? 0)}
+                    </Text>
                     <TouchableOpacity style={styles.ratingRow} onPress={openReviewsModal}>
                         <Star size={16} color={theme.colors.star} fill={theme.colors.star} />
                         <Text style={styles.ratingText}> {rating}</Text>
@@ -849,7 +877,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                             </View>
                             <TouchableOpacity
                                 style={styles.messageBtn}
-                                onPress={() => navigation.navigate('ChatDetail', { chatId: `boat-${boatId}`, boatId })}
+                                onPress={openChatWithOwner}
                             >
                                 <Text style={styles.messageBtnText}>НАПИСАТЬ ВЛАДЕЛЬЦУ</Text>
                             </TouchableOpacity>
@@ -864,7 +892,16 @@ export default function BoatDetailScreen({ route, navigation }) {
                         {boat.rules ? (
                             <>
                                 <Text style={styles.subSectionTitle}>Правила поведения на катере</Text>
-                                <Text style={styles.bodyText}>{boat.rules}</Text>
+                                <Text style={styles.bodyText}>
+                                    {rulesExpanded ? rulesText : rulesShort}
+                                </Text>
+                                {rulesText.length > 160 && (
+                                    <TouchableOpacity onPress={() => setRulesExpanded(!rulesExpanded)}>
+                                        <Text style={styles.viewAll}>
+                                            {rulesExpanded ? 'Свернуть' : 'Подробнее'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                )}
                             </>
                         ) : null}
                         {hasCancellationPolicy ? (
@@ -1418,7 +1455,8 @@ const styles = StyleSheet.create({
     content: { paddingHorizontal: 20, paddingTop: 20 },
     typeLabel: { fontSize: 13, fontFamily: theme.fonts.medium, color: theme.colors.textMuted, marginBottom: 4 },
     cityLabel: { fontSize: 12, fontFamily: theme.fonts.regular, color: theme.colors.textMuted, letterSpacing: 0.5, marginBottom: 4 },
-    title: { fontSize: 22, fontFamily: theme.fonts.bold, color: NAVY, lineHeight: 28, marginBottom: 8 },
+    title: { fontSize: 22, fontFamily: theme.fonts.bold, color: NAVY, lineHeight: 28, marginBottom: 4 },
+    bookingsCountTop: { fontSize: 14, fontFamily: theme.fonts.regular, color: theme.colors.textMuted, marginBottom: 8 },
     ratingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
     ratingText: { fontSize: 15, fontFamily: theme.fonts.semiBold, color: NAVY },
     ratingCount: { fontSize: 14, fontFamily: theme.fonts.regular, color: theme.colors.textMuted },

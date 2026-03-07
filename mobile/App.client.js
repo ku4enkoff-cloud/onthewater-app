@@ -24,13 +24,6 @@ SplashScreen.preventAutoHideAsync();
 
 const ONBOARDING_KEY = '@boatrent_onboarding_done';
 
-if (Platform.OS === 'android' || Platform.OS === 'ios') {
-  try {
-    const YaMap = require('react-native-yamap').default;
-    YaMap.init('84448445-01d9-454b-8398-9adaaf19ad61');
-  } catch (_) {}
-}
-
 class ErrorBoundary extends React.Component {
   state = { hasError: false, error: null };
   static getDerivedStateFromError(error) {
@@ -117,6 +110,18 @@ export default function App() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
 
   useEffect(() => {
+    if (Platform.OS !== 'android' && Platform.OS !== 'ios') return;
+    let cancelled = false;
+    try {
+      const { YANDEX_MAPKIT_API_KEY } = require('./src/shared/infrastructure/config');
+      const YaMap = require('react-native-yamap').default;
+      const key = YANDEX_MAPKIT_API_KEY && String(YANDEX_MAPKIT_API_KEY).trim();
+      if (key && !cancelled) YaMap.init(key).catch((err) => { if (__DEV__) console.warn('[YaMap] init failed:', err?.message || err); });
+    } catch (_) {}
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     const done = () => {
       if (!cancelled) setFontsLoaded(true);
@@ -170,10 +175,12 @@ export default function App() {
     return () => clearTimeout(t);
   }, []);
 
-  // Не показывать чёрный экран: пока грузятся шрифты — фон как у сплэша
+  // Не показывать чёрный экран: пока грузятся шрифты — фон как у сплэша и индикатор
   if (!fontsLoaded) {
     return (
-      <View style={{ flex: 1, backgroundColor: theme.colors.waveDark }} onLayout={onLayoutRootView} />
+      <View style={{ flex: 1, backgroundColor: theme.colors.waveDark, justifyContent: 'center', alignItems: 'center' }} onLayout={onLayoutRootView}>
+        <ActivityIndicator size="large" color="#FFFFFF" />
+      </View>
     );
   }
 

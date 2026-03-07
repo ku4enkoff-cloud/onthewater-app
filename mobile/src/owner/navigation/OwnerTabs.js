@@ -1,6 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Anchor, Ship, Settings, MessageCircle, User } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import OwnerDashboardScreen from '../screens/OwnerDashboardScreen';
@@ -13,6 +14,10 @@ const TEAL = '#0D5C5C';
 const Tab = createBottomTabNavigator();
 
 export default function OwnerTabs() {
+    const insets = useSafeAreaInsets();
+    const tabBarHeight = 62 + insets.bottom;
+    const tabBarPaddingBottom = 6 + insets.bottom;
+
     return (
         <Tab.Navigator
             screenOptions={({ route }) => ({
@@ -21,9 +26,12 @@ export default function OwnerTabs() {
                 tabBarInactiveTintColor: theme.colors.textMuted,
                 tabBarLabelStyle: { fontSize: 11, fontFamily: theme.fonts.medium, marginTop: -2 },
                 tabBarStyle: {
-                    paddingBottom: 6, paddingTop: 8, height: 62,
+                    paddingBottom: tabBarPaddingBottom,
+                    paddingTop: 8,
+                    height: tabBarHeight,
                     backgroundColor: '#fff',
-                    borderTopWidth: 0.5, borderTopColor: '#E5E7EB',
+                    borderTopWidth: 0.5,
+                    borderTopColor: '#E5E7EB',
                 },
                 tabBarIcon: ({ color, focused }) => {
                     const sz = 22;
