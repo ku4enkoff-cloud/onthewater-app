@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-    ChevronLeft, Ship, Anchor, Waves, Sailboat, Move3d, Zap, Layers,
+    ChevronLeft, Ship, Anchor, Waves, Sailboat, Move3d, Zap, Layers, Home, Fish, Wind,
 } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
@@ -15,13 +15,13 @@ try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (
 const GRADIENT = ['#0A4D4D', '#0D5C5C', '#1A7A5A'];
 const TEAL = '#0D5C5C';
 
-const NAME_TO_ICON = {
-    катер: Ship, яхта: Anchor, гидроцикл: Zap, 'парусная яхта': Sailboat,
-    катамаран: Move3d, буксировщик: Waves, понтон: Layers,
+const ICON_MAP = {
+    ship: Ship, anchor: Anchor, waves: Waves, sailboat: Sailboat,
+    zap: Zap, move3d: Move3d, layers: Layers, home: Home, fish: Fish, wind: Wind,
 };
-const getIconForName = (name) => {
-    const key = (name || '').toLowerCase().trim();
-    return NAME_TO_ICON[key] || Ship;
+const getIcon = (iconKey) => {
+    const key = (iconKey || '').toLowerCase().trim();
+    return ICON_MAP[key] || Ship;
 };
 
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -53,7 +53,7 @@ export default function BoatTypeScreen({ navigation }) {
         id: String(t.id),
         name: t.name || '',
         slug: (t.name || '').toLowerCase().replace(/\s+/g, '_'),
-        Icon: getIconForName(t.name),
+        Icon: getIcon(t.icon),
     }));
 
     return (
