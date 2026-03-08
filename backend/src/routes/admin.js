@@ -278,8 +278,8 @@ router.get('/boat-types', async (req, res, next) => {
     try {
         let { rows } = await pool.query('SELECT * FROM boat_types ORDER BY sort_order ASC, id ASC');
         if (rows.length === 0) {
-            const def = [['Парусная яхта','https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400',0],['Яхта','https://images.unsplash.com/photo-1567894340315-735d7c361db0?w=400',1],['Понтон','https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400',2],['Катер','https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400',3],['Буксировщик','https://images.unsplash.com/photo-1567894340315-735d7c361db0?w=400',4],['Гидроцикл','https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400',5]];
-            for (const [n,i,s] of def) await pool.query('INSERT INTO boat_types (name, slug, image, sort_order) VALUES ($1,$2,$3,$4)', [n, slugFromName(n), i, s]);
+            const def = [['Парусная яхта','https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400',0,'sailboat'],['Яхта','https://images.unsplash.com/photo-1567894340315-735d7c361db0?w=400',1,'anchor'],['Понтон','https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400',2,'layers'],['Катер','https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400',3,'ship'],['Буксировщик','https://images.unsplash.com/photo-1567894340315-735d7c361db0?w=400',4,'waves'],['Гидроцикл','https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400',5,'zap']];
+            for (const [n,i,s,ic] of def) await pool.query('INSERT INTO boat_types (name, slug, image, sort_order, icon) VALUES ($1,$2,$3,$4,$5)', [n, slugFromName(n), i, s, ic || 'ship']);
             const r = await pool.query('SELECT * FROM boat_types ORDER BY sort_order ASC, id ASC');
             rows = r.rows;
         }
@@ -294,9 +294,10 @@ router.post('/boat-types', boatTypeUpload, async (req, res, next) => {
         const name = (req.body?.name != null) ? String(req.body.name).trim() : '';
         if (!name) return res.status(400).json({ error: 'Укажите название типа' });
         const slug = slugFromName(name);
+        const icon = (req.body?.icon != null && String(req.body.icon).trim()) ? String(req.body.icon).trim() : 'ship';
         const file = req.files?.photo?.[0];
         const image = (file && (file.location || file.filename)) ? (file.location || '/uploads/' + path.basename(file.filename)) : '';
-        const { rows } = await pool.query('INSERT INTO boat_types (name, slug, image, sort_order) VALUES ($1,$2,$3,COALESCE((SELECT MAX(sort_order) FROM boat_types),0)+1) RETURNING *', [name, slug, image]);
+        const { rows } = await pool.query('INSERT INTO boat_types (name, slug, image, sort_order, icon) VALUES ($1,$2,$3,COALESCE((SELECT MAX(sort_order) FROM boat_types),0)+1,$4) RETURNING *', [name, slug, image, icon]);
         res.status(201).json(rows[0]);
     } catch (err) {
         console.error('[POST /admin/boat-types]', err);
@@ -311,10 +312,11 @@ router.put('/boat-types/:id', boatTypeUpload, async (req, res, next) => {
         if (ex.length === 0) return res.status(404).json({ error: 'Тип не найден' });
         const name = (req.body?.name != null) ? String(req.body.name).trim() : (ex[0].name || '');
         const slug = slugFromName(name);
+        const icon = (req.body?.icon != null && String(req.body.icon).trim()) ? String(req.body.icon).trim() : (ex[0].icon || 'ship');
         const file = req.files?.photo?.[0];
         let image = ex[0].image || '';
         if (file) image = file.location || '/uploads/' + path.basename(file.filename) || image;
-        await pool.query('UPDATE boat_types SET name = $1, slug = $2, image = $3 WHERE id = $4', [name, slug, image, id]);
+        await pool.query('UPDATE boat_types SET name = $1, slug = $2, image = $3, icon = $4 WHERE id = $5', [name, slug, image, icon, id]);
         const { rows } = await pool.query('SELECT * FROM boat_types WHERE id = $1', [id]);
         res.json(rows[0]);
     } catch (err) { next(err); }

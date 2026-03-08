@@ -5,6 +5,19 @@ import Modal from '../components/Modal';
 import modalStyles from '../components/Modal.module.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
+
+const ICON_OPTIONS = [
+  { value: 'ship', label: 'Катер' },
+  { value: 'anchor', label: 'Яхта' },
+  { value: 'waves', label: 'Буксировщик' },
+  { value: 'sailboat', label: 'Парусная яхта' },
+  { value: 'zap', label: 'Гидроцикл' },
+  { value: 'move3d', label: 'Катамаран' },
+  { value: 'layers', label: 'Понтон' },
+  { value: 'home', label: 'Хаусбот' },
+  { value: 'fish', label: 'Рыболовный катер' },
+  { value: 'wind', label: 'Скорость/ветер' },
+];
 function photoUrl(photo) {
   if (!photo) return null;
   return photo.startsWith('http') ? photo : `${API_BASE}${photo.startsWith('/') ? '' : '/'}${photo}`;
@@ -29,7 +42,7 @@ export default function BoatTypes() {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: '' });
+  const [form, setForm] = useState({ name: '', icon: 'ship' });
   const [photoFile, setPhotoFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -44,14 +57,14 @@ export default function BoatTypes() {
 
   const openAdd = () => {
     setEditing({ id: null });
-    setForm({ name: '' });
+    setForm({ name: '', icon: 'ship' });
     setPhotoFile(null);
     setError('');
   };
 
   const openEdit = (item) => {
     setEditing(item);
-    setForm({ name: item.name || '' });
+    setForm({ name: item.name || '', icon: item.icon || 'ship' });
     setPhotoFile(null);
     setError('');
   };
@@ -69,11 +82,13 @@ export default function BoatTypes() {
       if (editing.id) {
         const formData = new FormData();
         formData.append('name', name);
+        formData.append('icon', form.icon || 'ship');
         if (photoFile) formData.append('photo', photoFile);
         await api.put(`/admin/boat-types/${editing.id}`, formData);
       } else {
         const formData = new FormData();
         formData.append('name', name);
+        formData.append('icon', form.icon || 'ship');
         if (photoFile) formData.append('photo', photoFile);
         await api.post('/admin/boat-types', formData);
       }
@@ -203,6 +218,21 @@ export default function BoatTypes() {
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="Катер, Яхта, Гидроцикл…"
               />
+            </div>
+            <div className={modalStyles.formRow}>
+              <label className={modalStyles.label}>Иконка в приложении</label>
+              <select
+                className={modalStyles.select}
+                value={form.icon || 'ship'}
+                onChange={(e) => setForm({ ...form, icon: e.target.value })}
+              >
+                {ICON_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <p className={modalStyles.label} style={{ marginTop: 4, fontSize: '0.8rem', color: '#64748b' }}>
+                Отображается в приложении владельца при выборе типа судна
+              </p>
             </div>
             <div className={modalStyles.formRow}>
               <label className={modalStyles.label}>Фото</label>
