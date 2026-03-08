@@ -16,12 +16,12 @@ const DEFAULT = [
 
 router.get('/', async (req, res, next) => {
     try {
-        let { rows } = await pool.query('SELECT id, name, image, sort_order FROM boat_types ORDER BY sort_order ASC, id ASC');
+        let { rows } = await pool.query('SELECT id, name, image, sort_order, icon FROM boat_types ORDER BY sort_order ASC, id ASC');
         if (rows.length === 0) {
             for (const [n, i, s] of DEFAULT) {
                 await pool.query('INSERT INTO boat_types (name, image, sort_order) VALUES ($1, $2, $3)', [n, i, s]);
             }
-            const r = await pool.query('SELECT id, name, image, sort_order FROM boat_types ORDER BY sort_order ASC, id ASC');
+            const r = await pool.query('SELECT id, name, image, sort_order, icon FROM boat_types ORDER BY sort_order ASC, id ASC');
             rows = r.rows;
         }
         res.json(rows);

@@ -187,6 +187,8 @@ async function migrate() {
             )
         `);
 
+        await client.query(`ALTER TABLE boat_types ADD COLUMN IF NOT EXISTS icon VARCHAR(50) DEFAULT 'ship'`).catch(() => {});
+
         const { rows: typesCount } = await client.query('SELECT COUNT(*) FROM boat_types');
         if (parseInt(typesCount[0].count, 10) === 0) {
             const defaultTypes = [
