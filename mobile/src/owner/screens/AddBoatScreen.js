@@ -63,7 +63,8 @@ export default function AddBoatScreen({ navigation, route }) {
             payload.append('year', boatInfo?.year || '');
             payload.append('length_m', '');
             payload.append('capacity', String(boatInfo?.capacity || '0'));
-            payload.append('amenities', JSON.stringify(boatInfo?.amenities || []));
+            const amenities = [...(boatInfo?.amenities || []), ...(boatInfo?.waterSports || [])];
+            payload.append('amenities', JSON.stringify(amenities));
             payload.append('location_country', boatLocation?.country || '');
             payload.append('location_region', boatLocation?.region || '');
             payload.append('location_city', boatLocation?.city || '');

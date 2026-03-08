@@ -17,6 +17,9 @@ try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (
 const GRADIENT = ['#0A4D4D', '#0D5C5C', '#1A7A5A'];
 const TEAL = '#0D5C5C';
 
+const WATER_SPORTS_OPTIONS = ['Вейксерф', 'Вейкборд', 'Водные лыжи'];
+const isTugboat = (name) => (name || '').toLowerCase().includes('буксировщик');
+
 const AMENITIES = [
     { id: 'gps',        label: 'GPS-навигация',  Icon: ShieldCheck },
     { id: 'wifi',       label: 'Wi-Fi',           Icon: Wifi },
@@ -40,10 +43,17 @@ export default function BoatInfoScreen({ navigation, route }) {
     const [yearOpen, setYearOpen] = useState(false);
     const [capacity, setCapacity] = useState('');
     const [selectedAmenities, setSelectedAmenities] = useState([]);
+    const [waterSports, setWaterSports] = useState([]);
 
     const toggleAmenity = (id) => {
         setSelectedAmenities((prev) =>
             prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id],
+        );
+    };
+
+    const toggleWaterSport = (name) => {
+        setWaterSports((prev) =>
+            prev.includes(name) ? prev.filter((s) => s !== name) : [...prev, name],
         );
     };
 
@@ -59,6 +69,7 @@ export default function BoatInfoScreen({ navigation, route }) {
                 year: year.trim(),
                 capacity: capacity.trim(),
                 amenities: selectedAmenities,
+                waterSports: isTugboat(boatType?.name) ? waterSports : [],
             },
         });
     };
@@ -188,6 +199,33 @@ export default function BoatInfoScreen({ navigation, route }) {
                             maxLength={3}
                         />
                     </View>
+
+                    {boatType && isTugboat(boatType.name) && (
+                        <>
+                            <Text style={s.sectionTitle}>Водные виды спорта</Text>
+                            <Text style={s.sectionHint}>Выберите доступные виды</Text>
+                            <View style={s.amenitiesGrid}>
+                                {WATER_SPORTS_OPTIONS.map((name) => {
+                                    const active = waterSports.includes(name);
+                                    return (
+                                        <TouchableOpacity
+                                            key={name}
+                                            style={[s.amenityChip, active && s.amenityChipActive]}
+                                            onPress={() => toggleWaterSport(name)}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Text style={[s.amenityLabel, active && s.amenityLabelActive]}>
+                                                {name}
+                                            </Text>
+                                            {active && (
+                                                <Check size={14} color="#fff" strokeWidth={2.5} style={{ marginLeft: 2 }} />
+                                            )}
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                        </>
+                    )}
 
                     {/* Amenities */}
                     <Text style={s.sectionTitle}>Удобства</Text>

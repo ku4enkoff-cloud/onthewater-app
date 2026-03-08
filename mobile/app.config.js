@@ -10,18 +10,23 @@ export default {
     slug: isOwner ? 'boatrent-owner' : 'boatrent',
     version: '1.0.0',
     orientation: 'portrait',
-    icon: './assets/icon.png',
+    icon: isOwner ? './assets/icon-owner.png' : './assets/icon.png',
     userInterfaceStyle: 'light',
     splash: {
       image: './assets/splash.png',
       resizeMode: 'contain',
       backgroundColor: '#1B365D',
     },
-    ios: { supportsTablet: true },
+    ios: {
+      supportsTablet: true,
+      infoPlist: {
+        LSApplicationQueriesSchemes: ['yandexmaps', 'yandexnavi'],
+      },
+    },
     android: {
       adaptiveIcon: {
-        foregroundImage: './assets/adaptive-icon.png',
-        backgroundColor: '#ffffff',
+        foregroundImage: isOwner ? './assets/adaptive-icon-owner.png' : './assets/adaptive-icon.png',
+        backgroundColor: isOwner ? '#0a6e82' : '#ffffff',
       },
       package: isOwner ? 'com.anonymous.onthewater.owner' : 'com.anonymous.onthewater',
     },
