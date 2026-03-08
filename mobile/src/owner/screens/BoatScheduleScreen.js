@@ -154,6 +154,10 @@ export default function BoatScheduleScreen({ navigation, route }) {
     };
 
     const anyDaySelected = workDates.size > 0;
+    const hasWeekendSelected = anyDaySelected && Array.from(workDates).some((d) => {
+        const day = new Date(d).getDay();
+        return day === 0 || day === 6;
+    });
     const canContinue = anyDaySelected && pricePerHour.trim();
 
     const handleNext = () => {
@@ -322,10 +326,10 @@ export default function BoatScheduleScreen({ navigation, route }) {
                         <Text style={s.selectedCount}>Выбрано дней: {workDates.size}</Text>
                     )}
 
-                    {/* Working hours */}
+                    {/* Working hours - weekdays */}
                     {anyDaySelected && (
                         <View style={[s.hoursBlock, { zIndex: 20 }]}>
-                            <Text style={s.hoursLabel}>Часы работы</Text>
+                            <Text style={s.hoursLabel}>Часы работы (будни)</Text>
                             <View style={s.hoursRow}>
                                 <View style={{ flex: 1, zIndex: weekdayStartOpen ? 30 : 1 }}>
                                     <Text style={s.hoursSmallLabel}>С</Text>
@@ -335,6 +339,24 @@ export default function BoatScheduleScreen({ navigation, route }) {
                                 <View style={{ flex: 1, zIndex: weekdayEndOpen ? 30 : 1 }}>
                                     <Text style={s.hoursSmallLabel}>До</Text>
                                     {renderTimeDropdown(weekdayEnd, setWeekdayEnd, weekdayEndOpen, setWeekdayEndOpen)}
+                                </View>
+                            </View>
+                        </View>
+                    )}
+
+                    {/* Working hours - weekends */}
+                    {hasWeekendSelected && (
+                        <View style={[s.hoursBlock, { zIndex: 20 }]}>
+                            <Text style={s.hoursLabel}>Часы работы (выходные дни)</Text>
+                            <View style={s.hoursRow}>
+                                <View style={{ flex: 1, zIndex: weekendStartOpen ? 30 : 1 }}>
+                                    <Text style={s.hoursSmallLabel}>С</Text>
+                                    {renderTimeDropdown(weekendStart, setWeekendStart, weekendStartOpen, setWeekendStartOpen)}
+                                </View>
+                                <Text style={s.hoursDash}>—</Text>
+                                <View style={{ flex: 1, zIndex: weekendEndOpen ? 30 : 1 }}>
+                                    <Text style={s.hoursSmallLabel}>До</Text>
+                                    {renderTimeDropdown(weekendEnd, setWeekendEnd, weekendEndOpen, setWeekendEndOpen)}
                                 </View>
                             </View>
                         </View>

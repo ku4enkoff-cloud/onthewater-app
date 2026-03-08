@@ -472,9 +472,11 @@ export default function SearchResultsScreen({ route, navigation }) {
                         </View>
                     )}
                     <View style={styles.priceBadge}>
-                        <Text style={styles.priceBadgeText}>от {(Number(item.price_per_hour) || 0).toLocaleString('ru-RU')} ₽</Text>
-                        <Text style={styles.priceUnit}>
-                            /{(() => {
+                        {(() => {
+                            const weekday = Number(item.price_per_hour) || 0;
+                            const weekend = (item.price_weekend != null && String(item.price_weekend).trim() !== '')
+                                ? Number(item.price_weekend) : weekday;
+                            const dur = (() => {
                                 const m = Number(item.schedule_min_duration) || 60;
                                 if (m === 60) return 'час';
                                 if (m < 60) return `${m} мин`;
@@ -482,8 +484,22 @@ export default function SearchResultsScreen({ route, navigation }) {
                                 const min = m % 60;
                                 if (min === 0) return h === 1 ? 'час' : `${h} ч`;
                                 return `${h} ч ${min} мин`;
-                            })()}
-                        </Text>
+                            })();
+                            const same = weekday === weekend;
+                            return same
+                                ? (
+                                    <>
+                                        <Text style={styles.priceBadgeText}>от {weekday.toLocaleString('ru-RU')} ₽</Text>
+                                        <Text style={styles.priceUnit}>/{dur}</Text>
+                                    </>
+                                )
+                                : (
+                                    <>
+                                        <Text style={styles.priceBadgeText}>{weekday.toLocaleString('ru-RU')} ₽ будни · {weekend.toLocaleString('ru-RU')} ₽ вых.</Text>
+                                        <Text style={styles.priceUnit}>/{dur}</Text>
+                                    </>
+                                );
+                        })()}
                     </View>
                 </View>
 

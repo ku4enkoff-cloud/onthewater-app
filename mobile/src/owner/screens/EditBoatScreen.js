@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
     ScrollView, Alert, Image, ActivityIndicator, Platform, KeyboardAvoidingView, Modal,
 } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import {
     ChevronLeft, ChevronRight, ChevronDown, FileText, AlignLeft, ShieldCheck, Camera, X, Trash2,
-    Ship, MapPin, Clock, DollarSign, Users, Wrench, ImageIcon, Check, Plus,
+    Ship, MapPin, Clock, Users, Wrench, ImageIcon, Check, Plus, XCircle, Anchor, Waves,
 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../../shared/theme';
@@ -25,6 +26,8 @@ const AMENITIES_OPTIONS = [
     'Туалет', 'Кондиционер', 'Аудиосистема', 'Bluetooth', 'Спасательные жилеты',
     'Трап для купания', 'Холодильник', 'Якорь', 'Климат-контроль', 'Розетки 220В',
 ];
+const WATER_SPORTS_OPTIONS = ['Вейксерф', 'Вейкборд', 'Водные лыжи'];
+const isTugboat = (name) => (name || '').toLowerCase().includes('буксировщик');
 
 const WEEKDAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
@@ -61,6 +64,54 @@ let tierIdCounter = 1;
 
 const photoUrl = (src) => getPhotoUrl(src);
 
+const getMapHtml = (initLat, initLng) => {
+    const clat = (initLat != null && !isNaN(initLat)) ? initLat : 55.751244;
+    const clng = (initLng != null && !isNaN(initLng)) ? initLng : 37.618423;
+    const hasInit = initLat != null && initLng != null && !isNaN(initLat) && !isNaN(initLng);
+    const initMarker = hasInit
+        ? `marker = new ymaps.Placemark([${clat},${clng}],{},{preset:'islands#redDotIcon'}); map.geoObjects.add(marker);`
+        : '';
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<style>*{margin:0;padding:0} html,body,#map{width:100%;height:100%}</style>
+<script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&apikey=none" type="text/javascript"></script>
+</head>
+<body>
+<div id="map"></div>
+<script>
+ymaps.ready(function(){
+  var map = new ymaps.Map('map',{center:[${clat},${clng}],zoom:10,controls:['zoomControl']});
+  var marker = null;
+  ${initMarker}
+  function reverseGeocode(lat, lng) {
+    var url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&accept-language=ru';
+    fetch(url).then(function(r){return r.json();}).then(function(data){
+      var a = data.address || {};
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type:'geocode',
+        country:a.country||'', region:a.state||'', city:a.city||a.town||a.village||'',
+        address:(a.road||'')+(a.house_number?' '+a.house_number:'')
+      }));
+    }).catch(function(){window.ReactNativeWebView.postMessage(JSON.stringify({type:'geocode',country:'',region:'',city:'',address:''}));});
+  }
+  map.events.add('click',function(e){
+    var coords = e.get('coords');
+    if(marker) map.geoObjects.remove(marker);
+    marker = new ymaps.Placemark(coords,{},{preset:'islands#redDotIcon'});
+    map.geoObjects.add(marker);
+    window.ReactNativeWebView.postMessage(JSON.stringify({type:'coords', lat:coords[0], lng:coords[1]}));
+    reverseGeocode(coords[0], coords[1]);
+  });
+});
+</script>
+</body>
+</html>`;
+};
+
 export default function EditBoatScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
     const { boatId } = route.params || {};
@@ -72,7 +123,10 @@ export default function EditBoatScreen({ route, navigation }) {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [rules, setRules] = useState('');
+    const [cancellationPolicy, setCancellationPolicy] = useState('');
+    const [captainOption, setCaptainOption] = useState('none');
     const [typeId, setTypeId] = useState('1');
+    const [typeName, setTypeName] = useState('');
     const [manufacturer, setManufacturer] = useState('');
     const [model, setModel] = useState('');
     const [year, setYear] = useState('');
@@ -83,6 +137,12 @@ export default function EditBoatScreen({ route, navigation }) {
     const [locationAddress, setLocationAddress] = useState('');
     const [locationCountry, setLocationCountry] = useState('');
     const [locationYachtClub, setLocationYachtClub] = useState('');
+    const [lat, setLat] = useState(null);
+    const [lng, setLng] = useState(null);
+    const [mapCenterLat, setMapCenterLat] = useState(null);
+    const [mapCenterLng, setMapCenterLng] = useState(null);
+    const [mapReady, setMapReady] = useState(false);
+    const webRef = useRef(null);
     const [pricePerHour, setPricePerHour] = useState('');
     const [weekendPrice, setWeekendPrice] = useState('');
     const [amenities, setAmenities] = useState([]);
@@ -124,7 +184,11 @@ export default function EditBoatScreen({ route, navigation }) {
             setTitle(b.title || '');
             setDescription(b.description || '');
             setRules(b.rules || '');
+            setCancellationPolicy(b.cancellation_policy || '');
+            const cap = b.captain_included === true || b.captain_included === 1 || b.captain_included === '1';
+            setCaptainOption(cap ? 'included' : 'none');
             setTypeId(String(b.type_id || '1'));
+            setTypeName(b.type_name || '');
             setManufacturer(b.manufacturer || '');
             setModel(b.model || '');
             setYear(b.year ? String(b.year) : '');
@@ -135,6 +199,19 @@ export default function EditBoatScreen({ route, navigation }) {
             setLocationAddress(b.location_address || '');
             setLocationCountry(b.location_country || '');
             setLocationYachtClub(b.location_yacht_club || '');
+            if (b.lat != null && b.lng != null) {
+                const blat = parseFloat(b.lat);
+                const blng = parseFloat(b.lng);
+                setLat(blat);
+                setLng(blng);
+                setMapCenterLat(blat);
+                setMapCenterLng(blng);
+            } else {
+                setLat(null);
+                setLng(null);
+                setMapCenterLat(null);
+                setMapCenterLng(null);
+            }
             setPricePerHour(b.price_per_hour ? String(b.price_per_hour) : '');
             setWeekendPrice(b.price_weekend ? String(b.price_weekend) : '');
 
@@ -243,6 +320,26 @@ export default function EditBoatScreen({ route, navigation }) {
 
     const clearAllDates = () => setWorkDates(new Set());
 
+    const onMapMessage = (event) => {
+        try {
+            const data = JSON.parse(event.nativeEvent.data);
+            if (data.type === 'coords') {
+                setLat(data.lat);
+                setLng(data.lng);
+            } else if (data.type === 'geocode') {
+                if (data.country) setLocationCountry(data.country);
+                if (data.region) setLocationRegion(data.region);
+                if (data.city) setLocationCity(data.city);
+                if (data.address) setLocationAddress(data.address);
+            }
+        } catch (_) {}
+    };
+
+    const hasWeekendSelected = workDates.size > 0 && Array.from(workDates).some((d) => {
+        const day = new Date(d).getDay();
+        return day === 0 || day === 6;
+    });
+
     const closeAllDropdowns = () => {
         setWeekdayStartOpen(false); setWeekdayEndOpen(false);
         setWeekendStartOpen(false); setWeekendEndOpen(false);
@@ -327,6 +424,7 @@ export default function EditBoatScreen({ route, navigation }) {
             payload.append('title', title.trim());
             payload.append('description', description.trim());
             payload.append('type_id', typeId);
+            payload.append('type_name', boatTypes.find((t) => String(t.id) === typeId)?.name || 'Катер');
             payload.append('manufacturer', manufacturer);
             payload.append('model', model);
             payload.append('year', year);
@@ -337,6 +435,8 @@ export default function EditBoatScreen({ route, navigation }) {
             payload.append('location_address', locationAddress);
             payload.append('location_country', locationCountry);
             payload.append('location_yacht_club', locationYachtClub);
+            payload.append('lat', String(lat != null ? lat : 55.75));
+            payload.append('lng', String(lng != null ? lng : 37.62));
             payload.append('price_per_hour', pricePerHour);
             payload.append('price_per_day', '');
             payload.append('price_weekend', weekendPrice.trim());
@@ -352,10 +452,10 @@ export default function EditBoatScreen({ route, navigation }) {
                     ...(t.price_weekend != null && String(t.price_weekend).trim() && { price_weekend: String(t.price_weekend).trim() }),
                 })),
             ));
-            payload.append('captain_included', '0');
-            payload.append('has_captain_option', '0');
+            payload.append('captain_included', captainOption === 'included' ? '1' : '0');
+            payload.append('has_captain_option', captainOption === 'optional' ? '1' : '0');
             payload.append('rules', rules.trim());
-            payload.append('cancellation_policy', '');
+            payload.append('cancellation_policy', cancellationPolicy.trim());
             payload.append('amenities', JSON.stringify(amenities));
 
             const isLocalUri = (p) => typeof p === 'string' && (p.startsWith('file://') || p.startsWith('content://'));
@@ -481,7 +581,7 @@ export default function EditBoatScreen({ route, navigation }) {
                         {boatTypes.map((t) => {
                             const active = typeId === String(t.id);
                             return (
-                                <TouchableOpacity key={t.id} style={[s.chip, active && s.chipActive]} onPress={() => setTypeId(String(t.id))} activeOpacity={0.7}>
+                                <TouchableOpacity key={t.id} style={[s.chip, active && s.chipActive]} onPress={() => { setTypeId(String(t.id)); setTypeName(t.name || ''); }} activeOpacity={0.7}>
                                     <Text style={[s.chipText, active && s.chipTextActive]}>{t.name}</Text>
                                 </TouchableOpacity>
                             );
@@ -520,6 +620,32 @@ export default function EditBoatScreen({ route, navigation }) {
 
                     {/* Location */}
                     <SectionIcon icon={MapPin} label="Расположение" />
+                    <Text style={s.sectionHint}>Нажмите на карту, чтобы указать местоположение.</Text>
+                    <View style={s.mapContainer}>
+                        {!mapReady && (
+                            <View style={s.mapLoader}>
+                                <ActivityIndicator size="large" color={TEAL} />
+                                <Text style={s.mapLoaderText}>Загрузка карты...</Text>
+                            </View>
+                        )}
+                        <WebView
+                            ref={webRef}
+                            source={{ html: getMapHtml(mapCenterLat, mapCenterLng) }}
+                            style={[s.map, !mapReady && { opacity: 0 }]}
+                            onMessage={onMapMessage}
+                            onLoadEnd={() => setMapReady(true)}
+                            javaScriptEnabled
+                            domStorageEnabled
+                            scrollEnabled={false}
+                            nestedScrollEnabled={false}
+                        />
+                        {lat != null && lng != null && (
+                            <View style={s.coordsBadge}>
+                                <MapPin size={14} color="#fff" />
+                                <Text style={s.coordsText}>{lat.toFixed(5)}, {lng.toFixed(5)}</Text>
+                            </View>
+                        )}
+                    </View>
                     <View style={s.row}>
                         <View style={{ flex: 1 }}>
                             <Text style={s.smallLabel}>Страна</Text>
@@ -612,7 +738,7 @@ export default function EditBoatScreen({ route, navigation }) {
 
                     {workDates.size > 0 && (
                         <View style={[s.hoursBlock, { zIndex: 20 }]}>
-                            <Text style={s.hoursLabel}>Часы работы</Text>
+                            <Text style={s.hoursLabel}>Часы работы (будни)</Text>
                             <View style={s.hoursRow}>
                                 <View style={{ flex: 1, zIndex: weekdayStartOpen ? 30 : 1 }}>
                                     <Text style={s.hoursSmallLabel}>С</Text>
@@ -622,6 +748,23 @@ export default function EditBoatScreen({ route, navigation }) {
                                 <View style={{ flex: 1, zIndex: weekdayEndOpen ? 30 : 1 }}>
                                     <Text style={s.hoursSmallLabel}>До</Text>
                                     {renderTimeDropdown(weekdayEnd, setWeekdayEnd, weekdayEndOpen, setWeekdayEndOpen)}
+                                </View>
+                            </View>
+                        </View>
+                    )}
+
+                    {hasWeekendSelected && (
+                        <View style={[s.hoursBlock, { zIndex: 20 }]}>
+                            <Text style={s.hoursLabel}>Часы работы (выходные дни)</Text>
+                            <View style={s.hoursRow}>
+                                <View style={{ flex: 1, zIndex: weekendStartOpen ? 30 : 1 }}>
+                                    <Text style={s.hoursSmallLabel}>С</Text>
+                                    {renderTimeDropdown(weekendStart, setWeekendStart, weekendStartOpen, setWeekendStartOpen)}
+                                </View>
+                                <Text style={s.hoursDash}>—</Text>
+                                <View style={{ flex: 1, zIndex: weekendEndOpen ? 30 : 1 }}>
+                                    <Text style={s.hoursSmallLabel}>До</Text>
+                                    {renderTimeDropdown(weekendEnd, setWeekendEnd, weekendEndOpen, setWeekendEndOpen)}
                                 </View>
                             </View>
                         </View>
@@ -659,7 +802,7 @@ export default function EditBoatScreen({ route, navigation }) {
                         )}
                     </View>
 
-                    <SectionIcon icon={DollarSign} label="Стоимость аренды" />
+                    <Text style={[s.sectionTitle, { marginTop: 20 }]}>Стоимость аренды</Text>
                     <Text style={s.sectionHint}>Цена за {DURATION_OPTIONS.find((d) => d.value === minDuration)?.label || '1 час'}</Text>
                     <View style={s.editPriceRow}>
                         <TextInput
@@ -763,6 +906,23 @@ export default function EditBoatScreen({ route, navigation }) {
                         <Text style={s.addTierText}>Добавить стоимость</Text>
                     </TouchableOpacity>
 
+                    {/* Water sports (for tugboat) */}
+                    {isTugboat(boatTypes.find((t) => String(t.id) === typeId)?.name || typeName) && (
+                        <>
+                            <SectionIcon icon={Waves} label="Водные виды спорта" />
+                            <View style={s.chipRow}>
+                                {WATER_SPORTS_OPTIONS.map((name) => {
+                                    const active = amenities.includes(name);
+                                    return (
+                                        <TouchableOpacity key={name} style={[s.chip, active && s.chipActive]} onPress={() => toggleAmenity(name)} activeOpacity={0.7}>
+                                            <Text style={[s.chipText, active && s.chipTextActive]}>{name}</Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                        </>
+                    )}
+
                     {/* Amenities */}
                     <SectionIcon icon={Users} label="Удобства" />
                     <View style={s.chipRow}>
@@ -779,6 +939,59 @@ export default function EditBoatScreen({ route, navigation }) {
                     {/* Rules */}
                     <SectionIcon icon={ShieldCheck} label="Правила поведения" />
                     <TextInput style={[s.input, s.textArea]} value={rules} onChangeText={setRules} placeholder="Правила и ограничения" placeholderTextColor="#9CA3AF" multiline textAlignVertical="top" maxLength={1000} />
+
+                    {/* Cancellation policy */}
+                    <View style={s.fieldWrap}>
+                        <View style={s.fieldHeader}>
+                            <XCircle size={18} color={TEAL} />
+                            <Text style={s.fieldLabel}>Условия отмены бронирования</Text>
+                        </View>
+                        <Text style={s.fieldHint}>Опишите условия возврата средств при отмене бронирования</Text>
+                        <TextInput
+                            style={[s.input, s.textArea]}
+                            placeholder="Например: бесплатная отмена за 24 часа, при отмене менее чем за 12 часов — возврат 50%..."
+                            placeholderTextColor="#9CA3AF"
+                            value={cancellationPolicy}
+                            onChangeText={setCancellationPolicy}
+                            multiline
+                            textAlignVertical="top"
+                            maxLength={1000}
+                        />
+                        <Text style={s.charCount}>{cancellationPolicy.length}/1000</Text>
+                    </View>
+
+                    {/* Captain */}
+                    <View style={s.fieldWrap}>
+                        <View style={s.fieldHeader}>
+                            <Anchor size={18} color={TEAL} />
+                            <Text style={s.fieldLabel}>Капитан</Text>
+                        </View>
+                        <Text style={s.fieldHint}>Укажите, как сдаётся катер в аренду</Text>
+                        <View style={s.captainOptions}>
+                            {[
+                                { key: 'included', label: 'С капитаном', desc: 'Капитан включён в стоимость аренды' },
+                                { key: 'none', label: 'Без капитана', desc: 'Арендатор управляет самостоятельно' },
+                            ].map((opt) => {
+                                const active = captainOption === opt.key;
+                                return (
+                                    <TouchableOpacity
+                                        key={opt.key}
+                                        style={[s.captainCard, active && s.captainCardActive]}
+                                        onPress={() => setCaptainOption(opt.key)}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={[s.radioOuter, active && s.radioOuterActive]}>
+                                            {active && <View style={s.radioInner} />}
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={[s.captainLabel, active && s.captainLabelActive]}>{opt.label}</Text>
+                                            <Text style={s.captainDesc}>{opt.desc}</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </View>
 
                     {/* Photos */}
                     <View style={s.sectionHeader}>
@@ -851,6 +1064,26 @@ const s = StyleSheet.create({
     sectionHint: { fontSize: 13, fontFamily: theme.fonts.regular, color: '#9CA3AF', marginBottom: 12 },
     counter: { fontSize: 14, fontFamily: theme.fonts.semiBold, color: TEAL },
 
+    mapContainer: {
+        height: 260, borderRadius: 14, overflow: 'hidden',
+        borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 20,
+        backgroundColor: '#F3F4F6',
+    },
+    map: { flex: 1 },
+    mapLoader: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: 'center', alignItems: 'center',
+        backgroundColor: '#F3F4F6', zIndex: 2,
+    },
+    mapLoaderText: { marginTop: 8, fontSize: 13, fontFamily: theme.fonts.regular, color: '#9CA3AF' },
+    coordsBadge: {
+        position: 'absolute', bottom: 10, left: 10,
+        flexDirection: 'row', alignItems: 'center', gap: 5,
+        backgroundColor: 'rgba(13,92,92,0.85)', borderRadius: 8,
+        paddingHorizontal: 10, paddingVertical: 5,
+    },
+    coordsText: { fontSize: 12, fontFamily: theme.fonts.medium, color: '#fff' },
+
     calendarWrap: { marginBottom: 22, padding: 16, backgroundColor: '#F9FAFB', borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB' },
     monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 },
     arrowBtn: { padding: 8 },
@@ -918,6 +1151,27 @@ const s = StyleSheet.create({
     timeDropdownTextActive: { fontFamily: theme.fonts.semiBold, color: TEAL },
 
     fieldWrap: { marginBottom: 22 },
+    fieldHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+    fieldLabel: { fontSize: 16, fontFamily: theme.fonts.semiBold, color: '#1B365D' },
+    fieldHint: { fontSize: 13, fontFamily: theme.fonts.regular, color: '#9CA3AF', marginBottom: 8, lineHeight: 18 },
+    charCount: { fontSize: 12, fontFamily: theme.fonts.regular, color: '#9CA3AF', textAlign: 'right', marginTop: 4 },
+    captainOptions: { gap: 10 },
+    captainCard: {
+        flexDirection: 'row', alignItems: 'center', gap: 12,
+        borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: 12,
+        paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#fff',
+    },
+    captainCardActive: { borderColor: TEAL, backgroundColor: '#F0FAFA' },
+    radioOuter: {
+        width: 22, height: 22, borderRadius: 11,
+        borderWidth: 2, borderColor: '#D1D5DB',
+        alignItems: 'center', justifyContent: 'center',
+    },
+    radioOuterActive: { borderColor: TEAL },
+    radioInner: { width: 12, height: 12, borderRadius: 6, backgroundColor: TEAL },
+    captainLabel: { fontSize: 15, fontFamily: theme.fonts.semiBold, color: '#1B365D' },
+    captainLabelActive: { color: TEAL },
+    captainDesc: { fontSize: 12, fontFamily: theme.fonts.regular, color: '#9CA3AF', marginTop: 2 },
     durationSelector: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12,

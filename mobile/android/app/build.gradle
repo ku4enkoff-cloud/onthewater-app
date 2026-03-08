@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.anonymous.onthewater'
+    namespace 'com.anonymous.onthewater.owner'
     defaultConfig {
-        applicationId 'com.anonymous.onthewater'
+        applicationId 'com.anonymous.onthewater.owner'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

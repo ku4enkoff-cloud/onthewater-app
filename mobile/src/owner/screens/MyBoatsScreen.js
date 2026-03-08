@@ -73,22 +73,21 @@ export default function MyBoatsScreen({ navigation }) {
                 <View style={s.cardFooter}>
                     <View>
                         {item.price_per_hour != null && String(item.price_per_hour).trim() !== '' && (
-                            <Text style={s.cardPrice}>
-                                {item.price_per_hour} ₽ будни
-                            </Text>
+                            <>
+                                <Text style={s.cardPrice}>{item.price_per_hour} ₽ будни</Text>
+                                <Text style={s.cardPrice}>
+                                    {(item.price_weekend != null && String(item.price_weekend).trim() !== ''
+                                        ? item.price_weekend
+                                        : item.price_per_hour
+                                    )} ₽ вых.
+                                </Text>
+                            </>
                         )}
-                        {item.price_weekend != null && String(item.price_weekend).trim() !== '' && (
-                            <Text style={s.cardPrice}>
-                                {item.price_weekend} ₽ вых.
-                            </Text>
-                        )}
-                        {(item.price_per_hour == null || String(item.price_per_hour).trim() === '') &&
-                         (item.price_weekend == null || String(item.price_weekend).trim() === '') && (
+                        {(item.price_per_hour == null || String(item.price_per_hour).trim() === '') && (
                             <Text style={s.cardPrice}>—</Text>
                         )}
                         <Text style={s.cardPriceUnit}>
-                            {(item.price_per_hour != null && String(item.price_per_hour).trim() !== '') ||
-                             (item.price_weekend != null && String(item.price_weekend).trim() !== '')
+                            {item.price_per_hour != null && String(item.price_per_hour).trim() !== ''
                                 ? getDurationLabel(item.schedule_min_duration ?? 60)
                                 : ''}
                         </Text>
