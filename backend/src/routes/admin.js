@@ -274,24 +274,31 @@ router.get('/boat-types', async (req, res, next) => {
     } catch (err) { next(err); }
 });
 
-router.post('/boat-types', upload.single('photo'), async (req, res, next) => {
+const boatTypeUpload = upload.fields([{ name: 'photo', maxCount: 1 }]);
+
+router.post('/boat-types', boatTypeUpload, async (req, res, next) => {
     try {
         const name = (req.body?.name != null) ? String(req.body.name).trim() : '';
         if (!name) return res.status(400).json({ error: 'Укажите название типа' });
-        const image = (req.file && (req.file.location || req.file.filename)) ? (req.file.location || '/uploads/' + path.basename(req.file.filename)) : '';
+        const file = req.files?.photo?.[0];
+        const image = (file && (file.location || file.filename)) ? (file.location || '/uploads/' + path.basename(file.filename)) : '';
         const { rows } = await pool.query('INSERT INTO boat_types (name, image, sort_order) VALUES ($1,$2,COALESCE((SELECT MAX(sort_order) FROM boat_types),0)+1) RETURNING *', [name, image]);
         res.status(201).json(rows[0]);
-    } catch (err) { next(err); }
+    } catch (err) {
+        console.error('[POST /admin/boat-types]', err);
+        next(err);
+    }
 });
 
-router.put('/boat-types/:id', upload.single('photo'), async (req, res, next) => {
+router.put('/boat-types/:id', boatTypeUpload, async (req, res, next) => {
     try {
         const id = parseInt(req.params.id, 10);
         const { rows: ex } = await pool.query('SELECT * FROM boat_types WHERE id = $1', [id]);
         if (ex.length === 0) return res.status(404).json({ error: 'Тип не найден' });
         const name = (req.body?.name != null) ? String(req.body.name).trim() : (ex[0].name || '');
+        const file = req.files?.photo?.[0];
         let image = ex[0].image || '';
-        if (req.file) image = req.file.location || '/uploads/' + path.basename(req.file.filename) || image;
+        if (file) image = file.location || '/uploads/' + path.basename(file.filename) || image;
         await pool.query('UPDATE boat_types SET name = $1, image = $2 WHERE id = $3', [name, image, id]);
         const { rows } = await pool.query('SELECT * FROM boat_types WHERE id = $1', [id]);
         res.json(rows[0]);
