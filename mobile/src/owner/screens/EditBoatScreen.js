@@ -20,11 +20,6 @@ try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (
 const GRADIENT = ['#0A4D4D', '#0D5C5C', '#1A7A5A'];
 const TEAL = '#0D5C5C';
 
-const BOAT_TYPES = [
-    { id: '1', name: 'Катер' }, { id: '2', name: 'Яхта' }, { id: '3', name: 'Гидроцикл' },
-    { id: '4', name: 'Парусная яхта' }, { id: '5', name: 'Катамаран' }, { id: '6', name: 'Буксировщик' },
-];
-
 const AMENITIES_OPTIONS = [
     'Туалет', 'Кондиционер', 'Аудиосистема', 'Bluetooth', 'Спасательные жилеты',
     'Трап для купания', 'Холодильник', 'Якорь', 'Климат-контроль', 'Розетки 220В',
@@ -58,6 +53,7 @@ export default function EditBoatScreen({ route, navigation }) {
 
     const [fetching, setFetching] = useState(true);
     const [loading, setLoading] = useState(false);
+    const [boatTypes, setBoatTypes] = useState([]);
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -91,6 +87,12 @@ export default function EditBoatScreen({ route, navigation }) {
     const [weekendStartOpen, setWeekendStartOpen] = useState(false);
     const [weekendEndOpen, setWeekendEndOpen] = useState(false);
     const [tierDurationOpenId, setTierDurationOpenId] = useState(null);
+
+    useEffect(() => {
+        api.get('/boat-types')
+            .then((r) => setBoatTypes(Array.isArray(r.data) ? r.data : []))
+            .catch(() => setBoatTypes([]));
+    }, []);
 
     useEffect(() => {
         if (boatId) loadBoat();
@@ -408,10 +410,10 @@ export default function EditBoatScreen({ route, navigation }) {
                     {/* Type */}
                     <SectionIcon icon={Ship} label="Тип судна" />
                     <View style={s.chipRow}>
-                        {BOAT_TYPES.map((t) => {
-                            const active = typeId === t.id;
+                        {boatTypes.map((t) => {
+                            const active = typeId === String(t.id);
                             return (
-                                <TouchableOpacity key={t.id} style={[s.chip, active && s.chipActive]} onPress={() => setTypeId(t.id)} activeOpacity={0.7}>
+                                <TouchableOpacity key={t.id} style={[s.chip, active && s.chipActive]} onPress={() => setTypeId(String(t.id))} activeOpacity={0.7}>
                                     <Text style={[s.chipText, active && s.chipTextActive]}>{t.name}</Text>
                                 </TouchableOpacity>
                             );

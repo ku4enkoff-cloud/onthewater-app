@@ -103,7 +103,7 @@ export default function BoatMediaScreen({ navigation, route }) {
             Alert.alert('Внимание', 'Добавьте хотя бы одну фотографию');
             return;
         }
-        navigation.replace('AddBoat', {
+        navigation.navigate('AddBoat', {
             boatType,
             boatInfo,
             boatLocation,

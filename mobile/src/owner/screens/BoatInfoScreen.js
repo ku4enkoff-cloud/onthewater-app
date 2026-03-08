@@ -51,7 +51,7 @@ export default function BoatInfoScreen({ navigation, route }) {
 
     const handleNext = () => {
         if (!canContinue) return;
-        navigation.replace('BoatLocation', {
+        navigation.navigate('BoatLocation', {
             boatType,
             boatInfo: {
                 manufacturer: manufacturer.trim(),

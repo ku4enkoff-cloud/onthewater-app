@@ -80,7 +80,8 @@ export default function BoatTypes() {
       setEditing(null);
       load();
     } catch (err) {
-      setError(err.response?.data?.error || 'Ошибка сохранения');
+      const data = err.response?.data;
+      setError(data?.detail || data?.error || 'Ошибка сохранения');
     } finally {
       setSaving(false);
     }

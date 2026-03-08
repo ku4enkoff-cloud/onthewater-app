@@ -113,7 +113,7 @@ export default function BoatLocationScreen({ navigation, route }) {
 
     const handleNext = () => {
         if (!canContinue) return;
-        navigation.replace('BoatSchedule', {
+        navigation.navigate('BoatSchedule', {
             boatType,
             boatInfo,
             boatLocation: {

@@ -121,7 +121,7 @@ export default function BoatScheduleScreen({ navigation, route }) {
 
     const handleNext = () => {
         if (!canContinue) return;
-        navigation.replace('BoatMedia', {
+        navigation.navigate('BoatMedia', {
             boatType,
             boatInfo,
             boatLocation,
