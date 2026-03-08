@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions,
+    View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-    ChevronLeft, Ship, Anchor, Waves, Sailboat, Move3d, Zap,
+    ChevronLeft, Ship, Anchor, Waves, Sailboat, Move3d, Zap, Layers, Home, Fish, Wind,
 } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
+import { api } from '../../shared/infrastructure/api';
 
 let LinearGradient = null;
 try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
@@ -14,14 +15,14 @@ try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (
 const GRADIENT = ['#0A4D4D', '#0D5C5C', '#1A7A5A'];
 const TEAL = '#0D5C5C';
 
-const BOAT_TYPES = [
-    { id: '1', name: 'Катер',          slug: 'motorboat', Icon: Ship },
-    { id: '2', name: 'Яхта',           slug: 'yacht',     Icon: Anchor },
-    { id: '3', name: 'Гидроцикл',      slug: 'jetski',    Icon: Zap },
-    { id: '4', name: 'Парусная яхта',  slug: 'sailboat',  Icon: Sailboat },
-    { id: '5', name: 'Катамаран',       slug: 'catamaran', Icon: Move3d },
-    { id: '6', name: 'Буксировщик',    slug: 'wakeboat',  Icon: Waves },
-];
+const ICON_MAP = {
+    ship: Ship, anchor: Anchor, waves: Waves, sailboat: Sailboat,
+    zap: Zap, move3d: Move3d, layers: Layers, home: Home, fish: Fish, wind: Wind,
+};
+const getIcon = (iconKey) => {
+    const key = (iconKey || '').toLowerCase().trim();
+    return ICON_MAP[key] || Ship;
+};
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const GRID_PAD = 20;
@@ -31,13 +32,29 @@ const CARD_W = (SCREEN_W - GRID_PAD * 2 - GAP * (COLS - 1)) / COLS;
 
 export default function BoatTypeScreen({ navigation }) {
     const insets = useSafeAreaInsets();
+    const [boatTypes, setBoatTypes] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [selected, setSelected] = useState(null);
+
+    useEffect(() => {
+        api.get('/boat-types')
+            .then((r) => setBoatTypes(Array.isArray(r.data) ? r.data : []))
+            .catch(() => setBoatTypes([]))
+            .finally(() => setLoading(false));
+    }, []);
 
     const handleNext = () => {
         if (!selected) return;
         const { Icon, ...serializable } = selected;
-        navigation.replace('BoatInfo', { boatType: serializable });
+        navigation.navigate('BoatInfo', { boatType: serializable });
     };
+
+    const typesWithIcons = boatTypes.map((t) => ({
+        id: String(t.id),
+        name: t.name || '',
+        slug: (t.name || '').toLowerCase().replace(/\s+/g, '_'),
+        Icon: getIcon(t.icon),
+    }));
 
     return (
         <View style={s.root}>
@@ -70,34 +87,45 @@ export default function BoatTypeScreen({ navigation }) {
                 contentContainerStyle={s.bodyContent}
                 showsVerticalScrollIndicator={false}
             >
+                {loading ? (
+                    <View style={s.loadingWrap}>
+                        <ActivityIndicator size="large" color={TEAL} />
+                        <Text style={s.loadingText}>Загрузка типов...</Text>
+                    </View>
+                ) : (
                 <View style={s.grid}>
-                    {BOAT_TYPES.map((type) => {
-                        const isActive = selected?.id === type.id;
-                        const IconComp = type.Icon;
-                        return (
-                            <TouchableOpacity
-                                key={type.id}
-                                style={[s.card, isActive && s.cardActive]}
-                                onPress={() => setSelected(type)}
-                                activeOpacity={0.7}
-                            >
-                                <View style={[s.iconCircle, isActive && s.iconCircleActive]}>
-                                    <IconComp
-                                        size={28}
-                                        color={isActive ? '#fff' : TEAL}
-                                        strokeWidth={1.6}
-                                    />
-                                </View>
-                                <Text
-                                    style={[s.cardLabel, isActive && s.cardLabelActive]}
-                                    numberOfLines={2}
-                                >
-                                    {type.name}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    })}
+                    {Array.from({ length: Math.ceil(typesWithIcons.length / COLS) }, (_, rowIndex) => (
+                        <View key={rowIndex} style={s.gridRow}>
+                            {typesWithIcons.slice(rowIndex * COLS, rowIndex * COLS + COLS).map((type) => {
+                                const isActive = selected?.id === type.id;
+                                const IconComp = type.Icon;
+                                return (
+                                    <TouchableOpacity
+                                        key={type.id}
+                                        style={[s.card, isActive && s.cardActive]}
+                                        onPress={() => setSelected(type)}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={[s.iconCircle, isActive && s.iconCircleActive]}>
+                                            <IconComp
+                                                size={28}
+                                                color={isActive ? '#fff' : TEAL}
+                                                strokeWidth={1.6}
+                                            />
+                                        </View>
+                                        <Text
+                                            style={[s.cardLabel, isActive && s.cardLabelActive]}
+                                            numberOfLines={2}
+                                        >
+                                            {type.name}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    ))}
                 </View>
+                )}
             </ScrollView>
 
             <View style={[s.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
@@ -132,9 +160,15 @@ const s = StyleSheet.create({
 
     body: { flex: 1 },
     bodyContent: { paddingHorizontal: GRID_PAD, paddingTop: 28, paddingBottom: 24 },
+    loadingWrap: { paddingVertical: 48, alignItems: 'center', gap: 12 },
+    loadingText: { fontSize: 14, fontFamily: theme.fonts.regular, color: '#6B7280' },
 
     grid: {
-        flexDirection: 'row', flexWrap: 'wrap',
+        flexDirection: 'column',
+        gap: GAP,
+    },
+    gridRow: {
+        flexDirection: 'row',
         gap: GAP,
     },
 

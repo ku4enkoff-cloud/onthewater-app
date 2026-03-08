@@ -15,6 +15,7 @@ import {
     Alert,
     Platform,
     KeyboardAvoidingView,
+    Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -60,6 +61,8 @@ const NAVY = '#1B365D';
 const IMAGE_HEIGHT = 300;
 
 const resolvePhotoUri = (src) => getPhotoUrl(src) || 'https://placehold.co/800x600/png';
+const WATER_SPORTS_OPTIONS = ['Вейксерф', 'Вейкборд', 'Водные лыжи'];
+const isTugboat = (name) => (name || '').toLowerCase().includes('буксировщик');
 
 const DEFAULT_PRICING_TIERS = [
     { hours: 2, multiplier: 2 },
@@ -601,9 +604,39 @@ export default function BoatDetailScreen({ route, navigation }) {
                     {boat.type_name ? (
                         <Text style={styles.typeLabel}>Тип судна: {boat.type_name}</Text>
                     ) : null}
-                    <Text style={styles.cityLabel}>
-                        {(boat.location_city || '').toUpperCase()}
-                    </Text>
+                    {boat.type_name && isTugboat(boat.type_name) && (() => {
+                        const waterSports = (boat.amenities || []).filter((a) => WATER_SPORTS_OPTIONS.includes(a));
+                        return waterSports.length > 0 ? (
+                            <Text style={styles.waterSportsLabel}>Водные виды спорта: {waterSports.join(', ')}</Text>
+                        ) : null;
+                    })()}
+                    <TouchableOpacity
+                        onPress={async () => {
+                            const addr = [boat.location_country, boat.location_region, boat.location_city, boat.location_address].filter(Boolean).join(', ');
+                            const appUrl = boat.lat != null && boat.lng != null
+                                ? `yandexmaps://maps.yandex.ru/?pt=${boat.lng},${boat.lat}&z=16`
+                                : addr ? `yandexmaps://maps.yandex.ru/?text=${encodeURIComponent(addr)}` : null;
+                            const webUrl = boat.lat != null && boat.lng != null
+                                ? `https://yandex.ru/maps/?pt=${boat.lng},${boat.lat}&z=16`
+                                : addr ? `https://yandex.ru/maps/?text=${encodeURIComponent(addr)}` : null;
+                            if (!appUrl && !webUrl) return;
+                            try {
+                                if (appUrl && (await Linking.canOpenURL(appUrl))) {
+                                    await Linking.openURL(appUrl);
+                                } else {
+                                    await Linking.openURL(webUrl);
+                                }
+                            } catch {
+                                if (webUrl) Linking.openURL(webUrl).catch(() => Alert.alert('Ошибка', 'Не удалось открыть карту'));
+                            }
+                        }}
+                        activeOpacity={0.7}
+                        disabled={!(boat.lat != null && boat.lng != null) && !([boat.location_country, boat.location_region, boat.location_city, boat.location_address].filter(Boolean).length > 0)}
+                    >
+                        <Text style={[styles.cityLabel, (boat.lat != null && boat.lng != null) || [boat.location_country, boat.location_region, boat.location_city, boat.location_address].some(Boolean) ? styles.addressLink : null]}>
+                            {[boat.location_country, boat.location_region, boat.location_city, boat.location_address].filter(Boolean).join(', ') || '—'}
+                        </Text>
+                    </TouchableOpacity>
                     <Text style={styles.bookingsCountTop}>
                         {boat.bookings_count ?? 0} {pluralizeBookings(boat.bookings_count ?? 0)}
                     </Text>
@@ -1067,10 +1100,11 @@ export default function BoatDetailScreen({ route, navigation }) {
                             {bookShowDatePicker && (() => {
                                 let wd = boat?.schedule_work_days;
                                 if (typeof wd === 'string') try { wd = JSON.parse(wd); } catch { wd = null; }
-                                const workDays = wd && typeof wd === 'object'
+                                const workDays = wd && typeof wd === 'object' && !wd.dates
                                     ? { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true, ...wd }
                                     : { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true };
-                                const isWorkingDay = (d) => workDays[getWeekdayKey(d)] === true;
+                                const workDatesSet = wd?.dates && Array.isArray(wd.dates) ? new Set(wd.dates) : null;
+                                const isWorkingDay = (d) => workDatesSet ? workDatesSet.has(toDateKey(d)) : workDays[getWeekdayKey(d)] === true;
                                 const today = new Date();
                                 today.setHours(0, 0, 0, 0);
                                 const grid = getCalendarGrid(calendarMonth);
@@ -1454,7 +1488,9 @@ const styles = StyleSheet.create({
     /* Content */
     content: { paddingHorizontal: 20, paddingTop: 20 },
     typeLabel: { fontSize: 13, fontFamily: theme.fonts.medium, color: theme.colors.textMuted, marginBottom: 4 },
+    waterSportsLabel: { fontSize: 13, fontFamily: theme.fonts.medium, color: theme.colors.textMuted, marginBottom: 4 },
     cityLabel: { fontSize: 12, fontFamily: theme.fonts.regular, color: theme.colors.textMuted, letterSpacing: 0.5, marginBottom: 4 },
+    addressLink: { color: '#0D5C5C', textDecorationLine: 'underline' },
     title: { fontSize: 22, fontFamily: theme.fonts.bold, color: NAVY, lineHeight: 28, marginBottom: 4 },
     bookingsCountTop: { fontSize: 14, fontFamily: theme.fonts.regular, color: theme.colors.textMuted, marginBottom: 8 },
     ratingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },

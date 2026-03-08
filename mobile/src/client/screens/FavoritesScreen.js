@@ -83,7 +83,16 @@ export default function FavoritesScreen({ navigation }) {
                             <Text style={styles.ratingNum}>{item.rating ?? '—'}</Text>
                             <Text style={styles.ratingCount}>({item.reviews_count ?? 0})</Text>
                         </View>
-                        <Text style={styles.priceText}>от {(Number(item.price_per_hour) || 0).toLocaleString('ru-RU')} ₽<Text style={styles.priceUnit}>/час</Text></Text>
+                        <Text style={styles.priceText}>
+                            {(() => {
+                                const weekday = Number(item.price_per_hour) || 0;
+                                const weekend = (item.price_weekend != null && String(item.price_weekend).trim() !== '')
+                                    ? Number(item.price_weekend) : weekday;
+                                return weekday === weekend
+                                    ? <>от {weekday.toLocaleString('ru-RU')} ₽<Text style={styles.priceUnit}>/час</Text></>
+                                    : <>{weekday.toLocaleString('ru-RU')} ₽ будни · {weekend.toLocaleString('ru-RU')} ₽ вых.<Text style={styles.priceUnit}>/час</Text></>;
+                            })()}
+                        </Text>
                     </View>
                 </View>
             </TouchableOpacity>

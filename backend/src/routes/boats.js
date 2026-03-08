@@ -16,6 +16,23 @@ function getPhotoUrl(file) {
     return null;
 }
 
+async function ensureTypeNames(boats) {
+    if (!boats || boats.length === 0) return boats;
+    const needType = boats.filter((b) => !b.type_name || String(b.type_name).trim() === '');
+    if (needType.length === 0) return boats;
+    const typeIds = [...new Set(needType.map((b) => b.type_id).filter(Boolean).map(String))];
+    if (typeIds.length === 0) return boats;
+    const { rows: types } = await pool.query(
+        'SELECT id, name FROM boat_types WHERE id::text = ANY($1)',
+        [typeIds]
+    );
+    const map = Object.fromEntries(types.map((t) => [String(t.id), t.name || 'Катер']));
+    for (const b of needType) {
+        if (b.type_id) b.type_name = map[String(b.type_id)] || 'Катер';
+    }
+    return boats;
+}
+
 router.get('/', async (req, res, next) => {
     try {
         const { lat, lng, radius, popular, limit, region, city } = req.query;
@@ -53,6 +70,7 @@ router.get('/', async (req, res, next) => {
         }
 
         const { rows } = await pool.query(query, params);
+        await ensureTypeNames(rows);
         res.json(rows);
     } catch (err) {
         next(err);
@@ -87,6 +105,7 @@ router.get('/:id', async (req, res, next) => {
                 boat.owner_name = full && full.trim() ? full.trim() : (u.email || 'Владелец');
             }
         }
+        await ensureTypeNames([boat]);
         res.json({
             manufacturer: '', model: '', year: '', location_country: '', location_region: '',
             location_address: '', location_yacht_club: '', rules: '', cancellation_policy: '',
