@@ -1067,10 +1067,11 @@ export default function BoatDetailScreen({ route, navigation }) {
                             {bookShowDatePicker && (() => {
                                 let wd = boat?.schedule_work_days;
                                 if (typeof wd === 'string') try { wd = JSON.parse(wd); } catch { wd = null; }
-                                const workDays = wd && typeof wd === 'object'
+                                const workDays = wd && typeof wd === 'object' && !wd.dates
                                     ? { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true, ...wd }
                                     : { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true };
-                                const isWorkingDay = (d) => workDays[getWeekdayKey(d)] === true;
+                                const workDatesSet = wd?.dates && Array.isArray(wd.dates) ? new Set(wd.dates) : null;
+                                const isWorkingDay = (d) => workDatesSet ? workDatesSet.has(toDateKey(d)) : workDays[getWeekdayKey(d)] === true;
                                 const today = new Date();
                                 today.setHours(0, 0, 0, 0);
                                 const grid = getCalendarGrid(calendarMonth);

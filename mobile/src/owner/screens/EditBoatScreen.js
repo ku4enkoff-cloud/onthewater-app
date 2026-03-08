@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
-    ScrollView, Alert, Image, ActivityIndicator, Platform, KeyboardAvoidingView,
+    ScrollView, Alert, Image, ActivityIndicator, Platform, KeyboardAvoidingView, Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import {
-    ChevronLeft, ChevronDown, FileText, AlignLeft, ShieldCheck, Camera, X, Trash2,
+    ChevronLeft, ChevronRight, ChevronDown, FileText, AlignLeft, ShieldCheck, Camera, X, Trash2,
     Ship, MapPin, Clock, DollarSign, Users, Wrench, ImageIcon, Check, Plus,
 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -19,16 +19,30 @@ try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (
 
 const GRADIENT = ['#0A4D4D', '#0D5C5C', '#1A7A5A'];
 const TEAL = '#0D5C5C';
+const GOLD = '#E2A83E';
 
 const AMENITIES_OPTIONS = [
     'Туалет', 'Кондиционер', 'Аудиосистема', 'Bluetooth', 'Спасательные жилеты',
     'Трап для купания', 'Холодильник', 'Якорь', 'Климат-контроль', 'Розетки 220В',
 ];
 
-const WEEKDAYS = [
-    { key: 'mon', label: 'Пн' }, { key: 'tue', label: 'Вт' }, { key: 'wed', label: 'Ср' },
-    { key: 'thu', label: 'Чт' }, { key: 'fri', label: 'Пт' }, { key: 'sat', label: 'Сб' }, { key: 'sun', label: 'Вс' },
-];
+const WEEKDAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+const toDateKey = (d) => d.toISOString().split('T')[0];
+const getCalendarGrid = (monthDate) => {
+    const y = monthDate.getFullYear(), m = monthDate.getMonth();
+    const first = new Date(y, m, 1);
+    let start = new Date(first);
+    const toMonday = first.getDay() === 0 ? 6 : first.getDay() - 1;
+    start.setDate(start.getDate() - toMonday);
+    const grid = [];
+    for (let row = 0; row < 6; row++) for (let col = 0; col < 7; col++) {
+        const cell = new Date(start);
+        cell.setDate(start.getDate() + row * 7 + col);
+        grid.push({ date: cell, isCurrentMonth: cell.getMonth() === m });
+    }
+    return grid;
+};
 const TIME_OPTIONS = [];
 for (let h = 0; h < 24; h++) TIME_OPTIONS.push(`${String(h).padStart(2, '0')}:00`);
 const DURATION_OPTIONS = [
@@ -74,7 +88,11 @@ export default function EditBoatScreen({ route, navigation }) {
     const [amenities, setAmenities] = useState([]);
     const [photos, setPhotos] = useState([]);
 
-    const [workDays, setWorkDays] = useState({ mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: false });
+    const [workDates, setWorkDates] = useState(new Set());
+    const [calendarMonth, setCalendarMonth] = useState(() => {
+        const d = new Date();
+        return new Date(d.getFullYear(), d.getMonth(), 1);
+    });
     const [weekdayStart, setWeekdayStart] = useState(DEFAULT_START);
     const [weekdayEnd, setWeekdayEnd] = useState(DEFAULT_END);
     const [weekendStart, setWeekendStart] = useState('09:00');
@@ -121,7 +139,23 @@ export default function EditBoatScreen({ route, navigation }) {
             setWeekendPrice(b.price_weekend ? String(b.price_weekend) : '');
 
             const wd = b.schedule_work_days;
-            if (wd && typeof wd === 'object') setWorkDays({ mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: false, ...wd });
+            if (wd && typeof wd === 'object') {
+                if (wd.dates && Array.isArray(wd.dates)) {
+                    setWorkDates(new Set(wd.dates));
+                } else {
+                    const workDaysMap = { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: false, ...wd };
+                    const generated = [];
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    for (let i = 0; i < 180; i++) {
+                        const d = new Date(today);
+                        d.setDate(d.getDate() + i);
+                        const key = WEEKDAY_KEYS[d.getDay()];
+                        if (workDaysMap[key] === true) generated.push(toDateKey(d));
+                    }
+                    setWorkDates(new Set(generated));
+                }
+            }
             const wh = b.schedule_weekday_hours;
             if (wh && typeof wh === 'object') {
                 if (wh.start) setWeekdayStart(wh.start);
@@ -183,7 +217,32 @@ export default function EditBoatScreen({ route, navigation }) {
 
     const removeImage = (index) => setPhotos((prev) => prev.filter((_, i) => i !== index));
 
-    const toggleDay = (key) => setWorkDays((prev) => ({ ...prev, [key]: !prev[key] }));
+    const toggleDate = (date) => {
+        const key = toDateKey(date);
+        setWorkDates((prev) => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key);
+            else next.add(key);
+            return next;
+        });
+    };
+
+    const selectAllInMonth = () => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const grid = getCalendarGrid(calendarMonth);
+        const keys = grid
+            .filter(({ date, isCurrentMonth }) => isCurrentMonth && date >= today)
+            .map(({ date }) => toDateKey(date));
+        setWorkDates((prev) => {
+            const next = new Set(prev);
+            keys.forEach((k) => next.add(k));
+            return next;
+        });
+    };
+
+    const clearAllDates = () => setWorkDates(new Set());
+
     const closeAllDropdowns = () => {
         setWeekdayStartOpen(false); setWeekdayEndOpen(false);
         setWeekendStartOpen(false); setWeekendEndOpen(false);
@@ -216,24 +275,32 @@ export default function EditBoatScreen({ route, navigation }) {
                 <ChevronDown size={16} color={TEAL} style={{ transform: [{ rotate: isOpen ? '180deg' : '0deg' }] }} />
             </TouchableOpacity>
             {isOpen && (
-                <View style={s.timeDropdown}>
-                    <ScrollView nestedScrollEnabled style={s.timeDropdownScroll} keyboardShouldPersistTaps="handled">
-                        {TIME_OPTIONS.map((t) => {
-                            const active = t === value;
-                            return (
-                                <TouchableOpacity
-                                    key={t}
-                                    style={[s.timeDropdownItem, active && s.timeDropdownItemActive]}
-                                    onPress={() => { setValue(t); setIsOpen(false); }}
-                                    activeOpacity={0.6}
-                                >
-                                    <Text style={[s.timeDropdownText, active && s.timeDropdownTextActive]}>{t}</Text>
-                                    {active && <Check size={14} color={TEAL} />}
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </ScrollView>
-                </View>
+                <Modal visible transparent animationType="fade">
+                    <TouchableOpacity
+                        style={s.timeDropdownBackdrop}
+                        activeOpacity={1}
+                        onPress={() => setIsOpen(false)}
+                    >
+                        <View style={[s.timeDropdown, s.timeDropdownModal]} onStartShouldSetResponder={() => true}>
+                            <ScrollView style={s.timeDropdownScroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator>
+                                {TIME_OPTIONS.map((t) => {
+                                    const active = t === value;
+                                    return (
+                                        <TouchableOpacity
+                                            key={t}
+                                            style={[s.timeDropdownItem, active && s.timeDropdownItemActive]}
+                                            onPress={() => { setValue(t); setIsOpen(false); }}
+                                            activeOpacity={0.6}
+                                        >
+                                            <Text style={[s.timeDropdownText, active && s.timeDropdownTextActive]}>{t}</Text>
+                                            {active && <Check size={14} color={TEAL} />}
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </ScrollView>
+                        </View>
+                    </TouchableOpacity>
+                </Modal>
             )}
         </View>
     );
@@ -273,7 +340,8 @@ export default function EditBoatScreen({ route, navigation }) {
             payload.append('price_per_hour', pricePerHour);
             payload.append('price_per_day', '');
             payload.append('price_weekend', weekendPrice.trim());
-            payload.append('schedule_work_days', JSON.stringify(workDays));
+            const scheduleWorkDays = workDates.size > 0 ? { dates: Array.from(workDates) } : { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: false };
+            payload.append('schedule_work_days', JSON.stringify(scheduleWorkDays));
             payload.append('schedule_weekday_hours', JSON.stringify({ start: weekdayStart, end: weekdayEnd }));
             payload.append('schedule_weekend_hours', JSON.stringify({ start: weekendStart, end: weekendEnd }));
             payload.append('schedule_min_duration', String(minDuration));
@@ -477,29 +545,74 @@ export default function EditBoatScreen({ route, navigation }) {
                     <Text style={s.smallLabel}>Яхт-клуб</Text>
                     <TextInput style={s.input} value={locationYachtClub} onChangeText={setLocationYachtClub} placeholder="Название яхт-клуба (необязательно)" placeholderTextColor="#9CA3AF" />
 
-                    {/* Schedule & Price (same as add boat) */}
-                    <SectionIcon icon={Clock} label="Рабочие дни" />
-                    <Text style={s.sectionHint}>Дни, когда катер доступен для аренды</Text>
-                    <View style={s.daysRow}>
-                        {WEEKDAYS.map((day) => {
-                            const active = workDays[day.key];
-                            const isWeekend = day.key === 'sat' || day.key === 'sun';
-                            return (
-                                <TouchableOpacity
-                                    key={day.key}
-                                    style={[s.dayChip, active && s.dayChipActive, isWeekend && active && s.dayChipWeekend]}
-                                    onPress={() => toggleDay(day.key)}
-                                    activeOpacity={0.7}
-                                >
-                                    <Text style={[s.dayChipText, active && s.dayChipTextActive]}>{day.label}</Text>
-                                </TouchableOpacity>
-                            );
-                        })}
+                    {/* Schedule & Price */}
+                    <Text style={[s.sectionTitle, { marginTop: 20, fontSize: 17 }]}>Рабочие дни</Text>
+                    <Text style={s.sectionHint}>Выберите даты, когда катер доступен для аренды.</Text>
+                    <View style={s.calendarWrap}>
+                        <View style={s.monthRow}>
+                            <TouchableOpacity onPress={() => setCalendarMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))} style={s.arrowBtn}>
+                                <ChevronLeft size={24} color={TEAL} />
+                            </TouchableOpacity>
+                            <Text style={s.monthTitle}>{calendarMonth.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}</Text>
+                            <TouchableOpacity onPress={() => setCalendarMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))} style={s.arrowBtn}>
+                                <ChevronRight size={24} color={TEAL} />
+                            </TouchableOpacity>
+                        </View>
+                        <View style={s.weekdayRow}>
+                            {WEEKDAY_LABELS.map((label, i) => (
+                                <Text key={label} style={[s.weekdayText, (i === 5 || i === 6) && s.weekdayWeekend]}>{label}</Text>
+                            ))}
+                        </View>
+                        <View style={s.grid}>
+                            {getCalendarGrid(calendarMonth).map(({ date, isCurrentMonth }, idx) => {
+                                const key = toDateKey(date);
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                const isPast = date < today;
+                                const selected = workDates.has(key);
+                                const selectable = isCurrentMonth && !isPast;
+                                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                                return (
+                                    <TouchableOpacity
+                                        key={idx}
+                                        style={[
+                                            s.dayCell,
+                                            !isCurrentMonth && s.dayOtherMonth,
+                                            selectable && s.dayAvailable,
+                                            !selectable && isCurrentMonth && s.dayUnavailable,
+                                            selected && isWeekend && s.daySelectedWeekend,
+                                            selected && !isWeekend && s.daySelected,
+                                        ]}
+                                        onPress={() => selectable && toggleDate(date)}
+                                        disabled={!selectable}
+                                        activeOpacity={selectable ? 0.7 : 1}
+                                    >
+                                        <Text style={[
+                                            s.dayNum,
+                                            !isCurrentMonth && s.dayNumOther,
+                                            selectable && s.dayNumAvailable,
+                                            !selectable && isCurrentMonth && s.dayNumUnavailable,
+                                            selected && isWeekend && s.dayNumSelectedWeekend,
+                                            selected && !isWeekend && s.dayNumSelected,
+                                        ]}>{date.getDate()}</Text>
+                                        </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                        <View style={s.calendarActions}>
+                            <TouchableOpacity style={s.calendarActionBtn} onPress={selectAllInMonth} activeOpacity={0.7}>
+                                <Text style={s.calendarActionText}>Выбрать все</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={s.calendarActionBtn} onPress={clearAllDates} activeOpacity={0.7}>
+                                <Text style={s.calendarActionText}>Очистить все</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
+                    {workDates.size > 0 && <Text style={s.selectedCount}>Выбрано дней: {workDates.size}</Text>}
 
-                    {(workDays.mon || workDays.tue || workDays.wed || workDays.thu || workDays.fri) && (
+                    {workDates.size > 0 && (
                         <View style={[s.hoursBlock, { zIndex: 20 }]}>
-                            <Text style={s.hoursLabel}>Будни (Пн–Пт)</Text>
+                            <Text style={s.hoursLabel}>Часы работы</Text>
                             <View style={s.hoursRow}>
                                 <View style={{ flex: 1, zIndex: weekdayStartOpen ? 30 : 1 }}>
                                     <Text style={s.hoursSmallLabel}>С</Text>
@@ -509,22 +622,6 @@ export default function EditBoatScreen({ route, navigation }) {
                                 <View style={{ flex: 1, zIndex: weekdayEndOpen ? 30 : 1 }}>
                                     <Text style={s.hoursSmallLabel}>До</Text>
                                     {renderTimeDropdown(weekdayEnd, setWeekdayEnd, weekdayEndOpen, setWeekdayEndOpen)}
-                                </View>
-                            </View>
-                        </View>
-                    )}
-                    {(workDays.sat || workDays.sun) && (
-                        <View style={[s.hoursBlock, { zIndex: 10 }]}>
-                            <Text style={s.hoursLabel}>Выходные (Сб–Вс)</Text>
-                            <View style={s.hoursRow}>
-                                <View style={{ flex: 1, zIndex: weekendStartOpen ? 30 : 1 }}>
-                                    <Text style={s.hoursSmallLabel}>С</Text>
-                                    {renderTimeDropdown(weekendStart, setWeekendStart, weekendStartOpen, setWeekendStartOpen)}
-                                </View>
-                                <Text style={s.hoursDash}>—</Text>
-                                <View style={{ flex: 1, zIndex: weekendEndOpen ? 30 : 1 }}>
-                                    <Text style={s.hoursSmallLabel}>До</Text>
-                                    {renderTimeDropdown(weekendEnd, setWeekendEnd, weekendEndOpen, setWeekendEndOpen)}
                                 </View>
                             </View>
                         </View>
@@ -576,7 +673,7 @@ export default function EditBoatScreen({ route, navigation }) {
                         <Text style={s.editPriceSuffix}>₽ / {DURATION_OPTIONS.find((d) => d.value === minDuration)?.label || '1 час'}</Text>
                     </View>
 
-                    {(workDays.sat || workDays.sun) && (
+                    {workDates.size > 0 && (
                         <>
                             <Text style={[s.sectionTitle, { marginTop: 16 }]}>Цена в выходные (Сб–Вс)</Text>
                             <Text style={s.sectionHint}>Другая цена за {DURATION_OPTIONS.find((d) => d.value === minDuration)?.label || '1 час'} в субботу и воскресенье</Text>
@@ -625,7 +722,7 @@ export default function EditBoatScreen({ route, navigation }) {
                                         <Trash2 size={18} color="#EF4444" />
                                     </TouchableOpacity>
                                 </View>
-                                {(workDays.sat || workDays.sun) && (
+                                {workDates.size > 0 && (
                                     <View style={s.tierWeekendRow}>
                                         <Text style={s.tierWeekendLabel}>Выходные (Сб–Вс)</Text>
                                         <View style={s.tierPriceWrap}>
@@ -754,6 +851,34 @@ const s = StyleSheet.create({
     sectionHint: { fontSize: 13, fontFamily: theme.fonts.regular, color: '#9CA3AF', marginBottom: 12 },
     counter: { fontSize: 14, fontFamily: theme.fonts.semiBold, color: TEAL },
 
+    calendarWrap: { marginBottom: 22, padding: 16, backgroundColor: '#F9FAFB', borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB' },
+    monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 },
+    arrowBtn: { padding: 8 },
+    monthTitle: { fontSize: 18, fontFamily: theme.fonts.bold, color: '#1B365D', textTransform: 'capitalize' },
+    weekdayRow: { flexDirection: 'row', marginBottom: 8 },
+    calendarActions: { flexDirection: 'row', gap: 12, marginTop: 0 },
+    calendarActionBtn: {
+        flex: 1, paddingVertical: 10,
+        borderRadius: 10, borderWidth: 1, borderColor: TEAL, backgroundColor: '#fff',
+        alignItems: 'center',
+    },
+    calendarActionText: { fontSize: 14, fontFamily: theme.fonts.semiBold, color: TEAL },
+    weekdayText: { flex: 1, textAlign: 'center', fontSize: 12, fontFamily: theme.fonts.medium, color: '#6B7280' },
+    weekdayWeekend: { color: '#9CA3AF' },
+    grid: { flexDirection: 'row', flexWrap: 'wrap' },
+    dayCell: { width: '14.28%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center', marginVertical: 2 },
+    dayOtherMonth: { opacity: 0.35 },
+    dayAvailable: { backgroundColor: 'rgba(13,92,92,0.08)' },
+    dayUnavailable: { opacity: 0.5 },
+    daySelected: { backgroundColor: TEAL, borderRadius: 999 },
+    daySelectedWeekend: { backgroundColor: GOLD, borderRadius: 999 },
+    dayNum: { fontSize: 15, fontFamily: theme.fonts.medium, color: '#1B365D' },
+    dayNumOther: { color: '#9CA3AF' },
+    dayNumAvailable: { color: '#1B365D' },
+    dayNumUnavailable: { color: '#9CA3AF' },
+    dayNumSelected: { color: '#fff', fontFamily: theme.fonts.bold },
+    dayNumSelectedWeekend: { color: '#fff', fontFamily: theme.fonts.bold },
+    selectedCount: { fontSize: 13, fontFamily: theme.fonts.medium, color: '#6B7280', marginTop: 8 },
     daysRow: { flexDirection: 'row', gap: 8, marginBottom: 22, flexWrap: 'wrap' },
     dayChip: {
         width: 42, height: 42, borderRadius: 21, borderWidth: 1.5, borderColor: '#E5E7EB',
@@ -776,11 +901,14 @@ const s = StyleSheet.create({
     },
     timeSelectorText: { flex: 1, fontSize: 15, fontFamily: theme.fonts.medium, color: '#1B365D' },
     timeDropdown: {
-        position: 'absolute', top: 50, left: 0, right: 0,
         borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, backgroundColor: '#fff',
         ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 }, android: { elevation: 6 } }),
     },
-    timeDropdownScroll: { maxHeight: 180 },
+    timeDropdownBackdrop: {
+        flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', paddingHorizontal: 24,
+    },
+    timeDropdownModal: { maxHeight: 280 },
+    timeDropdownScroll: { maxHeight: 260 },
     timeDropdownItem: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
