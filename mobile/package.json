@@ -16,7 +16,9 @@
     "ios:owner": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner expo run:ios",
     "web": "expo start --web",
     "log:android": "node scripts/adb-logcat.js",
-    "apk": "cd android && .\\gradlew assembleRelease"
+    "apk": "cd android && .\\gradlew assembleRelease",
+    "apk:owner": "cd android && .\\gradlew assembleDebug -PreactNativeArchitectures=armeabi-v7a,arm64-v8a",
+    "apk:owner:release": "cd android && .\\gradlew assembleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a"
   },
   "dependencies": {
     "@expo-google-fonts/jost": "^0.4.2",
