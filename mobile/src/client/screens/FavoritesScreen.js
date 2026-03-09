@@ -88,9 +88,8 @@ export default function FavoritesScreen({ navigation }) {
                                 const weekday = Number(item.price_per_hour) || 0;
                                 const weekend = (item.price_weekend != null && String(item.price_weekend).trim() !== '')
                                     ? Number(item.price_weekend) : weekday;
-                                return weekday === weekend
-                                    ? <>от {weekday.toLocaleString('ru-RU')} ₽<Text style={styles.priceUnit}>/час</Text></>
-                                    : <>{weekday.toLocaleString('ru-RU')} ₽ будни · {weekend.toLocaleString('ru-RU')} ₽ вых.<Text style={styles.priceUnit}>/час</Text></>;
+                                const minPrice = Math.min(weekday, weekend);
+                                return <>от {minPrice.toLocaleString('ru-RU')} ₽<Text style={styles.priceUnit}>/час</Text></>;
                             })()}
                         </Text>
                     </View>
