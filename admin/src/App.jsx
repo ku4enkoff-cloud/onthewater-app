@@ -8,6 +8,7 @@ import Users from './pages/Users';
 import Boats from './pages/Boats';
 import BoatTypes from './pages/BoatTypes';
 import Destinations from './pages/Destinations';
+import Amenities from './pages/Amenities';
 import Bookings from './pages/Bookings';
 import Reviews from './pages/Reviews';
 
@@ -37,6 +38,7 @@ export default function App() {
         <Route path="boats" element={<Boats />} />
         <Route path="boat-types" element={<BoatTypes />} />
         <Route path="destinations" element={<Destinations />} />
+        <Route path="amenities" element={<Amenities />} />
         <Route path="bookings" element={<Bookings />} />
         <Route path="reviews" element={<Reviews />} />
       </Route>

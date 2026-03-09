@@ -397,6 +397,57 @@ router.patch('/destinations/reorder', async (req, res, next) => {
     } catch (err) { next(err); }
 });
 
+router.get('/amenities', async (req, res, next) => {
+    try {
+        const { rows } = await pool.query('SELECT * FROM amenities ORDER BY sort_order ASC, id ASC');
+        res.json(rows);
+    } catch (err) { next(err); }
+});
+
+router.post('/amenities', async (req, res, next) => {
+    try {
+        const name = (req.body?.name != null) ? String(req.body.name).trim() : '';
+        if (!name) return res.status(400).json({ error: 'Укажите название удобства' });
+        const { rows } = await pool.query(
+            'INSERT INTO amenities (name, sort_order) VALUES ($1, COALESCE((SELECT MAX(sort_order) FROM amenities), -1) + 1) RETURNING *',
+            [name]
+        );
+        res.status(201).json(rows[0]);
+    } catch (err) { next(err); }
+});
+
+router.put('/amenities/:id', async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const name = (req.body?.name != null) ? String(req.body.name).trim() : '';
+        if (!name) return res.status(400).json({ error: 'Укажите название удобства' });
+        const { rows: ex } = await pool.query('SELECT * FROM amenities WHERE id = $1', [id]);
+        if (ex.length === 0) return res.status(404).json({ error: 'Удобство не найдено' });
+        await pool.query('UPDATE amenities SET name = $1 WHERE id = $2', [name, id]);
+        const { rows } = await pool.query('SELECT * FROM amenities WHERE id = $1', [id]);
+        res.json(rows[0]);
+    } catch (err) { next(err); }
+});
+
+router.delete('/amenities/:id', async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const { rowCount } = await pool.query('DELETE FROM amenities WHERE id = $1', [id]);
+        if (rowCount === 0) return res.status(404).json({ error: 'Удобство не найдено' });
+        res.json({ ok: true });
+    } catch (err) { next(err); }
+});
+
+router.patch('/amenities/reorder', async (req, res, next) => {
+    try {
+        const ids = Array.isArray(req.body?.ids) ? req.body.ids.map((x) => parseInt(x, 10)).filter((x) => !isNaN(x)) : [];
+        if (ids.length === 0) return res.status(400).json({ error: 'Укажите порядок удобств' });
+        for (let i = 0; i < ids.length; i++) await pool.query('UPDATE amenities SET sort_order = $1 WHERE id = $2', [i, ids[i]]);
+        const { rows } = await pool.query('SELECT * FROM amenities ORDER BY sort_order ASC, id ASC');
+        res.json(rows);
+    } catch (err) { next(err); }
+});
+
 router.patch('/users/:id', async (req, res, next) => {
     try {
         const id = parseInt(req.params.id, 10);

@@ -32,6 +32,9 @@ export default function Layout() {
           <NavLink to="/admin/destinations" className={({ isActive }) => (isActive ? styles.linkActive : styles.link)}>
             Популярные направления
           </NavLink>
+          <NavLink to="/admin/amenities" className={({ isActive }) => (isActive ? styles.linkActive : styles.link)}>
+            Удобства
+          </NavLink>
           <NavLink to="/admin/bookings" className={({ isActive }) => (isActive ? styles.linkActive : styles.link)}>
             Бронирования
           </NavLink>

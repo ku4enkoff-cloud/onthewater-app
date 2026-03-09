@@ -187,6 +187,14 @@ async function migrate() {
             )
         `);
 
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS amenities (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                sort_order INT DEFAULT 0
+            )
+        `);
+
         await client.query(`ALTER TABLE boat_types ADD COLUMN IF NOT EXISTS icon VARCHAR(50) DEFAULT 'ship'`).catch(() => {});
 
         const { rows: typesCount } = await client.query('SELECT COUNT(*) FROM boat_types');
@@ -228,6 +236,16 @@ async function migrate() {
                 );
             }
         }
+
+        try {
+            const { rows: amCount } = await client.query('SELECT COUNT(*) FROM amenities');
+            if (parseInt(amCount[0]?.count ?? 0, 10) === 0) {
+                const defaultAmenities = ['Туалет', 'Кондиционер', 'Аудиосистема', 'Bluetooth', 'Спасательные жилеты', 'Трап для купания', 'Холодильник', 'Якорь', 'Климат-контроль', 'Розетки 220В'];
+                for (let i = 0; i < defaultAmenities.length; i++) {
+                    await client.query('INSERT INTO amenities (name, sort_order) VALUES ($1, $2)', [defaultAmenities[i], i]);
+                }
+            }
+        } catch (_) {}
 
         // Добавить location_region для существующих БД
         await client.query(`ALTER TABLE boats ADD COLUMN IF NOT EXISTS location_region VARCHAR(255) DEFAULT ''`).catch(() => {});
