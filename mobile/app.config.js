@@ -13,9 +13,9 @@ export default {
     icon: isOwner ? './assets/icon-owner.png' : './assets/icon.png',
     userInterfaceStyle: 'light',
     splash: {
-      image: './assets/splash.png',
+      image: isOwner ? './assets/splash-owner.webp' : './assets/splash.png',
       resizeMode: 'contain',
-      backgroundColor: '#1B365D',
+      backgroundColor: isOwner ? '#0a6e82' : '#1B365D',
     },
     ios: {
       supportsTablet: true,

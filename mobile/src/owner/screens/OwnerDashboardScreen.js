@@ -60,10 +60,7 @@ export default function OwnerDashboardScreen({ navigation }) {
     const displayName = user?.name || user?.email?.split('@')[0] || 'Владелец';
 
     const MENU = [
-        { icon: CreditCard, label: 'Настройки выплат', screen: null },
-        { icon: Clock, label: 'История выплат', screen: null },
         { icon: User, label: 'Профиль', screen: 'Account' },
-        { icon: FileText, label: 'Налоговые формы', screen: null },
         { icon: Settings, label: 'Ресурсы владельца', screen: null },
     ];
 

@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Image } from 'react-native';
+import {
+    View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Image,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../../../theme';
 import { api } from '../../../infrastructure/api';
 import { MessageCircle, User } from 'lucide-react-native';
+
+let LinearGradient;
+try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
+const GRADIENT = ['#0A3D3D', '#0D5C5C', '#1A7A6E', '#3A9E7A'];
 
 export default function OwnerChatScreen({ navigation }) {
     const [chats, setChats] = useState([]);
@@ -67,11 +73,23 @@ export default function OwnerChatScreen({ navigation }) {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            <View style={styles.header}>
-                <Text style={theme.typography.h1}>Сообщения</Text>
-                <Text style={[theme.typography.body, { color: theme.colors.textMuted, marginTop: 4 }]}>
-                    Чаты с клиентами
-                </Text>
+            <View style={styles.headerWrap}>
+                {LinearGradient ? (
+                    <LinearGradient
+                        colors={GRADIENT}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={StyleSheet.absoluteFillObject}
+                    />
+                ) : (
+                    <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#0D5C5C' }]} />
+                )}
+                <View style={styles.header}>
+                    <Text style={[theme.typography.h1, { color: '#fff' }]}>Сообщения</Text>
+                    <Text style={[theme.typography.body, { color: 'rgba(255,255,255,0.82)', marginTop: 4 }]}>
+                        Чаты с клиентами
+                    </Text>
+                </View>
             </View>
 
             <View style={styles.searchContainer}>
@@ -116,12 +134,16 @@ export default function OwnerChatScreen({ navigation }) {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    headerWrap: {
+        paddingBottom: theme.spacing.md,
+        overflow: 'hidden',
+    },
     header: {
         paddingHorizontal: theme.spacing.lg,
         paddingTop: theme.spacing.xl,
         paddingBottom: theme.spacing.md,
     },
-    searchContainer: { paddingHorizontal: theme.spacing.lg, marginBottom: theme.spacing.md },
+    searchContainer: { paddingHorizontal: theme.spacing.lg, marginTop: theme.spacing.md, marginBottom: theme.spacing.md },
     searchInputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
