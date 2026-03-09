@@ -110,7 +110,7 @@ const pluralizeBookings = (n) => {
 
 export default function SearchResultsScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
-    const { cityName, dateISO, useMyLocation, boatTypeId, boatTypeName } = route.params || {};
+    const { cityName, dateISO, useMyLocation, boatTypeId, boatTypeName, allRegions } = route.params || {};
     const { toggleFavorite, isFavorite } = useContext(FavoritesContext);
     const [allBoats, setAllBoats] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -140,7 +140,7 @@ export default function SearchResultsScreen({ route, navigation }) {
         year: 'numeric',
     });
 
-    const displayCity = useMyLocation ? 'Рядом со мной' : (cityName || 'Москва');
+    const displayCity = useMyLocation ? 'Рядом со мной' : (allRegions ? 'Все регионы' : (cityName || 'Москва'));
 
     const isRegion = (name) => name && (String(name).includes('область') || String(name).trim().toLowerCase() === 'московская область');
 
@@ -148,7 +148,10 @@ export default function SearchResultsScreen({ route, navigation }) {
         setLoading(true);
         try {
             let list = [];
-            if (useMyLocation) {
+            if (allRegions) {
+                const res = await api.get('/boats', { params: { popular: 1, limit: 200 } });
+                list = Array.isArray(res.data) ? res.data : [];
+            } else if (useMyLocation) {
                 let lat = 55.751244;
                 let lng = 37.618423;
                 try {
@@ -193,7 +196,7 @@ export default function SearchResultsScreen({ route, navigation }) {
         } finally {
             setLoading(false);
         }
-    }, [cityName, useMyLocation, boatTypeId, boatTypeName]);
+    }, [cityName, useMyLocation, boatTypeId, boatTypeName, allRegions]);
 
     useEffect(() => {
         fetchBoats();
@@ -476,6 +479,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                             const weekday = Number(item.price_per_hour) || 0;
                             const weekend = (item.price_weekend != null && String(item.price_weekend).trim() !== '')
                                 ? Number(item.price_weekend) : weekday;
+                            const minPrice = Math.min(weekday, weekend);
                             const dur = (() => {
                                 const m = Number(item.schedule_min_duration) || 60;
                                 if (m === 60) return 'час';
@@ -485,20 +489,12 @@ export default function SearchResultsScreen({ route, navigation }) {
                                 if (min === 0) return h === 1 ? 'час' : `${h} ч`;
                                 return `${h} ч ${min} мин`;
                             })();
-                            const same = weekday === weekend;
-                            return same
-                                ? (
-                                    <>
-                                        <Text style={styles.priceBadgeText}>от {weekday.toLocaleString('ru-RU')} ₽</Text>
-                                        <Text style={styles.priceUnit}>/{dur}</Text>
-                                    </>
-                                )
-                                : (
-                                    <>
-                                        <Text style={styles.priceBadgeText}>{weekday.toLocaleString('ru-RU')} ₽ будни · {weekend.toLocaleString('ru-RU')} ₽ вых.</Text>
-                                        <Text style={styles.priceUnit}>/{dur}</Text>
-                                    </>
-                                );
+                            return (
+                                <>
+                                    <Text style={styles.priceBadgeText}>от {minPrice.toLocaleString('ru-RU')} ₽</Text>
+                                    <Text style={styles.priceUnit}>/{dur}</Text>
+                                </>
+                            );
                         })()}
                     </View>
                 </View>

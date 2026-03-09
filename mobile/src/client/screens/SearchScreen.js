@@ -316,11 +316,12 @@ export default function SearchScreen({ navigation }) {
                         activeOpacity={0.9}
                         onPress={() => {
                             navigation.navigate('SearchResults', {
-                                cityName: 'Москва',
+                                cityName: null,
                                 useMyLocation: false,
                                 dateISO: new Date().toISOString(),
                                 boatTypeId: c.id,
                                 boatTypeName: c.name,
+                                allRegions: true,
                             });
                         }}
                     >
