@@ -74,7 +74,6 @@ export default function SearchScreen({ navigation }) {
     const [refreshing, setRefreshing] = useState(false);
     const refreshKey = 0; // оставлено для совместимости (не меняем — без моргания картинок)
     const [locationModalVisible, setLocationModalVisible] = useState(false);
-    const [selectedCategory, setSelectedCategory] = useState(null);
 
     const fetchBoatCategories = useCallback(async () => {
         try {
@@ -316,8 +315,13 @@ export default function SearchScreen({ navigation }) {
                         style={styles.catCard}
                         activeOpacity={0.9}
                         onPress={() => {
-                            setSelectedCategory(c);
-                            setLocationModalVisible(true);
+                            navigation.navigate('SearchResults', {
+                                cityName: 'Москва',
+                                useMyLocation: false,
+                                dateISO: new Date().toISOString(),
+                                boatTypeId: c.id,
+                                boatTypeName: c.name,
+                            });
                         }}
                     >
                         <Image source={{ uri: c.image }} style={styles.catImage} />
@@ -348,16 +352,11 @@ export default function SearchScreen({ navigation }) {
             {listContent}
             <LocationPickerModal
                 visible={locationModalVisible}
-                onClose={() => {
-                    setLocationModalVisible(false);
-                    setSelectedCategory(null);
-                }}
+                onClose={() => setLocationModalVisible(false)}
                 onSelect={({ useMyLocation, cityName }) => {
                     navigation.navigate('CityBoats', {
                         useMyLocation: !!useMyLocation,
                         cityName: useMyLocation ? null : cityName,
-                        boatTypeId: selectedCategory?.id,
-                        boatTypeName: selectedCategory?.name,
                     });
                 }}
             />
