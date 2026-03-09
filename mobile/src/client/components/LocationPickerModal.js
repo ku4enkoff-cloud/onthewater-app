@@ -49,23 +49,51 @@ function cityNameFromMapKitItem(item) {
 export default function LocationPickerModal({ visible, onClose, onSelect }) {
     const insets = useSafeAreaInsets();
     const [query, setQuery] = useState('');
-    const [citiesWithBoats, setCitiesWithBoats] = useState([]);
+    const [locationList, setLocationList] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
     const [loadingCities, setLoadingCities] = useState(false);
     const [loadingSuggest, setLoadingSuggest] = useState(false);
     const debouncedQuery = useDebounce(query, 300);
     const citiesSetRef = useRef(new Set());
 
-    const fetchCitiesWithBoats = useCallback(async () => {
+    const fetchLocationList = useCallback(async () => {
         setLoadingCities(true);
         try {
-            const res = await api.get('/boats/cities');
-            const list = Array.isArray(res.data) ? res.data : [];
-            setCitiesWithBoats(list);
-            citiesSetRef.current = new Set(list.map((c) => (c || '').trim().toLowerCase()));
+            let regions = [];
+            let dests = [];
+            try {
+                const regionsRes = await api.get('/boats/regions');
+                regions = Array.isArray(regionsRes.data) ? regionsRes.data : [];
+            } catch (e) {
+                console.warn('Regions fetch error:', e?.message || e);
+            }
+            try {
+                const destinationsRes = await api.get('/destinations');
+                dests = Array.isArray(destinationsRes.data) ? destinationsRes.data : [];
+            } catch (e) {
+                console.warn('Destinations fetch error:', e?.message || e);
+            }
+            const destNames = dests.map((d) => (d?.name ? String(d.name).trim() : '')).filter(Boolean);
+            const seen = new Set();
+            const combined = [];
+            for (const r of regions) {
+                const name = (r && typeof r === 'object' && r.region) ? String(r.region).trim() : (typeof r === 'string' ? String(r).trim() : '');
+                if (name && !seen.has(name.toLowerCase())) {
+                    seen.add(name.toLowerCase());
+                    combined.push(name);
+                }
+            }
+            for (const name of destNames) {
+                if (name && !seen.has(name.toLowerCase())) {
+                    seen.add(name.toLowerCase());
+                    combined.push(name);
+                }
+            }
+            setLocationList(combined.sort((a, b) => a.localeCompare(b, 'ru')));
+            citiesSetRef.current = new Set(combined.map((c) => (c || '').trim().toLowerCase()));
         } catch (e) {
-            console.warn('Fetch cities error:', e);
-            setCitiesWithBoats([]);
+            console.warn('Fetch locations error:', e);
+            setLocationList([]);
             citiesSetRef.current = new Set();
         } finally {
             setLoadingCities(false);
@@ -74,7 +102,7 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
 
     useEffect(() => {
         if (visible) {
-            fetchCitiesWithBoats();
+            fetchLocationList();
             setQuery('');
             setSuggestions([]);
             if (SuggestModule?.reset) SuggestModule.reset().catch(() => {});
@@ -82,7 +110,7 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
         return () => {
             if (SuggestModule?.reset) SuggestModule.reset().catch(() => {});
         };
-    }, [visible, fetchCitiesWithBoats]);
+    }, [visible, fetchLocationList]);
 
     useEffect(() => {
         if (!debouncedQuery.trim()) {
@@ -93,7 +121,7 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
 
         const q = debouncedQuery.trim().toLowerCase();
         const fallbackOnlyLocal = () => {
-            const cities = citiesWithBoats.filter((c) => (c || '').toLowerCase().includes(q));
+            const cities = locationList.filter((c) => (c || '').toLowerCase().includes(q));
             setSuggestions(cities.map((c) => ({ id: c, name: c })));
             setLoadingSuggest(false);
         };
@@ -126,7 +154,7 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
                     }
                 }
                 if (filtered.length === 0 && citiesSet.size > 0) {
-                    const local = citiesWithBoats.filter((c) => (c || '').toLowerCase().includes(q));
+                    const local = locationList.filter((c) => (c || '').toLowerCase().includes(q));
                     setSuggestions(local.map((c) => ({ id: c, name: c })));
                 } else {
                     setSuggestions(filtered);
@@ -137,7 +165,7 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
                 fallbackOnlyLocal();
             })
             .finally(() => setLoadingSuggest(false));
-    }, [debouncedQuery, citiesWithBoats]);
+    }, [debouncedQuery, locationList]);
 
     const handleSelect = useCallback(
         (useMyLocation, cityName) => {
@@ -151,7 +179,7 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
 
     const displayList = query.trim()
         ? suggestions
-        : citiesWithBoats.map((c) => ({ id: c, name: c }));
+        : locationList.map((c) => ({ id: c, name: c }));
 
     const renderItem = ({ item }) => (
         <TouchableOpacity

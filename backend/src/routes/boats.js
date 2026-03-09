@@ -88,6 +88,18 @@ router.get('/cities', async (req, res, next) => {
     }
 });
 
+router.get('/regions', async (req, res, next) => {
+    try {
+        const { rows } = await pool.query(
+            `SELECT DISTINCT location_region AS region FROM boats WHERE status != 'deleted' AND location_region IS NOT NULL AND TRIM(COALESCE(location_region, '')) <> '' ORDER BY location_region`
+        );
+        res.json(rows.map((r) => (r?.region ? String(r.region).trim() : null)).filter(Boolean));
+    } catch (err) {
+        console.warn('GET /boats/regions error:', err.message);
+        res.json([]);
+    }
+});
+
 /** Занятые интервалы катера на дату. GET /boats/:id/availability?date=YYYY-MM-DD */
 router.get('/:id/availability', async (req, res, next) => {
     try {
