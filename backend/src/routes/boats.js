@@ -88,6 +88,34 @@ router.get('/cities', async (req, res, next) => {
     }
 });
 
+/** Занятые интервалы катера на дату. GET /boats/:id/availability?date=YYYY-MM-DD */
+router.get('/:id/availability', async (req, res, next) => {
+    try {
+        const boatId = parseInt(req.params.id, 10);
+        const dateStr = (req.query.date || '').trim();
+        if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            return res.status(400).json({ error: 'Укажите дату в формате YYYY-MM-DD' });
+        }
+        const { rows } = await pool.query(
+            `SELECT
+               to_char(start_at AT TIME ZONE 'Europe/Moscow', 'HH24:MI') AS start_time,
+               to_char(start_at AT TIME ZONE 'Europe/Moscow' + (COALESCE(hours, 2)::int || ' hours')::interval, 'HH24:MI') AS end_time
+             FROM bookings
+             WHERE boat_id = $1 AND status IN ('confirmed', 'pending')
+               AND (start_at AT TIME ZONE 'Europe/Moscow')::date = $2::date
+             ORDER BY start_at`,
+            [boatId, dateStr]
+        );
+        const intervals = rows.map((r) => ({
+            start: r.start_time || '00:00',
+            end: r.end_time || '00:00',
+        }));
+        res.json({ busy: intervals });
+    } catch (err) {
+        next(err);
+    }
+});
+
 router.get('/:id', async (req, res, next) => {
     try {
         const { rows } = await pool.query('SELECT * FROM boats WHERE id = $1', [parseInt(req.params.id, 10)]);

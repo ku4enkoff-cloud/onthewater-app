@@ -108,13 +108,6 @@ for (let h = 9; h <= 20; h++) {
     TIME_SLOTS.push(`${String(h).padStart(2, '0')}:00`);
     TIME_SLOTS.push(`${String(h).padStart(2, '0')}:30`);
 }
-/** Занятые интервалы катера [start, end) в формате 'HH:MM'. Подставьте данные с API. */
-const BUSY_INTERVALS = [
-    { start: '12:00', end: '13:30' },
-    { start: '15:30', end: '16:00' },
-    { start: '18:00', end: '19:00' },
-];
-
 const slotToMinutes = (slot) => {
     const [h, m] = slot.split(':').map(Number);
     return h * 60 + m;
@@ -124,20 +117,18 @@ const minutesToSlot = (total) => {
     const m = total % 60;
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 };
-/** Слот занят, если время попадает в один из BUSY_INTERVALS */
-const isSlotInBusyInterval = (slot) =>
-    BUSY_INTERVALS.some((b) => {
+const isSlotInBusyInterval = (slot, busyIntervals = []) =>
+    busyIntervals.some((b) => {
         const t = slotToMinutes(slot);
         const start = slotToMinutes(b.start);
         const end = slotToMinutes(b.end);
         return t >= start && t < end;
     });
-/** Можно ли начать бронирование в slot при длительности durationMin (мин), чтобы не пересекаться с занятыми интервалами */
-const isStartTimeValid = (slot, durationMin) => {
-    if (isSlotInBusyInterval(slot)) return false;
+const isStartTimeValid = (slot, durationMin, busyIntervals = []) => {
+    if (isSlotInBusyInterval(slot, busyIntervals)) return false;
     const startMin = slotToMinutes(slot);
     const endMin = startMin + durationMin;
-    return BUSY_INTERVALS.every((b) => {
+    return busyIntervals.every((b) => {
         const bStart = slotToMinutes(b.start);
         const bEnd = slotToMinutes(b.end);
         return endMin <= bStart || startMin >= bEnd;
@@ -216,7 +207,27 @@ export default function BoatDetailScreen({ route, navigation }) {
     const [bookHours, setBookHours] = useState(60);
     const [bookCaptain, setBookCaptain] = useState(true);
     const [bookPassengers, setBookPassengers] = useState(4);
+    const [busyIntervals, setBusyIntervals] = useState([]);
+    const [busySlotsLoading, setBusySlotsLoading] = useState(false);
     const scrollRef = useRef(null);
+
+    const fetchBusyIntervals = useCallback(async (date) => {
+        if (!boatId || !date) return;
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        const dateStr = `${y}-${m}-${d}`;
+        setBusySlotsLoading(true);
+        try {
+            const res = await api.get(`/boats/${boatId}/availability`, { params: { date: dateStr } });
+            setBusyIntervals(Array.isArray(res.data?.busy) ? res.data.busy : []);
+        } catch (e) {
+            console.log('Availability fetch error:', e);
+            setBusyIntervals([]);
+        } finally {
+            setBusySlotsLoading(false);
+        }
+    }, [boatId]);
 
     const scrollToCancellationPolicy = () => {
         if (scrollRef.current) scrollRef.current.scrollToEnd({ animated: true });
@@ -1188,7 +1199,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                             {/* Start time */}
                             <TouchableOpacity
                                 style={bk.inputField}
-                                onPress={() => { setPendingTime(bookTime); setBookShowTimePicker(true); }}
+                                onPress={() => { setPendingTime(bookTime); fetchBusyIntervals(bookDate); setBookShowTimePicker(true); }}
                                 activeOpacity={0.7}
                             >
                                 {bookTime ? (
@@ -1265,12 +1276,16 @@ export default function BoatDetailScreen({ route, navigation }) {
                             <View style={{ width: 22 }} />
                         </View>
                         <View style={tp.hint}>
-                            <Text style={tp.hintText}>Показано текущее доступное время.</Text>
+                            {busySlotsLoading ? (
+                                <ActivityIndicator size="small" color={NAVY} style={{ marginVertical: 4 }} />
+                            ) : (
+                                <Text style={tp.hintText}>Показано текущее доступное время.</Text>
+                            )}
                         </View>
                         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tp.grid}>
                             {TIME_SLOTS.map((slot) => {
-                                const isBusy = isSlotInBusyInterval(slot);
-                                const canStart = isStartTimeValid(slot, bookHours);
+                                const isBusy = isSlotInBusyInterval(slot, busyIntervals);
+                                const canStart = isStartTimeValid(slot, bookHours, busyIntervals);
                                 const isSelected = pendingTime === slot;
                                 const disabled = !canStart;
                                 return (
