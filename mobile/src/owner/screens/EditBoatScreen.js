@@ -22,7 +22,7 @@ const GRADIENT = ['#0A4D4D', '#0D5C5C', '#1A7A5A'];
 const TEAL = '#0D5C5C';
 const GOLD = '#E2A83E';
 
-const AMENITIES_OPTIONS = [
+const AMENITIES_FALLBACK = [
     'Туалет', 'Кондиционер', 'Аудиосистема', 'Bluetooth', 'Спасательные жилеты',
     'Трап для купания', 'Холодильник', 'Якорь', 'Климат-контроль', 'Розетки 220В',
 ];
@@ -119,6 +119,7 @@ export default function EditBoatScreen({ route, navigation }) {
     const [fetching, setFetching] = useState(true);
     const [loading, setLoading] = useState(false);
     const [boatTypes, setBoatTypes] = useState([]);
+    const [amenitiesOptions, setAmenitiesOptions] = useState(AMENITIES_FALLBACK);
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -170,6 +171,16 @@ export default function EditBoatScreen({ route, navigation }) {
         api.get('/boat-types')
             .then((r) => setBoatTypes(Array.isArray(r.data) ? r.data : []))
             .catch(() => setBoatTypes([]));
+    }, []);
+
+    useEffect(() => {
+        api.get('/amenities')
+            .then((r) => {
+                const items = Array.isArray(r.data) ? r.data : [];
+                const names = items.map((a) => (a?.name ? String(a.name).trim() : '')).filter(Boolean);
+                if (names.length > 0) setAmenitiesOptions(names);
+            })
+            .catch(() => {});
     }, []);
 
     useEffect(() => {
@@ -926,14 +937,19 @@ export default function EditBoatScreen({ route, navigation }) {
                     {/* Amenities */}
                     <SectionIcon icon={Users} label="Удобства" />
                     <View style={s.chipRow}>
-                        {AMENITIES_OPTIONS.map((name) => {
+                        {(() => {
+                            const options = amenitiesOptions.length > 0 ? amenitiesOptions : AMENITIES_FALLBACK;
+                            const boatExtra = amenities.filter((a) => !options.includes(a));
+                            const allOptions = [...options, ...boatExtra];
+                            return allOptions.map((name) => {
                             const active = amenities.includes(name);
-                            return (
-                                <TouchableOpacity key={name} style={[s.chip, active && s.chipActive]} onPress={() => toggleAmenity(name)} activeOpacity={0.7}>
-                                    <Text style={[s.chipText, active && s.chipTextActive]}>{name}</Text>
-                                </TouchableOpacity>
-                            );
-                        })}
+                                return (
+                                    <TouchableOpacity key={name} style={[s.chip, active && s.chipActive]} onPress={() => toggleAmenity(name)} activeOpacity={0.7}>
+                                        <Text style={[s.chipText, active && s.chipTextActive]}>{name}</Text>
+                                    </TouchableOpacity>
+                                );
+                            });
+                        })()}
                     </View>
 
                     {/* Rules */}
