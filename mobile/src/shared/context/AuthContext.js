@@ -1,8 +1,9 @@
 import React, { createContext, useState, useEffect } from 'react';
+import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../infrastructure/api';
 
-const appVariant = process.env.EXPO_PUBLIC_APP_VARIANT || 'client';
+const appVariant = Constants.expoConfig?.extra?.appVariant || process.env.EXPO_PUBLIC_APP_VARIANT || 'client';
 const requiredRole = appVariant === 'owner' ? 'owner' : 'client';
 
 export const AuthContext = createContext(null);
