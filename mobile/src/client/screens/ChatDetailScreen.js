@@ -7,6 +7,7 @@ import {
     TextInput,
     TouchableOpacity,
     KeyboardAvoidingView,
+    Keyboard,
     Platform,
     ActivityIndicator,
     Image,
@@ -29,6 +30,21 @@ export default function ChatDetailScreen({ route, navigation }) {
     const [loading, setLoading] = useState(true);
     const [chat, setChat] = useState(null);
     const flatListRef = useRef(null);
+    const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+    useEffect(() => {
+        const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+        const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+        return () => {
+            show.remove();
+            hide.remove();
+        };
+    }, []);
+
+    const inputRowPaddingBottom =
+        Platform.OS === 'android' && keyboardVisible
+            ? theme.spacing.sm
+            : theme.spacing.lg + insets.bottom;
 
     useEffect(() => {
         if (chatId) {
@@ -175,7 +191,7 @@ export default function ChatDetailScreen({ route, navigation }) {
                 </View>
             )}
 
-            {!loading && (
+            {!loading && !keyboardVisible && (
                 <View style={styles.infoBanner}>
                     <View style={styles.infoIconWrap}>
                         <Lock size={18} color="#FFFFFF" strokeWidth={2} />
@@ -206,7 +222,7 @@ export default function ChatDetailScreen({ route, navigation }) {
                         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
                         keyboardShouldPersistTaps="handled"
                     />
-                    <View style={[styles.inputRow, { paddingBottom: theme.spacing.lg + insets.bottom }]}>
+                    <View style={[styles.inputRow, { paddingBottom: inputRowPaddingBottom }]}>
                         <TextInput
                             style={styles.input}
                             placeholder="Напишите сообщение..."
