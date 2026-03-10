@@ -104,7 +104,7 @@ export default function OnboardingScreen({ onFinish }) {
                 >
                     <Anchor size={22} color="#fff" strokeWidth={2} />
                 </LinearGradient>
-                <Text style={styles.logoText}>WAVE</Text>
+                <Text style={styles.logoText}>ONTHEWATER</Text>
             </View>
 
             <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 24) + 8 }]}>

@@ -265,9 +265,20 @@ export default function SearchResultsScreen({ route, navigation }) {
 
     useEffect(() => {
         if (!mapModalVisible || !mapViewReady || !ClusteredYamap || !mapRef.current) return;
+        const doFetch = (opts) => {
+            lastMapCenterRef.current = opts.lat != null && opts.lng != null ? { lat: opts.lat, lon: opts.lng } : lastMapCenterRef.current;
+            fetchBoatsForMap(opts);
+        };
         if (cityName && isRegion(cityName)) {
-            fetchBoatsForMap({ regionFilter: cityName });
+            doFetch({ regionFilter: cityName });
             return;
+        }
+        if (useMyLocation && userLocationRef.current) {
+            doFetch({ lat: userLocationRef.current.lat, lng: userLocationRef.current.lon });
+        } else if (cityName) {
+            doFetch({ cityFilter: cityName });
+        } else {
+            doFetch({ lat: mapCenter.lat, lng: mapCenter.lon });
         }
         const poll = () => {
             try {
@@ -295,7 +306,7 @@ export default function SearchResultsScreen({ route, navigation }) {
         return () => {
             if (mapPollRef.current) clearInterval(mapPollRef.current);
         };
-    }, [mapModalVisible, fetchBoatsForMap, cityName, useMyLocation]);
+    }, [mapModalVisible, mapViewReady, fetchBoatsForMap, cityName, useMyLocation, mapCenter]);
 
     const priceRange = useMemo(() => {
         const prices = allBoats
