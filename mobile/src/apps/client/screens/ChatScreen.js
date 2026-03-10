@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Image, ActivityIndicator } from 'react-native';
+import {
+    View,
+    Text,
+    StyleSheet,
+    FlatList,
+    TouchableOpacity,
+    TextInput,
+    Image,
+    ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../../theme';
 import { api } from '../../../infrastructure/api';
-import { MessageCircle, User } from 'lucide-react-native';
+import { MessageCircle, User, Search } from 'lucide-react-native';
 
 export default function ChatScreen({ navigation }) {
     const insets = useSafeAreaInsets();
@@ -32,60 +41,81 @@ export default function ChatScreen({ navigation }) {
         (chat.owner_name || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const renderChatItem = ({ item }) => (
-        <TouchableOpacity
-            style={styles.chatItem}
-            onPress={() => navigation.navigate('ChatDetail', { chatId: item.id })}
-        >
-            <View style={styles.avatarContainer}>
-                {item.owner_avatar ? (
-                    <Image source={{ uri: item.owner_avatar }} style={styles.avatar} />
-                ) : (
-                    <View style={styles.avatarPlaceholder}>
-                        <User size={24} color={theme.colors.textMuted} />
-                    </View>
-                )}
-                {item.unread_count > 0 && (
-                    <View style={styles.unreadBadge}>
-                        <Text style={styles.unreadBadgeText}>{item.unread_count}</Text>
-                    </View>
-                )}
-            </View>
+    const renderChatItem = ({ item }) => {
+        const isLastFromMe = item.last_message_is_own || item.last_message_sender === 'me';
+        const lastMessageText = item.last_message || '—';
+        const previewText = `${isLastFromMe ? 'Вы: ' : ''}${lastMessageText}`;
 
-            <View style={styles.chatContent}>
-                <View style={styles.chatHeader}>
-                    <Text style={styles.ownerName}>{item.owner_name}</Text>
-                    <Text style={styles.timeText}>{item.last_message_date} • {item.last_message_time}</Text>
+        const tripLabel =
+            item.trip_date_formatted ||
+            item.trip_date ||
+            item.trip_date_short ||
+            item.boat_title;
+
+        const statusLabel = item.status_label || item.status_text || item.status;
+
+        return (
+            <TouchableOpacity
+                style={styles.chatItem}
+                onPress={() => navigation.navigate('ChatDetail', { chatId: item.id })}
+                activeOpacity={0.8}
+            >
+                <View style={styles.avatarContainer}>
+                    {item.owner_avatar ? (
+                        <Image source={{ uri: item.owner_avatar }} style={styles.avatar} />
+                    ) : (
+                        <View style={styles.avatarPlaceholder}>
+                            <User size={24} color={theme.colors.textMuted} />
+                        </View>
+                    )}
+                    {item.unread_count > 0 && (
+                        <View style={styles.unreadDot} />
+                    )}
                 </View>
-                
-                <Text style={styles.boatTitle} numberOfLines={1}>{item.boat_title}</Text>
-                
-                <View style={styles.messageContainer}>
-                    <MessageCircle size={14} color={theme.colors.textMuted} />
+
+                <View style={styles.chatContent}>
+                    <View style={styles.chatHeader}>
+                        <Text style={styles.ownerName} numberOfLines={1}>
+                            {item.owner_name}
+                        </Text>
+                        {!!item.last_message_time && (
+                            <Text style={styles.timeText}>{item.last_message_time}</Text>
+                        )}
+                    </View>
+
                     <Text style={styles.lastMessage} numberOfLines={1}>
-                        {item.last_message}
+                        {previewText}
                     </Text>
+
+                    <View style={styles.tripRow}>
+                        <Text style={styles.tripText} numberOfLines={1}>
+                            {tripLabel}
+                        </Text>
+                        {!!statusLabel && (
+                            <View style={styles.statusPill}>
+                                <Text style={styles.statusPillText} numberOfLines={1}>
+                                    {statusLabel}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
                 </View>
-            </View>
-        </TouchableOpacity>
-    );
+            </TouchableOpacity>
+        );
+    };
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            <View style={styles.header}>
-                <Text style={theme.typography.h1}>Сообщения</Text>
-                <Text style={[theme.typography.body, { color: theme.colors.textMuted, marginTop: 4 }]}>
-                    Общайтесь с владельцами катеров
-                </Text>
+            <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+                <Text style={styles.headerTitle}>Сообщения</Text>
             </View>
 
-            {/* Поиск */}
             <View style={styles.searchContainer}>
                 <View style={styles.searchInputContainer}>
-                    <MessageCircle size={20} color={theme.colors.textMuted} style={styles.searchIcon} />
+                    <Search size={20} color={theme.colors.textMuted} style={styles.searchIcon} />
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Поиск по катерам или владельцам"
+                        placeholder="Поиск..."
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         placeholderTextColor={theme.colors.textMuted}
@@ -98,24 +128,24 @@ export default function ChatScreen({ navigation }) {
                     <ActivityIndicator size="large" color={theme.colors.primary} />
                 </View>
             ) : (
-            <FlatList
-                data={filteredChats}
-                renderItem={renderChatItem}
-                keyExtractor={item => item.id.toString()}
-                contentContainerStyle={[styles.listContainer, { paddingBottom: 100 + insets.bottom }]}
-                showsVerticalScrollIndicator={false}
-                ListEmptyComponent={
-                    <View style={styles.emptyState}>
-                        <View style={styles.emptyIconWrap}>
-                            <MessageCircle size={48} color={theme.colors.textMuted} />
+                <FlatList
+                    data={filteredChats}
+                    renderItem={renderChatItem}
+                    keyExtractor={item => item.id.toString()}
+                    contentContainerStyle={[styles.listContainer, { paddingBottom: insets.bottom + 88 }]}
+                    showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
+                        <View style={styles.emptyState}>
+                            <View style={styles.emptyIconWrap}>
+                                <MessageCircle size={48} color={theme.colors.textMuted} />
+                            </View>
+                            <Text style={styles.emptyTitle}>Нет сообщений</Text>
+                            <Text style={styles.emptySubtitle}>
+                                Начните общение с владельцем катера после бронирования
+                            </Text>
                         </View>
-                        <Text style={styles.emptyTitle}>Нет сообщений</Text>
-                        <Text style={styles.emptySubtitle}>
-                            Начните общение с владельцем катера после бронирования
-                        </Text>
-                    </View>
-                }
-            />
+                    }
+                />
             )}
         </SafeAreaView>
     );
@@ -133,8 +163,11 @@ const styles = StyleSheet.create({
     },
     header: {
         paddingHorizontal: theme.spacing.lg,
-        paddingTop: theme.spacing.xl,
-        paddingBottom: theme.spacing.md,
+        paddingBottom: theme.spacing.sm,
+    },
+    headerTitle: {
+        ...theme.typography.h1,
+        color: theme.colors.textMain,
     },
     searchContainer: {
         paddingHorizontal: theme.spacing.lg,
@@ -144,9 +177,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: theme.colors.surface,
-        borderRadius: theme.borderRadius.pill,
+        borderRadius: theme.borderRadius.md,
         paddingHorizontal: theme.spacing.md,
-        paddingVertical: theme.spacing.sm,
+        paddingVertical: 12,
         borderWidth: 1,
         borderColor: theme.colors.border,
     },
@@ -160,14 +193,15 @@ const styles = StyleSheet.create({
     },
     listContainer: {
         paddingHorizontal: theme.spacing.lg,
-        paddingBottom: 100,
     },
     chatItem: {
         flexDirection: 'row',
         backgroundColor: theme.colors.surface,
         borderRadius: theme.borderRadius.lg,
         padding: theme.spacing.md,
-        marginBottom: theme.spacing.md,
+        marginBottom: theme.spacing.sm,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
         ...theme.shadows.card,
     },
     avatarContainer: {
@@ -175,44 +209,37 @@ const styles = StyleSheet.create({
         marginRight: theme.spacing.md,
     },
     avatarPlaceholder: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
+        width: 52,
+        height: 52,
+        borderRadius: 26,
         backgroundColor: theme.colors.border,
         justifyContent: 'center',
         alignItems: 'center',
     },
     avatar: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
+        width: 52,
+        height: 52,
+        borderRadius: 26,
     },
-    unreadBadge: {
+    unreadDot: {
         position: 'absolute',
-        top: -4,
-        right: -4,
+        top: 0,
+        right: 0,
+        width: 10,
+        height: 10,
+        borderRadius: 5,
         backgroundColor: theme.colors.primary,
-        borderRadius: theme.borderRadius.pill,
-        minWidth: 20,
-        height: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 6,
-    },
-    unreadBadgeText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: 'bold',
     },
     chatContent: {
         flex: 1,
         justifyContent: 'center',
+        minWidth: 0,
     },
     chatHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 4,
+        marginBottom: 2,
     },
     ownerName: {
         ...theme.typography.body,
@@ -221,21 +248,37 @@ const styles = StyleSheet.create({
     timeText: {
         ...theme.typography.caption,
         color: theme.colors.textMuted,
-    },
-    boatTitle: {
-        ...theme.typography.bodySm,
-        color: theme.colors.textMuted,
-        marginBottom: 4,
-    },
-    messageContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        marginLeft: theme.spacing.sm,
     },
     lastMessage: {
         ...theme.typography.bodySm,
         color: theme.colors.textMain,
-        marginLeft: 6,
+        marginBottom: 4,
+    },
+    tripRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    tripText: {
+        ...theme.typography.bodySm,
+        color: theme.colors.textMuted,
         flex: 1,
+        marginRight: theme.spacing.sm,
+    },
+    statusPill: {
+        paddingHorizontal: theme.spacing.sm,
+        paddingVertical: 4,
+        borderRadius: theme.borderRadius.pill,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        backgroundColor: theme.colors.surface,
+    },
+    statusPillText: {
+        ...theme.typography.caption,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        color: theme.colors.textMuted,
     },
     emptyState: {
         alignItems: 'center',

@@ -13,7 +13,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../../theme';
 import { api } from '../../../infrastructure/api';
-import { ChevronLeft, Send, MessageCircle } from 'lucide-react-native';
+import { ChevronLeft, Send, Lock } from 'lucide-react-native';
 
 export default function ChatDetailScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
@@ -74,29 +74,74 @@ export default function ChatDetailScreen({ route, navigation }) {
     const renderMessage = ({ item }) => {
         const isMe = item.sender === 'me' || item.is_own;
         return (
-            <View style={[styles.messageBubble, isMe ? styles.messageBubbleMe : styles.messageBubbleThem]}>
-                <Text style={[styles.messageText, isMe && styles.messageTextMe]}>{item.text}</Text>
-                <Text style={[styles.messageTime, isMe && styles.messageTimeMe]}>{formatTime(item.created_at || item.createdAt)}</Text>
+            <View style={[styles.messageRow, isMe ? styles.messageRowMe : styles.messageRowThem]}>
+                <View style={[styles.messageBubble, isMe ? styles.messageBubbleMe : styles.messageBubbleThem]}>
+                    <Text style={[styles.messageText, isMe && styles.messageTextMe]}>{item.text}</Text>
+                </View>
+                <Text style={[styles.messageTime, isMe && styles.messageTimeMe]}>
+                    {formatTime(item.created_at || item.createdAt)}
+                </Text>
             </View>
         );
     };
 
+    const tripLabel =
+        chat?.trip_date_formatted ||
+        chat?.trip_date ||
+        chat?.trip_date_short;
+
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-                    <ChevronLeft size={24} color={theme.colors.primary} />
+                <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={() => navigation.goBack()}
+                    activeOpacity={0.7}
+                >
+                    <ChevronLeft size={24} color={theme.colors.textMain} />
                 </TouchableOpacity>
-                <View style={styles.headerCenter}>
-                    <Text style={styles.headerTitle} numberOfLines={1}>
-                        {chat?.owner_name || 'Владелец'}
-                    </Text>
-                    <Text style={styles.headerSubtitle} numberOfLines={1}>
-                        {chat?.boat_title || 'Чат'}
-                    </Text>
-                </View>
+                <Text style={styles.headerTitle} numberOfLines={1}>
+                    {chat?.owner_name || 'Владелец'}
+                </Text>
                 <View style={styles.headerSpacer} />
             </View>
+
+            {!loading && (
+                <View style={styles.tripHeader}>
+                    <View style={styles.tripInfo}>
+                        <Text style={styles.tripBoatTitle} numberOfLines={1}>
+                            {chat?.boat_title || 'Чат'}
+                        </Text>
+                        {!!tripLabel && (
+                            <Text style={styles.tripDate} numberOfLines={1}>
+                                {tripLabel}
+                            </Text>
+                        )}
+                    </View>
+                    <TouchableOpacity
+                        style={styles.tripDetailsButton}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            if (chat?.boat_id) {
+                                navigation.navigate('BoatDetail', { boatId: chat.boat_id });
+                            }
+                        }}
+                    >
+                        <Text style={styles.tripDetailsText}>Подробнее</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
+            {!loading && (
+                <View style={styles.infoBanner}>
+                    <View style={styles.infoIconWrap}>
+                        <Lock size={18} color={theme.colors.primary} strokeWidth={2} />
+                    </View>
+                    <Text style={styles.infoText}>
+                        Для вашей безопасности общайтесь только в приложении.
+                    </Text>
+                </View>
+            )}
 
             {loading ? (
                 <View style={styles.centered}>
@@ -111,15 +156,7 @@ export default function ChatDetailScreen({ route, navigation }) {
                         keyExtractor={item => (item.id || item._id || Math.random()).toString()}
                         contentContainerStyle={styles.messagesList}
                         showsVerticalScrollIndicator={false}
-                        ListEmptyComponent={
-                            <View style={styles.emptyChat}>
-                                <View style={styles.emptyIconWrap}>
-                                    <MessageCircle size={48} color={theme.colors.textMuted} />
-                                </View>
-                                <Text style={styles.emptyTitle}>Пока нет сообщений</Text>
-                                <Text style={styles.emptySubtitle}>Напишите первым</Text>
-                            </View>
-                        }
+                        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
                     />
                     <KeyboardAvoidingView
                         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -128,7 +165,7 @@ export default function ChatDetailScreen({ route, navigation }) {
                     >
                         <TextInput
                             style={styles.input}
-                            placeholder="Сообщение..."
+                            placeholder="Напишите сообщение..."
                             placeholderTextColor={theme.colors.textMuted}
                             value={inputText}
                             onChangeText={setInputText}
@@ -163,65 +200,117 @@ const styles = StyleSheet.create({
         backgroundColor: theme.colors.background,
     },
     backButton: { padding: theme.spacing.sm, marginLeft: -theme.spacing.sm },
-    headerCenter: { flex: 1, marginLeft: theme.spacing.sm },
     headerTitle: {
+        flex: 1,
+        textAlign: 'center',
         fontSize: 18,
         fontWeight: '600',
         color: theme.colors.textMain,
     },
-    headerSubtitle: {
+    headerSpacer: { width: 40 },
+    tripHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: theme.spacing.lg,
+        paddingVertical: theme.spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.border,
+        backgroundColor: theme.colors.surface,
+    },
+    tripInfo: { flex: 1, marginRight: theme.spacing.sm },
+    tripBoatTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: theme.colors.textMain,
+        marginBottom: 2,
+    },
+    tripDate: {
         ...theme.typography.caption,
         color: theme.colors.textMuted,
-        marginTop: 2,
     },
-    headerSpacer: { width: 40 },
-    messagesList: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingTop: theme.spacing.lg,
-        paddingBottom: theme.spacing.md,
+    tripDetailsButton: {
+        paddingHorizontal: theme.spacing.md,
+        paddingVertical: 6,
+        borderRadius: theme.borderRadius.pill,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
     },
-    emptyChat: {
-        paddingVertical: theme.spacing.xxl,
+    tripDetailsText: {
+        ...theme.typography.caption,
+        color: theme.colors.primary,
+        fontWeight: '600',
+    },
+    infoBanner: {
+        flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: theme.spacing.xl,
+        marginHorizontal: theme.spacing.lg,
+        marginTop: theme.spacing.md,
+        paddingVertical: theme.spacing.md,
+        paddingHorizontal: 0,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.border,
+        backgroundColor: theme.colors.background,
     },
-    emptyIconWrap: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: theme.colors.surface,
+    infoIconWrap: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#B8E6E0',
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: theme.spacing.lg,
+        marginRight: theme.spacing.md,
     },
-    emptyTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
+    infoText: {
+        flex: 1,
+        ...theme.typography.bodySm,
         color: theme.colors.textMain,
+    },
+    messagesList: {
+        paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.md,
+        paddingBottom: theme.spacing.md,
+    },
+    messageRow: {
         marginBottom: theme.spacing.sm,
     },
-    emptySubtitle: {
-        ...theme.typography.bodySm,
-        color: theme.colors.textMuted,
-        textAlign: 'center',
+    messageRowMe: {
+        alignItems: 'flex-end',
+    },
+    messageRowThem: {
+        alignItems: 'flex-start',
     },
     messageBubble: {
-        alignSelf: 'flex-start',
         maxWidth: '80%',
-        padding: theme.spacing.md,
-        borderRadius: theme.borderRadius.lg,
-        marginBottom: theme.spacing.sm,
-        backgroundColor: theme.colors.surface,
-        ...theme.shadows.card,
+        paddingHorizontal: theme.spacing.md,
+        paddingVertical: theme.spacing.sm,
+        borderRadius: 18,
     },
     messageBubbleMe: {
-        alignSelf: 'flex-end',
-        backgroundColor: theme.colors.primaryLight,
+        backgroundColor: theme.colors.primary,
+        borderBottomRightRadius: 4,
     },
-    messageText: { ...theme.typography.body },
-    messageTextMe: { color: theme.colors.textMain },
-    messageTime: { ...theme.typography.caption, marginTop: 4 },
-    messageTimeMe: { color: theme.colors.textMuted },
+    messageBubbleThem: {
+        backgroundColor: theme.colors.surface,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        borderBottomLeftRadius: 4,
+    },
+    messageText: {
+        ...theme.typography.body,
+        color: theme.colors.textMain,
+    },
+    messageTextMe: {
+        color: 'white',
+    },
+    messageTime: {
+        ...theme.typography.caption,
+        color: theme.colors.textMuted,
+        marginTop: 4,
+    },
+    messageTimeMe: {
+        color: theme.colors.textMuted,
+    },
     inputRow: {
         flexDirection: 'row',
         alignItems: 'flex-end',
@@ -237,9 +326,9 @@ const styles = StyleSheet.create({
         maxHeight: 120,
         borderWidth: 1,
         borderColor: theme.colors.border,
-        borderRadius: theme.borderRadius.pill,
+        borderRadius: 22,
         paddingHorizontal: 18,
-        paddingVertical: 12,
+        paddingVertical: 10,
         fontSize: 16,
         color: theme.colors.textMain,
         backgroundColor: theme.colors.surface,

@@ -19,6 +19,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "softwareKeyboardLayoutMode": "resize",
       "config": {
         "googleMaps": {
           "apiKey": "YOUR_YANDEX_MAPS_OR_GOOGLE_MAPS_API_KEY_HERE"

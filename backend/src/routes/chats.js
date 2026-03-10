@@ -101,10 +101,11 @@ router.post('/:id/messages', authenticate, async (req, res, next) => {
         if (chatRows.length === 0) return res.status(404).json({ error: 'Not found' });
         const text = (req.body && req.body.text) || '';
         const sender = req.user.role === 'owner' ? 'owner' : 'me';
+        const isOwn = sender === 'me';
 
         const { rows } = await pool.query(
             `INSERT INTO messages (chat_id, text, sender, is_own) VALUES ($1, $2, $3, $4) RETURNING *`,
-            [chatId, text, sender, true]
+            [chatId, text, sender, isOwn]
         );
         await pool.query('UPDATE chats SET last_message = $1 WHERE id = $2', [text, chatId]);
         res.status(201).json(rows[0]);

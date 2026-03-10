@@ -1,12 +1,19 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Image, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+    View,
+    Text,
+    StyleSheet,
+    FlatList,
+    TouchableOpacity,
+    Image,
+    ActivityIndicator,
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 import { AuthContext } from '../../shared/context/AuthContext';
 import UnauthorizedCard from '../../shared/components/UnauthorizedCard';
-import { MessageCircle, User, Search } from 'lucide-react-native';
+import { MessageCircle, User, Archive, ChevronRight } from 'lucide-react-native';
 
 export default function ChatScreen({ navigation }) {
     const insets = useSafeAreaInsets();
@@ -34,22 +41,66 @@ export default function ChatScreen({ navigation }) {
         (chat.owner_name || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const renderChatItem = ({ item }) => (
-        <TouchableOpacity style={styles.chatItem} onPress={() => navigation.navigate('ChatDetail', { chatId: item.id })} activeOpacity={0.7}>
-            <View style={styles.avatarContainer}>
-                {item.owner_avatar ? <Image source={{ uri: item.owner_avatar }} style={styles.avatar} /> : <View style={styles.avatarPlaceholder}><User size={24} color={theme.colors.gray400} /></View>}
-                {item.unread_count > 0 && <View style={styles.unreadDot} />}
-            </View>
-            <View style={styles.chatContent}>
-                <View style={styles.chatHeader}>
-                    <Text style={styles.ownerName}>{item.owner_name}</Text>
-                    <Text style={styles.timeText}>{item.last_message_time || item.last_message_date}</Text>
+    const renderChatItem = ({ item }) => {
+        const isLastFromMe = item.last_message_is_own || item.last_message_sender === 'me';
+        const lastMessageText = item.last_message || '—';
+        const previewText = `${isLastFromMe ? 'Вы: ' : ''}${lastMessageText}`;
+
+        const tripLabel =
+            item.trip_date_formatted ||
+            item.trip_date ||
+            item.trip_date_short ||
+            item.boat_title;
+
+        const statusLabel = item.status_label || item.status_text || item.status;
+
+        return (
+            <TouchableOpacity
+                style={styles.chatItem}
+                onPress={() => navigation.navigate('ChatDetail', { chatId: item.id })}
+                activeOpacity={0.7}
+            >
+                <View style={styles.avatarContainer}>
+                    {item.owner_avatar ? (
+                        <Image source={{ uri: item.owner_avatar }} style={styles.avatar} />
+                    ) : (
+                        <View style={styles.avatarPlaceholder}>
+                            <User size={24} color={theme.colors.gray400} />
+                        </View>
+                    )}
+                    {item.unread_count > 0 && <View style={styles.unreadDot} />}
                 </View>
-                <Text style={styles.boatTitle} numberOfLines={1}>{item.boat_title}</Text>
-                <Text style={styles.lastMessage} numberOfLines={1}>{item.last_message || '—'}</Text>
-            </View>
-        </TouchableOpacity>
-    );
+                <View style={styles.chatContent}>
+                    <View style={styles.chatHeader}>
+                        <Text style={styles.ownerName} numberOfLines={1}>
+                            {item.owner_name}
+                        </Text>
+                        <View style={styles.timeRow}>
+                            {!!item.last_message_time && (
+                                <Text style={styles.timeText}>{item.last_message_time}</Text>
+                            )}
+                            <ChevronRight size={18} color={theme.colors.gray400} strokeWidth={2} />
+                        </View>
+                    </View>
+                    <Text style={styles.lastMessage} numberOfLines={1}>
+                        {previewText}
+                    </Text>
+                    <View style={styles.tripRow}>
+                        <Text style={styles.tripText} numberOfLines={1}>
+                            {tripLabel ? `Поездка: ${tripLabel}` : ''}
+                        </Text>
+                        {!!statusLabel && (
+                            <View style={styles.statusPill}>
+                                <Text style={styles.statusPillText} numberOfLines={1}>
+                                    {statusLabel}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                </View>
+            </TouchableOpacity>
+        );
+    };
 
     if (!user) {
         return (
@@ -70,21 +121,19 @@ export default function ChatScreen({ navigation }) {
         <SafeAreaView style={styles.container} edges={['top']}>
             <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
                 <Text style={styles.headerTitle}>Сообщения</Text>
-            </View>
-            <View style={styles.searchContainer}>
-                <View style={styles.searchInputContainer}>
-                    <Search size={20} color={theme.colors.gray400} style={styles.searchIcon} />
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Поиск..."
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        placeholderTextColor={theme.colors.gray400}
-                    />
-                </View>
+                <TouchableOpacity
+                    style={styles.headerIconButton}
+                    onPress={() => {}}
+                    activeOpacity={0.7}
+                    accessibilityLabel="Архив сообщений"
+                >
+                    <Archive size={24} color={theme.colors.gray700} strokeWidth={1.5} />
+                </TouchableOpacity>
             </View>
             {loading ? (
-                <View style={styles.centered}><ActivityIndicator size="large" color={theme.colors.primary} /></View>
+                <View style={styles.centered}>
+                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                </View>
             ) : (
                 <FlatList
                     data={filteredChats}
@@ -98,7 +147,9 @@ export default function ChatScreen({ navigation }) {
                                 <MessageCircle size={48} color={theme.colors.gray400} />
                             </View>
                             <Text style={styles.emptyTitle}>Нет сообщений</Text>
-                            <Text style={styles.emptySubtitle}>Начните общение с владельцем катера после бронирования</Text>
+                            <Text style={styles.emptySubtitle}>
+                                Начните общение с владельцем катера после бронирования
+                            </Text>
                         </View>
                     }
                 />
@@ -110,35 +161,39 @@ export default function ChatScreen({ navigation }) {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    header: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.sm },
-    headerTitle: { ...theme.typography.h1, color: theme.colors.gray900 },
-    searchContainer: { paddingHorizontal: theme.spacing.lg, marginBottom: theme.spacing.md },
-    searchInputContainer: {
+    header: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: theme.colors.surface,
-        borderRadius: theme.borderRadius.md,
-        paddingHorizontal: theme.spacing.md,
-        paddingVertical: 12,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
+        justifyContent: 'space-between',
+        paddingHorizontal: theme.spacing.lg,
+        paddingBottom: theme.spacing.md,
     },
-    searchIcon: { marginRight: theme.spacing.sm },
-    searchInput: { flex: 1, fontSize: 16, fontFamily: theme.fonts.regular, color: theme.colors.gray900 },
+    headerTitle: { ...theme.typography.h1, color: theme.colors.gray900, flex: 1 },
+    headerIconButton: { padding: theme.spacing.xs },
     listContainer: { paddingHorizontal: theme.spacing.lg },
     chatItem: {
         flexDirection: 'row',
-        backgroundColor: theme.colors.surface,
-        borderRadius: theme.borderRadius.lg,
-        padding: theme.spacing.md,
-        marginBottom: theme.spacing.sm,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-        ...theme.shadows.card,
+        backgroundColor: theme.colors.background,
+        paddingVertical: theme.spacing.md,
+        paddingRight: 0,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.gray100,
     },
     avatarContainer: { position: 'relative', marginRight: theme.spacing.md },
-    avatarPlaceholder: { width: 52, height: 52, borderRadius: 26, backgroundColor: theme.colors.gray100, justifyContent: 'center', alignItems: 'center' },
-    avatar: { width: 52, height: 52, borderRadius: 26 },
+    avatarPlaceholder: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: theme.colors.gray100,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    avatar: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        ...theme.shadows.card,
+    },
     unreadDot: {
         position: 'absolute',
         top: 0,
@@ -149,11 +204,54 @@ const styles = StyleSheet.create({
         backgroundColor: theme.colors.primary,
     },
     chatContent: { flex: 1, justifyContent: 'center', minWidth: 0 },
-    chatHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 },
-    ownerName: { fontSize: 16, fontFamily: theme.fonts.semiBold, color: theme.colors.gray900 },
-    timeText: { fontSize: 12, color: theme.colors.gray400 },
-    boatTitle: { fontSize: 14, color: theme.colors.primary, marginBottom: 2 },
-    lastMessage: { fontSize: 14, color: theme.colors.gray500 },
+    chatHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    ownerName: {
+        fontSize: 17,
+        fontFamily: theme.fonts.semiBold,
+        color: theme.colors.gray900,
+        flex: 1,
+    },
+    timeRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginLeft: theme.spacing.sm,
+    },
+    timeText: { fontSize: 13, color: theme.colors.gray500 },
+    lastMessage: {
+        fontSize: 14,
+        fontFamily: theme.fonts.regular,
+        color: theme.colors.gray500,
+        marginBottom: 4,
+    },
+    tripRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    tripText: {
+        fontSize: 13,
+        color: theme.colors.gray500,
+        flex: 1,
+        marginRight: theme.spacing.sm,
+    },
+    statusPill: {
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 6,
+        backgroundColor: '#E8E4DD',
+    },
+    statusPillText: {
+        fontSize: 11,
+        fontFamily: theme.fonts.semiBold,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        color: theme.colors.gray700,
+    },
     emptyState: { alignItems: 'center', paddingVertical: theme.spacing.xxl, paddingHorizontal: theme.spacing.xl },
     emptyIconWrap: {
         width: 80,

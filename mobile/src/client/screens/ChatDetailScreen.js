@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import {
     View,
     Text,
@@ -9,14 +9,20 @@ import {
     KeyboardAvoidingView,
     Platform,
     ActivityIndicator,
+    Image,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
-import { ChevronLeft, Send, MessageCircle } from 'lucide-react-native';
+import { AuthContext } from '../../shared/context/AuthContext';
+import { ChevronLeft, Send, Lock, User } from 'lucide-react-native';
+
+const TEAL_BUBBLE = '#0D9488';
+const LIGHT_GRAY_BUBBLE = '#E5E7EB';
 
 export default function ChatDetailScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
+    const { user: currentUser } = useContext(AuthContext) || {};
     const { chatId } = route.params || {};
     const [messages, setMessages] = useState([]);
     const [inputText, setInputText] = useState('');
@@ -71,39 +77,125 @@ export default function ChatDetailScreen({ route, navigation }) {
         return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
     };
 
+    const myName = currentUser?.name || currentUser?.first_name || 'Вы';
+    const ownerName = chat?.owner_name || 'Владелец';
+
     const renderMessage = ({ item }) => {
-        const isMe = item.sender === 'me' || item.is_own;
+        const isMe = item.sender === 'me';
+        const timeStr = formatTime(item.created_at || item.createdAt);
         return (
-            <View style={[styles.messageBubble, isMe ? styles.messageBubbleMe : styles.messageBubbleThem]}>
-                <Text style={[styles.messageText, isMe && styles.messageTextMe]}>{item.text}</Text>
-                <Text style={[styles.messageTime, isMe && styles.messageTimeMe]}>{formatTime(item.created_at || item.createdAt)}</Text>
+            <View style={[styles.messageRow, isMe ? styles.messageRowMe : styles.messageRowThem]}>
+                <View style={[styles.messageBubble, isMe ? styles.messageBubbleMe : styles.messageBubbleThem]}>
+                    <Text style={[styles.messageText, isMe && styles.messageTextMe]}>{item.text}</Text>
+                </View>
+                <View style={[styles.messageMeta, isMe ? styles.messageMetaMe : styles.messageMetaThem]}>
+                    {!isMe && (
+                        <View style={styles.avatarSmallWrap}>
+                            {chat?.owner_avatar ? (
+                                <Image source={{ uri: chat.owner_avatar }} style={styles.avatarSmall} />
+                            ) : (
+                                <View style={styles.avatarSmallPlaceholder}>
+                                    <User size={12} color={theme.colors.gray500} />
+                                </View>
+                            )}
+                        </View>
+                    )}
+                    <View style={styles.messageMetaText}>
+                        {isMe ? (
+                            <>
+                                <Text style={styles.messageSender}>{myName}</Text>
+                                <Text style={styles.messageTime}>{timeStr}</Text>
+                            </>
+                        ) : (
+                            <Text style={styles.messageMetaLine}>
+                                <Text style={styles.messageSender}>{ownerName}</Text>
+                                <Text style={styles.messageDot}> · </Text>
+                                <Text style={styles.messageSenderRole}>Владелец</Text>
+                                <Text style={styles.messageDot}> · </Text>
+                                <Text style={styles.messageTime}>{timeStr}</Text>
+                            </Text>
+                        )}
+                    </View>
+                    {isMe && (
+                        <View style={styles.avatarSmallWrap}>
+                            {currentUser?.avatar ? (
+                                <Image source={{ uri: currentUser.avatar }} style={styles.avatarSmall} />
+                            ) : (
+                                <View style={styles.avatarSmallPlaceholder}>
+                                    <User size={12} color={theme.colors.gray500} />
+                                </View>
+                            )}
+                        </View>
+                    )}
+                </View>
             </View>
         );
     };
 
+    const tripLabel =
+        chat?.trip_date_formatted ||
+        chat?.trip_date ||
+        chat?.trip_date_short;
+
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+            <View style={[styles.header, { paddingTop: insets.top + theme.spacing.xs }]}>
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-                    <ChevronLeft size={24} color={theme.colors.primary} />
+                    <ChevronLeft size={24} color={theme.colors.gray900} />
                 </TouchableOpacity>
-                <View style={styles.headerCenter}>
-                    <Text style={styles.headerTitle} numberOfLines={1}>
-                        {chat?.owner_name || 'Владелец'}
-                    </Text>
-                    <Text style={styles.headerSubtitle} numberOfLines={1}>
-                        {chat?.boat_title || 'Чат'}
-                    </Text>
-                </View>
+                <Text style={styles.headerTitle} numberOfLines={1}>
+                    {chat?.owner_name || 'Владелец'}
+                </Text>
                 <View style={styles.headerSpacer} />
             </View>
+
+            {!loading && (
+                <View style={styles.tripHeader}>
+                    <View style={styles.tripInfo}>
+                        <Text style={styles.tripBoatTitle} numberOfLines={1}>
+                            {chat?.boat_title || 'Чат'}
+                        </Text>
+                        {!!tripLabel && (
+                            <Text style={styles.tripDate} numberOfLines={1}>
+                                {tripLabel}
+                            </Text>
+                        )}
+                    </View>
+                    <TouchableOpacity
+                        style={styles.tripDetailsLink}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            if (chat?.boat_id) {
+                                navigation.navigate('BoatDetail', { boatId: chat.boat_id });
+                            }
+                        }}
+                    >
+                        <Text style={styles.tripDetailsText}>См. детали</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
+            {!loading && (
+                <View style={styles.infoBanner}>
+                    <View style={styles.infoIconWrap}>
+                        <Lock size={18} color="#FFFFFF" strokeWidth={2} />
+                    </View>
+                    <Text style={styles.infoText}>
+                        Для вашей безопасности общайтесь только в приложении.
+                    </Text>
+                </View>
+            )}
 
             {loading ? (
                 <View style={styles.centered}>
                     <ActivityIndicator size="large" color={theme.colors.primary} />
                 </View>
             ) : (
-                <>
+                <KeyboardAvoidingView
+                    style={styles.keyboardWrap}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
+                >
                     <FlatList
                         ref={flatListRef}
                         data={messages}
@@ -111,25 +203,14 @@ export default function ChatDetailScreen({ route, navigation }) {
                         keyExtractor={item => (item.id || item._id || Math.random()).toString()}
                         contentContainerStyle={styles.messagesList}
                         showsVerticalScrollIndicator={false}
-                        ListEmptyComponent={
-                            <View style={styles.emptyChat}>
-                                <View style={styles.emptyIconWrap}>
-                                    <MessageCircle size={48} color={theme.colors.gray400} />
-                                </View>
-                                <Text style={styles.emptyTitle}>Пока нет сообщений</Text>
-                                <Text style={styles.emptySubtitle}>Напишите первым</Text>
-                            </View>
-                        }
+                        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+                        keyboardShouldPersistTaps="handled"
                     />
-                    <KeyboardAvoidingView
-                        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-                        style={[styles.inputRow, { paddingBottom: theme.spacing.lg + insets.bottom }]}
-                    >
+                    <View style={[styles.inputRow, { paddingBottom: theme.spacing.lg + insets.bottom }]}>
                         <TextInput
                             style={styles.input}
-                            placeholder="Сообщение..."
-                            placeholderTextColor={theme.colors.textMuted}
+                            placeholder="Напишите сообщение..."
+                            placeholderTextColor={theme.colors.gray400}
                             value={inputText}
                             onChangeText={setInputText}
                             multiline
@@ -143,8 +224,8 @@ export default function ChatDetailScreen({ route, navigation }) {
                         >
                             <Send size={22} color="white" />
                         </TouchableOpacity>
-                    </KeyboardAvoidingView>
-                </>
+                    </View>
+                </KeyboardAvoidingView>
             )}
         </SafeAreaView>
     );
@@ -163,65 +244,159 @@ const styles = StyleSheet.create({
         backgroundColor: theme.colors.background,
     },
     backButton: { padding: theme.spacing.sm, marginLeft: -theme.spacing.sm },
-    headerCenter: { flex: 1, marginLeft: theme.spacing.sm },
     headerTitle: {
+        flex: 1,
+        textAlign: 'center',
         fontSize: 18,
         fontFamily: theme.fonts.semiBold,
         color: theme.colors.gray900,
     },
-    headerSubtitle: {
+    headerSpacer: { width: 40 },
+    tripHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: theme.spacing.lg,
+        paddingVertical: theme.spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.gray200,
+        backgroundColor: theme.colors.gray50,
+    },
+    tripInfo: { flex: 1, marginRight: theme.spacing.sm },
+    tripBoatTitle: {
+        fontSize: 15,
+        fontFamily: theme.fonts.semiBold,
+        color: theme.colors.gray900,
+        marginBottom: 2,
+    },
+    tripDate: {
         ...theme.typography.caption,
         color: theme.colors.gray500,
-        marginTop: 2,
     },
-    headerSpacer: { width: 40 },
-    messagesList: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingTop: theme.spacing.lg,
-        paddingBottom: theme.spacing.md,
+    tripDetailsLink: {
+        paddingVertical: 4,
+        paddingHorizontal: 4,
     },
-    emptyChat: {
-        paddingVertical: theme.spacing.xxl,
+    tripDetailsText: {
+        fontSize: 14,
+        color: theme.colors.primary,
+        fontFamily: theme.fonts.semiBold,
+    },
+    infoBanner: {
+        flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: theme.spacing.xl,
+        marginHorizontal: theme.spacing.lg,
+        marginTop: 0,
+        paddingVertical: theme.spacing.md,
+        paddingHorizontal: 0,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.gray200,
+        backgroundColor: theme.colors.gray50,
     },
-    emptyIconWrap: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: theme.colors.gray100,
+    infoIconWrap: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: TEAL_BUBBLE,
         alignItems: 'center',
         justifyContent: 'center',
+        marginRight: theme.spacing.md,
+    },
+    infoText: {
+        flex: 1,
+        ...theme.typography.bodySm,
+        color: theme.colors.gray900,
+    },
+    keyboardWrap: {
+        flex: 1,
+    },
+    messagesList: {
+        paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.md,
+        paddingBottom: theme.spacing.md,
+    },
+    messageRow: {
         marginBottom: theme.spacing.lg,
     },
-    emptyTitle: {
-        fontSize: 18,
-        fontFamily: theme.fonts.bold,
-        color: theme.colors.gray900,
-        marginBottom: theme.spacing.sm,
+    messageRowMe: {
+        alignItems: 'flex-end',
     },
-    emptySubtitle: {
-        fontSize: 14,
-        color: theme.colors.gray500,
-        textAlign: 'center',
+    messageRowThem: {
+        alignItems: 'flex-start',
     },
     messageBubble: {
-        alignSelf: 'flex-start',
         maxWidth: '80%',
-        padding: theme.spacing.md,
-        borderRadius: theme.borderRadius.lg,
-        marginBottom: theme.spacing.sm,
-        backgroundColor: theme.colors.surface,
-        ...theme.shadows.card,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderRadius: 18,
     },
     messageBubbleMe: {
-        alignSelf: 'flex-end',
-        backgroundColor: theme.colors.primaryLight,
+        backgroundColor: LIGHT_GRAY_BUBBLE,
+        borderBottomRightRadius: 4,
     },
-    messageText: { ...theme.typography.body },
-    messageTextMe: { color: theme.colors.textMain },
-    messageTime: { ...theme.typography.caption, marginTop: 4 },
-    messageTimeMe: { color: theme.colors.textMuted },
+    messageBubbleThem: {
+        backgroundColor: TEAL_BUBBLE,
+        borderBottomLeftRadius: 4,
+    },
+    messageText: {
+        fontSize: 16,
+        fontFamily: theme.fonts.regular,
+        color: '#FFFFFF',
+    },
+    messageTextMe: {
+        color: theme.colors.gray900,
+    },
+    messageMeta: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 6,
+        maxWidth: '80%',
+    },
+    messageMetaMe: {
+        justifyContent: 'flex-end',
+    },
+    messageMetaThem: {
+        justifyContent: 'flex-start',
+    },
+    messageMetaText: {
+        marginHorizontal: 6,
+    },
+    messageMetaLine: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+    },
+    messageSender: {
+        fontSize: 13,
+        fontFamily: theme.fonts.semiBold,
+        color: theme.colors.gray900,
+    },
+    messageSenderRole: {
+        fontSize: 13,
+        fontFamily: theme.fonts.regular,
+        color: theme.colors.gray500,
+    },
+    messageTime: {
+        fontSize: 12,
+        color: theme.colors.gray500,
+        marginTop: 1,
+    },
+    avatarSmallWrap: {
+        marginLeft: 0,
+        marginRight: 0,
+    },
+    avatarSmall: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+    },
+    avatarSmallPlaceholder: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: theme.colors.gray200,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     inputRow: {
         flexDirection: 'row',
         alignItems: 'flex-end',
@@ -236,14 +411,14 @@ const styles = StyleSheet.create({
         minHeight: 44,
         maxHeight: 120,
         borderWidth: 1,
-        borderColor: theme.colors.border,
-        borderRadius: theme.borderRadius.pill,
+        borderColor: theme.colors.gray200,
+        borderRadius: 24,
         paddingHorizontal: 18,
         paddingVertical: 12,
         fontSize: 16,
         fontFamily: theme.fonts.regular,
         color: theme.colors.gray900,
-        backgroundColor: theme.colors.surface,
+        backgroundColor: '#FFFFFF',
         marginRight: theme.spacing.sm,
     },
     sendButton: {
