@@ -1,12 +1,18 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
+const PRODUCTION_API = 'https://api.onthewater.ru';
+
 function getApiBase() {
     const envUrl = typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_URL;
     if (envUrl && typeof envUrl === 'string' && envUrl.trim()) {
         return envUrl.replace(/\/$/, '');
     }
-    // Эмулятор Android достучится до бэкенда на ПК только по 10.0.2.2 (хост), не по LAN IP
+    // Собранное приложение (release) — всегда продакшн API
+    if (typeof __DEV__ !== 'undefined' && !__DEV__) {
+        return PRODUCTION_API;
+    }
+    // Разработка: эмулятор Android достучится до бэкенда на ПК по 10.0.2.2
     if (Platform.OS === 'android') {
         return 'http://10.0.2.2:3000';
     }
