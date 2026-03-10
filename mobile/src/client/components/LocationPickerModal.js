@@ -105,10 +105,24 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
             fetchLocationList();
             setQuery('');
             setSuggestions([]);
-            if (SuggestModule?.reset) SuggestModule.reset().catch(() => {});
+            if (SuggestModule?.reset) {
+                try {
+                    const maybePromise = SuggestModule.reset();
+                    if (maybePromise && typeof maybePromise.catch === 'function') {
+                        maybePromise.catch(() => {});
+                    }
+                } catch (_) {}
+            }
         }
         return () => {
-            if (SuggestModule?.reset) SuggestModule.reset().catch(() => {});
+            if (SuggestModule?.reset) {
+                try {
+                    const maybePromise = SuggestModule.reset();
+                    if (maybePromise && typeof maybePromise.catch === 'function') {
+                        maybePromise.catch(() => {});
+                    }
+                } catch (_) {}
+            }
         };
     }, [visible, fetchLocationList]);
 
