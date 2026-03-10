@@ -132,6 +132,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     const mapRef = useRef(null);
     const mapPollRef = useRef(null);
     const lastMapCenterRef = useRef(null);
+    const mapModalOpenRef = useRef(false);
 
     const dateObj = dateISO ? new Date(dateISO) : new Date();
     const formattedDate = dateObj.toLocaleDateString('ru-RU', {
@@ -217,11 +218,11 @@ export default function SearchResultsScreen({ route, navigation }) {
                 const res = await api.get('/boats', { params: { lat, lng, radius: 50 } });
                 list = Array.isArray(res.data) ? res.data : [];
             }
-            setMapBoats(list);
+            if (mapModalOpenRef.current) setMapBoats(list);
         } catch (_) {
-            setMapBoats([]);
+            if (mapModalOpenRef.current) setMapBoats([]);
         } finally {
-            setMapLoading(false);
+            if (mapModalOpenRef.current) setMapLoading(false);
         }
     }, []);
 
@@ -249,13 +250,20 @@ export default function SearchResultsScreen({ route, navigation }) {
         setMapZoom(zoom);
         setMapBoats(boats);
         setSelectedMapBoat(null);
+        mapModalOpenRef.current = true;
         setMapModalVisible(true);
         setMapViewReady(false);
         lastMapCenterRef.current = { lat: center.lat, lon: center.lon };
     }, [boats, cityName, useMyLocation]);
 
+    const closeMapModal = useCallback(() => {
+        mapModalOpenRef.current = false;
+        setMapModalVisible(false);
+    }, []);
+
     useEffect(() => {
         if (!mapModalVisible) {
+            mapModalOpenRef.current = false;
             setMapViewReady(false);
             return;
         }
@@ -281,8 +289,10 @@ export default function SearchResultsScreen({ route, navigation }) {
             doFetch({ lat: mapCenter.lat, lng: mapCenter.lon });
         }
         const poll = () => {
+            if (!mapModalOpenRef.current) return;
             try {
                 mapRef.current?.getCameraPosition?.((pos) => {
+                    if (!mapModalOpenRef.current) return;
                     const lat = pos?.lat ?? pos?.latitude;
                     const lon = pos?.lon ?? pos?.longitude;
                     if (lat == null || lon == null) return;
@@ -302,7 +312,7 @@ export default function SearchResultsScreen({ route, navigation }) {
             } catch (_) {}
         };
         poll();
-        mapPollRef.current = setInterval(poll, 2500);
+        mapPollRef.current = setInterval(poll, 5000);
         return () => {
             if (mapPollRef.current) clearInterval(mapPollRef.current);
         };
@@ -823,13 +833,13 @@ export default function SearchResultsScreen({ route, navigation }) {
                 visible={mapModalVisible}
                 animationType="slide"
                 transparent
-                onRequestClose={() => setMapModalVisible(false)}
+                onRequestClose={closeMapModal}
             >
                 <View style={[styles.mapModalOverlay, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
                     <View style={styles.mapModalContent}>
                         <View style={styles.mapModalHeader}>
                             <TouchableOpacity
-                                onPress={() => setMapModalVisible(false)}
+                                onPress={closeMapModal}
                                 style={styles.mapModalClose}
                                 hitSlop={12}
                             >
@@ -892,18 +902,18 @@ export default function SearchResultsScreen({ route, navigation }) {
                                     </View>
                                 )}
                                 <TouchableOpacity
-                                    style={[styles.mapListButton, { bottom: selectedMapBoat ? 180 : 24 }]}
-                                    onPress={() => setMapModalVisible(false)}
+                                    style={[styles.mapListButton, { bottom: 24 + insets.bottom }]}
+                                    onPress={closeMapModal}
                                     activeOpacity={0.9}
                                 >
                                     <Text style={styles.mapListButtonText}>Список</Text>
                                 </TouchableOpacity>
                                 {selectedMapBoat && (
                                     <TouchableOpacity
-                                        style={[styles.mapBoatSheet, { paddingBottom: insets.bottom + 16 }]}
+                                        style={[styles.mapBoatSheet, { bottom: 24 + 52 + 16 + insets.bottom }]}
                                         onPress={() => {
                                             const boatId = selectedMapBoat.id;
-                                            setMapModalVisible(false);
+                                            closeMapModal();
                                             InteractionManager.runAfterInteractions(() => {
                                                 setTimeout(() => {
                                                     navigation.navigate('BoatDetail', { boatId });
