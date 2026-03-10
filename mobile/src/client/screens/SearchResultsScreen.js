@@ -133,6 +133,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     const mapPollRef = useRef(null);
     const lastMapCenterRef = useRef(null);
     const mapModalOpenRef = useRef(false);
+    const [mapClosing, setMapClosing] = useState(false);
 
     const dateObj = dateISO ? new Date(dateISO) : new Date();
     const formattedDate = dateObj.toLocaleDateString('ru-RU', {
@@ -251,6 +252,7 @@ export default function SearchResultsScreen({ route, navigation }) {
         setMapBoats(boats);
         setSelectedMapBoat(null);
         mapModalOpenRef.current = true;
+        setMapClosing(false);
         setMapModalVisible(true);
         setMapViewReady(false);
         lastMapCenterRef.current = { lat: center.lat, lon: center.lon };
@@ -258,7 +260,12 @@ export default function SearchResultsScreen({ route, navigation }) {
 
     const closeMapModal = useCallback(() => {
         mapModalOpenRef.current = false;
-        setMapModalVisible(false);
+        setMapClosing(true);
+        // Сначала очищаем маркеры, даём нативу обработать удаление, затем закрываем — снижает риск "Failed to remove MapObject"
+        setTimeout(() => {
+            setMapModalVisible(false);
+            setMapClosing(false);
+        }, 220);
     }, []);
 
     useEffect(() => {
@@ -317,6 +324,13 @@ export default function SearchResultsScreen({ route, navigation }) {
             if (mapPollRef.current) clearInterval(mapPollRef.current);
         };
     }, [mapModalVisible, mapViewReady, fetchBoatsForMap, cityName, useMyLocation, mapCenter]);
+
+    const clusteredMarkersData = useMemo(() => {
+        if (mapClosing) return [];
+        return mapBoats
+            .filter((b) => b.lat != null && b.lng != null)
+            .map((b) => ({ point: { lat: b.lat, lon: b.lng }, data: b }));
+    }, [mapBoats, mapClosing]);
 
     const priceRange = useMemo(() => {
         const prices = allBoats
@@ -864,37 +878,33 @@ export default function SearchResultsScreen({ route, navigation }) {
                                         <Text style={styles.mapPlaceholderText}>Загрузка карты...</Text>
                                     </View>
                                 ) : (
-                                    <>
-                                <ClusteredYamap
-                                    ref={mapRef}
-                                    style={StyleSheet.absoluteFillObject}
-                                    initialRegion={{
-                                        lat: mapCenter.lat,
-                                        lon: mapCenter.lon,
-                                        zoom: mapZoom,
-                                    }}
-                                    clusterColor={NAVY}
-                                    clusteredMarkers={mapBoats
-                                        .filter((b) => b.lat != null && b.lng != null)
-                                        .map((b) => ({ point: { lat: b.lat, lon: b.lng }, data: b }))}
-                                    renderMarker={(info, index) => {
-                                        const boat = info.data;
-                                        const isSelected = selectedMapBoat?.id === boat?.id;
-                                        const price = boat ? (Number(boat.price_per_hour) || 0).toLocaleString('ru-RU') + ' ₽' : '';
-                                        return (
-                                            <Marker
-                                                key={`map-${boat?.id ?? index}-${index}`}
-                                                point={info.point}
-                                                anchor={{ x: 0.5, y: 1 }}
-                                                zIndex={isSelected ? 100 : 1}
-                                                onPress={() => boat && setSelectedMapBoat(isSelected ? null : boat)}
-                                            >
-                                                <MapPriceBubble price={price} selected={isSelected} />
-                                            </Marker>
-                                        );
-                                    }}
-                                />
-                                    </>
+                                    <ClusteredYamap
+                                        key="map-cluster"
+                                        ref={mapRef}
+                                        style={StyleSheet.absoluteFillObject}
+                                        initialRegion={{
+                                            lat: mapCenter.lat,
+                                            lon: mapCenter.lon,
+                                            zoom: mapZoom,
+                                        }}
+                                        clusterColor={NAVY}
+                                        clusteredMarkers={clusteredMarkersData}
+                                        renderMarker={(info, index) => {
+                                            const boat = info.data;
+                                            const isSelected = selectedMapBoat?.id === boat?.id;
+                                            const price = boat ? (Number(boat.price_per_hour) || 0).toLocaleString('ru-RU') + ' ₽' : '';
+                                            return (
+                                                <Marker
+                                                    key={`map-${boat?.id ?? index}`}
+                                                    point={info.point}
+                                                    anchor={{ x: 0.5, y: 1 }}
+                                                    onPress={() => boat && setSelectedMapBoat(isSelected ? null : boat)}
+                                                >
+                                                    <MapPriceBubble price={price} selected={isSelected} />
+                                                </Marker>
+                                            );
+                                        }}
+                                    />
                                 )}
                                 {mapLoading && (
                                     <View style={styles.mapLoadingOverlay}>
