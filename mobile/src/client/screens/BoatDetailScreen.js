@@ -200,6 +200,7 @@ export default function BoatDetailScreen({ route, navigation }) {
     const [rulesExpanded, setRulesExpanded] = useState(false);
     const [specsOpen, setSpecsOpen] = useState(false);
     const [featuresExpanded, setFeaturesExpanded] = useState(false);
+    const [bookingOptionsExpanded, setBookingOptionsExpanded] = useState(false);
     const [similarBoats, setSimilarBoats] = useState([]);
     const [selectedDuration, setSelectedDuration] = useState(null);
     const [bookingVisible, setBookingVisible] = useState(false);
@@ -372,7 +373,8 @@ export default function BoatDetailScreen({ route, navigation }) {
     const descShort = description.length > 160 ? description.slice(0, 160) + '...' : description;
     const rulesText = boat.rules || '';
     const rulesShort = rulesText.length > 160 ? rulesText.slice(0, 160) + '...' : rulesText;
-    const amenities = boat.amenities?.length ? boat.amenities : [];
+    const amenitiesRaw = boat.amenities?.length ? boat.amenities : [];
+    const amenities = amenitiesRaw.filter((a) => !WATER_SPORTS_OPTIONS.includes(typeof a === 'string' ? a : ''));
     const rating = boat.rating ?? 0;
     const reviewsCount = boat.reviews_count ?? 0;
     const favorite = isFavorite(boat.id);
@@ -778,7 +780,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                                 {boat.captain_included ? 'С капитаном' : 'Аренда'}
                             </Text>
                             <View style={styles.bookingDivider} />
-                            {displayTiers.map((tier, i) => {
+                            {(bookingOptionsExpanded ? displayTiers : displayTiers.slice(0, 4)).map((tier, i) => {
                                 const isFirst = i === 0;
                                 const sel = selectedDuration === tier.durationMin;
                                 return (
@@ -813,6 +815,17 @@ export default function BoatDetailScreen({ route, navigation }) {
                                 );
                             })}
                         </View>
+                        {displayTiers.length > 4 && (
+                            <TouchableOpacity
+                                onPress={() => setBookingOptionsExpanded(!bookingOptionsExpanded)}
+                                style={styles.viewAllBtn}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={[styles.viewAll, { marginTop: 0, fontFamily: theme.fonts.semiBold }]}>
+                                    {bookingOptionsExpanded ? 'Скрыть' : 'Показать все'}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
 
                     <View style={styles.divider} />
@@ -1547,6 +1560,11 @@ const styles = StyleSheet.create({
     subSectionTitle: { fontSize: 15, fontFamily: theme.fonts.semiBold, color: NAVY, marginBottom: 10 },
     bodyText: { fontSize: 15, fontFamily: theme.fonts.regular, color: theme.colors.gray700, lineHeight: 22 },
     viewAll: { fontSize: 15, fontFamily: theme.fonts.medium, color: NAVY, marginTop: 10 },
+    viewAllBtn: {
+        marginTop: 12, paddingVertical: 12, paddingHorizontal: 16,
+        backgroundColor: 'rgba(27,54,93,0.08)', borderRadius: 12, borderWidth: 1.5, borderColor: NAVY,
+        alignItems: 'center',
+    },
     divider: { height: 1, backgroundColor: '#F3F4F6', marginVertical: 20 },
 
     /* Features list */
