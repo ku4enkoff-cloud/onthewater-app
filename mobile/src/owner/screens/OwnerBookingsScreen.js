@@ -62,6 +62,7 @@ const EMPTY_MESSAGES = {
 export default function OwnerBookingsScreen() {
     const insets = useSafeAreaInsets();
     const [bookings, setBookings] = useState([]);
+    const [boats, setBoats] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
     const [activeTab, setActiveTab] = useState('all');
     const [editModalVisible, setEditModalVisible] = useState(false);
@@ -74,9 +75,13 @@ export default function OwnerBookingsScreen() {
     const [showTimePicker, setShowTimePicker] = useState(false);
     const [filterDate, setFilterDate] = useState(null);
     const [filterBoatId, setFilterBoatId] = useState(null);
-    const [showFilterDatePicker, setShowFilterDatePicker] = useState(false);
+    const [showFilterCalendar, setShowFilterCalendar] = useState(false);
+    const [filterCalendarMonth, setFilterCalendarMonth] = useState(() => new Date());
 
-    useEffect(() => { fetchBookings(); }, []);
+    useEffect(() => {
+        fetchBookings();
+        fetchBoats();
+    }, []);
 
     const fetchBookings = async () => {
         try {
@@ -89,19 +94,23 @@ export default function OwnerBookingsScreen() {
         }
     };
 
-    const onRefresh = () => { setRefreshing(true); fetchBookings(); };
+    const fetchBoats = async () => {
+        try {
+            const res = await api.get('/boats');
+            setBoats(Array.isArray(res.data) ? res.data : []);
+        } catch (_) {
+            setBoats([]);
+        }
+    };
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        fetchBookings();
+        fetchBoats();
+    };
 
     const VISIBLE_STATUSES = ['pending', 'confirmed', 'completed', 'cancelled'];
-    const boatOptions = (() => {
-        const map = new Map();
-        bookings.forEach((b) => {
-            if (!b.boat_id || !b.boat_title) return;
-            if (!map.has(b.boat_id)) {
-                map.set(b.boat_id, String(b.boat_title));
-            }
-        });
-        return Array.from(map.entries()).map(([id, title]) => ({ id, title }));
-    })();
+    const boatOptions = boats.map((b) => ({ id: b.id, title: b.title || 'Без названия' }));
 
     const filtered = bookings.filter((b) => {
         if (!VISIBLE_STATUSES.includes(b.status)) return false;
@@ -112,7 +121,11 @@ export default function OwnerBookingsScreen() {
             const d = new Date(start);
             if (d.getFullYear() !== filterDate.getFullYear() || d.getMonth() !== filterDate.getMonth() || d.getDate() !== filterDate.getDate()) return false;
         }
-        if (filterBoatId != null && b.boat_id !== filterBoatId) return false;
+        if (filterBoatId != null) {
+            const bookingBoatId = b.boat_id ?? b.boatId ?? b.boat?.id ?? null;
+            if (bookingBoatId == null) return false;
+            if (Number(bookingBoatId) !== Number(filterBoatId)) return false;
+        }
         return true;
     });
 
@@ -331,7 +344,11 @@ export default function OwnerBookingsScreen() {
             <View style={s.filtersWrap}>
                 <TouchableOpacity
                     style={s.filterDateBtn}
-                    onPress={() => setShowFilterDatePicker(true)}
+                    onPress={() => {
+                        const base = filterDate || new Date();
+                        setFilterCalendarMonth(new Date(base.getFullYear(), base.getMonth(), 1));
+                        setShowFilterCalendar(true);
+                    }}
                     activeOpacity={0.7}
                 >
                     <Calendar size={18} color={filterDate ? TEAL : theme.colors.gray400} />
@@ -391,23 +408,96 @@ export default function OwnerBookingsScreen() {
                     </ScrollView>
                 )}
             </View>
-            {showFilterDatePicker && (
-                <DateTimePicker
-                    value={filterDate || new Date()}
-                    mode="date"
-                    onChange={(_, d) => {
-                        setFilterDate(d || null);
-                        if (Platform.OS === 'android') setShowFilterDatePicker(false);
-                    }}
-                />
-            )}
-            {showFilterDatePicker && Platform.OS === 'ios' && (
-                <View style={s.filterDatePickerBar}>
-                    <TouchableOpacity onPress={() => setShowFilterDatePicker(false)}>
-                        <Text style={s.filterDatePickerDone}>Готово</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
+            {showFilterCalendar && (() => {
+                const grid = getCalendarGrid(filterCalendarMonth);
+                const monthTitle = filterCalendarMonth.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+                const prevMonth = () => setFilterCalendarMonth(new Date(filterCalendarMonth.getFullYear(), filterCalendarMonth.getMonth() - 1, 1));
+                const nextMonth = () => setFilterCalendarMonth(new Date(filterCalendarMonth.getFullYear(), filterCalendarMonth.getMonth() + 1, 1));
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                return (
+                    <Modal visible transparent animationType="fade">
+                        <View style={s.calOverlay}>
+                            <View style={s.calSheet}>
+                                <View style={s.calHeader}>
+                                    <TouchableOpacity onPress={() => setShowFilterCalendar(false)} hitSlop={12}>
+                                        <X size={22} color={NAVY} />
+                                    </TouchableOpacity>
+                                    <Text style={s.calHeaderTitle}>Выберите дату</Text>
+                                    <View style={{ width: 22 }} />
+                                </View>
+                                <View style={s.calMonthRow}>
+                                    <TouchableOpacity onPress={prevMonth} style={s.calArrowBtn}>
+                                        <ChevronLeft size={24} color={NAVY} />
+                                    </TouchableOpacity>
+                                    <Text style={s.calMonthTitle}>{monthTitle}</Text>
+                                    <TouchableOpacity onPress={nextMonth} style={s.calArrowBtn}>
+                                        <ChevronRight size={24} color={NAVY} />
+                                    </TouchableOpacity>
+                                </View>
+                                <View style={s.calWeekdayRow}>
+                                    {WEEKDAY_LABELS.map((label, i) => (
+                                        <Text key={label} style={[s.calWeekdayText, (i === 5 || i === 6) && s.calWeekdayWeekend]}>
+                                            {label}
+                                        </Text>
+                                    ))}
+                                </View>
+                                <View style={s.calGrid}>
+                                    {grid.map(({ date, isCurrentMonth }, idx) => {
+                                        const isPast = date < today;
+                                        const selectable = isCurrentMonth && !isPast;
+                                        const selected = filterDate && sameDay(date, filterDate);
+                                        return (
+                                            <TouchableOpacity
+                                                key={idx}
+                                                style={[
+                                                    s.calDayCell,
+                                                    !isCurrentMonth && s.calDayOtherMonth,
+                                                    selectable && s.calDayAvailable,
+                                                    !selectable && isCurrentMonth && s.calDayUnavailable,
+                                                    selected && s.calDaySelected,
+                                                ]}
+                                                onPress={() => {
+                                                    if (selectable) {
+                                                        setFilterDate(date);
+                                                        setShowFilterCalendar(false);
+                                                    }
+                                                }}
+                                                disabled={!selectable}
+                                                activeOpacity={selectable ? 0.7 : 1}
+                                            >
+                                                <Text
+                                                    style={[
+                                                        s.calDayNum,
+                                                        !isCurrentMonth && s.calDayNumOther,
+                                                        selectable && s.calDayNumAvailable,
+                                                        !selectable && isCurrentMonth && s.calDayNumUnavailable,
+                                                        selected && s.calDayNumSelected,
+                                                    ]}
+                                                >
+                                                    {date.getDate()}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                                <View style={s.calFilterFooter}>
+                                    <TouchableOpacity
+                                        style={s.calFilterAllBtn}
+                                        onPress={() => {
+                                            setFilterDate(null);
+                                            setShowFilterCalendar(false);
+                                        }}
+                                        activeOpacity={0.8}
+                                    >
+                                        <Text style={s.calFilterAllText}>Любая дата</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    </Modal>
+                );
+            })()}
 
             {/* Edit modal */}
             <Modal visible={editModalVisible} animationType="fade" transparent>
@@ -643,15 +733,6 @@ const s = StyleSheet.create({
         fontFamily: theme.fonts.semiBold,
         color: TEAL,
     },
-    filterDatePickerBar: {
-        backgroundColor: '#fff',
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        alignItems: 'flex-end',
-        borderTopWidth: StyleSheet.hairlineWidth,
-        borderTopColor: '#E5E7EB',
-    },
-    filterDatePickerDone: { fontSize: 16, fontFamily: theme.fonts.semiBold, color: TEAL },
 
     list: { paddingHorizontal: 20, paddingTop: 16 },
 
@@ -767,4 +848,20 @@ const s = StyleSheet.create({
     calDayNumAvailable: { color: '#10B981' },
     calDayNumUnavailable: { color: theme.colors.error },
     calDayNumSelected: { color: '#fff', fontFamily: theme.fonts.bold },
+
+    calFilterFooter: {
+        marginTop: 16,
+        paddingHorizontal: 4,
+    },
+    calFilterAllBtn: {
+        paddingVertical: 10,
+        borderRadius: 999,
+        alignItems: 'center',
+        backgroundColor: '#F3F4F6',
+    },
+    calFilterAllText: {
+        fontSize: 14,
+        fontFamily: theme.fonts.semiBold,
+        color: NAVY,
+    },
 });
