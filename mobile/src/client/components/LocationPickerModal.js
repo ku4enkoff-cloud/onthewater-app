@@ -202,7 +202,7 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
             activeOpacity={0.7}
         >
             <View style={styles.rowIcon}>
-                <MapPin size={22} color={theme.colors.primary} />
+                <MapPin size={20} color={theme.colors.gray500} />
             </View>
             <Text style={styles.rowTitle}>{item.name}</Text>
         </TouchableOpacity>
@@ -215,7 +215,7 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
             activeOpacity={0.7}
         >
             <View style={styles.rowIcon}>
-                <Navigation size={22} color={theme.colors.primary} />
+                <Navigation size={20} color={theme.colors.gray500} />
             </View>
             <Text style={styles.rowTitle}>Моё местоположение</Text>
         </TouchableOpacity>
@@ -246,7 +246,7 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
 
                     <View style={styles.searchWrap}>
                         <View style={styles.searchBar}>
-                            <Search size={20} color={theme.colors.gray400} />
+                            <Search size={18} color={theme.colors.gray400} />
                             <TextInput
                                 style={styles.searchInput}
                                 placeholder="Куда хотите отправиться?"
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     },
     searchInput: {
         flex: 1,
-        fontSize: 17,
+        fontSize: 15,
         fontFamily: theme.fonts.regular,
         color: theme.colors.textMain,
         paddingVertical: 0,
@@ -344,17 +344,17 @@ const styles = StyleSheet.create({
     row: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 16,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: theme.colors.border,
+        paddingVertical: 10,
+        borderBottomWidth: 0,
     },
     rowIcon: {
         marginRight: theme.spacing.md,
     },
     rowTitle: {
         flex: 1,
-        fontSize: 17,
-        fontWeight: '500',
+        fontSize: 15,
+        fontWeight: '400',
+        fontFamily: theme.fonts.regular,
         color: theme.colors.textMain,
     },
 });
