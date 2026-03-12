@@ -29,6 +29,7 @@ export default function Users() {
   });
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
   const load = () => {
