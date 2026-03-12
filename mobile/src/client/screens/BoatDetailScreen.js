@@ -1081,8 +1081,14 @@ export default function BoatDetailScreen({ route, navigation }) {
                         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={bk.scrollContent}>
                             <Text style={bk.sectionTitle}>Детали бронирования</Text>
 
-                            {/* Duration chips */}
-                            <View style={bk.chipsRow}>
+                            {/* Duration chips — горизонтальный скролл в одну строку */}
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                nestedScrollEnabled
+                                contentContainerStyle={bk.chipsRow}
+                                style={bk.chipsScroll}
+                            >
                                 {displayTiers.map((tier) => (
                                     <TouchableOpacity
                                         key={tier.durationMin}
@@ -1094,7 +1100,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                                         </Text>
                                     </TouchableOpacity>
                                 ))}
-                            </View>
+                            </ScrollView>
 
                             {/* Date field */}
                             <TouchableOpacity
@@ -1832,10 +1838,11 @@ const bk = StyleSheet.create({
     iosPickerWrap: { marginBottom: 14 },
     iosPickerDone: { fontSize: 16, fontFamily: theme.fonts.semiBold, color: NAVY, textAlign: 'right', paddingTop: 8 },
 
-    chipsRow: { flexDirection: 'row', gap: 10, marginBottom: 20, marginTop: 4 },
+    chipsRow: { flexDirection: 'row', gap: 10, marginBottom: 20, marginTop: 4, paddingRight: 16, flexGrow: 0 },
+    chipsScroll: { flexGrow: 0, flexShrink: 0 },
     chip: {
-        flex: 1, alignItems: 'center', paddingVertical: 14,
-        borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: 12,
+        minWidth: 64, alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 12,
+        borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: 12, flexShrink: 0,
     },
     chipActive: { borderColor: NAVY, backgroundColor: 'rgba(27,54,93,0.06)' },
     chipNum: { fontSize: 18, fontFamily: theme.fonts.semiBold, color: theme.colors.gray400 },
