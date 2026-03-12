@@ -1152,7 +1152,8 @@ export default function BoatDetailScreen({ route, navigation }) {
                                                 <View style={cal.grid}>
                                                     {grid.map(({ date, isCurrentMonth }, idx) => {
                                                         const key = toDateKey(date);
-                                                        const isPast = date < today;
+                                                        const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                                                        const isPast = dateOnly < today;
                                                         const working = isWorkingDay(date);
                                                         const fullyBooked = fullyBookedDates.has(key);
                                                         const unavailable = !working || fullyBooked || isPast;

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, FlatList, TouchableOpacity,
     RefreshControl, ScrollView, Modal, Alert, Platform, TextInput,
+    ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -10,6 +11,34 @@ import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 
 const DURATION_OPTIONS = [30, 60, 90, 120, 180, 240];
+
+// Тайм-слоты для выбора времени начала (шаг 30 минут)
+const TIME_SLOTS = [];
+for (let h = 9; h <= 20; h++) {
+    TIME_SLOTS.push(`${String(h).padStart(2, '0')}:00`);
+    TIME_SLOTS.push(`${String(h).padStart(2, '0')}:30`);
+}
+const slotToMinutes = (slot) => {
+    const [h, m] = slot.split(':').map(Number);
+    return h * 60 + m;
+};
+const isSlotInBusyInterval = (slot, busyIntervals = []) =>
+    busyIntervals.some((b) => {
+        const t = slotToMinutes(slot);
+        const start = slotToMinutes(b.start);
+        const end = slotToMinutes(b.end);
+        return t >= start && t < end;
+    });
+const isStartTimeValid = (slot, durationMin, busyIntervals = []) => {
+    if (isSlotInBusyInterval(slot, busyIntervals)) return false;
+    const startMin = slotToMinutes(slot);
+    const endMin = startMin + durationMin;
+    return busyIntervals.every((b) => {
+        const bStart = slotToMinutes(b.start);
+        const bEnd = slotToMinutes(b.end);
+        return endMin <= bStart || startMin >= bEnd;
+    });
+};
 
 const WEEKDAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
@@ -77,6 +106,10 @@ export default function OwnerBookingsScreen() {
     const [filterBoatId, setFilterBoatId] = useState(null);
     const [showFilterCalendar, setShowFilterCalendar] = useState(false);
     const [filterCalendarMonth, setFilterCalendarMonth] = useState(() => new Date());
+    const [pendingTime, setPendingTime] = useState(null);
+    const [busyIntervals, setBusyIntervals] = useState([]);
+    const [busySlotsLoading, setBusySlotsLoading] = useState(false);
+    const [timeBoatId, setTimeBoatId] = useState(null);
 
     useEffect(() => {
         fetchBookings();
@@ -100,6 +133,26 @@ export default function OwnerBookingsScreen() {
             setBoats(Array.isArray(res.data) ? res.data : []);
         } catch (_) {
             setBoats([]);
+        }
+    };
+
+    const fetchBusyIntervals = async (date, boatId) => {
+        if (!boatId || !date) {
+            setBusyIntervals([]);
+            return;
+        }
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        const dateStr = `${y}-${m}-${d}`;
+        setBusySlotsLoading(true);
+        try {
+            const res = await api.get(`/boats/${boatId}/availability`, { params: { date: dateStr } });
+            setBusyIntervals(Array.isArray(res.data?.busy) ? res.data.busy : []);
+        } catch (_) {
+            setBusyIntervals([]);
+        } finally {
+            setBusySlotsLoading(false);
         }
     };
 
@@ -150,11 +203,17 @@ export default function OwnerBookingsScreen() {
     const openEditModal = (item) => {
         const startAt = item.start_at || item.date_start;
         const d = startAt ? new Date(startAt) : new Date();
+        const boatId = item.boat_id ?? item.boatId ?? item.boat?.id ?? null;
         setEditingBooking(item);
         setEditDate(d);
         setEditTime(d);
         setEditDuration(Number(item.hours) || 60);
         setCalendarMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+        setTimeBoatId(boatId);
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        setPendingTime(`${hh}:${mm}`);
+        fetchBusyIntervals(d, boatId);
         setEditModalVisible(true);
     };
 
@@ -444,7 +503,8 @@ export default function OwnerBookingsScreen() {
                                 </View>
                                 <View style={s.calGrid}>
                                     {grid.map(({ date, isCurrentMonth }, idx) => {
-                                        const isPast = date < today;
+                                        const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                                        const isPast = dateOnly < today;
                                         const selectable = isCurrentMonth && !isPast;
                                         const selected = filterDate && sameDay(date, filterDate);
                                         return (
@@ -561,7 +621,8 @@ export default function OwnerBookingsScreen() {
                                             <View style={s.calGrid}>
                                                 {grid.map(({ date, isCurrentMonth }, idx) => {
                                                     const key = toDateKey(date);
-                                                    const isPast = date < today;
+                                                    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                                                    const isPast = dateOnly < today;
                                                     const working = isWorkingDay(date);
                                                     const unavailable = !working || isPast;
                                                     const selectable = isCurrentMonth && !unavailable;
@@ -579,6 +640,7 @@ export default function OwnerBookingsScreen() {
                                                             onPress={() => {
                                                                 if (selectable) {
                                                                     setEditDate(date);
+                                                                    fetchBusyIntervals(date, timeBoatId);
                                                                     setShowCalendarModal(false);
                                                                 }
                                                             }}
@@ -605,19 +667,22 @@ export default function OwnerBookingsScreen() {
                         })()}
                         <View style={s.modalRow}>
                             <Text style={s.modalLabel}>Время</Text>
-                            <TouchableOpacity style={s.modalValueBtn} onPress={() => setShowTimePicker(true)}>
+                            <TouchableOpacity
+                                style={s.modalValueBtn}
+                                onPress={() => {
+                                    const hh = String(editTime.getHours()).padStart(2, '0');
+                                    const mm = String(editTime.getMinutes()).padStart(2, '0');
+                                    setPendingTime(`${hh}:${mm}`);
+                                    fetchBusyIntervals(editDate, timeBoatId);
+                                    setShowTimePicker(true);
+                                }}
+                            >
                                 <Text style={s.modalValue}>
                                     {String(editTime.getHours()).padStart(2, '0')}:{String(editTime.getMinutes()).padStart(2, '0')}
                                 </Text>
                             </TouchableOpacity>
                         </View>
-                        {showTimePicker && (
-                            <DateTimePicker
-                                value={editTime}
-                                mode="time"
-                                onChange={(_, t) => { setEditTime(t || editTime); if (Platform.OS === 'android') setShowTimePicker(false); }}
-                            />
-                        )}
+                        {/* Тайм-пикер для изменения времени бронирования */}
                         <Text style={s.modalLabel}>Длительность</Text>
                         <View style={s.durationChips}>
                             {DURATION_OPTIONS.map((mins) => (
@@ -646,6 +711,84 @@ export default function OwnerBookingsScreen() {
                     </TouchableOpacity>
                 </TouchableOpacity>
             </Modal>
+
+            {/* Тайм-пикер модальное окно */}
+            {showTimePicker && (
+                <Modal visible animationType="slide" transparent onRequestClose={() => setShowTimePicker(false)}>
+                    <View style={s.timeOverlay}>
+                        <View style={[s.timeSheet, { paddingBottom: insets.bottom + 16 }]}>
+                            <View style={s.timeHeader}>
+                                <TouchableOpacity onPress={() => setShowTimePicker(false)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                                    <X size={22} color={NAVY} />
+                                </TouchableOpacity>
+                                <Text style={s.timeHeaderTitle}>Время начала</Text>
+                                <View style={{ width: 22 }} />
+                            </View>
+                            <View style={s.timeHint}>
+                                {busySlotsLoading ? (
+                                    <ActivityIndicator size="small" color={NAVY} style={{ marginVertical: 4 }} />
+                                ) : (
+                                    <Text style={s.timeHintText}>Показано текущее доступное время.</Text>
+                                )}
+                            </View>
+                            <ScrollView
+                                showsVerticalScrollIndicator={false}
+                                style={s.timeScroll}
+                                contentContainerStyle={s.timeGrid}
+                            >
+                                {TIME_SLOTS.map((slot) => {
+                                    const isBusy = isSlotInBusyInterval(slot, busyIntervals);
+                                    const canStart = isStartTimeValid(slot, editDuration, busyIntervals);
+                                    const isSelected = pendingTime === slot;
+                                    const disabled = !canStart;
+                                    return (
+                                        <TouchableOpacity
+                                            key={slot}
+                                            style={[
+                                                s.timeSlot,
+                                                isSelected && s.timeSlotSelected,
+                                                isBusy && s.timeSlotBusy,
+                                                canStart && !isSelected && s.timeSlotAvailable,
+                                            ]}
+                                            onPress={() => { if (canStart) setPendingTime(slot); }}
+                                            disabled={disabled}
+                                            activeOpacity={disabled ? 1 : 0.7}
+                                        >
+                                            <Text
+                                                style={[
+                                                    s.timeSlotText,
+                                                    isSelected && s.timeSlotTextSelected,
+                                                    isBusy && s.timeSlotTextBusy,
+                                                    canStart && !isSelected && s.timeSlotTextAvailable,
+                                                ]}
+                                            >
+                                                {slot}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </ScrollView>
+                            <View style={s.timeFooter}>
+                                <TouchableOpacity
+                                    style={[s.timeApplyBtn, !pendingTime && s.timeApplyBtnDisabled]}
+                                    onPress={() => {
+                                        if (!pendingTime) return;
+                                        const [h, m] = pendingTime.split(':').map(Number);
+                                        const d = new Date(editDate);
+                                        d.setHours(h, m, 0, 0);
+                                        setEditTime(d);
+                                        setShowTimePicker(false);
+                                    }}
+                                    disabled={!pendingTime}
+                                    activeOpacity={0.9}
+                                >
+                                    <Text style={s.timeApplyBtnText}>ПРИМЕНИТЬ</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+            )}
 
             {/* List */}
             <FlatList
@@ -863,5 +1006,108 @@ const s = StyleSheet.create({
         fontSize: 14,
         fontFamily: theme.fonts.semiBold,
         color: NAVY,
+    },
+
+    /* Time picker modal (owner) */
+    timeOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'flex-end',
+    },
+    timeSheet: {
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        paddingTop: 16,
+        paddingHorizontal: 20,
+        maxHeight: '80%',
+    },
+    timeHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+    },
+    timeHeaderTitle: {
+        fontSize: 18,
+        fontFamily: theme.fonts.bold,
+        color: NAVY,
+    },
+    timeHint: {
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 12,
+        backgroundColor: '#F3F4F6',
+        marginBottom: 12,
+    },
+    timeHintText: {
+        fontSize: 13,
+        fontFamily: theme.fonts.regular,
+        color: theme.colors.gray500,
+        textAlign: 'center',
+    },
+    timeScroll: {
+        maxHeight: 360,
+        marginBottom: 8,
+    },
+    timeGrid: {
+        paddingVertical: 4,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    timeSlot: {
+        width: '47%',
+        paddingVertical: 10,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        alignItems: 'center',
+        backgroundColor: '#F9FAFB',
+    },
+    timeSlotAvailable: {
+        backgroundColor: '#ECFDF5',
+        borderColor: '#6EE7B7',
+    },
+    timeSlotBusy: {
+        backgroundColor: '#FEE2E2',
+        borderColor: '#FCA5A5',
+    },
+    timeSlotSelected: {
+        backgroundColor: '#E5ECFF',
+        borderColor: NAVY,
+    },
+    timeSlotText: {
+        fontSize: 15,
+        fontFamily: theme.fonts.medium,
+        color: NAVY,
+    },
+    timeSlotTextAvailable: {
+        color: TEAL,
+    },
+    timeSlotTextBusy: {
+        color: theme.colors.error,
+    },
+    timeSlotTextSelected: {
+        color: NAVY,
+        fontFamily: theme.fonts.semiBold,
+    },
+    timeFooter: {
+        paddingTop: 4,
+        paddingBottom: 8,
+    },
+    timeApplyBtn: {
+        backgroundColor: NAVY,
+        borderRadius: 14,
+        paddingVertical: 14,
+        alignItems: 'center',
+    },
+    timeApplyBtnDisabled: {
+        opacity: 0.5,
+    },
+    timeApplyBtnText: {
+        fontSize: 15,
+        fontFamily: theme.fonts.semiBold,
+        color: '#fff',
     },
 });
