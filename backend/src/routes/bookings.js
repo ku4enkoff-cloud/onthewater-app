@@ -1,8 +1,17 @@
 const express = require('express');
 const { pool } = require('../db');
 const { authenticate } = require('../middleware/auth');
+const { sendPush } = require('../utils/push');
 
 const router = express.Router();
+
+async function sendBookingPushToClient(userId, title, body, bookingId) {
+    try {
+        const { rows } = await pool.query('SELECT push_token FROM users WHERE id = $1', [userId]);
+        const token = rows[0]?.push_token;
+        if (token) await sendPush(token, title, body, { bookingId, type: 'booking' });
+    } catch (_) {}
+}
 
 // В БД в колонке hours всегда храним длительность в МИНУТАХ (клиент присылает минуты: 30, 60, 120...).
 // Для совместимости: если пришло целое число 1–24, считаем это часами и переводим в минуты.
@@ -134,7 +143,9 @@ router.patch('/:id', authenticate, async (req, res, next) => {
             vals
         );
         if (rows.length === 0) return res.status(404).json({ error: 'Not found' });
-        res.json(rows[0]);
+        const updated = rows[0];
+        sendBookingPushToClient(updated.user_id, 'Бронирование изменено', `Владелец изменил параметры бронирования «${updated.boat_title || 'Катер'}». Проверьте детали.`, updated.id);
+        res.json(updated);
     } catch (err) {
         next(err);
     }

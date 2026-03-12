@@ -127,6 +127,22 @@ router.get('/me', authenticate, (req, res) => {
     res.json(req.user);
 });
 
+// Сохранение Expo Push Token для уведомлений (клиентское приложение)
+router.post('/push-token', authenticate, async (req, res, next) => {
+    try {
+        const { push_token } = req.body || {};
+        const token = typeof push_token === 'string' ? push_token.trim() : null;
+        // Пустая строка или null — сбрасываем токен
+        await pool.query(
+            'UPDATE users SET push_token = $1 WHERE id = $2',
+            [token || null, req.user.id]
+        );
+        res.json({ ok: true });
+    } catch (err) {
+        next(err);
+    }
+});
+
 // Загрузка фото профиля (аватар)
 router.post('/avatar', authenticate, upload.single('avatar'), async (req, res, next) => {
     try {

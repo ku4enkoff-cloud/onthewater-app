@@ -1,8 +1,17 @@
 const express = require('express');
 const { pool } = require('../db');
 const { authenticate } = require('../middleware/auth');
+const { sendPush } = require('../utils/push');
 
 const router = express.Router();
+
+async function sendBookingPushToClient(userId, title, body, bookingId) {
+    try {
+        const { rows } = await pool.query('SELECT push_token FROM users WHERE id = $1', [userId]);
+        const token = rows[0]?.push_token;
+        if (token) await sendPush(token, title, body, { bookingId, type: 'booking' });
+    } catch (_) {}
+}
 
 router.get('/bookings', authenticate, async (req, res, next) => {
     try {
@@ -62,11 +71,13 @@ router.post('/bookings/:id/confirm', authenticate, async (req, res, next) => {
 
 router.post('/bookings/:id/decline', authenticate, async (req, res, next) => {
     try {
-        const { rows } = await pool.query(
-            'DELETE FROM bookings WHERE id = $1 AND owner_id = $2 RETURNING id',
-            [parseInt(req.params.id, 10), req.user.id]
-        );
+        const id = parseInt(req.params.id, 10);
+        const { rows: before } = await pool.query('SELECT id, user_id, boat_title FROM bookings WHERE id = $1 AND owner_id = $2', [id, req.user.id]);
+        if (before.length === 0) return res.status(404).json({ error: 'Not found' });
+        const b = before[0];
+        const { rows } = await pool.query('DELETE FROM bookings WHERE id = $1 AND owner_id = $2 RETURNING id', [id, req.user.id]);
         if (rows.length === 0) return res.status(404).json({ error: 'Not found' });
+        sendBookingPushToClient(b.user_id, 'Бронирование отменено', `«${b.boat_title || 'Катер'}» отменено владельцем.`, b.id);
         res.json({ ok: true });
     } catch (err) {
         next(err);
@@ -106,7 +117,9 @@ router.patch('/bookings/:id', authenticate, async (req, res, next) => {
             vals
         );
         if (rows.length === 0) return res.status(404).json({ error: 'Not found' });
-        res.json(rows[0]);
+        const updated = rows[0];
+        sendBookingPushToClient(updated.user_id, 'Бронирование изменено', `Владелец изменил параметры бронирования «${updated.boat_title || 'Катер'}». Проверьте детали.`, updated.id);
+        res.json(updated);
     } catch (err) {
         next(err);
     }

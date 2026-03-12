@@ -87,6 +87,9 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = async () => {
+        try {
+            await api.post('/auth/push-token', { push_token: '' });
+        } catch (_) {}
         await AsyncStorage.removeItem('@token');
         setUser(null);
     };

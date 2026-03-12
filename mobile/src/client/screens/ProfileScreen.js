@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Pressable, Image, ScrollView, Alert, Modal, FlatList, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, Image, ScrollView, Alert, Modal, FlatList, TextInput, ActivityIndicator, Switch } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthContext } from '../../shared/context/AuthContext';
@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../../shared/infrastructure/api';
 import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
 import { theme } from '../../shared/theme';
-import { User, Settings, Heart, HelpCircle, LogOut, ChevronRight, Calendar, Star, Shield, FileText, Bell, X, Pencil, Trash2 } from 'lucide-react-native';
+import { User, Settings, Heart, HelpCircle, LogOut, ChevronRight, Calendar, Star, Shield, FileText, Bell, X, Pencil, Trash2, Lock } from 'lucide-react-native';
 
 export default function ProfileScreen({ navigation }) {
     const insets = useSafeAreaInsets();
@@ -26,6 +26,13 @@ export default function ProfileScreen({ navigation }) {
     const [editText, setEditText] = useState('');
     const [savingReview, setSavingReview] = useState(false);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [notificationsModalVisible, setNotificationsModalVisible] = useState(false);
+    const [emailBooking, setEmailBooking] = useState(true);
+    const [emailMessages, setEmailMessages] = useState(true);
+    const [emailNews, setEmailNews] = useState(true);
+    const [pushBooking, setPushBooking] = useState(true);
+    const [pushMessages, setPushMessages] = useState(true);
+    const [pushNews, setPushNews] = useState(true);
 
     const handlePickAvatar = useCallback(async () => {
         try {
@@ -175,7 +182,7 @@ export default function ProfileScreen({ navigation }) {
 
     const menuItems = [
         { id: 'bookings', icon: Calendar, title: 'Мои брони', onPress: () => navigation.navigate('Bookings') },
-        { id: 'notifications', icon: Bell, title: 'Уведомления', onPress: () => {} },
+        { id: 'notifications', icon: Bell, title: 'Уведомления', onPress: () => setNotificationsModalVisible(true) },
         { id: 'settings', icon: Settings, title: 'Настройки', onPress: () => {} },
         { id: 'help', icon: HelpCircle, title: 'Помощь', onPress: () => {} },
         { id: 'privacy', icon: Shield, title: 'Политика конфиденциальности', onPress: () => {} },
@@ -344,6 +351,58 @@ export default function ProfileScreen({ navigation }) {
                 </View>
             </View>
         </Modal>
+
+        <Modal visible={notificationsModalVisible} animationType="slide" transparent>
+            <View style={styles.modalOverlay}>
+                <View style={[styles.notificationsModal, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
+                    <View style={styles.notificationsModalHeader}>
+                        <Text style={styles.notificationsModalTitle}>Настройки уведомлений</Text>
+                        <TouchableOpacity onPress={() => setNotificationsModalVisible(false)} hitSlop={12}>
+                            <X size={24} color={theme.colors.gray700} />
+                        </TouchableOpacity>
+                    </View>
+                    <ScrollView style={styles.notificationsScroll} showsVerticalScrollIndicator={false}>
+                        <Text style={styles.notificationsSectionTitle}>Email</Text>
+                        <Text style={styles.notificationsSectionSubtitle}>Настройки для: {user?.email || '—'}</Text>
+                        <Text style={styles.notificationsHint}>
+                            Отключить email по бронированиям нельзя, но вы можете отключить SMS и Push.
+                        </Text>
+                        <View style={styles.notificationRow}>
+                            <View style={styles.notificationRowLeft}>
+                                <Text style={styles.notificationLabel}>Бронирования</Text>
+                                <Lock size={14} color={theme.colors.gray400} style={{ marginLeft: 6 }} />
+                            </View>
+                            <Switch value={emailBooking} onValueChange={setEmailBooking} trackColor={{ false: theme.colors.gray300, true: theme.colors.primary }} thumbColor="#fff" disabled />
+                        </View>
+                        <View style={styles.notificationRow}>
+                            <Text style={styles.notificationLabel}>Сообщения</Text>
+                            <Switch value={emailMessages} onValueChange={setEmailMessages} trackColor={{ false: theme.colors.gray300, true: theme.colors.primary }} thumbColor="#fff" />
+                        </View>
+                        <View style={styles.notificationRow}>
+                            <Text style={styles.notificationLabel}>Новости и акции</Text>
+                            <Switch value={emailNews} onValueChange={setEmailNews} trackColor={{ false: theme.colors.gray300, true: theme.colors.primary }} thumbColor="#fff" />
+                        </View>
+
+                        <Text style={[styles.notificationsSectionTitle, { marginTop: 28 }]}>Push</Text>
+                        <Text style={styles.notificationsHint}>
+                            Чтобы получать push-уведомления, включите их в настройках телефона и ниже.
+                        </Text>
+                        <View style={styles.notificationRow}>
+                            <Text style={styles.notificationLabel}>Бронирования</Text>
+                            <Switch value={pushBooking} onValueChange={setPushBooking} trackColor={{ false: theme.colors.gray300, true: theme.colors.primary }} thumbColor="#fff" />
+                        </View>
+                        <View style={styles.notificationRow}>
+                            <Text style={styles.notificationLabel}>Сообщения</Text>
+                            <Switch value={pushMessages} onValueChange={setPushMessages} trackColor={{ false: theme.colors.gray300, true: theme.colors.primary }} thumbColor="#fff" />
+                        </View>
+                        <View style={styles.notificationRow}>
+                            <Text style={styles.notificationLabel}>Новости и акции</Text>
+                            <Switch value={pushNews} onValueChange={setPushNews} trackColor={{ false: theme.colors.gray300, true: theme.colors.primary }} thumbColor="#fff" />
+                        </View>
+                    </ScrollView>
+                </View>
+            </View>
+        </Modal>
     </>
     );
 }
@@ -465,4 +524,14 @@ const styles = StyleSheet.create({
     editReviewCancelText: { fontSize: 16, fontFamily: theme.fonts.medium, color: theme.colors.gray700 },
     editReviewSaveBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: theme.colors.primary, alignItems: 'center', justifyContent: 'center', minHeight: 48 },
     editReviewSaveText: { fontSize: 16, fontFamily: theme.fonts.semiBold, color: '#fff' },
+    notificationsModal: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '90%', paddingHorizontal: theme.spacing.lg },
+    notificationsModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: theme.spacing.md, borderBottomWidth: 1, borderBottomColor: theme.colors.gray100 },
+    notificationsModalTitle: { fontSize: 20, fontFamily: theme.fonts.bold, color: theme.colors.gray900 },
+    notificationsScroll: { paddingVertical: theme.spacing.md },
+    notificationsSectionTitle: { fontSize: 18, fontFamily: theme.fonts.bold, color: theme.colors.gray900 },
+    notificationsSectionSubtitle: { fontSize: 14, color: theme.colors.gray500, marginTop: 4 },
+    notificationsHint: { fontSize: 14, color: theme.colors.gray600, marginTop: 8, marginBottom: 16 },
+    notificationRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.gray100 },
+    notificationRowLeft: { flexDirection: 'row', alignItems: 'center' },
+    notificationLabel: { fontSize: 16, fontFamily: theme.fonts.medium, color: theme.colors.gray900 },
 });

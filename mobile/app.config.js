@@ -43,6 +43,7 @@ export default {
     web: { favicon: './assets/favicon.png' },
     plugins: [
       ['expo-build-properties', { android: { minSdkVersion: 26, usesCleartextTraffic: true } }],
+      ['expo-notifications', { icon: './assets/icon.png', color: '#1B365D', sounds: [] }],
       [
         'expo-image-picker',
         {

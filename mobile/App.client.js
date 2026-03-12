@@ -19,6 +19,7 @@ import { theme } from './src/shared/theme';
 import AppSplashScreen from './src/shared/components/AppSplashScreen';
 import ClientNavigator from './src/client/navigation/ClientNavigator';
 import OnboardingScreen from './src/client/screens/OnboardingScreen';
+import { useRegisterPushToken } from './src/client/hooks/useRegisterPushToken';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -43,7 +44,8 @@ class ErrorBoundary extends React.Component {
 }
 
 function ClientRoot() {
-  const { loading } = useContext(AuthContext);
+  const { loading, user } = useContext(AuthContext);
+  useRegisterPushToken(user);
   const [onboardingDone, setOnboardingDone] = useState(null);
   const [loadingTimedOut, setLoadingTimedOut] = useState(false);
 
