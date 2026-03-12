@@ -16,6 +16,7 @@ import {
     Platform,
     KeyboardAvoidingView,
     Linking,
+    NativeModules,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -59,6 +60,17 @@ import {
 const { width, height } = Dimensions.get('window');
 const NAVY = '#1B365D';
 const IMAGE_HEIGHT = 300;
+
+const isYamapAvailable = NativeModules.yamap != null;
+let YaMap = null;
+let YamapMarker = null;
+if (isYamapAvailable) {
+    try {
+        const yamap = require('react-native-yamap');
+        YaMap = yamap.default;
+        YamapMarker = yamap.Marker;
+    } catch (_) {}
+}
 
 const resolvePhotoUri = (src) => getPhotoUrl(src) || 'https://placehold.co/800x600/png';
 const WATER_SPORTS_OPTIONS = ['Вейксерф', 'Вейкборд', 'Водные лыжи'];
@@ -217,6 +229,7 @@ export default function BoatDetailScreen({ route, navigation }) {
     const [bookPassengers, setBookPassengers] = useState(4);
     const [busyIntervals, setBusyIntervals] = useState([]);
     const [busySlotsLoading, setBusySlotsLoading] = useState(false);
+    const [mapModalVisible, setMapModalVisible] = useState(false);
     const scrollRef = useRef(null);
 
     const fetchBusyIntervals = useCallback(async (date) => {
@@ -887,13 +900,18 @@ export default function BoatDetailScreen({ route, navigation }) {
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Расположение</Text>
                         {boat.lat != null && boat.lng != null ? (
-                            <Image
-                                source={{
-                                    uri: `https://static-maps.yandex.ru/1.x/?ll=${boat.lng},${boat.lat}&size=${Math.round(width)},180&z=15&l=map&pt=${boat.lng},${boat.lat}`,
-                                }}
-                                style={styles.staticMap}
-                                resizeMode="cover"
-                            />
+                            <TouchableOpacity
+                                onPress={() => setMapModalVisible(true)}
+                                activeOpacity={1}
+                            >
+                                <Image
+                                    source={{
+                                        uri: `https://static-maps.yandex.ru/1.x/?ll=${boat.lng},${boat.lat}&size=${Math.round(width)},180&z=13&l=map&pt=${boat.lng},${boat.lat}`,
+                                    }}
+                                    style={styles.staticMap}
+                                    resizeMode="cover"
+                                />
+                            </TouchableOpacity>
                         ) : (
                             <View style={styles.locationPlaceholder}>
                                 <MapPin size={32} color={NAVY} />
@@ -910,6 +928,61 @@ export default function BoatDetailScreen({ route, navigation }) {
                             <Text style={styles.locationHint}>Яхт-клуб: {boat.location_yacht_club}</Text>
                         ) : null}
                     </View>
+
+                    {/* Модальное окно с картой */}
+                    {boat.lat != null && boat.lng != null && (
+                        <Modal
+                            visible={mapModalVisible}
+                            animationType="fade"
+                            transparent
+                            onRequestClose={() => setMapModalVisible(false)}
+                        >
+                            <View style={styles.mapModalOverlay}>
+                                <TouchableOpacity
+                                    style={StyleSheet.absoluteFill}
+                                    activeOpacity={1}
+                                    onPress={() => setMapModalVisible(false)}
+                                />
+                                <View style={[styles.mapModalContent, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16 }]}>
+                                    <View style={styles.mapModalHeader}>
+                                        <Text style={styles.mapModalTitle}>Местоположение катера</Text>
+                                        <TouchableOpacity
+                                            onPress={() => setMapModalVisible(false)}
+                                            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                                            style={styles.mapModalClose}
+                                        >
+                                            <X size={24} color={NAVY} />
+                                        </TouchableOpacity>
+                                    </View>
+                                    {YaMap && YamapMarker ? (
+                                        <View style={styles.mapModalImage}>
+                                            <YaMap
+                                                style={StyleSheet.absoluteFillObject}
+                                                initialRegion={{
+                                                    lat: boat.lat,
+                                                    lon: boat.lng,
+                                                    zoom: 14,
+                                                }}
+                                            >
+                                                <YamapMarker point={{ lat: boat.lat, lon: boat.lng }} />
+                                            </YaMap>
+                                        </View>
+                                    ) : (
+                                        <Image
+                                            source={{
+                                                uri: `https://static-maps.yandex.ru/1.x/?ll=${boat.lng},${boat.lat}&size=${Math.round(width)},${Math.round(height * 0.5)}&z=14&l=map&pt=${boat.lng},${boat.lat}`,
+                                            }}
+                                            style={styles.mapModalImage}
+                                            resizeMode="cover"
+                                        />
+                                    )}
+                                    <Text style={styles.mapModalAddress} numberOfLines={2}>
+                                        {[boat.location_country, boat.location_region, boat.location_city, boat.location_address].filter(Boolean).join(', ') || '—'}
+                                    </Text>
+                                </View>
+                            </View>
+                        </Modal>
+                    )}
 
                     <View style={styles.divider} />
 
@@ -1675,6 +1748,25 @@ const styles = StyleSheet.create({
 
     /* Location */
     staticMap: { width: '100%', height: 180, borderRadius: 14, marginBottom: 12 },
+    mapModalOverlay: {
+        flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20,
+    },
+    mapModalContent: {
+        backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden', maxHeight: '90%',
+    },
+    mapModalHeader: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+    },
+    mapModalTitle: { fontSize: 18, fontFamily: theme.fonts.bold, color: NAVY },
+    mapModalClose: { padding: 4 },
+    mapModalImage: {
+        width: '100%', height: 300, marginTop: 0, overflow: 'hidden',
+    },
+    mapModalAddress: {
+        fontSize: 14, fontFamily: theme.fonts.regular, color: theme.colors.gray700,
+        paddingHorizontal: 20, paddingVertical: 12,
+    },
     locationPlaceholder: {
         height: 180, backgroundColor: '#F3F4F6', borderRadius: 14,
         justifyContent: 'center', alignItems: 'center', gap: 8, marginBottom: 12,

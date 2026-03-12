@@ -21,6 +21,7 @@ export default function Login() {
       setAuth(data.token, data.user);
       window.location.href = '/panel/admin';
     } catch (err) {
+      console.error('[Login]', err?.message, err?.code, err?.response?.status, err?.config?.baseURL);
       const msg = err.response?.data?.error || (err.response ? 'Ошибка входа' : 'Нет связи с сервером. Проверьте адрес API (VITE_API_URL).');
       const status = err.response?.status;
       setError(status ? `${msg} (${status})` : msg);
