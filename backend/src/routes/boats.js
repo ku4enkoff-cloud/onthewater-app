@@ -111,7 +111,7 @@ router.get('/:id/availability', async (req, res, next) => {
         const { rows } = await pool.query(
             `SELECT
                to_char(start_at AT TIME ZONE 'Europe/Moscow', 'HH24:MI') AS start_time,
-               to_char(start_at AT TIME ZONE 'Europe/Moscow' + (COALESCE(hours, 2)::int || ' hours')::interval, 'HH24:MI') AS end_time
+               to_char(start_at AT TIME ZONE 'Europe/Moscow' + (COALESCE(hours, 120)::int * interval '1 minute'), 'HH24:MI') AS end_time
              FROM bookings
              WHERE boat_id = $1 AND status IN ('confirmed', 'pending')
                AND (start_at AT TIME ZONE 'Europe/Moscow')::date = $2::date

@@ -15,12 +15,7 @@ router.get('/bookings', authenticate, async (req, res, next) => {
         await pool.query(
             `UPDATE bookings SET status = 'completed'
              WHERE status = 'confirmed' AND start_at IS NOT NULL
-             AND (start_at + (
-               CASE WHEN COALESCE(hours, 0)::int <= 24
-                 THEN (COALESCE(hours, 0)::int * 60) * interval '1 minute'
-                 ELSE COALESCE(hours, 0)::int * interval '1 minute'
-               END
-             )) < NOW()`
+             AND (start_at + (COALESCE(hours, 180)::int * interval '1 minute')) < NOW()`
         );
         const { rows: rawRows } = await pool.query(
             `SELECT b.*, boat.schedule_work_days as boat_schedule_work_days

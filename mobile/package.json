@@ -18,12 +18,14 @@
     "web": "expo start --web",
     "log:android": "node scripts/adb-logcat.js",
     "apk": "cd android && .\\gradlew assembleRelease",
-    "apk:client": "npx cross-env EXPO_PUBLIC_APP_VARIANT=client android\\gradlew.bat -p android assembleDebug -PreactNativeArchitectures=armeabi-v7a,arm64-v8a",
-    "apk:client:release": "npx cross-env EXPO_PUBLIC_APP_VARIANT=client android\\gradlew.bat -p android assembleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a",
-    "apk:owner": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner android\\gradlew.bat -p android assembleDebug -PreactNativeArchitectures=armeabi-v7a,arm64-v8a",
-    "apk:owner:release": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner android\\gradlew.bat -p android assembleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a",
-    "bundle": "npx cross-env EXPO_PUBLIC_APP_VARIANT=client android\\gradlew.bat -p android bundleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a",
-    "bundle:owner": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner android\\gradlew.bat -p android bundleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a"
+    "apk:client": "npx cross-env EXPO_PUBLIC_APP_VARIANT=client ANDROID_HOME=C:\\Users\\ku4en\\AppData\\Local\\Android\\Sdk android\\gradlew.bat -p android assembleDebug -PreactNativeArchitectures=armeabi-v7a,arm64-v8a",
+    "apk:client:release": "npx cross-env EXPO_PUBLIC_APP_VARIANT=client ANDROID_HOME=C:\\Users\\ku4en\\AppData\\Local\\Android\\Sdk android\\gradlew.bat -p android assembleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a",
+    "apk:owner": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner ANDROID_HOME=C:\\Users\\ku4en\\AppData\\Local\\Android\\Sdk android\\gradlew.bat -p android assembleDebug -PreactNativeArchitectures=armeabi-v7a,arm64-v8a",
+    "apk:owner:release": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner ANDROID_HOME=C:\\Users\\ku4en\\AppData\\Local\\Android\\Sdk android\\gradlew.bat -p android assembleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a",
+    "build:owner": "npm run prebuild:owner && npm run apk:owner",
+    "build:owner:release": "npm run prebuild:owner && npm run apk:owner:release",
+    "bundle": "npx cross-env EXPO_PUBLIC_APP_VARIANT=client ANDROID_HOME=C:\\Users\\ku4en\\AppData\\Local\\Android\\Sdk android\\gradlew.bat -p android bundleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a",
+    "bundle:owner": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner ANDROID_HOME=C:\\Users\\ku4en\\AppData\\Local\\Android\\Sdk android\\gradlew.bat -p android bundleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a"
   },
   "dependencies": {
     "@expo-google-fonts/jost": "^0.4.2",

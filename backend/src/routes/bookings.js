@@ -19,7 +19,7 @@ router.post('/', authenticate, async (req, res, next) => {
             `INSERT INTO bookings (user_id, owner_id, boat_id, boat_title, boat_photo, start_at, hours, passengers, captain, total_price, status)
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pending')
              RETURNING *`,
-            [req.user.id, boat.owner_id, boat.id, boat.title, boatPhoto, start_at || new Date().toISOString(), hours || 3, passengers || 1, !!captain, total_price || 0]
+            [req.user.id, boat.owner_id, boat.id, boat.title, boatPhoto, start_at || new Date().toISOString(), hours != null ? hours : 180, passengers || 1, !!captain, total_price || 0]
         );
         res.json(rows[0]);
     } catch (err) {
@@ -32,12 +32,7 @@ router.get('/', authenticate, async (req, res, next) => {
         await pool.query(
             `UPDATE bookings SET status = 'completed'
              WHERE status = 'confirmed' AND start_at IS NOT NULL
-             AND (start_at + (
-               CASE WHEN COALESCE(hours, 0)::int <= 24
-                 THEN (COALESCE(hours, 0)::int * 60) * interval '1 minute'
-                 ELSE COALESCE(hours, 0)::int * interval '1 minute'
-               END
-             )) < NOW()`
+             AND (start_at + (COALESCE(hours, 180)::int * interval '1 minute')) < NOW()`
         );
         const { rows } = await pool.query(
             `SELECT b.*, boat.location_city, boat.location_address, boat.location_yacht_club, boat.photos AS boat_photos
