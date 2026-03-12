@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, RefreshControl, Linking, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
@@ -112,12 +112,35 @@ export default function BookingsScreen({ navigation }) {
                     <Clock size={16} color={theme.colors.gray500} />
                     <Text style={styles.infoText}>{durationLabel(item)}</Text>
                 </View>
-                {item.location_city ? (
-                    <View style={styles.infoRow}>
-                        <MapPin size={16} color={theme.colors.gray500} />
-                        <Text style={styles.infoText}>{item.location_city}</Text>
-                    </View>
-                ) : null}
+                {(() => {
+                    const addr = [
+                        item.location_country ?? item.locationCountry,
+                        item.location_region ?? item.locationRegion,
+                        item.location_city ?? item.locationCity,
+                        item.location_address ?? item.locationAddress,
+                    ].filter(Boolean).join(', ');
+                    if (!addr) return null;
+                    const openNav = async () => {
+                        const navUrl = item.lat != null && item.lng != null
+                            ? `yandexnavi://build_route_on_map?lat_to=${item.lat}&lon_to=${item.lng}`
+                            : `yandexnavi://map_search?text=${encodeURIComponent(addr)}`;
+                        const mapsUrl = item.lat != null && item.lng != null
+                            ? `https://yandex.ru/maps/?pt=${item.lng},${item.lat}&z=16`
+                            : `https://yandex.ru/maps/?text=${encodeURIComponent(addr)}`;
+                        try {
+                            const canOpen = await Linking.canOpenURL('yandexnavi://');
+                            await Linking.openURL(canOpen ? navUrl : mapsUrl);
+                        } catch {
+                            Linking.openURL(mapsUrl).catch(() => Alert.alert('Ошибка', 'Не удалось открыть карту'));
+                        }
+                    };
+                    return (
+                        <TouchableOpacity style={styles.infoRow} onPress={openNav} activeOpacity={0.7}>
+                            <MapPin size={16} color={theme.colors.primary} />
+                            <Text style={[styles.infoText, styles.addressLink]} numberOfLines={2}>{addr}</Text>
+                        </TouchableOpacity>
+                    );
+                })()}
                 <View style={styles.statusContainer}>
                     <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
                         <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>{getStatusText(item.status)}</Text>
@@ -203,6 +226,7 @@ const styles = StyleSheet.create({
     cardPrice: { fontSize: 18, fontFamily: theme.fonts.bold, color: theme.colors.primary },
     infoRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
     infoText: { fontSize: 14, color: theme.colors.gray500, marginLeft: 8 },
+    addressLink: { color: theme.colors.primary, textDecorationLine: 'underline', flex: 1 },
     statusContainer: { marginTop: theme.spacing.md, alignItems: 'flex-start' },
     statusBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
     statusText: { fontSize: 12, fontFamily: theme.fonts.semiBold },

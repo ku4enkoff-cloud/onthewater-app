@@ -236,7 +236,7 @@ export default function SearchScreen({ navigation }) {
                     pointerEvents="none"
                 />
                 <View style={[styles.heroContent, { top: insets.top + 12 }]}>
-                    <Text style={styles.heroTitle}>Бронируй, плыви,{'\n'}отдыхай</Text>
+                    <Text style={styles.heroTitle}>Бронируй, плыви, отдыхай</Text>
                     <Text style={styles.heroSubtitle}>
                         Аренда катеров, прогулки с капитаном{'\n'}и незабываемые впечатления на воде.
                     </Text>
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
         marginHorizontal: -theme.spacing.lg,
         position: 'relative',
         overflow: 'hidden',
-        marginBottom: theme.spacing.lg,
+        marginBottom: theme.spacing.sm,
     },
     heroImage: {
         ...StyleSheet.absoluteFillObject,
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
         right: theme.spacing.lg,
     },
     heroTitle: {
-        fontSize: 28,
+        fontSize: 24,
         fontFamily: theme.fonts.bold,
         color: NAVY,
         lineHeight: 34,
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
     heroSubtitle: {
         fontSize: 15,
         fontFamily: theme.fonts.regular,
-        color: theme.colors.gray500,
+        color: NAVY,
         lineHeight: 22,
     },
     searchBarWrap: {
@@ -441,8 +441,8 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontFamily: theme.fonts.bold,
         color: NAVY,
-        marginBottom: theme.spacing.md,
-        marginTop: theme.spacing.sm,
+        marginBottom: theme.spacing.lg,
+        marginTop: 0,
     },
     /* ---- Destination cards (name below image) ---- */
     destList: {

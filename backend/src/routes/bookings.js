@@ -55,7 +55,7 @@ router.get('/', authenticate, async (req, res, next) => {
              AND (start_at + (COALESCE(hours, 180)::int * interval '1 minute')) < NOW()`
         );
         const { rows } = await pool.query(
-            `SELECT b.*, boat.location_city, boat.location_address, boat.location_yacht_club, boat.photos AS boat_photos
+            `SELECT b.*, boat.location_city, boat.location_address, boat.location_yacht_club, boat.location_country, boat.location_region, boat.lat, boat.lng, boat.photos AS boat_photos
              FROM bookings b
              LEFT JOIN boats boat ON boat.id = b.boat_id
              WHERE b.user_id = $1
@@ -82,7 +82,7 @@ function enrichBookingPhoto(r) {
 router.get('/:id', authenticate, async (req, res, next) => {
     try {
         const { rows } = await pool.query(
-            `SELECT b.*, boat.location_city, boat.location_address, boat.location_yacht_club, boat.photos AS boat_photos
+            `SELECT b.*, boat.location_city, boat.location_address, boat.location_yacht_club, boat.location_country, boat.location_region, boat.lat, boat.lng, boat.photos AS boat_photos
              FROM bookings b
              LEFT JOIN boats boat ON boat.id = b.boat_id
              WHERE b.id = $1 AND b.user_id = $2`,

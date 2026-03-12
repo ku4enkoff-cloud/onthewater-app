@@ -27,7 +27,9 @@ router.get('/bookings', authenticate, async (req, res, next) => {
              AND (start_at + (COALESCE(hours, 180)::int * interval '1 minute')) < NOW()`
         );
         const { rows: rawRows } = await pool.query(
-            `SELECT b.*, boat.schedule_work_days as boat_schedule_work_days
+            `SELECT b.*, boat.schedule_work_days as boat_schedule_work_days,
+              boat.location_city, boat.location_address, boat.location_yacht_club,
+              boat.location_country, boat.location_region, boat.lat, boat.lng
              FROM bookings b
              LEFT JOIN boats boat ON boat.id = b.boat_id
              WHERE b.owner_id = $1

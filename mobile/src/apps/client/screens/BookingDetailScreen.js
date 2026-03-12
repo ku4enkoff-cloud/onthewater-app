@@ -130,7 +130,7 @@ export default function BookingDetailScreen({ route, navigation }) {
         const formatGoogleDate = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
         const title = encodeURIComponent(`Аренда: ${booking.boat_title || 'Катер'}`);
         const dates = `${formatGoogleDate(start)}/${formatGoogleDate(end)}`;
-        const location = encodeURIComponent([booking.location_address, booking.location_yacht_club, booking.location_city].filter(Boolean).join(', ') || '');
+        const location = encodeURIComponent([booking.location_country, booking.location_region, booking.location_city, booking.location_address, booking.location_yacht_club].filter(Boolean).join(', ') || '');
         const details = encodeURIComponent(`Бронирование катера. Стоимость: ${booking.total_price != null ? Number(booking.total_price).toLocaleString('ru-RU') : ''} ₽`);
         const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}${location ? `&location=${location}` : ''}`;
         Linking.openURL(url).catch(() => Alert.alert('Ошибка', 'Не удалось открыть календарь'));
@@ -205,7 +205,7 @@ export default function BookingDetailScreen({ route, navigation }) {
                     <View style={styles.infoRow}>
                         <MapPin size={20} color={theme.colors.textMuted} />
                         <Text style={styles.infoText}>
-                            {[booking.location_address, booking.location_yacht_club, booking.location_city].filter(Boolean).join(', ') || 'Адрес не указан'}
+                            {[booking.location_country, booking.location_region, booking.location_city, booking.location_address, booking.location_yacht_club].filter(Boolean).join(', ') || 'Адрес не указан'}
                         </Text>
                     </View>
 

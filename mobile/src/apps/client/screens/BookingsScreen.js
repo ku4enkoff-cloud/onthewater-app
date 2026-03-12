@@ -127,12 +127,16 @@ export default function BookingsScreen({ navigation }) {
                     <Clock size={16} color={theme.colors.textMuted} />
                     <Text style={styles.infoText}>{durationLabel(item)}</Text>
                 </View>
-                {item.location_city ? (
-                <View style={styles.infoRow}>
-                    <MapPin size={16} color={theme.colors.textMuted} />
-                    <Text style={styles.infoText}>{item.location_city}</Text>
-                </View>
-                ) : null}
+                {(() => {
+                    const addr = [item.location_country, item.location_region, item.location_city, item.location_address, item.location_yacht_club].filter(Boolean).join(', ');
+                    if (!addr) return null;
+                    return (
+                        <View style={styles.infoRow}>
+                            <MapPin size={16} color={theme.colors.textMuted} />
+                            <Text style={styles.infoText}>{addr}</Text>
+                        </View>
+                    );
+                })()}
                 
                 <View style={styles.statusContainer}>
                     <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
