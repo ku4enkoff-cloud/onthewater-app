@@ -502,6 +502,9 @@ router.delete('/users/:id', async (req, res, next) => {
         if (id === req.user.id) {
             return res.status(400).json({ error: 'Нельзя удалить себя' });
         }
+        // Удаляем чаты, где пользователь — владелец (у owner_id нет FK; сообщения удалятся по CASCADE)
+        await pool.query('DELETE FROM chats WHERE owner_id = $1', [id]);
+        // DELETE FROM users каскадно удалит: boats владельца, bookings, чаты (user_id), reviews.user_id → SET NULL
         const { rowCount } = await pool.query('DELETE FROM users WHERE id = $1', [id]);
         if (rowCount === 0) return res.status(404).json({ error: 'Пользователь не найден' });
         res.json({ ok: true });
