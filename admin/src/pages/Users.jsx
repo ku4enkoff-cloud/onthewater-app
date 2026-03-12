@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api, { getUser } from '../api';
+import api from '../api';
 import styles from './Table.module.css';
 import Modal from '../components/Modal';
 import modalStyles from '../components/Modal.module.css';
@@ -91,9 +91,6 @@ export default function Users() {
       setDeleting(false);
     }
   };
-
-  const currentUser = getUser();
-  const isSelf = editing && currentUser && editing.id === currentUser.id;
 
   if (loading) return <div className={styles.loading}>Загрузка…</div>;
 
@@ -261,17 +258,15 @@ export default function Users() {
               </select>
             </div>
             <div className={modalStyles.actions}>
-              {!isSelf && (
-                <button
-                  type="button"
-                  className={`${modalStyles.btn} ${modalStyles.btnDanger}`}
-                  onClick={handleDelete}
-                  disabled={deleting || saving}
-                  style={{ marginRight: 'auto' }}
-                >
-                  {deleting ? 'Удаление…' : 'Удалить'}
-                </button>
-              )}
+              <button
+                type="button"
+                className={`${modalStyles.btn} ${modalStyles.btnDanger}`}
+                onClick={handleDelete}
+                disabled={deleting || saving}
+                style={{ marginRight: 'auto' }}
+              >
+                {deleting ? 'Удаление…' : 'Удалить'}
+              </button>
               <button type="button" className={`${modalStyles.btn} ${modalStyles.btnSecondary}`} onClick={() => setEditing(null)}>Отмена</button>
               <button type="submit" className={modalStyles.btn} disabled={saving}>{saving ? 'Сохранение…' : 'Сохранить'}</button>
             </div>
