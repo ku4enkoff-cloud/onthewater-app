@@ -44,7 +44,7 @@ router.get('/', async (req, res, next) => {
             params = ['deleted', user.id];
         } else if (region && String(region).trim()) {
             const regionVal = String(region).trim();
-            const statusCond = "status = 'approved'";
+            const statusCond = "status = 'active'";
             if (regionVal.toLowerCase() === 'московская область') {
                 query = `SELECT * FROM boats WHERE ${statusCond} AND LOWER(TRIM(COALESCE(location_region, ''))) = LOWER($1) AND LOWER(TRIM(COALESCE(location_city, ''))) != 'москва' ORDER BY COALESCE(bookings_count, 0) DESC, id`;
             } else {
@@ -53,17 +53,17 @@ router.get('/', async (req, res, next) => {
             params = [regionVal];
         } else if (city && String(city).trim()) {
             const cityVal = String(city).trim();
-            query = `SELECT * FROM boats WHERE status = 'approved' AND LOWER(TRIM(COALESCE(location_city, ''))) = LOWER($1) ORDER BY COALESCE(bookings_count, 0) DESC, id`;
+            query = `SELECT * FROM boats WHERE status = 'active' AND LOWER(TRIM(COALESCE(location_city, ''))) = LOWER($1) ORDER BY COALESCE(bookings_count, 0) DESC, id`;
             params = [cityVal];
         } else if (popular) {
             const lim = Math.min(50, Math.max(1, parseInt(limit, 10) || 10));
-            query = `SELECT * FROM boats WHERE status = 'approved' ORDER BY COALESCE(bookings_count, 0) DESC, id LIMIT $1`;
+            query = `SELECT * FROM boats WHERE status = 'active' ORDER BY COALESCE(bookings_count, 0) DESC, id LIMIT $1`;
             params = [lim];
         } else if (lat != null && lng != null) {
             const latF = parseFloat(lat);
             const lngF = parseFloat(lng);
             const rad = radius ? parseFloat(radius) : 50;
-            query = `SELECT * FROM boats WHERE status = 'approved' AND lat IS NOT NULL AND lng IS NOT NULL AND (|/ ((lat - $1)^2 + (lng - $2)^2)) * 111 <= $3 ORDER BY id`;
+            query = `SELECT * FROM boats WHERE status = 'active' AND lat IS NOT NULL AND lng IS NOT NULL AND (|/ ((lat - $1)^2 + (lng - $2)^2)) * 111 <= $3 ORDER BY id`;
             params = [latF, lngF, rad];
         } else {
             query = `SELECT * FROM boats WHERE status = 'approved' ORDER BY id`;
@@ -81,7 +81,7 @@ router.get('/', async (req, res, next) => {
 router.get('/cities', async (req, res, next) => {
     try {
         const { rows } = await pool.query(
-            `SELECT DISTINCT location_city AS city FROM boats WHERE status = 'approved' AND location_city IS NOT NULL AND TRIM(COALESCE(location_city, '')) <> '' ORDER BY location_city`
+            `SELECT DISTINCT location_city AS city FROM boats WHERE status = 'active' AND location_city IS NOT NULL AND TRIM(COALESCE(location_city, '')) <> '' ORDER BY location_city`
         );
         res.json(rows.map((r) => (r?.city ? String(r.city).trim() : null)).filter(Boolean));
     } catch (err) {
@@ -92,7 +92,7 @@ router.get('/cities', async (req, res, next) => {
 router.get('/regions', async (req, res, next) => {
     try {
         const { rows } = await pool.query(
-            `SELECT DISTINCT location_region AS region FROM boats WHERE status = 'approved' AND location_region IS NOT NULL AND TRIM(COALESCE(location_region, '')) <> '' ORDER BY location_region`
+            `SELECT DISTINCT location_region AS region FROM boats WHERE status = 'active' AND location_region IS NOT NULL AND TRIM(COALESCE(location_region, '')) <> '' ORDER BY location_region`
         );
         res.json(rows.map((r) => (r?.region ? String(r.region).trim() : null)).filter(Boolean));
     } catch (err) {
@@ -137,7 +137,7 @@ router.get('/:id', async (req, res, next) => {
         const boat = rows[0];
         const viewer = req.user;
         const isOwner = viewer && boat.owner_id && Number(boat.owner_id) === Number(viewer.id);
-        if (!isOwner && boat.status !== 'approved') {
+        if (!isOwner && boat.status !== 'active') {
             return res.status(404).json({ error: 'Катер не найден' });
         }
         // Всегда подставляем актуальное имя владельца из users (name/first_name+last_name/email)
