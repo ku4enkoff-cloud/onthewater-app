@@ -4,6 +4,16 @@ const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
+// В БД в колонке hours всегда храним длительность в МИНУТАХ (клиент присылает минуты: 30, 60, 120...).
+// Для совместимости: если пришло целое число 1–24, считаем это часами и переводим в минуты.
+function normalizeDurationToMinutes(hours) {
+    if (hours == null) return 180;
+    const n = Number(hours);
+    if (Number.isNaN(n)) return 180;
+    if (Number.isInteger(n) && n >= 1 && n <= 24) return n * 60; // раньше могли слать часы
+    return n; // уже минуты
+}
+
 router.post('/', authenticate, async (req, res, next) => {
     try {
         const { boat_id, start_at, hours, passengers, captain, total_price } = req.body || {};
@@ -15,11 +25,12 @@ router.post('/', authenticate, async (req, res, next) => {
         const first = photos[0];
         const boatPhoto = typeof first === 'string' ? first : (first?.location || first?.url || first?.filename || '') || '';
 
+        const durationMinutes = normalizeDurationToMinutes(hours);
         const { rows } = await pool.query(
             `INSERT INTO bookings (user_id, owner_id, boat_id, boat_title, boat_photo, start_at, hours, passengers, captain, total_price, status)
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pending')
              RETURNING *`,
-            [req.user.id, boat.owner_id, boat.id, boat.title, boatPhoto, start_at || new Date().toISOString(), hours != null ? hours : 180, passengers || 1, !!captain, total_price || 0]
+            [req.user.id, boat.owner_id, boat.id, boat.title, boatPhoto, start_at || new Date().toISOString(), durationMinutes, passengers || 1, !!captain, total_price || 0]
         );
         res.json(rows[0]);
     } catch (err) {
@@ -115,7 +126,7 @@ router.patch('/:id', authenticate, async (req, res, next) => {
         const vals = [];
         let idx = 1;
         if (start_at != null) { updates.push(`start_at = $${idx++}`); vals.push(start_at); }
-        if (hours != null) { updates.push(`hours = $${idx++}`); vals.push(hours); }
+        if (hours != null) { updates.push(`hours = $${idx++}`); vals.push(normalizeDurationToMinutes(hours)); }
         if (updates.length === 0) return res.json(booking);
         vals.push(id, ownerId);
         const { rows } = await pool.query(
