@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Pressable, Image, ScrollView,
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthContext } from '../../shared/context/AuthContext';
+import { NotificationsContext } from '../../shared/context/NotificationsContext';
 import { FavoritesContext } from '../../shared/context/FavoritesContext';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -14,6 +15,7 @@ import { User, Settings, Heart, HelpCircle, LogOut, ChevronRight, Calendar, Star
 export default function ProfileScreen({ navigation }) {
     const insets = useSafeAreaInsets();
     const { user, logout, refreshUser } = useContext(AuthContext);
+    const { pushEnabled, setPushEnabled } = useContext(NotificationsContext);
     const { favoriteBoats } = useContext(FavoritesContext);
     const [loading, setLoading] = useState(false);
     const [completedTrips, setCompletedTrips] = useState(0);
@@ -30,9 +32,6 @@ export default function ProfileScreen({ navigation }) {
     const [emailBooking, setEmailBooking] = useState(true);
     const [emailMessages, setEmailMessages] = useState(true);
     const [emailNews, setEmailNews] = useState(true);
-    const [pushBooking, setPushBooking] = useState(true);
-    const [pushMessages, setPushMessages] = useState(true);
-    const [pushNews, setPushNews] = useState(true);
 
     const handlePickAvatar = useCallback(async () => {
         try {
@@ -385,19 +384,11 @@ export default function ProfileScreen({ navigation }) {
 
                         <Text style={[styles.notificationsSectionTitle, { marginTop: 28 }]}>Push</Text>
                         <Text style={styles.notificationsHint}>
-                            Чтобы получать push-уведомления, включите их в настройках телефона и ниже.
+                            Чтобы получать push-уведомления, включите их в настройках телефона и ниже. Отключив, вы перестанете получать push.
                         </Text>
                         <View style={styles.notificationRow}>
-                            <Text style={styles.notificationLabel}>Бронирования</Text>
-                            <Switch value={pushBooking} onValueChange={setPushBooking} trackColor={{ false: theme.colors.gray300, true: theme.colors.primary }} thumbColor="#fff" />
-                        </View>
-                        <View style={styles.notificationRow}>
-                            <Text style={styles.notificationLabel}>Сообщения</Text>
-                            <Switch value={pushMessages} onValueChange={setPushMessages} trackColor={{ false: theme.colors.gray300, true: theme.colors.primary }} thumbColor="#fff" />
-                        </View>
-                        <View style={styles.notificationRow}>
-                            <Text style={styles.notificationLabel}>Новости и акции</Text>
-                            <Switch value={pushNews} onValueChange={setPushNews} trackColor={{ false: theme.colors.gray300, true: theme.colors.primary }} thumbColor="#fff" />
+                            <Text style={styles.notificationLabel}>Push-уведомления</Text>
+                            <Switch value={pushEnabled !== false} onValueChange={setPushEnabled} trackColor={{ false: theme.colors.gray300, true: theme.colors.primary }} thumbColor="#fff" />
                         </View>
                     </ScrollView>
                 </View>

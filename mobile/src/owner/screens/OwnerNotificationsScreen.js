@@ -5,6 +5,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Lock } from 'lucide-react-native';
 import { AuthContext } from '../../shared/context/AuthContext';
+import { NotificationsContext } from '../../shared/context/NotificationsContext';
 import { theme } from '../../shared/theme';
 
 let LinearGradient;
@@ -18,6 +19,7 @@ export default function OwnerNotificationsScreen({ navigation }) {
     const insets = useSafeAreaInsets();
     const authCtx = useContext(AuthContext);
     const user = authCtx?.user;
+    const { pushEnabled, setPushEnabled } = useContext(NotificationsContext);
 
     const phone = user?.phone || '';
     const email = user?.email || '';
@@ -29,10 +31,6 @@ export default function OwnerNotificationsScreen({ navigation }) {
     const [smsBooking, setSmsBooking] = useState(true);
     const [smsMessages, setSmsMessages] = useState(true);
     const [smsNews, setSmsNews] = useState(true);
-
-    const [pushBooking, setPushBooking] = useState(true);
-    const [pushMessages, setPushMessages] = useState(true);
-    const [pushNews, setPushNews] = useState(true);
 
     const trackColor = { false: '#E0E4EA', true: TEAL };
 
@@ -130,20 +128,12 @@ export default function OwnerNotificationsScreen({ navigation }) {
                     <Text style={s.sectionHint}>
                         Для получения push-уведомлений убедитесь, что они включены в{' '}
                         <Text style={s.link} onPress={() => Linking.openSettings()}>настройках вашего устройства</Text>{' '}
-                        и в настройках ниже.
+                        и ниже. Отключив — перестанете получать push.
                     </Text>
 
                     <View style={s.toggleRow}>
-                        <Text style={s.toggleLabel}>Бронирования</Text>
-                        <Switch value={pushBooking} onValueChange={setPushBooking} trackColor={trackColor} thumbColor="#fff" />
-                    </View>
-                    <View style={s.toggleRow}>
-                        <Text style={s.toggleLabel}>Уведомления о сообщениях</Text>
-                        <Switch value={pushMessages} onValueChange={setPushMessages} trackColor={trackColor} thumbColor="#fff" />
-                    </View>
-                    <View style={s.toggleRow}>
-                        <Text style={s.toggleLabel}>Новости и акции</Text>
-                        <Switch value={pushNews} onValueChange={setPushNews} trackColor={trackColor} thumbColor="#fff" />
+                        <Text style={s.toggleLabel}>Push-уведомления</Text>
+                        <Switch value={pushEnabled !== false} onValueChange={setPushEnabled} trackColor={trackColor} thumbColor="#fff" />
                     </View>
                 </View>
             </ScrollView>

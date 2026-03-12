@@ -15,6 +15,7 @@ import {
 import { NavigationContainer } from '@react-navigation/native';
 import { AuthProvider, AuthContext } from './src/shared/context/AuthContext';
 import { FavoritesProvider } from './src/shared/context/FavoritesContext';
+import { NotificationsProvider, NotificationsContext } from './src/shared/context/NotificationsContext';
 import { theme } from './src/shared/theme';
 import AppSplashScreen from './src/shared/components/AppSplashScreen';
 import ClientNavigator from './src/client/navigation/ClientNavigator';
@@ -45,7 +46,8 @@ class ErrorBoundary extends React.Component {
 
 function ClientRoot() {
   const { loading, user } = useContext(AuthContext);
-  useRegisterPushToken(user);
+  const { pushEnabled } = useContext(NotificationsContext);
+  useRegisterPushToken(user, pushEnabled);
   const [onboardingDone, setOnboardingDone] = useState(null);
   const [loadingTimedOut, setLoadingTimedOut] = useState(false);
 
@@ -191,10 +193,12 @@ export default function App() {
       <View style={{ flex: 1, backgroundColor: theme.colors.waveDark }} onLayout={onLayoutRootView}>
         <ErrorBoundary>
           <AuthProvider>
-            <FavoritesProvider>
-              <ClientRoot />
+            <NotificationsProvider>
+              <FavoritesProvider>
+                <ClientRoot />
               <StatusBar style="auto" />
-            </FavoritesProvider>
+              </FavoritesProvider>
+            </NotificationsProvider>
           </AuthProvider>
         </ErrorBoundary>
       </View>

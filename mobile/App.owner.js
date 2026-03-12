@@ -13,9 +13,11 @@ import {
 } from '@expo-google-fonts/jost';
 import { NavigationContainer } from '@react-navigation/native';
 import { AuthProvider, AuthContext } from './src/shared/context/AuthContext';
+import { NotificationsProvider, NotificationsContext } from './src/shared/context/NotificationsContext';
 import { theme } from './src/shared/theme';
 import OwnerAuthStack from './src/owner/OwnerAuthStack';
 import OwnerNavigator from './src/owner/navigation/OwnerNavigator';
+import { useRegisterPushToken } from './src/client/hooks/useRegisterPushToken';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -45,6 +47,8 @@ class ErrorBoundary extends React.Component {
 
 function OwnerRoot() {
   const { user, loading } = useContext(AuthContext);
+  const { pushEnabled } = useContext(NotificationsContext);
+  useRegisterPushToken(user, pushEnabled);
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -106,8 +110,10 @@ export default function App() {
       <SafeAreaProvider>
         <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
           <AuthProvider>
-            <OwnerRoot />
-            <StatusBar style="light" />
+            <NotificationsProvider>
+              <OwnerRoot />
+              <StatusBar style="light" />
+            </NotificationsProvider>
           </AuthProvider>
         </View>
       </SafeAreaProvider>

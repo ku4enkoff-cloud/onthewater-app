@@ -1,8 +1,19 @@
 const express = require('express');
 const { pool } = require('../db');
 const { authenticate } = require('../middleware/auth');
+const { sendPush } = require('../utils/push');
 
 const router = express.Router();
+
+async function sendMessagePushToRecipient(recipientId, senderName, textPreview, chatId) {
+    try {
+        const { rows } = await pool.query('SELECT push_token FROM users WHERE id = $1', [recipientId]);
+        const token = rows[0]?.push_token;
+        if (!token) return;
+        const body = textPreview && textPreview.length > 50 ? textPreview.slice(0, 47) + '…' : (textPreview || 'Новое сообщение');
+        await sendPush(token, `${senderName || 'Сообщение'}:`, body, { chatId, type: 'message' });
+    } catch (_) {}
+}
 
 router.get('/', authenticate, async (req, res, next) => {
     try {
@@ -99,15 +110,19 @@ router.post('/:id/messages', authenticate, async (req, res, next) => {
         const chatId = parseInt(req.params.id, 10);
         const { rows: chatRows } = await pool.query('SELECT * FROM chats WHERE id = $1', [chatId]);
         if (chatRows.length === 0) return res.status(404).json({ error: 'Not found' });
+        const chat = chatRows[0];
         const text = (req.body && req.body.text) || '';
         const sender = req.user.role === 'owner' ? 'owner' : 'me';
         const isOwn = sender === 'me';
+        const recipientId = sender === 'owner' ? chat.user_id : chat.owner_id;
+        const senderName = req.user.name || req.user.first_name || req.user.email || (sender === 'owner' ? chat.owner_name : chat.user_name) || 'Сообщение';
 
         const { rows } = await pool.query(
             `INSERT INTO messages (chat_id, text, sender, is_own) VALUES ($1, $2, $3, $4) RETURNING *`,
             [chatId, text, sender, isOwn]
         );
         await pool.query('UPDATE chats SET last_message = $1 WHERE id = $2', [text, chatId]);
+        sendMessagePushToRecipient(recipientId, senderName, text, chatId);
         res.status(201).json(rows[0]);
     } catch (err) {
         next(err);
