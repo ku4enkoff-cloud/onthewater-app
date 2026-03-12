@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api';
+import api, { getUser } from '../api';
 import styles from './Table.module.css';
 import Modal from '../components/Modal';
 import modalStyles from '../components/Modal.module.css';
@@ -76,6 +76,24 @@ export default function Users() {
       setSaving(false);
     }
   };
+
+  const handleDelete = async () => {
+    if (!editing || !confirm(`Удалить пользователя ${editing.email || editing.id}? Данные будут безвозвратно удалены.`)) return;
+    setDeleting(true);
+    setError('');
+    try {
+      await api.delete(`/admin/users/${editing.id}`);
+      setEditing(null);
+      load();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Ошибка удаления');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const currentUser = getUser();
+  const isSelf = editing && currentUser && editing.id === currentUser.id;
 
   if (loading) return <div className={styles.loading}>Загрузка…</div>;
 
@@ -243,6 +261,17 @@ export default function Users() {
               </select>
             </div>
             <div className={modalStyles.actions}>
+              {!isSelf && (
+                <button
+                  type="button"
+                  className={`${modalStyles.btn} ${modalStyles.btnDanger}`}
+                  onClick={handleDelete}
+                  disabled={deleting || saving}
+                  style={{ marginRight: 'auto' }}
+                >
+                  {deleting ? 'Удаление…' : 'Удалить'}
+                </button>
+              )}
               <button type="button" className={`${modalStyles.btn} ${modalStyles.btnSecondary}`} onClick={() => setEditing(null)}>Отмена</button>
               <button type="submit" className={modalStyles.btn} disabled={saving}>{saving ? 'Сохранение…' : 'Сохранить'}</button>
             </div>

@@ -496,4 +496,18 @@ router.patch('/users/:id', async (req, res, next) => {
     }
 });
 
+router.delete('/users/:id', async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        if (id === req.user.id) {
+            return res.status(400).json({ error: 'Нельзя удалить себя' });
+        }
+        const { rowCount } = await pool.query('DELETE FROM users WHERE id = $1', [id]);
+        if (rowCount === 0) return res.status(404).json({ error: 'Пользователь не найден' });
+        res.json({ ok: true });
+    } catch (err) {
+        next(err);
+    }
+});
+
 module.exports = router;

@@ -125,6 +125,15 @@
   background: #cbd5e1;
 }
 
+.btnDanger {
+  background: #dc3545;
+  color: #fff;
+}
+
+.btnDanger:hover {
+  background: #c82333;
+}
+
 .error {
   margin: 0 0 0.5rem;
   font-size: 0.85rem;
