@@ -139,7 +139,14 @@ const isStartTimeValid = (slot, durationMin, busyIntervals = []) => {
 const WEEKDAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const getWeekdayKey = (d) => WEEKDAY_KEYS[d.getDay()];
-const toDateKey = (d) => d.toISOString().split('T')[0];
+// Локальная дата YYYY-MM-DD (не UTC), чтобы не сдвигать день при разных часовых поясах
+const toLocalDateKey = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+};
+const toDateKey = (d) => toLocalDateKey(d);
 const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
 const getCalendarGrid = (monthDate) => {
@@ -454,8 +461,8 @@ export default function BoatDetailScreen({ route, navigation }) {
             await api.post('/bookings', {
                 boat_id: boat.id,
                 start_at: bookTime
-                    ? `${bookDate.toISOString().split('T')[0]}T${bookTime}:00`
-                    : bookDate.toISOString(),
+                    ? `${toLocalDateKey(bookDate)}T${bookTime}:00`
+                    : `${toLocalDateKey(bookDate)}T00:00:00`,
                 hours: bookHours,
                 passengers: bookPassengers,
                 captain: bookCaptain,
