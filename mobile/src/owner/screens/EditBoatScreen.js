@@ -64,7 +64,7 @@ let tierIdCounter = 1;
 
 const photoUrl = (src) => getPhotoUrl(src);
 
-const getMapHtml = (initLat, initLng) => {
+const getMapHtml = (initLat, initLng, withControls = true) => {
     const clat = (initLat != null && !isNaN(initLat)) ? initLat : 55.751244;
     const clng = (initLng != null && !isNaN(initLng)) ? initLng : 37.618423;
     const hasInit = initLat != null && initLng != null && !isNaN(initLat) && !isNaN(initLng);
@@ -84,7 +84,7 @@ const getMapHtml = (initLat, initLng) => {
 <div id="map"></div>
 <script>
 ymaps.ready(function(){
-  var map = new ymaps.Map('map',{center:[${clat},${clng}],zoom:10,controls:['zoomControl']});
+  var map = new ymaps.Map('map',{center:[${clat},${clng}],zoom:10,controls:${withControls ? "['zoomControl']" : "[]"}});
   var marker = null;
   ${initMarker}
   function reverseGeocode(lat, lng) {
@@ -110,6 +110,20 @@ ymaps.ready(function(){
 </script>
 </body>
 </html>`;
+};
+
+const shouldAllowMapRequest = (event) => {
+    try {
+        const url = event?.url || event?.mainDocumentURL || '';
+        if (!url) return true;
+        if (url.startsWith('about:blank') || url.startsWith('data:')) return true;
+        if (url.startsWith('https://api-maps.yandex.ru') || url.startsWith('https://nominatim.openstreetmap.org')) {
+            return true;
+        }
+        return false;
+    } catch (_) {
+        return true;
+    }
 };
 
 export default function EditBoatScreen({ route, navigation }) {
@@ -143,6 +157,10 @@ export default function EditBoatScreen({ route, navigation }) {
     const [mapCenterLat, setMapCenterLat] = useState(null);
     const [mapCenterLng, setMapCenterLng] = useState(null);
     const [mapReady, setMapReady] = useState(false);
+    const [mapModalVisible, setMapModalVisible] = useState(false);
+    const [mapModalReady, setMapModalReady] = useState(false);
+    const [modalMapCenterLat, setModalMapCenterLat] = useState(null);
+    const [modalMapCenterLng, setModalMapCenterLng] = useState(null);
     const webRef = useRef(null);
     const [pricePerHour, setPricePerHour] = useState('');
     const [weekendPrice, setWeekendPrice] = useState('');
@@ -631,8 +649,19 @@ export default function EditBoatScreen({ route, navigation }) {
 
                     {/* Location */}
                     <SectionIcon icon={MapPin} label="Расположение" />
-                    <Text style={s.sectionHint}>Нажмите на карту, чтобы указать местоположение.</Text>
-                    <View style={s.mapContainer}>
+                    <Text style={s.sectionHint}>Нажмите на карту, чтобы открыть карту и указать местоположение.</Text>
+                    <TouchableOpacity
+                        activeOpacity={0.9}
+                        style={s.mapContainer}
+                        onPress={() => {
+                            const centerLat = lat ?? mapCenterLat ?? 55.751244;
+                            const centerLng = lng ?? mapCenterLng ?? 37.618423;
+                            setModalMapCenterLat(centerLat);
+                            setModalMapCenterLng(centerLng);
+                            setMapModalVisible(true);
+                            setMapModalReady(false);
+                        }}
+                    >
                         {!mapReady && (
                             <View style={s.mapLoader}>
                                 <ActivityIndicator size="large" color={TEAL} />
@@ -641,7 +670,7 @@ export default function EditBoatScreen({ route, navigation }) {
                         )}
                         <WebView
                             ref={webRef}
-                            source={{ html: getMapHtml(mapCenterLat, mapCenterLng) }}
+                            source={{ html: getMapHtml(mapCenterLat, mapCenterLng, false) }}
                             style={[s.map, !mapReady && { opacity: 0 }]}
                             onMessage={onMapMessage}
                             onLoadEnd={() => setMapReady(true)}
@@ -649,14 +678,14 @@ export default function EditBoatScreen({ route, navigation }) {
                             domStorageEnabled
                             scrollEnabled={false}
                             nestedScrollEnabled={false}
+                            pointerEvents="none"
+                            onShouldStartLoadWithRequest={shouldAllowMapRequest}
                         />
-                        {lat != null && lng != null && (
-                            <View style={s.coordsBadge}>
-                                <MapPin size={14} color="#fff" />
-                                <Text style={s.coordsText}>{lat.toFixed(5)}, {lng.toFixed(5)}</Text>
-                            </View>
-                        )}
-                    </View>
+                        <View style={s.mapPreviewHint} pointerEvents="none">
+                            <MapPin size={16} color={TEAL} />
+                            <Text style={s.mapPreviewHintText}>Нажмите, чтобы открыть карту</Text>
+                        </View>
+                    </TouchableOpacity>
                     <View style={s.row}>
                         <View style={{ flex: 1 }}>
                             <Text style={s.smallLabel}>Страна</Text>
@@ -1043,6 +1072,74 @@ export default function EditBoatScreen({ route, navigation }) {
                 </ScrollView>
             </KeyboardAvoidingView>
 
+            {/* Модальное окно с картой */}
+            <Modal
+                visible={mapModalVisible}
+                animationType="slide"
+                transparent
+                onRequestClose={() => setMapModalVisible(false)}
+            >
+                <View style={[s.mapModalOverlay, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+                    <View style={s.mapModalContent}>
+                        <View style={s.mapModalHeader}>
+                            <Text style={s.mapModalTitle}>Укажите местоположение</Text>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setMapModalVisible(false);
+                                    if (lat != null && lng != null) {
+                                        setMapCenterLat(lat);
+                                        setMapCenterLng(lng);
+                                    }
+                                }}
+                                style={s.mapModalClose}
+                                hitSlop={12}
+                            >
+                                <X size={24} color="#1B365D" />
+                            </TouchableOpacity>
+                        </View>
+                        <View style={s.mapModalMapWrap}>
+                            {!mapModalReady && (
+                                <View style={[s.mapLoader, { position: 'absolute', zIndex: 2 }]}>
+                                    <ActivityIndicator size="large" color={TEAL} />
+                                    <Text style={s.mapLoaderText}>Загрузка карты...</Text>
+                                </View>
+                            )}
+                            <WebView
+                                key={`modal-map-${modalMapCenterLat}-${modalMapCenterLng}`}
+                                source={{ html: getMapHtml(modalMapCenterLat ?? 55.751244, modalMapCenterLng ?? 37.618423, true) }}
+                                style={[StyleSheet.absoluteFillObject, !mapModalReady && { opacity: 0 }]}
+                                onMessage={onMapMessage}
+                                onLoadEnd={() => setMapModalReady(true)}
+                                javaScriptEnabled
+                                domStorageEnabled
+                                scrollEnabled={false}
+                                nestedScrollEnabled={false}
+                                onShouldStartLoadWithRequest={shouldAllowMapRequest}
+                            />
+                            {lat != null && lng != null && (
+                                <View style={[s.coordsBadge, { bottom: 16, left: 16 }]}>
+                                    <MapPin size={14} color="#fff" />
+                                    <Text style={s.coordsText}>{lat.toFixed(5)}, {lng.toFixed(5)}</Text>
+                                </View>
+                            )}
+                        </View>
+                        <TouchableOpacity
+                            style={[s.mapModalDoneBtn, { marginBottom: insets.bottom || 16 }]}
+                            onPress={() => {
+                                setMapModalVisible(false);
+                                if (lat != null && lng != null) {
+                                    setMapCenterLat(lat);
+                                    setMapCenterLng(lng);
+                                }
+                            }}
+                            activeOpacity={0.85}
+                        >
+                            <Text style={s.mapModalDoneText}>Готово</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
             {/* Footer */}
             <View style={[s.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
                 <TouchableOpacity
@@ -1099,6 +1196,21 @@ const s = StyleSheet.create({
         paddingHorizontal: 10, paddingVertical: 5,
     },
     coordsText: { fontSize: 12, fontFamily: theme.fonts.medium, color: '#fff' },
+
+    mapModalOverlay: { flex: 1, backgroundColor: '#fff' },
+    mapModalContent: { flex: 1, paddingHorizontal: 20 },
+    mapModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+    mapModalTitle: { fontSize: 18, fontFamily: theme.fonts.semiBold, color: '#1B365D' },
+    mapModalClose: { padding: 4 },
+    mapModalMapWrap: { flex: 1, minHeight: 300, borderRadius: 14, overflow: 'hidden', backgroundColor: '#F3F4F6', marginVertical: 16 },
+    mapModalDoneBtn: { backgroundColor: TEAL, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
+    mapModalDoneText: { fontSize: 16, fontFamily: theme.fonts.semiBold, color: '#fff' },
+    mapPreviewHint: {
+        position: 'absolute', left: 0, right: 0, bottom: 0,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+        backgroundColor: 'rgba(255,255,255,0.92)', paddingVertical: 8,
+    },
+    mapPreviewHintText: { fontSize: 12, fontFamily: theme.fonts.medium, color: TEAL },
 
     calendarWrap: { marginBottom: 22, padding: 16, backgroundColor: '#F9FAFB', borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB' },
     monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 },

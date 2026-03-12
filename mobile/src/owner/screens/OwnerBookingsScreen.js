@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, FlatList, TouchableOpacity,
-    RefreshControl, ScrollView, Modal, Alert, Platform,
+    RefreshControl, ScrollView, Modal, Alert, Platform, TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, Pencil, ChevronLeft, ChevronRight, X } from 'lucide-react-native';
+import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, Pencil, ChevronLeft, ChevronRight, X, Ship } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 
@@ -72,6 +72,9 @@ export default function OwnerBookingsScreen() {
     const [showCalendarModal, setShowCalendarModal] = useState(false);
     const [calendarMonth, setCalendarMonth] = useState(() => new Date());
     const [showTimePicker, setShowTimePicker] = useState(false);
+    const [filterDate, setFilterDate] = useState(null);
+    const [filterBoatId, setFilterBoatId] = useState(null);
+    const [showFilterDatePicker, setShowFilterDatePicker] = useState(false);
 
     useEffect(() => { fetchBookings(); }, []);
 
@@ -89,10 +92,28 @@ export default function OwnerBookingsScreen() {
     const onRefresh = () => { setRefreshing(true); fetchBookings(); };
 
     const VISIBLE_STATUSES = ['pending', 'confirmed', 'completed', 'cancelled'];
+    const boatOptions = (() => {
+        const map = new Map();
+        bookings.forEach((b) => {
+            if (!b.boat_id || !b.boat_title) return;
+            if (!map.has(b.boat_id)) {
+                map.set(b.boat_id, String(b.boat_title));
+            }
+        });
+        return Array.from(map.entries()).map(([id, title]) => ({ id, title }));
+    })();
+
     const filtered = bookings.filter((b) => {
         if (!VISIBLE_STATUSES.includes(b.status)) return false;
-        if (activeTab === 'all') return true;
-        return b.status === activeTab;
+        if (activeTab !== 'all' && b.status !== activeTab) return false;
+        if (filterDate != null) {
+            const start = b.start_at || b.date_start;
+            if (!start) return false;
+            const d = new Date(start);
+            if (d.getFullYear() !== filterDate.getFullYear() || d.getMonth() !== filterDate.getMonth() || d.getDate() !== filterDate.getDate()) return false;
+        }
+        if (filterBoatId != null && b.boat_id !== filterBoatId) return false;
+        return true;
     });
 
     const getTabCount = (key) => {
@@ -306,6 +327,88 @@ export default function OwnerBookingsScreen() {
                 </ScrollView>
             </View>
 
+            {/* Filters */}
+            <View style={s.filtersWrap}>
+                <TouchableOpacity
+                    style={s.filterDateBtn}
+                    onPress={() => setShowFilterDatePicker(true)}
+                    activeOpacity={0.7}
+                >
+                    <Calendar size={18} color={filterDate ? TEAL : theme.colors.gray400} />
+                    <Text style={[s.filterDateText, filterDate && s.filterDateTextActive]}>
+                        {filterDate ? filterDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Любая дата'}
+                    </Text>
+                    {filterDate != null && (
+                        <TouchableOpacity hitSlop={8} onPress={() => setFilterDate(null)} style={s.filterClear}>
+                            <X size={16} color={theme.colors.gray500} />
+                        </TouchableOpacity>
+                    )}
+                </TouchableOpacity>
+                {boatOptions.length > 0 && (
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={s.filterBoatChips}
+                    >
+                        <TouchableOpacity
+                            style={[
+                                s.boatChip,
+                                filterBoatId == null && s.boatChipActive,
+                            ]}
+                            onPress={() => setFilterBoatId(null)}
+                            activeOpacity={0.7}
+                        >
+                            <Text
+                                style={[
+                                    s.boatChipText,
+                                    filterBoatId == null && s.boatChipTextActive,
+                                ]}
+                            >
+                                Все катера
+                            </Text>
+                        </TouchableOpacity>
+                        {boatOptions.map((boat) => {
+                            const active = filterBoatId === boat.id;
+                            return (
+                                <TouchableOpacity
+                                    key={boat.id}
+                                    style={[s.boatChip, active && s.boatChipActive]}
+                                    onPress={() => setFilterBoatId(boat.id)}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text
+                                        style={[
+                                            s.boatChipText,
+                                            active && s.boatChipTextActive,
+                                        ]}
+                                        numberOfLines={1}
+                                    >
+                                        {boat.title}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                )}
+            </View>
+            {showFilterDatePicker && (
+                <DateTimePicker
+                    value={filterDate || new Date()}
+                    mode="date"
+                    onChange={(_, d) => {
+                        setFilterDate(d || null);
+                        if (Platform.OS === 'android') setShowFilterDatePicker(false);
+                    }}
+                />
+            )}
+            {showFilterDatePicker && Platform.OS === 'ios' && (
+                <View style={s.filterDatePickerBar}>
+                    <TouchableOpacity onPress={() => setShowFilterDatePicker(false)}>
+                        <Text style={s.filterDatePickerDone}>Готово</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
             {/* Edit modal */}
             <Modal visible={editModalVisible} animationType="fade" transparent>
                 <TouchableOpacity
@@ -496,6 +599,59 @@ const s = StyleSheet.create({
         whiteSpace: 'nowrap',
     },
     tabTextActive: { color: TEAL, fontFamily: theme.fonts.semiBold },
+
+    filtersWrap: {
+        backgroundColor: '#fff',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: '#E5E7EB',
+        gap: 10,
+    },
+    filterDateBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        backgroundColor: '#F9FAFB',
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    filterDateText: { fontSize: 14, fontFamily: theme.fonts.regular, color: theme.colors.gray500, marginLeft: 8, flex: 1 },
+    filterDateTextActive: { color: TEAL, fontFamily: theme.fonts.medium },
+    filterBoatChips: { paddingTop: 4, paddingBottom: 2, gap: 8 },
+    boatChip: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        backgroundColor: '#F9FAFB',
+        marginRight: 8,
+    },
+    boatChipActive: {
+        backgroundColor: 'rgba(13,92,92,0.08)',
+        borderColor: TEAL,
+    },
+    boatChipText: {
+        fontSize: 13,
+        fontFamily: theme.fonts.regular,
+        color: theme.colors.gray600,
+    },
+    boatChipTextActive: {
+        fontFamily: theme.fonts.semiBold,
+        color: TEAL,
+    },
+    filterDatePickerBar: {
+        backgroundColor: '#fff',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        alignItems: 'flex-end',
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderTopColor: '#E5E7EB',
+    },
+    filterDatePickerDone: { fontSize: 16, fontFamily: theme.fonts.semiBold, color: TEAL },
 
     list: { paddingHorizontal: 20, paddingTop: 16 },
 
