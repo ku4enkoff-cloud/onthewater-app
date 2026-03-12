@@ -1,20 +1,24 @@
 import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import { api } from '../../shared/infrastructure/api';
+
+// expo-notifications не поддерживается в Expo Go (SDK 53+). Загружаем только для development build.
+const isExpoGo = Constants.appOwnership === 'expo';
 
 /**
  * Регистрирует Expo Push Token на сервере (клиент и владелец).
  * Учитывает pushEnabled: если false — токен на сервере очищается.
- * Push-уведомления работают только в development build, не в Expo Go.
+ * В Expo Go пропускается без ошибки (push работает только в development build).
  */
 export function useRegisterPushToken(user, pushEnabled) {
     const lastTokenRef = useRef(null);
 
     useEffect(() => {
         if (!user || Platform.OS !== 'android' && Platform.OS !== 'ios') return;
-        if (pushEnabled === undefined || pushEnabled === null) return; // ждём загрузки настроек
+        if (pushEnabled === undefined || pushEnabled === null) return;
+        if (isExpoGo) return; // Expo Go — push не поддерживается, не грузим expo-notifications
 
         let cancelled = false;
         (async () => {
@@ -24,7 +28,8 @@ export function useRegisterPushToken(user, pushEnabled) {
                     await api.post('/auth/push-token', { push_token: '' });
                     return;
                 }
-                if (!Device.isDevice) return; // Эмулятор — Expo Push не поддерживается
+                if (!Device.isDevice) return;
+                const Notifications = require('expo-notifications');
                 const { status: existing } = await Notifications.getPermissionsAsync();
                 let finalStatus = existing;
                 if (existing !== 'granted') {
