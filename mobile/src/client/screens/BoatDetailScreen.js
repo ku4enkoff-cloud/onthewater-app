@@ -116,7 +116,7 @@ const AMENITY_ICONS = {
 };
 
 const TIME_SLOTS = [];
-for (let h = 9; h <= 20; h++) {
+for (let h = 6; h <= 23; h++) {
     TIME_SLOTS.push(`${String(h).padStart(2, '0')}:00`);
     TIME_SLOTS.push(`${String(h).padStart(2, '0')}:30`);
 }
@@ -1376,7 +1376,12 @@ export default function BoatDetailScreen({ route, navigation }) {
                             <View>
                                 <Text style={bk.footerPrice}>{bookPrice.toLocaleString('ru-RU')} ₽</Text>
                             </View>
-                            <TouchableOpacity style={bk.submitBtn} onPress={submitBooking} activeOpacity={0.9}>
+                            <TouchableOpacity
+                                style={[bk.submitBtn, !bookTime && bk.submitBtnDisabled]}
+                                onPress={submitBooking}
+                                disabled={!bookTime}
+                                activeOpacity={0.9}
+                            >
                                 <Text style={bk.submitBtnText}>ЗАБРОНИРОВАТЬ</Text>
                             </TouchableOpacity>
                         </View>
@@ -2018,6 +2023,7 @@ const bk = StyleSheet.create({
     },
     footerPrice: { fontSize: 22, fontFamily: theme.fonts.bold, color: NAVY },
     submitBtn: { backgroundColor: NAVY, paddingVertical: 16, paddingHorizontal: 24, borderRadius: 12 },
+    submitBtnDisabled: { opacity: 0.5 },
     submitBtnText: { fontSize: 14, fontFamily: theme.fonts.bold, color: '#fff', letterSpacing: 0.5 },
 });
 
