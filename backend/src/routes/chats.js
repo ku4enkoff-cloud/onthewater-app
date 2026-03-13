@@ -106,6 +106,22 @@ router.patch('/:id/archive', authenticate, async (req, res, next) => {
     }
 });
 
+// Вернуть чат из архива (только для клиента — user_id)
+router.patch('/:id/unarchive', authenticate, async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        if (Number.isNaN(id)) return res.status(400).json({ error: 'Неверный id чата' });
+        const { rowCount } = await pool.query(
+            'UPDATE chats SET user_archived = false WHERE id = $1 AND user_id = $2',
+            [id, req.user.id]
+        );
+        if (rowCount === 0) return res.status(404).json({ error: 'Чат не найден' });
+        res.status(204).send();
+    } catch (err) {
+        next(err);
+    }
+});
+
 router.get('/:id/messages', authenticate, async (req, res, next) => {
     try {
         const id = parseInt(req.params.id, 10);

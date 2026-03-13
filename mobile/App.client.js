@@ -12,6 +12,7 @@ import {
     Jost_600SemiBold,
     Jost_700Bold,
 } from '@expo-google-fonts/jost';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { AuthProvider, AuthContext } from './src/shared/context/AuthContext';
 import { FavoritesProvider } from './src/shared/context/FavoritesContext';
@@ -189,19 +190,21 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <View style={{ flex: 1, backgroundColor: theme.colors.waveDark }} onLayout={onLayoutRootView}>
-        <ErrorBoundary>
-          <AuthProvider>
-            <NotificationsProvider>
-              <FavoritesProvider>
-                <ClientRoot />
-              <StatusBar style="auto" />
-              </FavoritesProvider>
-            </NotificationsProvider>
-          </AuthProvider>
-        </ErrorBoundary>
-      </View>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <View style={{ flex: 1, backgroundColor: theme.colors.waveDark }} onLayout={onLayoutRootView}>
+          <ErrorBoundary>
+            <AuthProvider>
+              <NotificationsProvider>
+                <FavoritesProvider>
+                  <ClientRoot />
+                  <StatusBar style="auto" />
+                </FavoritesProvider>
+              </NotificationsProvider>
+            </AuthProvider>
+          </ErrorBoundary>
+        </View>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
