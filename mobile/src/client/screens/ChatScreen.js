@@ -9,7 +9,7 @@ import {
     ActivityIndicator,
     Modal,
 } from 'react-native';
-import { Swipeable } from 'react-native-gesture-handler';
+import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
@@ -211,7 +211,7 @@ export default function ChatScreen({ navigation }) {
             )}
 
             <Modal visible={archiveModalVisible} animationType="slide" transparent onRequestClose={() => setArchiveModalVisible(false)}>
-                <View style={styles.modalOverlay}>
+                <GestureHandlerRootView style={styles.modalOverlay}>
                     <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setArchiveModalVisible(false)} />
                     <View style={[styles.archiveModal, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24, maxHeight: '90%' }]}>
                         <View style={styles.archiveModalHeader}>
@@ -283,7 +283,7 @@ export default function ChatScreen({ navigation }) {
                             />
                         )}
                     </View>
-                </View>
+                </GestureHandlerRootView>
             </Modal>
         </SafeAreaView>
     );
@@ -426,6 +426,7 @@ const styles = StyleSheet.create({
     modalOverlay: {
         flex: 1,
         justifyContent: 'flex-end',
+        backgroundColor: 'transparent',
     },
     modalBackdrop: {
         ...StyleSheet.absoluteFillObject,
