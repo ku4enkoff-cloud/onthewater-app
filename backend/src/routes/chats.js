@@ -17,7 +17,13 @@ async function sendMessagePushToRecipient(recipientId, senderName, textPreview, 
 
 router.get('/', authenticate, async (req, res, next) => {
     try {
-        const { rows } = await pool.query('SELECT * FROM chats WHERE user_id = $1 ORDER BY created_at DESC', [req.user.id]);
+        const showArchived = req.query.archived === '1';
+        const { rows } = await pool.query(
+            showArchived
+                ? 'SELECT * FROM chats WHERE user_id = $1 AND user_archived = true ORDER BY created_at DESC'
+                : 'SELECT * FROM chats WHERE user_id = $1 AND (user_archived = false OR user_archived IS NULL) ORDER BY created_at DESC',
+            [req.user.id]
+        );
         res.json(rows);
     } catch (err) {
         next(err);
@@ -84,13 +90,13 @@ router.get('/:id', authenticate, async (req, res, next) => {
     }
 });
 
-// Удалить чат (только для клиента — user_id)
-router.delete('/:id', authenticate, async (req, res, next) => {
+// Переместить чат в архив (только для клиента — user_id)
+router.patch('/:id/archive', authenticate, async (req, res, next) => {
     try {
         const id = parseInt(req.params.id, 10);
         if (Number.isNaN(id)) return res.status(400).json({ error: 'Неверный id чата' });
         const { rowCount } = await pool.query(
-            'DELETE FROM chats WHERE id = $1 AND user_id = $2',
+            'UPDATE chats SET user_archived = true WHERE id = $1 AND user_id = $2',
             [id, req.user.id]
         );
         if (rowCount === 0) return res.status(404).json({ error: 'Чат не найден' });

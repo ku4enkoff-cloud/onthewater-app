@@ -14,7 +14,7 @@ import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 import { AuthContext } from '../../shared/context/AuthContext';
 import UnauthorizedCard from '../../shared/components/UnauthorizedCard';
-import { MessageCircle, User, Archive, ChevronRight, Trash2 } from 'lucide-react-native';
+import { MessageCircle, User, Archive, ChevronRight } from 'lucide-react-native';
 
 export default function ChatScreen({ navigation }) {
     const insets = useSafeAreaInsets();
@@ -42,23 +42,23 @@ export default function ChatScreen({ navigation }) {
         (chat.owner_name || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const handleDeleteChat = async (item) => {
+    const handleArchiveChat = async (item) => {
         try {
-            await api.delete(`/chats/${item.id}`);
+            await api.patch(`/chats/${item.id}/archive`);
             setChats(prev => prev.filter(c => c.id !== item.id));
         } catch (e) {
-            console.log('Error deleting chat', e);
+            console.log('Error archiving chat', e);
         }
     };
 
     const renderRightActions = (item) => (
         <TouchableOpacity
-            style={styles.deleteAction}
-            onPress={() => handleDeleteChat(item)}
+            style={styles.archiveAction}
+            onPress={() => handleArchiveChat(item)}
             activeOpacity={0.8}
         >
-            <Trash2 size={22} color="#fff" strokeWidth={2} />
-            <Text style={styles.deleteActionText}>Удалить диалог</Text>
+            <Archive size={22} color="#fff" strokeWidth={2} />
+            <Text style={styles.archiveActionText}>Переместить в архив</Text>
         </TouchableOpacity>
     );
 
@@ -291,17 +291,18 @@ const styles = StyleSheet.create({
     },
     emptyTitle: { ...theme.typography.h2, color: theme.colors.gray900, marginBottom: theme.spacing.sm },
     emptySubtitle: { ...theme.typography.bodySm, color: theme.colors.gray500, textAlign: 'center' },
-    deleteAction: {
-        backgroundColor: '#DC2626',
+    archiveAction: {
+        backgroundColor: theme.colors.gray700,
         justifyContent: 'center',
         alignItems: 'center',
-        width: 100,
+        width: 120,
         marginBottom: 1,
     },
-    deleteActionText: {
+    archiveActionText: {
         color: '#fff',
-        fontSize: 12,
+        fontSize: 11,
         fontFamily: theme.fonts.semiBold,
         marginTop: 4,
+        textAlign: 'center',
     },
 });
