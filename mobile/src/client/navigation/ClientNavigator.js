@@ -8,6 +8,10 @@ import CityBoatsScreen from '../screens/CityBoatsScreen';
 import SearchResultsScreen from '../screens/SearchResultsScreen';
 import CityMapScreen from '../screens/CityMapScreen';
 import LocationSelectScreen from '../screens/LocationSelectScreen';
+import ClientAccountScreen from '../screens/ClientAccountScreen';
+import ClientAccountInfoScreen from '../screens/ClientAccountInfoScreen';
+import OwnerNotificationsScreen from '../../owner/screens/OwnerNotificationsScreen';
+import OwnerSupportScreen from '../../owner/screens/OwnerSupportScreen';
 import LoginScreen from '../../auth/screens/LoginScreen';
 import RegisterScreen from '../../auth/screens/RegisterScreen';
 
@@ -17,6 +21,10 @@ export default function ClientNavigator() {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="MainTabs" component={ClientTabs} />
+            <Stack.Screen name="ClientAccount" component={ClientAccountScreen} />
+            <Stack.Screen name="ClientAccountInfo" component={ClientAccountInfoScreen} />
+            <Stack.Screen name="ClientNotifications" component={OwnerNotificationsScreen} />
+            <Stack.Screen name="ClientSupport" component={OwnerSupportScreen} />
             <Stack.Screen name="BoatDetail" component={BoatDetailScreen} />
             <Stack.Screen name="BookingDetail" component={BookingDetailScreen} />
             <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />

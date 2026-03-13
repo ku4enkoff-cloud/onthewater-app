@@ -10,7 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../../shared/infrastructure/api';
 import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
 import { theme } from '../../shared/theme';
-import { User, Settings, Heart, HelpCircle, LogOut, ChevronRight, Calendar, Star, Shield, FileText, Bell, X, Pencil, Trash2, Lock } from 'lucide-react-native';
+import { User, Heart, HelpCircle, LogOut, ChevronRight, Calendar, Star, Shield, FileText, Bell, X, Pencil, Trash2, Lock } from 'lucide-react-native';
 
 export default function ProfileScreen({ navigation }) {
     const insets = useSafeAreaInsets();
@@ -182,7 +182,7 @@ export default function ProfileScreen({ navigation }) {
     const menuItems = [
         { id: 'bookings', icon: Calendar, title: 'Мои брони', onPress: () => navigation.navigate('Bookings') },
         { id: 'notifications', icon: Bell, title: 'Уведомления', onPress: () => setNotificationsModalVisible(true) },
-        { id: 'settings', icon: Settings, title: 'Настройки', onPress: () => {} },
+        { id: 'account', icon: User, title: 'Данные аккаунта', onPress: () => navigation.navigate('ClientAccountInfo') },
         { id: 'help', icon: HelpCircle, title: 'Помощь', onPress: () => {} },
         { id: 'privacy', icon: Shield, title: 'Политика конфиденциальности', onPress: () => {} },
         { id: 'terms', icon: FileText, title: 'Условия использования', onPress: () => {} },

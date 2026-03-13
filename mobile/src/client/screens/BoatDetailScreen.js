@@ -147,6 +147,29 @@ const isStartTimeValid = (slot, durationMin, busyIntervals = []) => {
     });
 };
 
+/** Возвращает слоты времени, доступные для бронирования: от начала работы до (конец работы - длительность) */
+const getAvailableTimeSlotsBySchedule = (boat, date, durationMin) => {
+    let startStr = '09:00';
+    let endStr = '20:00';
+    if (boat?.schedule_weekday_hours || boat?.schedule_weekend_hours) {
+        let sh = boat.schedule_weekday_hours;
+        if (typeof sh === 'string') try { sh = JSON.parse(sh); } catch { sh = null; }
+        let weh = boat.schedule_weekend_hours;
+        if (typeof weh === 'string') try { weh = JSON.parse(weh); } catch { weh = null; }
+        const isWeekend = date && (date.getDay() === 0 || date.getDay() === 6);
+        const schedule = isWeekend ? (weh && typeof weh === 'object' ? weh : sh) : (sh && typeof sh === 'object' ? sh : weh);
+        if (schedule && schedule.start) startStr = schedule.start;
+        if (schedule && schedule.end) endStr = schedule.end;
+    }
+    const startMin = slotToMinutes(startStr);
+    const endMin = slotToMinutes(endStr);
+    const latestStartMin = endMin - durationMin;
+    return TIME_SLOTS.filter((slot) => {
+        const slotMin = slotToMinutes(slot);
+        return slotMin >= startMin && slotMin <= latestStartMin;
+    });
+};
+
 // Календарь: Пн–Вс, рабочие дни катера и полностью занятые
 const WEEKDAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
@@ -1299,7 +1322,20 @@ export default function BoatDetailScreen({ route, navigation }) {
                             {/* Start time */}
                             <TouchableOpacity
                                 style={bk.inputField}
-                                onPress={() => { setPendingTime(bookTime); fetchBusyIntervals(bookDate); setBookShowTimePicker(true); }}
+                                onPress={() => {
+                                    const slots = getAvailableTimeSlotsBySchedule(boat, bookDate, bookHours);
+                                    let valid = slots.includes(bookTime);
+                                    if (valid && bookDate && bookTime) {
+                                        const now = new Date();
+                                        if (toLocalDateKey(bookDate) === toLocalDateKey(now)) {
+                                            const currMin = now.getHours() * 60 + now.getMinutes();
+                                            valid = slotToMinutes(bookTime) > currMin;
+                                        }
+                                    }
+                                    setPendingTime(valid ? bookTime : null);
+                                    fetchBusyIntervals(bookDate);
+                                    setBookShowTimePicker(true);
+                                }}
                                 activeOpacity={0.7}
                             >
                                 {bookTime ? (
@@ -1379,13 +1415,17 @@ export default function BoatDetailScreen({ route, navigation }) {
                             {busySlotsLoading ? (
                                 <ActivityIndicator size="small" color={NAVY} style={{ marginVertical: 4 }} />
                             ) : (
-                                <Text style={tp.hintText}>Показано текущее доступное время.</Text>
+                                <Text style={tp.hintText}>Доступное время — зелёным, недоступное — красным.</Text>
                             )}
                         </View>
                         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tp.grid}>
                             {TIME_SLOTS.map((slot) => {
-                                const isBusy = isSlotInBusyInterval(slot, busyIntervals);
-                                const canStart = isStartTimeValid(slot, bookHours, busyIntervals);
+                                const inSchedule = getAvailableTimeSlotsBySchedule(boat, bookDate, bookHours).includes(slot);
+                                const now = new Date();
+                                const isToday = bookDate && toLocalDateKey(bookDate) === toLocalDateKey(now);
+                                const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                                const isPast = isToday && slotToMinutes(slot) <= currentMinutes;
+                                const canStart = !isPast && inSchedule && isStartTimeValid(slot, bookHours, busyIntervals);
                                 const isSelected = pendingTime === slot;
                                 const disabled = !canStart;
                                 return (
@@ -1394,7 +1434,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                                         style={[
                                             tp.slot,
                                             isSelected && tp.slotSelected,
-                                            isBusy && tp.slotBusy,
+                                            !canStart && tp.slotUnavailable,
                                             canStart && !isSelected && tp.slotAvailable,
                                         ]}
                                         onPress={() => { if (canStart) setPendingTime(slot); }}
@@ -1405,7 +1445,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                                             style={[
                                                 tp.slotText,
                                                 isSelected && tp.slotTextSelected,
-                                                isBusy && tp.slotTextBusy,
+                                                !canStart && tp.slotTextUnavailable,
                                                 canStart && !isSelected && tp.slotTextAvailable,
                                             ]}
                                         >
@@ -2007,11 +2047,11 @@ const tp = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff',
     },
     slotSelected: { backgroundColor: '#E8EDF5', borderColor: NAVY },
-    slotBusy: { backgroundColor: '#FFF0F0', borderColor: '#F5B5B5' },
+    slotUnavailable: { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' },
     slotAvailable: { backgroundColor: '#ECFDF5', borderColor: '#6EE7B7' },
     slotText: { fontSize: 15, fontFamily: theme.fonts.medium, color: NAVY },
     slotTextSelected: { fontFamily: theme.fonts.bold, color: NAVY },
-    slotTextBusy: { color: '#D94040', textDecorationLine: 'line-through' },
+    slotTextUnavailable: { color: '#DC2626', textDecorationLine: 'line-through' },
     slotTextAvailable: { color: '#047857', fontFamily: theme.fonts.semiBold },
     footer: { paddingHorizontal: 20, paddingTop: 8 },
     applyBtn: {
