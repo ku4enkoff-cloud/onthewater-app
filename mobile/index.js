@@ -1,4 +1,5 @@
 // Точка входа: загружаем приложение клиента или владельца и регистрируем в Expo
+import 'react-native-gesture-handler';
 import { registerRootComponent } from 'expo';
 import Constants from 'expo-constants';
 

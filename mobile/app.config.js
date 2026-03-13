@@ -14,7 +14,7 @@ export default {
     userInterfaceStyle: 'light',
     splash: {
       image: isOwner ? './assets/splash-owner.png' : './assets/splash.png',
-      resizeMode: 'contain',
+      resizeMode: 'cover',
       backgroundColor: isOwner ? '#0a6e82' : '#1B365D',
     },
     ios: {

@@ -8,12 +8,13 @@ import {
     Image,
     ActivityIndicator,
 } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 import { AuthContext } from '../../shared/context/AuthContext';
 import UnauthorizedCard from '../../shared/components/UnauthorizedCard';
-import { MessageCircle, User, Archive, ChevronRight } from 'lucide-react-native';
+import { MessageCircle, User, Archive, ChevronRight, Trash2 } from 'lucide-react-native';
 
 export default function ChatScreen({ navigation }) {
     const insets = useSafeAreaInsets();
@@ -41,6 +42,26 @@ export default function ChatScreen({ navigation }) {
         (chat.owner_name || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const handleDeleteChat = async (item) => {
+        try {
+            await api.delete(`/chats/${item.id}`);
+            setChats(prev => prev.filter(c => c.id !== item.id));
+        } catch (e) {
+            console.log('Error deleting chat', e);
+        }
+    };
+
+    const renderRightActions = (item) => (
+        <TouchableOpacity
+            style={styles.deleteAction}
+            onPress={() => handleDeleteChat(item)}
+            activeOpacity={0.8}
+        >
+            <Trash2 size={22} color="#fff" strokeWidth={2} />
+            <Text style={styles.deleteActionText}>Удалить диалог</Text>
+        </TouchableOpacity>
+    );
+
     const renderChatItem = ({ item }) => {
         const isLastFromMe = item.last_message_is_own || item.last_message_sender === 'me';
         const lastMessageText = item.last_message || '—';
@@ -55,6 +76,11 @@ export default function ChatScreen({ navigation }) {
         const statusLabel = item.status_label || item.status_text || item.status;
 
         return (
+            <Swipeable
+                renderRightActions={() => renderRightActions(item)}
+                overshootRight={false}
+                friction={2}
+            >
             <TouchableOpacity
                 style={styles.chatItem}
                 onPress={() => navigation.navigate('ChatDetail', { chatId: item.id })}
@@ -99,6 +125,7 @@ export default function ChatScreen({ navigation }) {
                     </View>
                 </View>
             </TouchableOpacity>
+            </Swipeable>
         );
     };
 
@@ -264,4 +291,17 @@ const styles = StyleSheet.create({
     },
     emptyTitle: { ...theme.typography.h2, color: theme.colors.gray900, marginBottom: theme.spacing.sm },
     emptySubtitle: { ...theme.typography.bodySm, color: theme.colors.gray500, textAlign: 'center' },
+    deleteAction: {
+        backgroundColor: '#DC2626',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 100,
+        marginBottom: 1,
+    },
+    deleteActionText: {
+        color: '#fff',
+        fontSize: 12,
+        fontFamily: theme.fonts.semiBold,
+        marginTop: 4,
+    },
 });
