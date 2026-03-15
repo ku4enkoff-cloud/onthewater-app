@@ -8,6 +8,7 @@ import { FavoritesContext } from '../../shared/context/FavoritesContext';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../../shared/infrastructure/api';
+import { registerPushTokenNow } from '../hooks/useRegisterPushToken';
 import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
 import { theme } from '../../shared/theme';
 import { User, Heart, HelpCircle, LogOut, ChevronRight, Calendar, Star, Shield, FileText, Bell, X, Pencil, Trash2, Lock } from 'lucide-react-native';
@@ -394,11 +395,27 @@ export default function ProfileScreen({ navigation }) {
                             style={styles.pushTestButton}
                             onPress={async () => {
                                 try {
-                                    const { data } = await api.post('/auth/push-test');
+                                    let res = await api.post('/auth/push-test');
+                                    const data = res.data;
                                     Alert.alert(data.ok ? 'Готово' : 'Ошибка', data.message || (data.ok ? 'Уведомление отправлено.' : 'Не удалось отправить.'));
                                 } catch (e) {
                                     const status = e.response?.status;
-                                    let msg = e.response?.data?.error || e.message || 'Ошибка запроса';
+                                    const msgFromServer = e.response?.data?.error || '';
+                                    if (status === 400 && (msgFromServer.includes('не зарегистрирован') || msgFromServer.includes('Push-токен'))) {
+                                        const registered = await registerPushTokenNow();
+                                        if (registered) {
+                                            try {
+                                                const retry = await api.post('/auth/push-test');
+                                                Alert.alert(retry.data?.ok ? 'Готово' : 'Ошибка', retry.data?.message || 'Уведомление отправлено.');
+                                            } catch (err2) {
+                                                Alert.alert('Ошибка', err2.response?.data?.error || err2.message || 'Не удалось отправить.');
+                                            }
+                                        } else {
+                                            Alert.alert('Ошибка', 'Не удалось зарегистрировать устройство для push. Проверьте: приложение не Expo Go, разрешения уведомлений включены, интернет есть.');
+                                        }
+                                        return;
+                                    }
+                                    let msg = msgFromServer || e.message || 'Ошибка запроса';
                                     if (status === 404) {
                                         msg = 'Маршрут не найден (404). Задеплойте обновлённый бэкенд с эндпоинтом POST /auth/push-test.';
                                     }
