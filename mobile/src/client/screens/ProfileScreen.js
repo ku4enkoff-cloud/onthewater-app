@@ -402,8 +402,8 @@ export default function ProfileScreen({ navigation }) {
                                     const status = e.response?.status;
                                     const msgFromServer = e.response?.data?.error || '';
                                     if (status === 400 && (msgFromServer.includes('не зарегистрирован') || msgFromServer.includes('Push-токен'))) {
-                                        const registered = await registerPushTokenNow();
-                                        if (registered) {
+                                        const result = await registerPushTokenNow();
+                                        if (result.ok) {
                                             try {
                                                 const retry = await api.post('/auth/push-test');
                                                 Alert.alert(retry.data?.ok ? 'Готово' : 'Ошибка', retry.data?.message || 'Уведомление отправлено.');
@@ -411,7 +411,7 @@ export default function ProfileScreen({ navigation }) {
                                                 Alert.alert('Ошибка', err2.response?.data?.error || err2.message || 'Не удалось отправить.');
                                             }
                                         } else {
-                                            Alert.alert('Ошибка', 'Не удалось зарегистрировать устройство для push. Проверьте: приложение не Expo Go, разрешения уведомлений включены, интернет есть.');
+                                            Alert.alert('Ошибка', result.reason || 'Не удалось зарегистрировать устройство для push.');
                                         }
                                         return;
                                     }

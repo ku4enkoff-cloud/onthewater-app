@@ -152,8 +152,14 @@ router.post('/push-test', authenticate, async (req, res, next) => {
         if (!token) {
             return res.status(400).json({ error: 'Push-токен не зарегистрирован. Включите уведомления в приложении и перезайдите.' });
         }
-        const ok = await sendPush(token, 'ONTHEWATER', 'Тестовое уведомление — всё работает.', { type: 'test' });
-        res.json({ ok: !!ok, message: ok ? 'Уведомление отправлено.' : 'Ошибка отправки. Проверьте токен и логи сервера.' });
+        const result = await sendPush(token, 'ONTHEWATER', 'Тестовое уведомление — всё работает.', { type: 'test' });
+        if (result.ok) {
+            return res.json({ ok: true, message: 'Уведомление отправлено.' });
+        }
+        const msg = result.details?.error === 'DeviceNotRegistered'
+            ? 'Устройство не зарегистрировано в FCM. Включите push в настройках приложения и нажмите «Отправить тестовое уведомление» снова.'
+            : (result.error || 'Ошибка отправки. Проверьте логи сервера.');
+        res.json({ ok: false, message: msg });
     } catch (err) {
         next(err);
     }

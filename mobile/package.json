@@ -62,6 +62,7 @@
     "@babel/core": "^7.20.0",
     "@react-native-community/cli": "latest",
     "cross-env": "^7.0.3",
+    "eas-cli": "latest",
     "patch-package": "^8.0.1"
   },
   "private": true
