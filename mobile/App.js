@@ -17,7 +17,7 @@ import RootNavigator from './src/navigation/RootNavigator';
 
 SplashScreen.preventAutoHideAsync();
 
-// Показывать push и когда приложение открыто (foreground)
+// Показывать push и когда приложение открыто (foreground); канал Android с высоким приоритетом
 if (Platform.OS !== 'web' && Constants.appOwnership !== 'expo') {
   try {
     const Notifications = require('expo-notifications');
@@ -30,6 +30,14 @@ if (Platform.OS !== 'web' && Constants.appOwnership !== 'expo') {
         shouldShowList: true,
       }),
     });
+    if (Platform.OS === 'android' && Notifications.setNotificationChannelAsync) {
+      Notifications.setNotificationChannelAsync('default', {
+        name: 'Уведомления',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#1B365D',
+      }).catch(() => {});
+    }
   } catch (_) {}
 }
 
