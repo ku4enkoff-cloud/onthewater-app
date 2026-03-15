@@ -397,7 +397,11 @@ export default function ProfileScreen({ navigation }) {
                                     const { data } = await api.post('/auth/push-test');
                                     Alert.alert(data.ok ? 'Готово' : 'Ошибка', data.message || (data.ok ? 'Уведомление отправлено.' : 'Не удалось отправить.'));
                                 } catch (e) {
-                                    const msg = e.response?.data?.error || e.message || 'Ошибка запроса';
+                                    const status = e.response?.status;
+                                    let msg = e.response?.data?.error || e.message || 'Ошибка запроса';
+                                    if (status === 404) {
+                                        msg = 'Маршрут не найден (404). Задеплойте обновлённый бэкенд с эндпоинтом POST /auth/push-test.';
+                                    }
                                     Alert.alert('Ошибка', msg);
                                 }
                             }}
