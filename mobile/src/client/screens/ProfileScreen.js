@@ -390,6 +390,21 @@ export default function ProfileScreen({ navigation }) {
                             <Text style={styles.notificationLabel}>Push-уведомления</Text>
                             <Switch value={pushEnabled !== false} onValueChange={setPushEnabled} trackColor={{ false: theme.colors.gray300, true: theme.colors.primary }} thumbColor="#fff" />
                         </View>
+                        <TouchableOpacity
+                            style={styles.pushTestButton}
+                            onPress={async () => {
+                                try {
+                                    const { data } = await api.post('/auth/push-test');
+                                    Alert.alert(data.ok ? 'Готово' : 'Ошибка', data.message || (data.ok ? 'Уведомление отправлено.' : 'Не удалось отправить.'));
+                                } catch (e) {
+                                    const msg = e.response?.data?.error || e.message || 'Ошибка запроса';
+                                    Alert.alert('Ошибка', msg);
+                                }
+                            }}
+                            disabled={pushEnabled === false}
+                        >
+                            <Text style={styles.pushTestButtonText}>Отправить тестовое уведомление</Text>
+                        </TouchableOpacity>
                     </ScrollView>
                 </View>
             </View>
@@ -525,4 +540,6 @@ const styles = StyleSheet.create({
     notificationRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.gray100 },
     notificationRowLeft: { flexDirection: 'row', alignItems: 'center' },
     notificationLabel: { fontSize: 16, fontFamily: theme.fonts.medium, color: theme.colors.gray900 },
+    pushTestButton: { marginTop: 16, paddingVertical: 12, paddingHorizontal: 16, backgroundColor: theme.colors.primary, borderRadius: 12, alignSelf: 'flex-start' },
+    pushTestButtonText: { fontSize: 15, fontFamily: theme.fonts.medium, color: '#fff' },
 });

@@ -8,6 +8,7 @@ const { authLimiter } = require('../middleware/rateLimiter');
 const { registerSchema, loginSchema } = require('../schemas');
 const { generateToken } = require('../utils/jwt');
 const { authenticate } = require('../middleware/auth');
+const { sendPush } = require('../utils/push');
 
 const router = express.Router();
 
@@ -138,6 +139,21 @@ router.post('/push-token', authenticate, async (req, res, next) => {
             [token || null, req.user.id]
         );
         res.json({ ok: true });
+    } catch (err) {
+        next(err);
+    }
+});
+
+// Отправить тестовое push-уведомление текущему пользователю (для проверки)
+router.post('/push-test', authenticate, async (req, res, next) => {
+    try {
+        const { rows } = await pool.query('SELECT push_token FROM users WHERE id = $1', [req.user.id]);
+        const token = rows[0]?.push_token;
+        if (!token) {
+            return res.status(400).json({ error: 'Push-токен не зарегистрирован. Включите уведомления в приложении и перезайдите.' });
+        }
+        const ok = await sendPush(token, 'ONTHEWATER', 'Тестовое уведомление — всё работает.', { type: 'test' });
+        res.json({ ok: !!ok, message: ok ? 'Уведомление отправлено.' : 'Ошибка отправки. Проверьте токен и логи сервера.' });
     } catch (err) {
         next(err);
     }
