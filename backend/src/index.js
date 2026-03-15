@@ -82,6 +82,7 @@ app.get('/suggest', async (req, res) => {
             format: 'json',
             addressdetails: 1,
             limit: 10,
+            countrycodes: 'ru',
         });
         const r = await fetch(`https://nominatim.openstreetmap.org/search?${q.toString()}`, {
             headers: { 'User-Agent': NOMINATIM_UA },
