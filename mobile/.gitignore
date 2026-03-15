@@ -18,3 +18,5 @@ local.properties
 # Firebase: не коммитить в открытый репозиторий (предупреждения Google)
 google-services.json
 **/google-services.json
+# Ключ сервисного аккаунта (FCM / EAS) — секрет
+*-firebase-adminsdk-*.json
