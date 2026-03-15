@@ -26,6 +26,7 @@ async function sendPush(pushToken, title, body, data = {}) {
         priority: 'high',
         channelId: 'default',
     };
+    
 
     try {
         const res = await fetch(EXPO_PUSH_URL, {
