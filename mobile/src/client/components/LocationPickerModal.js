@@ -16,51 +16,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Search, MapPin, Navigation } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
-import { API_BASE, YANDEX_GEO_SUGGEST_API_KEY } from '../../shared/infrastructure/config';
+import { API_BASE } from '../../shared/infrastructure/config';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const YANDEX_SUGGEST_URL = 'https://suggest-maps.yandex.ru/v1/suggest';
-
-/** Подсказки через бэкенд (прокси) — обход 403 по Referer в мобильном приложении */
-async function fetchSuggestViaBackend(text) {
+/** Подсказки городов через бэкенд (OpenStreetMap Nominatim) */
+async function fetchSuggest(text) {
     const res = await fetch(`${API_BASE.replace(/\/$/, '')}/suggest?text=${encodeURIComponent(text.trim())}`);
-    if (!res.ok) return null;
+    if (!res.ok) return [];
     const data = await res.json().catch(() => null);
-    return Array.isArray(data?.results) ? data.results : null;
-}
-
-/** Прямой запрос к Yandex Geosuggest (может давать 403 при ограничении по Referer) */
-async function fetchYandexGeosuggestDirect(text, apiKey) {
-    if (!text?.trim() || !apiKey?.trim()) return [];
-    const params = new URLSearchParams({
-        apikey: apiKey.trim(),
-        text: text.trim(),
-        types: 'country,province,locality',
-        lang: 'ru',
-        results: '10',
-    });
-    const res = await fetch(`${YANDEX_SUGGEST_URL}?${params.toString()}`);
-    if (!res.ok) {
-        const errBody = await res.text();
-        const err = new Error(`Geosuggest ${res.status}`);
-        err.status = res.status;
-        err.body = errBody;
-        throw err;
-    }
-    const data = await res.json();
     return Array.isArray(data?.results) ? data.results : [];
 }
 
-/** Сначала прокси бэкенда, при недоступности — прямой запрос к Yandex */
-async function fetchSuggestResults(text, apiKey) {
-    const viaBackend = await fetchSuggestViaBackend(text);
-    if (viaBackend !== null) return viaBackend;
-    return fetchYandexGeosuggestDirect(text, apiKey);
-}
-
-/** Из ответа Geosuggest: title.text или title — название (город или "город, регион") */
-function cityNameFromGeosuggestItem(item) {
+/** Из ответа suggest (title.text или title) — название города/региона */
+function cityNameFromSuggestItem(item) {
     const title = item?.title;
     const t = (typeof title === 'string' ? title : title?.text || '').trim();
     return t.split(',')[0]?.trim() || t;
@@ -154,14 +123,14 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
         let cancelled = false;
         setLoadingSuggest(true);
 
-        fetchSuggestResults(debouncedQuery.trim(), YANDEX_GEO_SUGGEST_API_KEY)
+        fetchSuggest(debouncedQuery.trim())
             .then((raw) => {
                 if (cancelled) return;
                 const citiesSet = citiesSetRef.current;
                 const seen = new Set();
                 const list = [];
                 for (const item of raw || []) {
-                    const city = cityNameFromGeosuggestItem(item);
+                    const city = cityNameFromSuggestItem(item);
                     const cityNorm = city.trim().toLowerCase();
                     if (!cityNorm || seen.has(cityNorm)) continue;
                     seen.add(cityNorm);
@@ -182,16 +151,7 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
                 }
             })
             .catch((e) => {
-                if (__DEV__) {
-                    if (e?.status === 403) {
-                        console.warn(
-                            'Yandex Geosuggest 403: проверьте ключ в developer.tech.yandex.ru — включите «Геословарь» (Geosuggest) для ключа и снимите ограничение по HTTP referer для мобильного приложения.',
-                            e?.body || ''
-                        );
-                    } else {
-                        console.warn('Yandex Geosuggest error:', e);
-                    }
-                }
+                if (__DEV__) console.warn('Suggest error:', e?.message || e);
                 fallbackOnlyLocal();
             })
             .finally(() => {
