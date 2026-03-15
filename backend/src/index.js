@@ -57,29 +57,63 @@ app.get('/', (req, res) => res.json({
 }));
 app.get('/health', (req, res) => res.json({ ok: true }));
 
-// Прокси подсказок городов Yandex Geosuggest (обход 403 по Referer: запрос с сервера с заголовком Referer)
+// Подсказки городов: сначала Yandex Geosuggest, при 403 — fallback на OpenStreetMap Nominatim (без ключа)
 const YANDEX_SUGGEST_API_KEY = (process.env.YANDEX_GEO_SUGGEST_API_KEY || '').trim();
 const YANDEX_REFERER = (process.env.APP_URL || process.env.YANDEX_GEO_SUGGEST_REFERER || 'https://api.onthewater.ru').replace(/\/$/, '') + '/';
+const NOMINATIM_UA = 'ONTHEWATER/1.0 (contact@onthewater.ru)';
+
+function mapNominatimToSuggest(nominatimList) {
+    const seen = new Set();
+    return (nominatimList || []).filter((item) => {
+        const name = (item.address?.city || item.address?.town || item.address?.state || item.address?.country || item.display_name || '').trim();
+        const key = name.toLowerCase();
+        if (!name || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    }).slice(0, 10).map((item) => ({
+        title: { text: (item.address?.city || item.address?.town || item.address?.state || item.address?.country || item.display_name || '').trim() },
+    }));
+}
+
 app.get('/suggest', async (req, res) => {
     const text = (req.query.text || '').trim();
     if (!text) return res.status(400).json({ error: 'Missing text' });
-    if (!YANDEX_SUGGEST_API_KEY) return res.status(503).json({ error: 'Geosuggest not configured' });
+
+    if (YANDEX_SUGGEST_API_KEY) {
+        try {
+            const params = new URLSearchParams({
+                apikey: YANDEX_SUGGEST_API_KEY,
+                text,
+                types: 'country,province,locality',
+                lang: 'ru',
+                results: '10',
+            });
+            const r = await fetch(`https://suggest-maps.yandex.ru/v1/suggest?${params.toString()}`, {
+                headers: { Referer: YANDEX_REFERER },
+            });
+            const data = await r.json().catch(() => ({}));
+            if (r.ok) return res.json(data);
+            if (r.status === 403) console.warn('[suggest] Yandex 403, using Nominatim fallback');
+        } catch (e) {
+            console.warn('[suggest] Yandex error:', e?.message || e);
+        }
+    }
+
     try {
-        const params = new URLSearchParams({
-            apikey: YANDEX_SUGGEST_API_KEY,
-            text,
-            types: 'country,province,locality',
-            lang: 'ru',
-            results: '10',
+        const q = new URLSearchParams({
+            q: text,
+            format: 'json',
+            addressdetails: 1,
+            limit: 10,
         });
-        const r = await fetch(`https://suggest-maps.yandex.ru/v1/suggest?${params.toString()}`, {
-            headers: { Referer: YANDEX_REFERER },
+        const r = await fetch(`https://nominatim.openstreetmap.org/search?${q.toString()}`, {
+            headers: { 'User-Agent': NOMINATIM_UA },
         });
-        const data = await r.json().catch(() => ({}));
-        if (!r.ok) return res.status(r.status).json(data || { error: 'Yandex error' });
-        res.json(data);
+        const list = await r.json().catch(() => []);
+        const results = mapNominatimToSuggest(Array.isArray(list) ? list : []);
+        return res.json({ results });
     } catch (e) {
-        console.warn('[suggest]', e?.message || e);
+        console.warn('[suggest] Nominatim error:', e?.message || e);
         res.status(502).json({ error: 'Suggest unavailable' });
     }
 });
