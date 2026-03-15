@@ -132,7 +132,7 @@ export default function ProfileScreen() {
             {/* Версия приложения */}
             <View style={styles.versionContainer}>
                 <Text style={[theme.typography.caption, { color: theme.colors.textMuted }]}>
-                    ONTHEWATER v1.0.0
+                    ONTHEWATER v2.0.0
                 </Text>
             </View>
         </ScrollView>

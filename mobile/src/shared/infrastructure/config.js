@@ -50,8 +50,7 @@ if (__DEV__) {
 export const YANDEX_GEO_SUGGEST_API_KEY =
     (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_YANDEX_GEO_SUGGEST_API_KEY) ||
     (typeof Constants !== 'undefined' && Constants.expoConfig?.extra?.yandexGeosuggestApiKey) ||
-    (typeof Constants !== 'undefined' && Constants.expoConfig?.extra?.yandexMapkitApiKey) ||
-    '84448445-01d9-454b-8398-9adaaf19ad61';
+    '5cf2910a-9463-4be8-a6c9-81c7f5f0abef';
 
 /** Yandex MapKit API key for map tiles. Get at https://developer.tech.yandex.com/ — включите «MapKit» для ключа и укажите пакет com.anonymous.onthewater. */
 export const YANDEX_MAPKIT_API_KEY =

@@ -11,24 +11,59 @@ import {
     KeyboardAvoidingView,
     Platform,
     Dimensions,
-    NativeModules,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Search, MapPin, Navigation } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
+import { API_BASE, YANDEX_GEO_SUGGEST_API_KEY } from '../../shared/infrastructure/config';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const isMapKitSuggestAvailable = NativeModules.YamapSuggests != null;
-let SuggestModule = null;
-let SuggestTypes = null;
-if (isMapKitSuggestAvailable) {
-    try {
-        const yamap = require('react-native-yamap');
-        SuggestModule = yamap.Suggest;
-        SuggestTypes = yamap.SuggestTypes;
-    } catch (_) {}
+const YANDEX_SUGGEST_URL = 'https://suggest-maps.yandex.ru/v1/suggest';
+
+/** Подсказки через бэкенд (прокси) — обход 403 по Referer в мобильном приложении */
+async function fetchSuggestViaBackend(text) {
+    const res = await fetch(`${API_BASE.replace(/\/$/, '')}/suggest?text=${encodeURIComponent(text.trim())}`);
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => null);
+    return Array.isArray(data?.results) ? data.results : null;
+}
+
+/** Прямой запрос к Yandex Geosuggest (может давать 403 при ограничении по Referer) */
+async function fetchYandexGeosuggestDirect(text, apiKey) {
+    if (!text?.trim() || !apiKey?.trim()) return [];
+    const params = new URLSearchParams({
+        apikey: apiKey.trim(),
+        text: text.trim(),
+        types: 'country,province,locality',
+        lang: 'ru',
+        results: '10',
+    });
+    const res = await fetch(`${YANDEX_SUGGEST_URL}?${params.toString()}`);
+    if (!res.ok) {
+        const errBody = await res.text();
+        const err = new Error(`Geosuggest ${res.status}`);
+        err.status = res.status;
+        err.body = errBody;
+        throw err;
+    }
+    const data = await res.json();
+    return Array.isArray(data?.results) ? data.results : [];
+}
+
+/** Сначала прокси бэкенда, при недоступности — прямой запрос к Yandex */
+async function fetchSuggestResults(text, apiKey) {
+    const viaBackend = await fetchSuggestViaBackend(text);
+    if (viaBackend !== null) return viaBackend;
+    return fetchYandexGeosuggestDirect(text, apiKey);
+}
+
+/** Из ответа Geosuggest: title.text или title — название (город или "город, регион") */
+function cityNameFromGeosuggestItem(item) {
+    const title = item?.title;
+    const t = (typeof title === 'string' ? title : title?.text || '').trim();
+    return t.split(',')[0]?.trim() || t;
 }
 
 function useDebounce(value, delay) {
@@ -38,12 +73,6 @@ function useDebounce(value, delay) {
         return () => clearTimeout(t);
     }, [value, delay]);
     return debouncedValue;
-}
-
-/** Из ответа MapKit Suggest: title — название (город или "город, регион"), subtitle — доп. строка */
-function cityNameFromMapKitItem(item) {
-    const t = (item?.title || '').trim();
-    return t.split(',')[0]?.trim() || t;
 }
 
 export default function LocationPickerModal({ visible, onClose, onSelect }) {
@@ -105,25 +134,7 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
             fetchLocationList();
             setQuery('');
             setSuggestions([]);
-            if (SuggestModule?.reset) {
-                try {
-                    const maybePromise = SuggestModule.reset();
-                    if (maybePromise && typeof maybePromise.catch === 'function') {
-                        maybePromise.catch(() => {});
-                    }
-                } catch (_) {}
-            }
         }
-        return () => {
-            if (SuggestModule?.reset) {
-                try {
-                    const maybePromise = SuggestModule.reset();
-                    if (maybePromise && typeof maybePromise.catch === 'function') {
-                        maybePromise.catch(() => {});
-                    }
-                } catch (_) {}
-            }
-        };
     }, [visible, fetchLocationList]);
 
     useEffect(() => {
@@ -140,20 +151,17 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
             setLoadingSuggest(false);
         };
 
-        if (!SuggestModule?.suggest) {
-            fallbackOnlyLocal();
-            return;
-        }
-
+        let cancelled = false;
         setLoadingSuggest(true);
-        const options = SuggestTypes ? { suggestTypes: [SuggestTypes.YMKSuggestTypeGeo] } : undefined;
-        SuggestModule.suggest(debouncedQuery.trim(), options)
+
+        fetchSuggestResults(debouncedQuery.trim(), YANDEX_GEO_SUGGEST_API_KEY)
             .then((raw) => {
+                if (cancelled) return;
                 const citiesSet = citiesSetRef.current;
                 const seen = new Set();
                 const filtered = [];
                 for (const item of raw || []) {
-                    const city = cityNameFromMapKitItem(item);
+                    const city = cityNameFromGeosuggestItem(item);
                     const cityNorm = city.trim().toLowerCase();
                     if (!cityNorm || seen.has(cityNorm)) continue;
                     const matches = citiesSet.size === 0 || Array.from(citiesSet).some(
@@ -164,7 +172,7 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
                     );
                     if (matches) {
                         seen.add(cityNorm);
-                        filtered.push({ id: item.uri || city, name: city });
+                        filtered.push({ id: item?.uri || city, name: city });
                     }
                 }
                 if (filtered.length === 0 && citiesSet.size > 0) {
@@ -175,10 +183,23 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
                 }
             })
             .catch((e) => {
-                if (__DEV__) console.warn('MapKit Suggest error:', e);
+                if (__DEV__) {
+                    if (e?.status === 403) {
+                        console.warn(
+                            'Yandex Geosuggest 403: проверьте ключ в developer.tech.yandex.ru — включите «Геословарь» (Geosuggest) для ключа и снимите ограничение по HTTP referer для мобильного приложения.',
+                            e?.body || ''
+                        );
+                    } else {
+                        console.warn('Yandex Geosuggest error:', e);
+                    }
+                }
                 fallbackOnlyLocal();
             })
-            .finally(() => setLoadingSuggest(false));
+            .finally(() => {
+                if (!cancelled) setLoadingSuggest(false);
+            });
+
+        return () => { cancelled = true; };
     }, [debouncedQuery, locationList]);
 
     const handleSelect = useCallback(
