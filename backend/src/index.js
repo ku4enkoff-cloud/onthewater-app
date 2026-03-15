@@ -57,9 +57,7 @@ app.get('/', (req, res) => res.json({
 }));
 app.get('/health', (req, res) => res.json({ ok: true }));
 
-// Подсказки городов: сначала Yandex Geosuggest, при 403 — fallback на OpenStreetMap Nominatim (без ключа)
-const YANDEX_SUGGEST_API_KEY = (process.env.YANDEX_GEO_SUGGEST_API_KEY || '').trim();
-const YANDEX_REFERER = (process.env.APP_URL || process.env.YANDEX_GEO_SUGGEST_REFERER || 'https://api.onthewater.ru').replace(/\/$/, '') + '/';
+// Подсказки городов через OpenStreetMap Nominatim (без ключа)
 const NOMINATIM_UA = 'ONTHEWATER/1.0 (contact@onthewater.ru)';
 
 function mapNominatimToSuggest(nominatimList) {
@@ -78,27 +76,6 @@ function mapNominatimToSuggest(nominatimList) {
 app.get('/suggest', async (req, res) => {
     const text = (req.query.text || '').trim();
     if (!text) return res.status(400).json({ error: 'Missing text' });
-
-    if (YANDEX_SUGGEST_API_KEY) {
-        try {
-            const params = new URLSearchParams({
-                apikey: YANDEX_SUGGEST_API_KEY,
-                text,
-                types: 'country,province,locality',
-                lang: 'ru',
-                results: '10',
-            });
-            const r = await fetch(`https://suggest-maps.yandex.ru/v1/suggest?${params.toString()}`, {
-                headers: { Referer: YANDEX_REFERER },
-            });
-            const data = await r.json().catch(() => ({}));
-            if (r.ok) return res.json(data);
-            if (r.status === 403) console.warn('[suggest] Yandex 403, using Nominatim fallback');
-        } catch (e) {
-            console.warn('[suggest] Yandex error:', e?.message || e);
-        }
-    }
-
     try {
         const q = new URLSearchParams({
             q: text,
@@ -111,7 +88,7 @@ app.get('/suggest', async (req, res) => {
         });
         const list = await r.json().catch(() => []);
         const results = mapNominatimToSuggest(Array.isArray(list) ? list : []);
-        return res.json({ results });
+        res.json({ results });
     } catch (e) {
         console.warn('[suggest] Nominatim error:', e?.message || e);
         res.status(502).json({ error: 'Suggest unavailable' });
