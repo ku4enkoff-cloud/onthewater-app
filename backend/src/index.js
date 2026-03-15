@@ -57,6 +57,30 @@ app.get('/', (req, res) => res.json({
 }));
 app.get('/health', (req, res) => res.json({ ok: true }));
 
+// Прокси подсказок городов Yandex Geosuggest (обход 403 при ограничении по Referer в мобильном приложении)
+const YANDEX_SUGGEST_API_KEY = (process.env.YANDEX_GEO_SUGGEST_API_KEY || '').trim();
+app.get('/suggest', async (req, res) => {
+    const text = (req.query.text || '').trim();
+    if (!text) return res.status(400).json({ error: 'Missing text' });
+    if (!YANDEX_SUGGEST_API_KEY) return res.status(503).json({ error: 'Geosuggest not configured' });
+    try {
+        const params = new URLSearchParams({
+            apikey: YANDEX_SUGGEST_API_KEY,
+            text,
+            types: 'country,province,locality',
+            lang: 'ru',
+            results: '10',
+        });
+        const r = await fetch(`https://suggest-maps.yandex.ru/v1/suggest?${params.toString()}`);
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) return res.status(r.status).json(data || { error: 'Yandex error' });
+        res.json(data);
+    } catch (e) {
+        console.warn('[suggest]', e?.message || e);
+        res.status(502).json({ error: 'Suggest unavailable' });
+    }
+});
+
 const authRoutes = require('./routes/auth');
 const boatRoutes = require('./routes/boats');
 const chatRoutes = require('./routes/chats');

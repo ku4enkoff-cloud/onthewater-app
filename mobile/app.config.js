@@ -37,11 +37,13 @@ export default {
     extra: {
       appVariant: variant,
       yandexMapkitApiKey: process.env.EXPO_PUBLIC_YANDEX_MAPKIT_API_KEY || '84448445-01d9-454b-8398-9adaaf19ad61',
-      yandexGeosuggestApiKey: process.env.EXPO_PUBLIC_YANDEX_GEO_SUGGEST_API_KEY || process.env.EXPO_PUBLIC_YANDEX_MAPKIT_API_KEY || '84448445-01d9-454b-8398-9adaaf19ad61',
+      yandexGeosuggestApiKey: process.env.EXPO_PUBLIC_YANDEX_GEO_SUGGEST_API_KEY || '5cf2910a-9463-4be8-a6c9-81c7f5f0abef',
     },
     permissions: ['android.permission.RECORD_AUDIO'],
     web: { favicon: './assets/favicon.png' },
     plugins: [
+      './plugins/withAndroidSigning.js',
+      './plugins/withYandexMapKitKey.js',
       ['expo-build-properties', { android: { minSdkVersion: 26, usesCleartextTraffic: true } }],
       ['expo-notifications', { icon: './assets/icon.png', color: '#1B365D', sounds: [] }],
       [

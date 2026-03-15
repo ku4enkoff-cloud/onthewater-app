@@ -87,12 +87,12 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.anonymous.onthewater'
+    namespace 'com.anonymous.onthewater.owner'
     defaultConfig {
-        applicationId 'com.anonymous.onthewater'
+        applicationId 'com.anonymous.onthewater.owner'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
+        versionCode 1
         versionName "2.0.0"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
@@ -104,12 +104,13 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+    
         release {
             def keystorePropsFile = rootProject.file("keystore.properties")
             if (keystorePropsFile.exists()) {
                 def keystoreProps = new Properties()
                 keystoreProps.load(new FileInputStream(keystorePropsFile))
-                storeFile file(keystoreProps["storeFile"])
+                storeFile rootProject.file(keystoreProps["storeFile"])
                 storePassword keystoreProps["storePassword"]
                 keyAlias keystoreProps["keyAlias"]
                 keyPassword keystoreProps["keyPassword"]
@@ -121,8 +122,7 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            signingConfig file("${rootProject.projectDir}/keystore.properties").exists() \
-                ? signingConfigs.release : signingConfigs.debug
+            signingConfig file("${rootProject.projectDir}/keystore.properties").exists() ? signingConfigs.release : signingConfigs.debug
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds
