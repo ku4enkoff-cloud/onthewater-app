@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "489990057138",
+    "project_id": "onthewater-1813c",
+    "storage_bucket": "onthewater-1813c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:489990057138:android:72aa70a47fb23ea4f66dab",
+        "android_client_info": {
+          "package_name": "com.anonymous.onthewater"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCV0mRJ1jFod4NJyYvRIMjsOuiaKtg5tpM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
