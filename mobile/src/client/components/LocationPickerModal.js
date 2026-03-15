@@ -159,27 +159,26 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
                 if (cancelled) return;
                 const citiesSet = citiesSetRef.current;
                 const seen = new Set();
-                const filtered = [];
+                const list = [];
                 for (const item of raw || []) {
                     const city = cityNameFromGeosuggestItem(item);
                     const cityNorm = city.trim().toLowerCase();
                     if (!cityNorm || seen.has(cityNorm)) continue;
-                    const matches = citiesSet.size === 0 || Array.from(citiesSet).some(
+                    seen.add(cityNorm);
+                    const inOurList = citiesSet.size > 0 && Array.from(citiesSet).some(
                         (ourCity) =>
                             ourCity === cityNorm ||
                             (ourCity && cityNorm.includes(ourCity)) ||
                             (ourCity && ourCity.includes(cityNorm)),
                     );
-                    if (matches) {
-                        seen.add(cityNorm);
-                        filtered.push({ id: item?.uri || city, name: city });
-                    }
+                    list.push({ id: item?.uri || city, name: city, inOurList });
                 }
-                if (filtered.length === 0 && citiesSet.size > 0) {
+                if (list.length > 0) {
+                    list.sort((a, b) => (b.inOurList ? 1 : 0) - (a.inOurList ? 1 : 0));
+                    setSuggestions(list.map(({ id, name }) => ({ id, name })));
+                } else {
                     const local = locationList.filter((c) => (c || '').toLowerCase().includes(q));
                     setSuggestions(local.map((c) => ({ id: c, name: c })));
-                } else {
-                    setSuggestions(filtered);
                 }
             })
             .catch((e) => {
