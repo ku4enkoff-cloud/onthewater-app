@@ -15,3 +15,6 @@
 local.properties
 **/keystore.properties
 **/*.keystore
+# Firebase: не коммитить в открытый репозиторий (предупреждения Google)
+google-services.json
+**/google-services.json

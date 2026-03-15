@@ -10,7 +10,7 @@ const hasGoogleServices = fs.existsSync(path.join(__dirname, 'google-services.js
 export default {
   expo: {
     name: isOwner ? 'ONTHEWATER для владельцев' : 'ONTHEWATER',
-    slug: isOwner ? 'boatrent-owner' : 'boatrent',
+    slug: isOwner ? 'boatrent-owner' : 'onthewater', // для EAS (projectId) должен совпадать с slug проекта на expo.dev
     owner: 'sadfary',
     version: '2.0.0',
     orientation: 'portrait',
