@@ -55,6 +55,7 @@ async function sendPush(pushToken, title, body, data = {}) {
             console.warn('[push] HTTP', res.status, json);
             return { ok: false, error: `HTTP ${res.status}` };
         }
+        console.log('[push] sent to Expo OK');
         return { ok: true };
     } catch (err) {
         console.error('[push]', err.message);

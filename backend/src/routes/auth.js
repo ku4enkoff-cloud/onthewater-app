@@ -147,15 +147,19 @@ router.post('/push-token', authenticate, async (req, res, next) => {
 // Отправить тестовое push-уведомление текущему пользователю (для проверки)
 router.post('/push-test', authenticate, async (req, res, next) => {
     try {
-        const { rows } = await pool.query('SELECT push_token FROM users WHERE id = $1', [req.user.id]);
+        const userId = req.user.id;
+        const { rows } = await pool.query('SELECT push_token FROM users WHERE id = $1', [userId]);
         const token = rows[0]?.push_token;
+        console.log('[push-test] user', userId, token ? 'has token' : 'no token');
         if (!token) {
             return res.status(400).json({ error: 'Push-токен не зарегистрирован. Включите уведомления в приложении и перезайдите.' });
         }
         const result = await sendPush(token, 'ONTHEWATER', 'Тестовое уведомление — всё работает.', { type: 'test' });
         if (result.ok) {
+            console.log('[push-test] Expo accepted notification for user', userId);
             return res.json({ ok: true, message: 'Уведомление отправлено.' });
         }
+        console.warn('[push-test] Expo returned error for user', userId, result.error);
         const msg = result.details?.error === 'DeviceNotRegistered'
             ? 'Устройство не зарегистрировано в FCM. Включите push в настройках приложения и нажмите «Отправить тестовое уведомление» снова.'
             : (result.error || 'Ошибка отправки. Проверьте логи сервера.');
