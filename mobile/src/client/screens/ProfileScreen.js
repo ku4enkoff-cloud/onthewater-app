@@ -8,6 +8,7 @@ import { FavoritesContext } from '../../shared/context/FavoritesContext';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../../shared/infrastructure/api';
+import { registerPushTokenNow } from '../hooks/useRegisterPushToken';
 import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
 import { theme } from '../../shared/theme';
 import { User, Heart, HelpCircle, LogOut, ChevronRight, Calendar, Star, Shield, FileText, Bell, X, Pencil, Trash2, Lock } from 'lucide-react-native';
@@ -99,6 +100,18 @@ export default function ProfileScreen({ navigation }) {
         })();
         return () => { cancelled = true; };
     }, [user]);
+
+    // Первый вход пользователя в профиль: запросить разрешение на push и зарегистрировать токен
+    useEffect(() => {
+        if (!user) return;
+        (async () => {
+            try {
+                await registerPushTokenNow();
+            } catch (_) {
+                // тихо игнорируем, UI сам покажет состояние push в настройках
+            }
+        })();
+    }, [user?.id]);
 
     const fetchReviewsCount = useCallback(async () => {
         if (!user) return;
