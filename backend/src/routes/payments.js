@@ -1,7 +1,21 @@
 const express = require('express');
 const { pool } = require('../db');
+const { sendPush } = require('../utils/push');
 
 const router = express.Router();
+
+async function sendBookingStatusPushToClient(bookingId, title, body) {
+    try {
+        const { rows: bookingRows } = await pool.query('SELECT user_id FROM bookings WHERE id = $1', [bookingId]);
+        const userId = bookingRows[0]?.user_id;
+        if (!userId) return;
+        const { rows } = await pool.query('SELECT push_token FROM users WHERE id = $1', [userId]);
+        const token = rows[0]?.push_token;
+        if (token) {
+            await sendPush(token, title, body, { bookingId, type: 'booking' });
+        }
+    } catch (_) {}
+}
 
 // Webhook от ЮKassa
 router.post('/webhook', express.json(), async (req, res, next) => {
@@ -21,8 +35,18 @@ router.post('/webhook', express.json(), async (req, res, next) => {
         if (event === 'payment.succeeded') {
             await pool.query("UPDATE bookings SET status = 'confirmed' WHERE id = $1", [bookingId]);
             console.log(`Бронь ${bookingId} успешно оплачена.`);
+            await sendBookingStatusPushToClient(
+                bookingId,
+                'Бронирование подтверждено',
+                'Ваше бронирование успешно оплачено и подтверждено.'
+            );
         } else if (event === 'payment.canceled') {
             await pool.query("UPDATE bookings SET status = 'cancelled' WHERE id = $1", [bookingId]);
+            await sendBookingStatusPushToClient(
+                bookingId,
+                'Бронирование отменено',
+                'Оплата не прошла, бронирование отменено.'
+            );
         }
 
         res.status(200).send('OK');

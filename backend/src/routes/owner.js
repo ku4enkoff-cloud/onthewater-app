@@ -65,7 +65,14 @@ router.post('/bookings/:id/confirm', authenticate, async (req, res, next) => {
             [parseInt(req.params.id, 10), req.user.id]
         );
         if (rows.length === 0) return res.status(404).json({ error: 'Not found' });
-        res.json(rows[0]);
+        const booking = rows[0];
+        sendBookingPushToClient(
+            booking.user_id,
+            'Бронирование подтверждено',
+            `Ваше бронирование «${booking.boat_title || 'Катер'}» подтверждено.`,
+            booking.id
+        );
+        res.json(booking);
     } catch (err) {
         next(err);
     }

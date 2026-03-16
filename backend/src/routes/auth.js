@@ -150,7 +150,7 @@ router.post('/push-test', authenticate, async (req, res, next) => {
         const userId = req.user.id;
         const { rows } = await pool.query('SELECT push_token FROM users WHERE id = $1', [userId]);
         const token = rows[0]?.push_token;
-        console.log('[push-test] user', userId, token ? 'has token' : 'no token');
+        console.log('[push-test] user', userId, 'token =', token || 'NULL');
         if (!token) {
             return res.status(400).json({ error: 'Push-токен не зарегистрирован. Включите уведомления в приложении и перезайдите.' });
         }
