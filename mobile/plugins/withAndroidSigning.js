@@ -6,8 +6,9 @@ const RELEASE_SIGNING_CONFIG = `
             if (keystorePropsFile.exists()) {
                 def keystoreProps = new Properties()
                 keystoreProps.load(new FileInputStream(keystorePropsFile))
-                def parentDir = rootProject.getParentFile()
-                storeFile parentDir.file(keystoreProps["storeFile"].trim())
+                // rootProject.rootDir указывает на android/, parentFile = mobile/
+                def parentDir = rootProject.rootDir.parentFile
+                storeFile parentDir.toPath().resolve(keystoreProps["storeFile"].trim()).toFile()
                 storePassword keystoreProps["storePassword"]
                 keyAlias keystoreProps["keyAlias"]
                 keyPassword keystoreProps["keyPassword"]
