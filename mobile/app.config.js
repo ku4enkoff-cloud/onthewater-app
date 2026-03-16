@@ -12,7 +12,7 @@ export default {
     name: isOwner ? 'ONTHEWATER для владельцев' : 'ONTHEWATER',
     slug: isOwner ? 'boatrent-owner' : 'onthewater', // для EAS (projectId) должен совпадать с slug проекта на expo.dev
     owner: 'sadfary',
-    version: '2.0.0',
+    version: '2.0.1',
     orientation: 'portrait',
     icon: isOwner ? './assets/icon-owner.png' : './assets/icon.png',
     userInterfaceStyle: 'light',
