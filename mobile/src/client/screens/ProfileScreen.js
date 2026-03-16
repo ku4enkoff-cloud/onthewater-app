@@ -8,7 +8,6 @@ import { FavoritesContext } from '../../shared/context/FavoritesContext';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../../shared/infrastructure/api';
-import { registerPushTokenNow } from '../hooks/useRegisterPushToken';
 import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
 import { theme } from '../../shared/theme';
 import { User, Heart, HelpCircle, LogOut, ChevronRight, Calendar, Star, Shield, FileText, Bell, X, Pencil, Trash2, Lock } from 'lucide-react-native';
@@ -391,41 +390,6 @@ export default function ProfileScreen({ navigation }) {
                             <Text style={styles.notificationLabel}>Push-уведомления</Text>
                             <Switch value={pushEnabled !== false} onValueChange={setPushEnabled} trackColor={{ false: theme.colors.gray300, true: theme.colors.primary }} thumbColor="#fff" />
                         </View>
-                        <TouchableOpacity
-                            style={styles.pushTestButton}
-                            onPress={async () => {
-                                try {
-                                    let res = await api.post('/auth/push-test');
-                                    const data = res.data;
-                                    Alert.alert(data.ok ? 'Готово' : 'Ошибка', data.message || (data.ok ? 'Уведомление отправлено.' : 'Не удалось отправить.'));
-                                } catch (e) {
-                                    const status = e.response?.status;
-                                    const msgFromServer = e.response?.data?.error || '';
-                                    if (status === 400 && (msgFromServer.includes('не зарегистрирован') || msgFromServer.includes('Push-токен'))) {
-                                        const result = await registerPushTokenNow();
-                                        if (result.ok) {
-                                            try {
-                                                const retry = await api.post('/auth/push-test');
-                                                Alert.alert(retry.data?.ok ? 'Готово' : 'Ошибка', retry.data?.message || 'Уведомление отправлено.');
-                                            } catch (err2) {
-                                                Alert.alert('Ошибка', err2.response?.data?.error || err2.message || 'Не удалось отправить.');
-                                            }
-                                        } else {
-                                            Alert.alert('Ошибка', result.reason || 'Не удалось зарегистрировать устройство для push.');
-                                        }
-                                        return;
-                                    }
-                                    let msg = msgFromServer || e.message || 'Ошибка запроса';
-                                    if (status === 404) {
-                                        msg = 'Маршрут не найден (404). Задеплойте обновлённый бэкенд с эндпоинтом POST /auth/push-test.';
-                                    }
-                                    Alert.alert('Ошибка', msg);
-                                }
-                            }}
-                            disabled={pushEnabled === false}
-                        >
-                            <Text style={styles.pushTestButtonText}>Отправить тестовое уведомление</Text>
-                        </TouchableOpacity>
                     </ScrollView>
                 </View>
             </View>
@@ -561,6 +525,4 @@ const styles = StyleSheet.create({
     notificationRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.gray100 },
     notificationRowLeft: { flexDirection: 'row', alignItems: 'center' },
     notificationLabel: { fontSize: 16, fontFamily: theme.fonts.medium, color: theme.colors.gray900 },
-    pushTestButton: { marginTop: 16, paddingVertical: 12, paddingHorizontal: 16, backgroundColor: theme.colors.primary, borderRadius: 12, alignSelf: 'flex-start' },
-    pushTestButtonText: { fontSize: 15, fontFamily: theme.fonts.medium, color: '#fff' },
 });
