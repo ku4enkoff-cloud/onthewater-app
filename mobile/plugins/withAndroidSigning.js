@@ -2,11 +2,12 @@ const { withAppBuildGradle } = require('@expo/config-plugins');
 
 const RELEASE_SIGNING_CONFIG = `
         release {
-            def keystorePropsFile = rootProject.file("keystore.properties")
+            def keystorePropsFile = rootProject.file("../keystore.properties")
             if (keystorePropsFile.exists()) {
                 def keystoreProps = new Properties()
                 keystoreProps.load(new FileInputStream(keystorePropsFile))
-                storeFile rootProject.file(keystoreProps["storeFile"])
+                def parentDir = rootProject.getParentFile()
+                storeFile parentDir.file(keystoreProps["storeFile"].trim())
                 storePassword keystoreProps["storePassword"]
                 keyAlias keystoreProps["keyAlias"]
                 keyPassword keystoreProps["keyPassword"]
@@ -32,7 +33,7 @@ function withAndroidSigning(config) {
       /release \{[\s\S]*?signingConfig signingConfigs\.debug/,
       (m) => m.replace(
         /signingConfig signingConfigs\.debug/,
-        'signingConfig file("${rootProject.projectDir}/keystore.properties").exists() ? signingConfigs.release : signingConfigs.debug'
+        'signingConfig rootProject.file("../keystore.properties").exists() ? signingConfigs.release : signingConfigs.debug'
       )
     );
 
