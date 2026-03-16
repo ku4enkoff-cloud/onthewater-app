@@ -104,7 +104,19 @@ router.post('/:id/cancel', authenticate, async (req, res, next) => {
             [id, userId]
         );
         if (rows.length === 0) return res.status(404).json({ error: 'Not found' });
-        res.json(rows[0]);
+        const booking = rows[0];
+
+        // Уведомляем клиента об отмене (если отменил владелец или сам клиент)
+        try {
+            const cancelledByOwner = booking.owner_id === userId && booking.user_id !== userId;
+            const title = 'Бронирование отменено';
+            const body = cancelledByOwner
+                ? `Владелец отменил бронирование «${booking.boat_title || 'Катер'}».`
+                : `Вы отменили бронирование «${booking.boat_title || 'Катер'}».`;
+            await sendBookingPushToClient(booking.user_id, title, body, booking.id);
+        } catch (_) {}
+
+        res.json(booking);
     } catch (err) {
         next(err);
     }
