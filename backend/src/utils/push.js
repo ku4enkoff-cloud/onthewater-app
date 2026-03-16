@@ -23,8 +23,6 @@ async function sendPush(pushToken, title, body, data = {}) {
         body: body || '',
         sound: 'default',
         data: { ...data },
-        priority: 'high',
-        channelId: 'default',
     };
     
 
