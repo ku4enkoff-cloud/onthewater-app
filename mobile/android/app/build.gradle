@@ -87,12 +87,12 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.anonymous.onthewater'
+    namespace 'com.anonymous.onthewater.owner'
     defaultConfig {
-        applicationId 'com.anonymous.onthewater'
+        applicationId 'com.anonymous.onthewater.owner'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        versionCode 5
         versionName "2.0.1"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
@@ -110,22 +110,29 @@ android {
             if (keystorePropsFile.exists()) {
                 def keystoreProps = new Properties()
                 keystoreProps.load(new FileInputStream(keystorePropsFile))
-                // rootProject.rootDir указывает на android/, parentFile = mobile/
-                def parentDir = rootProject.rootDir.parentFile
-                storeFile parentDir.toPath().resolve(keystoreProps["storeFile"].trim()).toFile()
-                storePassword keystoreProps["storePassword"]
-                keyAlias keystoreProps["keyAlias"]
-                keyPassword keystoreProps["keyPassword"]
+                def storeFileName = keystoreProps["storeFile"] != null ? keystoreProps["storeFile"].trim() : ""
+                if (storeFileName) {
+                    def keystoreDir = keystorePropsFile.getParentFile()
+                    def storeFileObj = new File(keystoreDir, storeFileName)
+                    if (!storeFileObj.exists()) {
+                        throw new GradleException("Release keystore not found: " + storeFileObj.getAbsolutePath() + " (check mobile/keystore.properties and that " + storeFileName + " is in mobile/)")
+                    }
+                    storeFile storeFileObj
+                    storePassword keystoreProps["storePassword"]
+                    keyAlias keystoreProps["keyAlias"]
+                    keyPassword keystoreProps["keyPassword"]
+                }
             }
         }
     }
     buildTypes {
         debug {
+            // Debug-приложение подписываем обычным debug.keystore
             signingConfig signingConfigs.debug
         }
         release {
-            // Подписываем релиз нашим upload.keystore, если есть keystore.properties на уровень выше android/
-            signingConfig rootProject.file("../keystore.properties").exists() ? signingConfigs.release : signingConfigs.debug
+            // Релиз **всегда** использует release-конфиг (sadfary__onthewater.jks из mobile/)
+            signingConfig signingConfigs.release
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds

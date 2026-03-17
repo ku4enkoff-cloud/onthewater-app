@@ -6,12 +6,18 @@ const RELEASE_SIGNING_CONFIG = `
             if (keystorePropsFile.exists()) {
                 def keystoreProps = new Properties()
                 keystoreProps.load(new FileInputStream(keystorePropsFile))
-                // rootProject.rootDir указывает на android/, parentFile = mobile/
-                def parentDir = rootProject.rootDir.parentFile
-                storeFile parentDir.toPath().resolve(keystoreProps["storeFile"].trim()).toFile()
-                storePassword keystoreProps["storePassword"]
-                keyAlias keystoreProps["keyAlias"]
-                keyPassword keystoreProps["keyPassword"]
+                def storeFileName = keystoreProps["storeFile"] != null ? keystoreProps["storeFile"].trim() : ""
+                if (storeFileName) {
+                    def keystoreDir = keystorePropsFile.getParentFile()
+                    def storeFileObj = new File(keystoreDir, storeFileName)
+                    if (!storeFileObj.exists()) {
+                        throw new GradleException("Release keystore not found: " + storeFileObj.getAbsolutePath() + " (check mobile/keystore.properties and that " + storeFileName + " is in mobile/)")
+                    }
+                    storeFile storeFileObj
+                    storePassword keystoreProps["storePassword"]
+                    keyAlias keystoreProps["keyAlias"]
+                    keyPassword keystoreProps["keyPassword"]
+                }
             }
         }
 `;
@@ -29,14 +35,19 @@ function withAndroidSigning(config) {
       );
     }
 
-    // release buildType должен использовать keystore.properties если есть (вместо debug)
+    // Релиз всегда подписываем нашим ключом, если есть keystore.properties
+    const releaseSigningLine = 'signingConfig rootProject.file("../keystore.properties").exists() ? signingConfigs.release : signingConfigs.debug';
     contents = contents.replace(
-      /release \{[\s\S]*?signingConfig signingConfigs\.debug/,
-      (m) => m.replace(
-        /signingConfig signingConfigs\.debug/,
-        'signingConfig rootProject.file("../keystore.properties").exists() ? signingConfigs.release : signingConfigs.debug'
-      )
+      /release\s*\{[\s\S]*?signingConfig\s+signingConfigs\.debug/,
+      (m) => m.replace(/signingConfig\s+signingConfigs\.debug/, releaseSigningLine)
     );
+    // На случай если в шаблоне нет signingConfig в release — подставляем после "release {"
+    if (contents.includes('signingConfigs.release') && !contents.includes(releaseSigningLine)) {
+      contents = contents.replace(
+        /(buildTypes\s*\{\s*[\s\S]*?release\s*\{\s*)(\n)/,
+        '$1\n            ' + releaseSigningLine + '$2'
+      );
+    }
 
     config.modResults.contents = contents;
     return config;
