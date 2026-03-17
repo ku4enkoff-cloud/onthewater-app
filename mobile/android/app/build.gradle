@@ -87,12 +87,12 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.anonymous.onthewater.owner'
+    namespace 'com.anonymous.onthewater'
     defaultConfig {
-        applicationId 'com.anonymous.onthewater.owner'
+        applicationId 'com.anonymous.onthewater'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 5
+        versionCode 1
         versionName "2.0.1"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
@@ -127,12 +127,12 @@ android {
     }
     buildTypes {
         debug {
-            // Debug-приложение подписываем обычным debug.keystore
-            signingConfig signingConfigs.debug
+            signingConfig rootProject.file("../keystore.properties").exists() ? signingConfigs.release : signingConfigs.debug
         }
         release {
-            // Релиз **всегда** использует release-конфиг (sadfary__onthewater.jks из mobile/)
-            signingConfig signingConfigs.release
+            // Caution! In production, you need to generate your own keystore file.
+            // see https://reactnative.dev/docs/signed-apk-android.
+            signingConfig signingConfigs.debug
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds
