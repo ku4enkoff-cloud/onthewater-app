@@ -45,12 +45,18 @@ router.get('/bookings', authenticate, async (req, res, next) => {
             );
             userRows.forEach((u) => {
                 const displayName = (u.name && String(u.name).trim()) || (u.first_name || u.last_name ? [u.first_name, u.last_name].filter(Boolean).join(' ').trim() : null) || u.email;
-                usersMap[u.id] = displayName || null;
+                usersMap[u.id] = { name: displayName || null, phone: u.phone || null };
             });
         }
         const rows = rawRows.map((b) => {
             const { boat_schedule_work_days, ...rest } = b;
-            return { ...rest, client_name: usersMap[b.user_id] || null, schedule_work_days: boat_schedule_work_days };
+            const userMeta = usersMap[b.user_id] || {};
+            return {
+                ...rest,
+                client_name: userMeta.name || null,
+                client_phone: userMeta.phone || null,
+                schedule_work_days: boat_schedule_work_days,
+            };
         });
         res.json(rows);
     } catch (err) {
