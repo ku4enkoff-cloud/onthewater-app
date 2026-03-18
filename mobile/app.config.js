@@ -6,6 +6,19 @@ const fs = require('fs');
 const variant = process.env.EXPO_PUBLIC_APP_VARIANT || 'client';
 const isOwner = variant === 'owner';
 const hasGoogleServices = fs.existsSync(path.join(__dirname, 'google-services.json'));
+const versionCodesPath = path.join(__dirname, 'version-codes.json');
+
+function getAndroidVersionCode() {
+  try {
+    const raw = fs.readFileSync(versionCodesPath, 'utf8');
+    const parsed = JSON.parse(raw);
+    const v = isOwner ? parsed.owner : parsed.client;
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? n : 1;
+  } catch (_) {
+    return 1;
+  }
+}
 
 export default {
   expo: {
@@ -33,6 +46,7 @@ export default {
         backgroundColor: isOwner ? '#0a6e82' : '#ffffff',
       },
       package: isOwner ? 'com.anonymous.onthewater.owner' : 'com.anonymous.onthewater',
+      versionCode: getAndroidVersionCode(),
       ...(hasGoogleServices && { googleServicesFile: './google-services.json' }),
     },
     config: {

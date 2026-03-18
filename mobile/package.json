@@ -12,6 +12,8 @@
     "android:client": "npx cross-env EXPO_PUBLIC_APP_VARIANT=client expo run:android",
     "android:owner": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner expo run:android",
     "android:write-local-properties": "node scripts/write-local-properties.mjs",
+    "android:bump-version-code:client": "node scripts/bump-version-code.mjs client",
+    "android:bump-version-code:owner": "node scripts/bump-version-code.mjs owner",
     "prebuild:client": "npx cross-env EXPO_PUBLIC_APP_VARIANT=client expo prebuild --platform android --clean",
     "prebuild:owner": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner expo prebuild --platform android --clean",
     "ios": "expo run:ios",
@@ -20,15 +22,15 @@
     "log:android": "node scripts/adb-logcat.js",
     "apk": "cd android && .\\gradlew assembleRelease",
     "apk:client": "npx cross-env EXPO_PUBLIC_APP_VARIANT=client ANDROID_HOME=C:\\Users\\ku4en\\AppData\\Local\\Android\\Sdk android\\gradlew.bat -p android assembleDebug -PreactNativeArchitectures=armeabi-v7a,arm64-v8a",
-    "apk:client:release": "npx cross-env EXPO_PUBLIC_APP_VARIANT=client ANDROID_HOME=C:\\Users\\ku4en\\AppData\\Local\\Android\\Sdk android\\gradlew.bat -p android assembleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a",
+    "apk:client:release": "npm run android:bump-version-code:client && npx cross-env EXPO_PUBLIC_APP_VARIANT=client ANDROID_HOME=C:\\Users\\ku4en\\AppData\\Local\\Android\\Sdk android\\gradlew.bat -p android assembleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a",
     "apk:owner": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner ANDROID_HOME=C:\\Users\\ku4en\\AppData\\Local\\Android\\Sdk android\\gradlew.bat -p android assembleDebug -PreactNativeArchitectures=armeabi-v7a,arm64-v8a",
-    "apk:owner:release": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner ANDROID_HOME=C:\\Users\\ku4en\\AppData\\Local\\Android\\Sdk android\\gradlew.bat -p android assembleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a",
+    "apk:owner:release": "npm run android:bump-version-code:owner && npx cross-env EXPO_PUBLIC_APP_VARIANT=owner ANDROID_HOME=C:\\Users\\ku4en\\AppData\\Local\\Android\\Sdk android\\gradlew.bat -p android assembleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a",
     "build:client": "npm run prebuild:client && npm run apk:client",
     "build:client:release": "npm run prebuild:client && npm run apk:client:release",
     "build:owner": "npm run prebuild:owner && npm run apk:owner",
     "build:owner:release": "npm run prebuild:owner && npm run apk:owner:release",
-    "bundle": "npm run prebuild:client && npm run android:write-local-properties && npx cross-env EXPO_PUBLIC_APP_VARIANT=client ANDROID_HOME=C:\\Users\\ku4en\\AppData\\Local\\Android\\Sdk android\\gradlew.bat -p android bundleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a",
-    "bundle:owner": "npm run prebuild:owner && npm run android:write-local-properties && npx cross-env EXPO_PUBLIC_APP_VARIANT=owner ANDROID_HOME=C:\\Users\\ku4en\\AppData\\Local\\Android\\Sdk android\\gradlew.bat -p android bundleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a"
+    "bundle": "npm run android:bump-version-code:client && npm run prebuild:client && npm run android:write-local-properties && npx cross-env EXPO_PUBLIC_APP_VARIANT=client ANDROID_HOME=C:\\Users\\ku4en\\AppData\\Local\\Android\\Sdk android\\gradlew.bat -p android bundleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a",
+    "bundle:owner": "npm run android:bump-version-code:owner && npm run prebuild:owner && npm run android:write-local-properties && npx cross-env EXPO_PUBLIC_APP_VARIANT=owner ANDROID_HOME=C:\\Users\\ku4en\\AppData\\Local\\Android\\Sdk android\\gradlew.bat -p android bundleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a"
   },
   "dependencies": {
     "@expo-google-fonts/jost": "^0.4.2",
