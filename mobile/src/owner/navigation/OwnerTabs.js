@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Anchor, Ship, Settings, MessageCircle, User } from 'lucide-react-native';
+import { LayoutDashboard, Ship, Calendar, MessageCircle, User } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 import OwnerDashboardScreen from '../screens/OwnerDashboardScreen';
@@ -72,7 +72,7 @@ export default function OwnerTabs() {
                     if (route.name === 'Dashboard') {
                         return (
                             <View style={focused ? iconStyles.active : undefined}>
-                                <Anchor size={sz} color={color} strokeWidth={1.8} />
+                                <LayoutDashboard size={sz} color={color} strokeWidth={1.8} />
                             </View>
                         );
                     }
@@ -80,7 +80,7 @@ export default function OwnerTabs() {
                     if (route.name === 'Bookings') {
                         return (
                             <View style={badgeStyles.iconWrap}>
-                                <Settings size={sz} color={color} strokeWidth={1.8} />
+                                <Calendar size={sz} color={color} strokeWidth={1.8} />
                                 {pendingBookings > 0 && (
                                     <View style={badgeStyles.badge}>
                                         <Text style={badgeStyles.badgeText}>

@@ -4,9 +4,10 @@ import {
     RefreshControl, ScrollView, Modal, Alert, Platform, TextInput,
     ActivityIndicator,
 } from 'react-native';
+import { Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, Pencil, ChevronLeft, ChevronRight, X, Ship } from 'lucide-react-native';
+import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, Pencil, ChevronLeft, ChevronRight, X, Ship, Phone, Users } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 
@@ -323,8 +324,8 @@ export default function OwnerBookingsScreen() {
                     <Text style={s.cardPrice}>{(item.total_price || 0).toLocaleString('ru-RU')} ₽</Text>
                 </View>
                 <Text style={s.cardTitle} numberOfLines={2}>{item.boat_title}</Text>
-                <Text style={s.cardClient}>
-                    Клиент: {item.client_name || '—'}
+                <View style={s.cardClientBlock}>
+                    <Text style={s.cardClient}>Клиент: {item.client_name || '—'}</Text>
                     {(() => {
                         const phoneRaw =
                             item.client_phone ||
@@ -334,26 +335,58 @@ export default function OwnerBookingsScreen() {
                             item.client?.phone ||
                             item.user?.phone ||
                             null;
-                        if (!phoneRaw) return '';
+                        if (!phoneRaw) return null;
                         const digits = String(phoneRaw).replace(/\D/g, '');
                         const formatted = digits.length >= 11
                             ? `+${digits[0]} (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7, 9)}-${digits.slice(9, 11)}`
                             : phoneRaw;
-                        return ` • ${formatted}`;
+                        const telNumber = digits ? `+${digits}` : String(phoneRaw).trim();
+                        const telUrl = `tel:${telNumber}`;
+                        return (
+                            <TouchableOpacity
+                                onPress={() => Linking.openURL(telUrl)}
+                                activeOpacity={0.7}
+                                style={s.cardClientPhoneWrap}
+                            >
+                                <Phone size={14} color={theme.colors.gray500} />
+                                <Text style={s.cardClientPhone}>{formatted}</Text>
+                            </TouchableOpacity>
+                        );
                     })()}
-                </Text>
+                </View>
                 <View style={s.cardDetails}>
                     <View style={s.detailRow}>
                         <Calendar size={14} color={theme.colors.gray400} />
-                        <Text style={s.detailText}>{formatDate(item.start_at || item.date_start)}</Text>
+                        <Text style={s.detailText}>
+                            {formatDate(item.start_at || item.date_start)}
+                            {(() => {
+                                const src = item.start_at || item.date_start;
+                                if (!src) return '';
+                                const d = new Date(src);
+                                const time = d.toLocaleTimeString('ru-RU', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                });
+                                return ` • ${time}`;
+                            })()}
+                        </Text>
                     </View>
                     <View style={s.detailRow}>
                         <Clock size={14} color={theme.colors.gray400} />
                         <Text style={s.detailText}>{formatDuration(item.hours)}</Text>
                     </View>
-                    <Text style={s.detailText}>
-                        Гостей: {item.passengers || item.guests_count || '—'} • Капитан: {(item.captain || item.captain_requested) ? 'Да' : 'Нет'}
-                    </Text>
+                    <View style={s.detailRow}>
+                        <Users size={14} color={theme.colors.gray400} />
+                        <Text style={s.detailText}>
+                            Гостей: {item.passengers || item.guests_count || '—'}
+                        </Text>
+                    </View>
+                    <View style={s.detailRow}>
+                        <Ship size={14} color={theme.colors.gray400} />
+                        <Text style={s.detailText}>
+                            Капитан: {(item.captain || item.captain_requested) ? 'Да' : 'Нет'}
+                        </Text>
+                    </View>
                 </View>
                 {(item.status === 'pending' || item.status === 'confirmed') && (
                     <View style={s.actionsWrap}>
@@ -756,7 +789,25 @@ export default function OwnerBookingsScreen() {
                             >
                                 {TIME_SLOTS.map((slot) => {
                                     const isBusy = isSlotInBusyInterval(slot, busyIntervals);
-                                    const canStart = isStartTimeValid(slot, editDuration, busyIntervals);
+                                    const canStartBase = isStartTimeValid(slot, editDuration, busyIntervals);
+
+                                    const isToday = (() => {
+                                        const now = new Date();
+                                        const d = new Date(editDate);
+                                        return (
+                                            now.getFullYear() === d.getFullYear() &&
+                                            now.getMonth() === d.getMonth() &&
+                                            now.getDate() === d.getDate()
+                                        );
+                                    })();
+                                    const nowMinutes = (() => {
+                                        const n = new Date();
+                                        return n.getHours() * 60 + n.getMinutes();
+                                    })();
+                                    const slotMinutes = slotToMinutes(slot);
+                                    const isPastToday = isToday && slotMinutes <= nowMinutes;
+
+                                    const canStart = canStartBase && !isPastToday;
                                     const isSelected = pendingTime === slot;
                                     const disabled = !canStart;
                                     return (
@@ -914,7 +965,26 @@ const s = StyleSheet.create({
     },
     cardPrice: { fontSize: 20, fontFamily: theme.fonts.bold, color: NAVY },
     cardTitle: { fontSize: 16, fontFamily: theme.fonts.semiBold, color: NAVY, marginBottom: 4 },
-    cardClient: { fontSize: 13, fontFamily: theme.fonts.regular, color: theme.colors.gray500, marginBottom: 8 },
+    cardClientBlock: {
+        marginBottom: 8,
+    },
+    cardClient: {
+        fontSize: 13,
+        fontFamily: theme.fonts.regular,
+        color: theme.colors.gray500,
+    },
+    cardClientPhoneWrap: {
+        marginTop: 2,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    cardClientPhone: {
+        fontSize: 13,
+        fontFamily: theme.fonts.medium,
+        color: NAVY,
+        textDecorationLine: 'underline',
+    },
     cardDetails: { marginTop: 4 },
     detailRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
     detailText: { fontSize: 13, fontFamily: theme.fonts.regular, color: theme.colors.gray500, marginLeft: 6 },
