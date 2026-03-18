@@ -1,7 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const mobileDir = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+// Windows-safe: convert file:// URL to normal path (avoids "C:\\C:\\..." issues)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const mobileDir = path.resolve(__dirname, '..');
 const androidDir = path.join(mobileDir, 'android');
 
 const defaultSdkDir = path.join(process.env.USERPROFILE || 'C:\\Users\\ku4en', 'AppData', 'Local', 'Android', 'Sdk');
