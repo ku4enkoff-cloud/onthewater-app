@@ -323,7 +323,25 @@ export default function OwnerBookingsScreen() {
                     <Text style={s.cardPrice}>{(item.total_price || 0).toLocaleString('ru-RU')} ₽</Text>
                 </View>
                 <Text style={s.cardTitle} numberOfLines={2}>{item.boat_title}</Text>
-                <Text style={s.cardClient}>Клиент: {item.client_name || '—'}</Text>
+                <Text style={s.cardClient}>
+                    Клиент: {item.client_name || '—'}
+                    {(() => {
+                        const phoneRaw =
+                            item.client_phone ||
+                            item.phone ||
+                            item.user_phone ||
+                            item.user_phone_e164 ||
+                            item.client?.phone ||
+                            item.user?.phone ||
+                            null;
+                        if (!phoneRaw) return '';
+                        const digits = String(phoneRaw).replace(/\D/g, '');
+                        const formatted = digits.length >= 11
+                            ? `+${digits[0]} (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7, 9)}-${digits.slice(9, 11)}`
+                            : phoneRaw;
+                        return ` • ${formatted}`;
+                    })()}
+                </Text>
                 <View style={s.cardDetails}>
                     <View style={s.detailRow}>
                         <Calendar size={14} color={theme.colors.gray400} />

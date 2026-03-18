@@ -35,17 +35,32 @@ function withAndroidSigning(config) {
       );
     }
 
-    // Релиз всегда подписываем нашим ключом, если есть keystore.properties
-    const releaseSigningLine = 'signingConfig rootProject.file("../keystore.properties").exists() ? signingConfigs.release : signingConfigs.debug';
+    // ВАЖНО: для релиза всегда используем release keystore, для debug — debug keystore.
+    // Не используем условные signingConfig, иначе Play периодически получает debug-подпись.
+    const debugSigningLine = 'signingConfig signingConfigs.debug';
+    const releaseSigningLine = 'signingConfig signingConfigs.release';
+
+    // 1) Попытаться заменить существующие signingConfig внутри buildTypes/debug и buildTypes/release
     contents = contents.replace(
-      /release\s*\{[\s\S]*?signingConfig\s+signingConfigs\.debug/,
-      (m) => m.replace(/signingConfig\s+signingConfigs\.debug/, releaseSigningLine)
+      /(buildTypes\s*\{[\s\S]*?\bdebug\s*\{[\s\S]*?)\bsigningConfig\s+[^\n\r]+/m,
+      `$1${debugSigningLine}`
     );
-    // На случай если в шаблоне нет signingConfig в release — подставляем после "release {"
-    if (contents.includes('signingConfigs.release') && !contents.includes(releaseSigningLine)) {
+    contents = contents.replace(
+      /(buildTypes\s*\{[\s\S]*?\brelease\s*\{[\s\S]*?)\bsigningConfig\s+[^\n\r]+/m,
+      `$1${releaseSigningLine}`
+    );
+
+    // 2) Если строки signingConfig не было — вставить сразу после "debug {" / "release {"
+    if (!new RegExp(`buildTypes\\s*\\{[\\s\\S]*?\\bdebug\\s*\\{[\\s\\S]*?\\b${debugSigningLine.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(contents)) {
       contents = contents.replace(
-        /(buildTypes\s*\{\s*[\s\S]*?release\s*\{\s*)(\n)/,
-        '$1\n            ' + releaseSigningLine + '$2'
+        /(buildTypes\s*\{[\s\S]*?\bdebug\s*\{\s*\n)/,
+        `$1            ${debugSigningLine}\n`
+      );
+    }
+    if (!new RegExp(`buildTypes\\s*\\{[\\s\\S]*?\\brelease\\s*\\{[\\s\\S]*?\\b${releaseSigningLine.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(contents)) {
+      contents = contents.replace(
+        /(buildTypes\s*\{[\s\S]*?\brelease\s*\{\s*\n)/,
+        `$1            ${releaseSigningLine}\n`
       );
     }
 

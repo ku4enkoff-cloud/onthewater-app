@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { Mail, Anchor } from 'lucide-react-native';
+import { Mail } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 
 let LinearGradient;
@@ -15,7 +15,7 @@ try {
 const GRADIENT_COLORS = ['#0A3D3D', '#0D5C5C', '#1A7A6E', '#3A9E7A', '#6BBF8A'];
 const BUTTON_COLOR = '#E8A838';
 const FALLBACK_BG = '#0D5C5C';
-const BRAND = 'onthewater';
+const BRAND = 'Onthewater.ru';
 
 export default function WelcomeScreen({ navigation }) {
     return (
@@ -40,12 +40,9 @@ export default function WelcomeScreen({ navigation }) {
                 {/* Logo + Welcome */}
                 <View style={s.heroBlock}>
                     <View style={s.logoRow}>
-                        <View style={s.logoCircle}>
-                            <Anchor size={30} color="#fff" strokeWidth={1.8} />
-                        </View>
                         <Text style={s.logoText}>{BRAND}</Text>
                     </View>
-                    <Text style={s.welcomeText}>Welcome to {BRAND}</Text>
+                    <Text style={s.welcomeText}>Море возможностей для твоего судна.</Text>
                 </View>
 
                 {/* CTA */}
@@ -90,12 +87,6 @@ const s = StyleSheet.create({
 
     heroBlock: { alignItems: 'center', paddingHorizontal: 32 },
     logoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-    logoCircle: {
-        width: 46, height: 46, borderRadius: 23,
-        borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)',
-        justifyContent: 'center', alignItems: 'center',
-        marginRight: 10,
-    },
     logoText: {
         fontSize: 28, fontFamily: theme.fonts.semiBold, color: '#fff',
         letterSpacing: 0.3,

@@ -118,6 +118,18 @@ export default function RegisterScreen({ navigation, route }) {
         <SafeAreaView style={styles.container}>
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
                 <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+                    {navigation?.canGoBack?.() ? (
+                        <TouchableOpacity
+                            onPress={() => navigation.goBack()}
+                            style={styles.backBtn}
+                            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                            accessibilityRole="button"
+                            accessibilityLabel="Назад"
+                        >
+                            <Text style={styles.backIcon}>‹</Text>
+                            <Text style={styles.backText}>Назад</Text>
+                        </TouchableOpacity>
+                    ) : null}
                     <Text style={[theme.typography.h1, { marginBottom: 8 }]}>Создать аккаунт</Text>
                     <Text style={[theme.typography.body, { color: theme.colors.textMuted, marginBottom: 32 }]}>
                         {appVariant === 'owner' ? 'Регистрация для владельцев судов' : 'Присоединяйтесь к ONTHEWATER'}
@@ -161,6 +173,9 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
     keyboardView: { flex: 1 },
     contentContainer: { flexGrow: 1, paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.xl, paddingBottom: theme.spacing.xl },
+    backBtn: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, alignSelf: 'flex-start' },
+    backIcon: { fontSize: 28, lineHeight: 28, marginRight: 6, color: theme.colors.textMain },
+    backText: { ...theme.typography.body, fontWeight: '700', color: theme.colors.textMain },
     inputContainer: { marginBottom: theme.spacing.md },
     label: { ...theme.typography.bodySm, fontWeight: 'bold', marginBottom: 8 },
     input: { borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.borderRadius.md, padding: 14, fontSize: 16, backgroundColor: theme.colors.surface },

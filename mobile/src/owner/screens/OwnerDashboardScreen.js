@@ -33,6 +33,7 @@ export default function OwnerDashboardScreen({ navigation }) {
     const [stats, setStats] = useState({ completed: 0, earnings: 0, responseRate: null });
     const [reviews, setReviews] = useState(0);
     const [unreadMessages, setUnreadMessages] = useState(0);
+    const [pendingBookings, setPendingBookings] = useState(0);
     const [refreshing, setRefreshing] = useState(false);
 
     const loadStats = async () => {
@@ -44,11 +45,13 @@ export default function OwnerDashboardScreen({ navigation }) {
             ]);
             const list = Array.isArray(bookingsRes.data) ? bookingsRes.data : [];
             const completedList = list.filter(b => b.status === 'completed');
+            const pending = list.filter((b) => b && b.status === 'pending').length;
             const completed = completedList.length;
             const earnings = completedList.reduce((s, b) => s + (Number(b.total_price) || 0), 0);
             setStats({ completed, earnings, responseRate: null });
             setReviews(reviewsRes.data?.count ?? 0);
             setUnreadMessages(unreadRes.data?.count ?? 0);
+            setPendingBookings(pending);
         } catch (_) {}
     };
 
@@ -161,7 +164,16 @@ export default function OwnerDashboardScreen({ navigation }) {
                         onPress={() => navigation.navigate('Bookings')}
                         activeOpacity={0.7}
                     >
-                        <Settings size={22} color={TEAL} strokeWidth={1.8} />
+                        <View style={s.actionCardInner}>
+                            <Settings size={22} color={TEAL} strokeWidth={1.8} />
+                            {pendingBookings > 0 && (
+                                <View style={s.unreadBadge}>
+                                    <Text style={s.unreadBadgeText}>
+                                        {pendingBookings > 99 ? '99+' : pendingBookings}
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
                         <Text style={s.actionLabel}>Бронирования</Text>
                     </TouchableOpacity>
                 </View>
