@@ -89,7 +89,13 @@ router.get('/:id', authenticate, async (req, res, next) => {
         const id = parseInt(req.params.id, 10);
         if (Number.isNaN(id)) return res.status(400).json({ error: 'Неверный id чата' });
         const { rows } = await pool.query(
-            'SELECT * FROM chats WHERE id = $1 AND (user_id = $2 OR owner_id = $2)',
+            `SELECT c.*,
+                    u_user.avatar AS user_avatar,
+                    u_owner.avatar AS owner_avatar
+             FROM chats c
+             LEFT JOIN users u_user ON u_user.id = c.user_id
+             LEFT JOIN users u_owner ON u_owner.id = c.owner_id
+             WHERE c.id = $1 AND (c.user_id = $2 OR c.owner_id = $2)`,
             [id, req.user.id]
         );
         if (rows.length === 0) return res.status(404).json({ error: 'Not found' });

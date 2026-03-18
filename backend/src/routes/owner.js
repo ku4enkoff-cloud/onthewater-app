@@ -192,6 +192,7 @@ router.get('/chats', authenticate, async (req, res, next) => {
                     u.name AS user_name_fallback,
                     u.first_name AS user_first_name,
                     u.last_name AS user_last_name,
+                    u.avatar AS client_avatar,
                     u.email AS user_email
              FROM chats c
              LEFT JOIN users u ON u.id = c.user_id

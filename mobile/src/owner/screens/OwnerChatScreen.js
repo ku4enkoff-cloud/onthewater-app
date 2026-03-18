@@ -20,6 +20,10 @@ export default function OwnerChatScreen({ navigation }) {
 
     useEffect(() => {
         fetchChats();
+        const id = setInterval(() => {
+            fetchChats();
+        }, 30000);
+        return () => clearInterval(id);
     }, []);
 
     const fetchChats = async (isRefresh = false) => {

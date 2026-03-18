@@ -95,10 +95,17 @@ export default function ChatDetailScreen({ route, navigation }) {
 
     const myName = currentUser?.name || currentUser?.first_name || 'Вы';
     const ownerName = chat?.owner_name || 'Владелец';
+    const clientName = chat?.user_name || chat?.client_name || 'Клиент';
+    const clientAvatar = chat?.user_avatar || chat?.client_avatar || null;
 
     const renderMessage = ({ item }) => {
-        const isMe = item.sender === 'me';
+        // Backend пишет sender так: 'owner' для сообщений владельца и 'me' для сообщений клиента.
+        // Поэтому "я" зависит от роли текущего пользователя.
+        const isMe = item.sender === (currentUser?.role === 'owner' ? 'owner' : 'me');
         const timeStr = formatTime(item.created_at || item.createdAt);
+        const isOwnerSender = item.sender === 'owner';
+        const otherName = isOwnerSender ? ownerName : clientName;
+        const otherRoleLabel = isOwnerSender ? 'Владелец' : 'Клиент';
         return (
             <View style={[styles.messageRow, isMe ? styles.messageRowMe : styles.messageRowThem]}>
                 <View style={[styles.messageBubble, isMe ? styles.messageBubbleMe : styles.messageBubbleThem]}>
@@ -107,12 +114,22 @@ export default function ChatDetailScreen({ route, navigation }) {
                 <View style={[styles.messageMeta, isMe ? styles.messageMetaMe : styles.messageMetaThem]}>
                     {!isMe && (
                         <View style={styles.avatarSmallWrap}>
-                            {chat?.owner_avatar ? (
-                                <Image source={{ uri: chat.owner_avatar }} style={styles.avatarSmall} />
+                            {isOwnerSender ? (
+                                chat?.owner_avatar ? (
+                                    <Image source={{ uri: chat.owner_avatar }} style={styles.avatarSmall} />
+                                ) : (
+                                    <View style={styles.avatarSmallPlaceholder}>
+                                        <User size={12} color={theme.colors.gray500} />
+                                    </View>
+                                )
                             ) : (
-                                <View style={styles.avatarSmallPlaceholder}>
-                                    <User size={12} color={theme.colors.gray500} />
-                                </View>
+                                clientAvatar ? (
+                                    <Image source={{ uri: clientAvatar }} style={styles.avatarSmall} />
+                                ) : (
+                                    <View style={styles.avatarSmallPlaceholder}>
+                                        <User size={12} color={theme.colors.gray500} />
+                                    </View>
+                                )
                             )}
                         </View>
                     )}
@@ -124,9 +141,9 @@ export default function ChatDetailScreen({ route, navigation }) {
                             </>
                         ) : (
                             <Text style={styles.messageMetaLine}>
-                                <Text style={styles.messageSender}>{ownerName}</Text>
+                                <Text style={styles.messageSender}>{otherName}</Text>
                                 <Text style={styles.messageDot}> · </Text>
-                                <Text style={styles.messageSenderRole}>Владелец</Text>
+                                <Text style={styles.messageSenderRole}>{otherRoleLabel}</Text>
                                 <Text style={styles.messageDot}> · </Text>
                                 <Text style={styles.messageTime}>{timeStr}</Text>
                             </Text>
