@@ -185,8 +185,39 @@ router.get('/unread-messages-count', authenticate, async (req, res, next) => {
 
 router.get('/chats', authenticate, async (req, res, next) => {
     try {
-        const { rows } = await pool.query('SELECT * FROM chats WHERE owner_id = $1 ORDER BY created_at DESC', [req.user.id]);
-        res.json(rows);
+        // Показываем владельцу полное имя клиента (name или first_name+last_name), чтобы фамилия тоже отображалась
+        // даже для уже созданных чатов.
+        const { rows } = await pool.query(
+            `SELECT c.*,
+                    u.name AS user_name_fallback,
+                    u.first_name AS user_first_name,
+                    u.last_name AS user_last_name,
+                    u.email AS user_email
+             FROM chats c
+             LEFT JOIN users u ON u.id = c.user_id
+             WHERE c.owner_id = $1
+             ORDER BY c.created_at DESC`,
+            [req.user.id]
+        );
+
+        const mapped = rows.map((c) => {
+            const display =
+                [c.user_first_name, c.user_last_name]
+                    .filter(Boolean)
+                    .map((v) => String(v).trim())
+                    .filter(Boolean)
+                    .join(' ')
+                    .trim() ||
+                (c.user_name_fallback && String(c.user_name_fallback).trim()) ||
+                (c.user_email && String(c.user_email).trim()) ||
+                c.user_name ||
+                null;
+
+            const { user_name_fallback, user_first_name, user_last_name, user_email, ...rest } = c;
+            return { ...rest, user_name: display };
+        });
+
+        res.json(mapped);
     } catch (err) {
         next(err);
     }

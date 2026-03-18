@@ -62,7 +62,16 @@ router.post('/', authenticate, async (req, res, next) => {
             [ownerId]
         );
         const ownerName = ownerRows[0] && ownerRows[0].name ? ownerRows[0].name : 'Владелец';
-        const userName = req.user.name || req.user.email || 'Гость';
+        const userName =
+            [req.user.first_name, req.user.last_name]
+                .filter(Boolean)
+                .map((v) => String(v).trim())
+                .filter(Boolean)
+                .join(' ')
+                .trim() ||
+            (req.user.name && String(req.user.name).trim()) ||
+            req.user.email ||
+            'Гость';
         const { rows: inserted } = await pool.query(
             `INSERT INTO chats (user_id, owner_id, boat_id, boat_title, user_name, owner_name)
              VALUES ($1, $2, $3, $4, $5, $6)

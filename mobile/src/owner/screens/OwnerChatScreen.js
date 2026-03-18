@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-    View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Image,
+    View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Image, RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../shared/theme';
@@ -14,6 +14,7 @@ const GRADIENT = ['#0A3D3D', '#0D5C5C', '#1A7A6E', '#3A9E7A'];
 export default function OwnerChatScreen({ navigation }) {
     const [chats, setChats] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const insets = useSafeAreaInsets();
 
@@ -21,7 +22,7 @@ export default function OwnerChatScreen({ navigation }) {
         fetchChats();
     }, []);
 
-    const fetchChats = async () => {
+    const fetchChats = async (isRefresh = false) => {
         try {
             const res = await api.get('/owner/chats');
             setChats(Array.isArray(res.data) ? res.data : []);
@@ -29,13 +30,20 @@ export default function OwnerChatScreen({ navigation }) {
             console.log('Error fetching owner chats', e);
             setChats([]);
         } finally {
-            setLoading(false);
+            if (isRefresh) setRefreshing(false);
+            else setLoading(false);
         }
+    };
+
+    const onRefresh = () => {
+        if (refreshing) return;
+        setRefreshing(true);
+        fetchChats(true);
     };
 
     const filteredChats = chats.filter(
         chat =>
-            (chat.client_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (chat.user_name || chat.client_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
             (chat.boat_title || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
@@ -60,7 +68,7 @@ export default function OwnerChatScreen({ navigation }) {
             </View>
             <View style={styles.chatContent}>
                 <View style={styles.chatHeader}>
-                    <Text style={styles.clientName}>{item.client_name || 'Клиент'}</Text>
+                    <Text style={styles.clientName}>{item.user_name || item.client_name || '—'}</Text>
                     <Text style={styles.timeText}>{item.last_message_date || ''} • {item.last_message_time || ''}</Text>
                 </View>
                 <Text style={styles.boatTitle} numberOfLines={1}>{item.boat_title || 'Катер'}</Text>
@@ -95,7 +103,7 @@ export default function OwnerChatScreen({ navigation }) {
 
             <View style={styles.searchContainer}>
                 <View style={styles.searchInputContainer}>
-                    <MessageCircle size={20} color={theme.colors.textMuted} style={styles.searchIcon} />
+                    <MessageCircle size={18} color={theme.colors.textMuted} style={styles.searchIcon} />
                     <TextInput
                         style={styles.searchInput}
                         placeholder="Поиск по клиентам или катерам"
@@ -115,6 +123,13 @@ export default function OwnerChatScreen({ navigation }) {
                     keyExtractor={item => item.id.toString()}
                     contentContainerStyle={styles.listContainer}
                     showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            tintColor={'#0D5C5C'}
+                        />
+                    }
                     ListEmptyComponent={
                         <View style={styles.emptyState}>
                             <MessageCircle size={64} color={theme.colors.border} />
@@ -143,19 +158,19 @@ const styles = StyleSheet.create({
         paddingHorizontal: theme.spacing.lg,
         paddingBottom: theme.spacing.md,
     },
-    searchContainer: { paddingHorizontal: theme.spacing.lg, marginTop: theme.spacing.md, marginBottom: theme.spacing.md },
+    searchContainer: { paddingHorizontal: theme.spacing.md, marginTop: theme.spacing.sm, marginBottom: theme.spacing.sm },
     searchInputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: theme.colors.surface,
         borderRadius: theme.borderRadius.pill,
         paddingHorizontal: theme.spacing.md,
-        paddingVertical: theme.spacing.sm,
+        paddingVertical: 6,
         borderWidth: 1,
         borderColor: theme.colors.border,
     },
-    searchIcon: { marginRight: theme.spacing.sm },
-    searchInput: { flex: 1, fontSize: 16, color: theme.colors.textMain },
+    searchIcon: { marginRight: theme.spacing.xs },
+    searchInput: { flex: 1, fontSize: 14, color: theme.colors.textMain, lineHeight: 18 },
     listContainer: { paddingHorizontal: theme.spacing.lg, paddingBottom: 100 },
     chatItem: {
         flexDirection: 'row',
