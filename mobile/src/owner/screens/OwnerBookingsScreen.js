@@ -7,11 +7,18 @@ import {
 import { Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, Pencil, ChevronLeft, ChevronRight, X, Ship, Phone, Users } from 'lucide-react-native';
+import { Calendar, Clock, Timer, CheckCircle, XCircle, AlertCircle, Pencil, ChevronLeft, ChevronRight, X, Ship, Phone, Users } from 'lucide-react-native';
+import * as LucideIcons from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 
 const DURATION_OPTIONS = [30, 60, 90, 120, 180, 240];
+
+// Иконки из lucide: "field-time" и "time-slot" из макета.
+// Если конкретные экспорты не найдены, подстрахуемся `Clock`, чтобы UI не упал.
+const FieldTimeIcon = LucideIcons.FieldTime || LucideIcons.fieldTime || Clock;
+// В этой версии lucide-react-native иконки "time-slot" может не быть — ставим closest: Timer.
+const TimeSlotIcon = Timer;
 
 // Тайм-слоты для выбора времени начала (шаг 30 минут)
 const TIME_SLOTS = [];
@@ -73,6 +80,79 @@ const GRADIENT = ['#0A3D3D', '#0D5C5C', '#1A7A6E'];
 const TEAL = '#0D5C5C';
 const NAVY = '#1B365D';
 
+// Бизнес-слоты трактуем как время лодки. Пока лодка без индивидуального timezone — Europe/Moscow.
+const BOOKING_TIME_ZONE = 'Europe/Moscow';
+
+/** Europe/Moscow wall-time (YYYY-MM-DD HH:mm) → ISO (UTC) */
+const zonedWallTimeToIso = (timeZone, year, monthIndex, day, hour, minute) => {
+    const targetUtcMillis = Date.UTC(year, monthIndex, day, hour, minute, 0);
+    const dtf = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+    });
+
+    const partsToUtcMillis = (parts) => {
+        const get = (type) => {
+            const p = parts.find((x) => x.type === type);
+            return p ? parseInt(p.value, 10) : NaN;
+        };
+        const y = get('year');
+        const m = get('month');
+        const d = get('day');
+        const h = get('hour');
+        const mi = get('minute');
+        const s = get('second');
+        return Date.UTC(y, m - 1, d, h, mi, s);
+    };
+
+    let utcMillis = targetUtcMillis;
+    for (let i = 0; i < 2; i++) {
+        const date = new Date(utcMillis);
+        const parts = dtf.formatToParts(date);
+        const tzAsUtcMillis = partsToUtcMillis(parts);
+        const offset = tzAsUtcMillis - utcMillis;
+        utcMillis = targetUtcMillis - offset;
+    }
+    return new Date(utcMillis).toISOString();
+};
+
+const formatDateInBookingTz = (d) => {
+    if (!d) return '—';
+    const date = new Date(d);
+    try {
+        return new Intl.DateTimeFormat('ru-RU', {
+            timeZone: BOOKING_TIME_ZONE,
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+        }).format(date);
+    } catch {
+        return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+};
+
+const formatTimeHHMMInBookingTz = (d) => {
+    if (!d) return '';
+    const date = new Date(d);
+    try {
+        return new Intl.DateTimeFormat('ru-RU', {
+            timeZone: BOOKING_TIME_ZONE,
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        }).format(date);
+    } catch {
+        const time = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', hour12: false });
+        return time.replace(/\s/g, '');
+    }
+};
+
 const TABS = [
     { key: 'all',       label: 'Все',           status: null },
     { key: 'pending',   label: 'Ожидают',       status: 'pending' },
@@ -115,6 +195,9 @@ export default function OwnerBookingsScreen() {
     useEffect(() => {
         fetchBookings();
         fetchBoats();
+        // Периодическое обновление списка, пока экран смонтирован.
+        const id = setInterval(fetchBookings, 30000);
+        return () => clearInterval(id);
     }, []);
 
     const fetchBookings = async () => {
@@ -211,9 +294,7 @@ export default function OwnerBookingsScreen() {
         setEditDuration(Number(item.hours) || 60);
         setCalendarMonth(new Date(d.getFullYear(), d.getMonth(), 1));
         setTimeBoatId(boatId);
-        const hh = String(d.getHours()).padStart(2, '0');
-        const mm = String(d.getMinutes()).padStart(2, '0');
-        setPendingTime(`${hh}:${mm}`);
+        setPendingTime(formatTimeHHMMInBookingTz(startAt));
         fetchBusyIntervals(d, boatId);
         setEditModalVisible(true);
     };
@@ -231,9 +312,17 @@ export default function OwnerBookingsScreen() {
             const y = editDate.getFullYear();
             const mo = editDate.getMonth();
             const da = editDate.getDate();
-            const h = editTime.getHours();
-            const mi = editTime.getMinutes();
-            const start_at = new Date(y, mo, da, h, mi, 0, 0).toISOString();
+            const [hh, mm] = String(pendingTime || '').split(':');
+            const h = parseInt(hh, 10);
+            const mi = parseInt(mm, 10);
+            const start_at = zonedWallTimeToIso(
+                BOOKING_TIME_ZONE,
+                y,
+                mo,
+                da,
+                Number.isFinite(h) ? h : editTime.getHours(),
+                Number.isFinite(mi) ? mi : editTime.getMinutes()
+            );
             const res = await api.patch(`/bookings/${editingBooking.id}`, {
                 start_at,
                 hours: editDuration,
@@ -295,9 +384,7 @@ export default function OwnerBookingsScreen() {
     }[status] || status);
 
     const formatDate = (d) => {
-        if (!d) return '—';
-        const date = new Date(d);
-        return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+        return formatDateInBookingTz(d);
     };
 
     const formatDuration = (mins) => {
@@ -362,20 +449,20 @@ export default function OwnerBookingsScreen() {
                         <Calendar size={14} color={theme.colors.gray400} />
                         <Text style={s.detailText}>
                             {formatDate(item.start_at || item.date_start)}
+                        </Text>
+                    </View>
+                    <View style={s.detailRow}>
+                        <FieldTimeIcon size={14} color={theme.colors.gray400} />
+                        <Text style={s.detailText}>
                             {(() => {
                                 const src = item.start_at || item.date_start;
-                                if (!src) return '';
-                                const d = new Date(src);
-                                const time = d.toLocaleTimeString('ru-RU', {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                });
-                                return ` • ${time}`;
+                                if (!src) return '—';
+                                return formatTimeHHMMInBookingTz(src);
                             })()}
                         </Text>
                     </View>
                     <View style={s.detailRow}>
-                        <Clock size={14} color={theme.colors.gray400} />
+                        <TimeSlotIcon size={14} color={theme.colors.gray400} />
                         <Text style={s.detailText}>{formatDuration(item.hours)}</Text>
                     </View>
                     <View style={s.detailRow}>
@@ -724,15 +811,12 @@ export default function OwnerBookingsScreen() {
                             <TouchableOpacity
                                 style={s.modalValueBtn}
                                 onPress={() => {
-                                    const hh = String(editTime.getHours()).padStart(2, '0');
-                                    const mm = String(editTime.getMinutes()).padStart(2, '0');
-                                    setPendingTime(`${hh}:${mm}`);
                                     fetchBusyIntervals(editDate, timeBoatId);
                                     setShowTimePicker(true);
                                 }}
                             >
                                 <Text style={s.modalValue}>
-                                    {String(editTime.getHours()).padStart(2, '0')}:{String(editTime.getMinutes()).padStart(2, '0')}
+                                    {pendingTime || '—'}
                                 </Text>
                             </TouchableOpacity>
                         </View>

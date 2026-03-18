@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Image,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 import { MessageCircle, User } from 'lucide-react-native';
@@ -15,6 +15,7 @@ export default function OwnerChatScreen({ navigation }) {
     const [chats, setChats] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         fetchChats();
@@ -72,7 +73,7 @@ export default function OwnerChatScreen({ navigation }) {
     );
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.container}>
             <View style={styles.headerWrap}>
                 {LinearGradient ? (
                     <LinearGradient
@@ -84,7 +85,7 @@ export default function OwnerChatScreen({ navigation }) {
                 ) : (
                     <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#0D5C5C' }]} />
                 )}
-                <View style={styles.header}>
+                <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
                     <Text style={[theme.typography.h1, { color: '#fff' }]}>Сообщения</Text>
                     <Text style={[theme.typography.body, { color: 'rgba(255,255,255,0.82)', marginTop: 4 }]}>
                         Чаты с клиентами
@@ -127,7 +128,7 @@ export default function OwnerChatScreen({ navigation }) {
                     }
                 />
             )}
-        </SafeAreaView>
+        </View>
     );
 }
 
@@ -140,7 +141,6 @@ const styles = StyleSheet.create({
     },
     header: {
         paddingHorizontal: theme.spacing.lg,
-        paddingTop: theme.spacing.xl,
         paddingBottom: theme.spacing.md,
     },
     searchContainer: { paddingHorizontal: theme.spacing.lg, marginTop: theme.spacing.md, marginBottom: theme.spacing.md },

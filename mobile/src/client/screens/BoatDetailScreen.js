@@ -181,21 +181,64 @@ const toLocalDateKey = (d) => {
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
 };
-/** Локальная дата + время «ЧЧ:ММ» → ISO для API (TIMESTAMPTZ в БД) */
-const localDateTimeToIso = (dateObj, timeHHMM) => {
+// В БД время хранится как TIMESTAMPTZ, но бизнес-логика и слоты расписания трактуются
+// как время лодки. Пока лодка без индивидуального timezone — используем Europe/Moscow.
+const BOOKING_TIME_ZONE = 'Europe/Moscow';
+
+/** Europe/Moscow wall-time (YYYY-MM-DD HH:mm) → ISO (UTC) для TIMESTAMPTZ */
+const zonedWallTimeToIso = (timeZone, year, monthIndex, day, hour, minute) => {
+    const targetUtcMillis = Date.UTC(year, monthIndex, day, hour, minute, 0);
+
+    const dtf = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+    });
+
+    const partsToUtcMillis = (parts) => {
+        const get = (type) => {
+            const p = parts.find((x) => x.type === type);
+            return p ? parseInt(p.value, 10) : NaN;
+        };
+        const y = get('year');
+        const m = get('month');
+        const d = get('day');
+        const h = get('hour');
+        const mi = get('minute');
+        const s = get('second');
+        return Date.UTC(y, m - 1, d, h, mi, s);
+    };
+
+    // Итеративно уточняем offset (на случай переходов по DST).
+    let utcMillis = targetUtcMillis;
+    for (let i = 0; i < 2; i++) {
+        const date = new Date(utcMillis);
+        const parts = dtf.formatToParts(date);
+        const tzAsUtcMillis = partsToUtcMillis(parts);
+        const offset = tzAsUtcMillis - utcMillis;
+        utcMillis = targetUtcMillis - offset;
+    }
+    return new Date(utcMillis).toISOString();
+};
+
+/** (dateObj + 'ЧЧ:ММ') → ISO в UTC, трактуя wall-time как Europe/Moscow */
+const slotToIsoInBookingTz = (dateObj, timeHHMM) => {
     const parts = String(timeHHMM || '00:00').split(':');
     const hh = parseInt(parts[0], 10) || 0;
     const mm = parseInt(parts[1], 10) || 0;
-    const d = new Date(
+    return zonedWallTimeToIso(
+        BOOKING_TIME_ZONE,
         dateObj.getFullYear(),
         dateObj.getMonth(),
         dateObj.getDate(),
         hh,
-        mm,
-        0,
-        0
+        mm
     );
-    return d.toISOString();
 };
 const toDateKey = (d) => toLocalDateKey(d);
 const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -514,7 +557,7 @@ export default function BoatDetailScreen({ route, navigation }) {
         try {
             await api.post('/bookings', {
                 boat_id: boat.id,
-                start_at: localDateTimeToIso(bookDate, bookTime || '00:00'),
+                start_at: slotToIsoInBookingTz(bookDate, bookTime || '00:00'),
                 hours: bookHours,
                 passengers: bookPassengers,
                 captain: bookCaptain,
