@@ -228,9 +228,12 @@ export default function OwnerBookingsScreen() {
     const handleSaveEdit = async () => {
         if (!editingBooking) return;
         try {
-            const dateStr = editDate.toISOString().split('T')[0];
-            const timeStr = `${String(editTime.getHours()).padStart(2, '0')}:${String(editTime.getMinutes()).padStart(2, '0')}`;
-            const start_at = `${dateStr}T${timeStr}:00`;
+            const y = editDate.getFullYear();
+            const mo = editDate.getMonth();
+            const da = editDate.getDate();
+            const h = editTime.getHours();
+            const mi = editTime.getMinutes();
+            const start_at = new Date(y, mo, da, h, mi, 0, 0).toISOString();
             const res = await api.patch(`/bookings/${editingBooking.id}`, {
                 start_at,
                 hours: editDuration,

@@ -181,6 +181,22 @@ const toLocalDateKey = (d) => {
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
 };
+/** Локальная дата + время «ЧЧ:ММ» → ISO для API (TIMESTAMPTZ в БД) */
+const localDateTimeToIso = (dateObj, timeHHMM) => {
+    const parts = String(timeHHMM || '00:00').split(':');
+    const hh = parseInt(parts[0], 10) || 0;
+    const mm = parseInt(parts[1], 10) || 0;
+    const d = new Date(
+        dateObj.getFullYear(),
+        dateObj.getMonth(),
+        dateObj.getDate(),
+        hh,
+        mm,
+        0,
+        0
+    );
+    return d.toISOString();
+};
 const toDateKey = (d) => toLocalDateKey(d);
 const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
@@ -498,9 +514,7 @@ export default function BoatDetailScreen({ route, navigation }) {
         try {
             await api.post('/bookings', {
                 boat_id: boat.id,
-                start_at: bookTime
-                    ? `${toLocalDateKey(bookDate)}T${bookTime}:00`
-                    : `${toLocalDateKey(bookDate)}T00:00:00`,
+                start_at: localDateTimeToIso(bookDate, bookTime || '00:00'),
                 hours: bookHours,
                 passengers: bookPassengers,
                 captain: bookCaptain,
