@@ -17,14 +17,27 @@ router.get('/bookings', authenticate, async (req, res, next) => {
     try {
         // Неподтверждённые бронирования, срок которых уже прошёл — автоматически в отменённые
         await pool.query(
-            `UPDATE bookings SET status = 'cancelled'
-             WHERE status = 'pending' AND start_at IS NOT NULL AND start_at < NOW()`
+            `UPDATE bookings b
+             SET status = 'cancelled'
+             FROM boats boat
+             WHERE b.boat_id = boat.id
+               AND b.status = 'pending'
+               AND b.start_at IS NOT NULL
+               AND (b.start_at AT TIME ZONE COALESCE(boat.timezone, 'Europe/Moscow'))
+                   < (NOW() AT TIME ZONE COALESCE(boat.timezone, 'Europe/Moscow'))`
         );
         // Подтверждённые бронирования, время которых прошло — в завершённые
         await pool.query(
-            `UPDATE bookings SET status = 'completed'
-             WHERE status = 'confirmed' AND start_at IS NOT NULL
-             AND (start_at + (COALESCE(hours, 180)::int * interval '1 minute')) < NOW()`
+            `UPDATE bookings b
+             SET status = 'completed'
+             FROM boats boat
+             WHERE b.boat_id = boat.id
+               AND b.status = 'confirmed'
+               AND b.start_at IS NOT NULL
+               AND (
+                 (b.start_at AT TIME ZONE COALESCE(boat.timezone, 'Europe/Moscow'))
+                 + (COALESCE(b.hours, 180)::int * interval '1 minute')
+               ) < (NOW() AT TIME ZONE COALESCE(boat.timezone, 'Europe/Moscow'))`
         );
         const { rows: rawRows } = await pool.query(
             `SELECT b.*, boat.schedule_work_days as boat_schedule_work_days,

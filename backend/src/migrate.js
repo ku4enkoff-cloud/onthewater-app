@@ -253,6 +253,10 @@ async function migrate() {
         // Добавить location_region для существующих БД
         await client.query(`ALTER TABLE boats ADD COLUMN IF NOT EXISTS location_region VARCHAR(255) DEFAULT ''`).catch(() => {});
 
+        // Таймзона катера (для локального времени авто-отмены бронирований)
+        await client.query(`ALTER TABLE boats ADD COLUMN IF NOT EXISTS timezone TEXT`).catch(() => {});
+        await client.query(`UPDATE boats SET timezone = 'Europe/Moscow' WHERE timezone IS NULL`).catch(() => {});
+
         // Непрочитанные сообщения в чатах (для владельца: сообщения от клиента)
         await client.query(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS read BOOLEAN DEFAULT false`).catch(() => {});
 
