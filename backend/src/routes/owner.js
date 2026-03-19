@@ -153,9 +153,11 @@ router.get('/clients', authenticate, async (req, res, next) => {
 
         manualClients.forEach((m) => {
             const existing = m.user_id ? map.get(m.user_id) : null;
+            // Если клиент уже есть в базе пользователей/бронирований, считаем эти данные
+            // источником истины и не перетираем их ручными правками в owner_clients.
             const baseName =
-                (m.name && String(m.name).trim()) ||
                 existing?.name ||
+                (m.name && String(m.name).trim()) ||
                 m.email ||
                 'Клиент';
             const idKey = m.user_id || `manual-${m.id}`;
@@ -171,8 +173,8 @@ router.get('/clients', authenticate, async (req, res, next) => {
             map.set(idKey, {
                 ...merged,
                 name: baseName,
-                phone: m.phone || merged.phone || null,
-                email: m.email || merged.email || null,
+                phone: merged.phone || m.phone || null,
+                email: merged.email || m.email || null,
                 note: m.note || merged.note || null,
             });
         });

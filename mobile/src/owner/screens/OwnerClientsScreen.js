@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-    View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert,
+    View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert, RefreshControl,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +20,7 @@ export default function OwnerClientsScreen() {
     const navigation = useNavigation();
     const [clients, setClients] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [form, setForm] = useState({ name: '', phone: '', email: '', note: '' });
     const [lookupInProgress, setLookupInProgress] = useState(false);
@@ -76,7 +77,8 @@ export default function OwnerClientsScreen() {
         }
     };
 
-    const fetchClients = async () => {
+    const fetchClients = async (isRefresh = false) => {
+        if (isRefresh) setRefreshing(true);
         try {
             const res = await api.get('/owner/clients');
             setClients(Array.isArray(res.data) ? res.data : []);
@@ -84,8 +86,14 @@ export default function OwnerClientsScreen() {
             console.log('Error fetching owner clients', e?.message);
             setClients([]);
         } finally {
-            setLoading(false);
+            if (isRefresh) setRefreshing(false);
+            else setLoading(false);
         }
+    };
+
+    const onRefresh = () => {
+        if (refreshing) return;
+        fetchClients(true);
     };
 
     useEffect(() => {
@@ -114,7 +122,10 @@ export default function OwnerClientsScreen() {
     };
 
     const confirmDeleteClient = (client) => {
-        if (!client.owner_client_id) return;
+        if (!client.owner_client_id) {
+            Alert.alert('Недоступно', 'Этого клиента нельзя удалить из списка, так как он добавлен автоматически');
+            return;
+        }
         Alert.alert(
             'Удалить клиента',
             `Удалить клиента «${client.name || 'Клиент'}» из вашей базы?`,
@@ -137,18 +148,15 @@ export default function OwnerClientsScreen() {
         );
     };
 
-    const renderRightActions = (item) => {
-        if (!item.owner_client_id) return null;
-        return (
-            <TouchableOpacity
-                style={s.deleteAction}
-                activeOpacity={0.8}
-                onPress={() => confirmDeleteClient(item)}
-            >
-                <Text style={s.deleteActionText}>Удалить</Text>
-            </TouchableOpacity>
-        );
-    };
+    const renderRightActions = (item) => (
+        <TouchableOpacity
+            style={s.deleteAction}
+            activeOpacity={0.8}
+            onPress={() => confirmDeleteClient(item)}
+        >
+            <Text style={s.deleteActionText}>Удалить</Text>
+        </TouchableOpacity>
+    );
 
     const renderItem = ({ item }) => (
         <Swipeable
@@ -241,6 +249,9 @@ export default function OwnerClientsScreen() {
                     keyExtractor={(item, index) => String(item.id ?? item.user_id ?? index)}
                     contentContainerStyle={clients.length === 0 ? s.emptyContainer : s.list}
                     renderItem={renderItem}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={TEAL} />
+                    }
                     ListEmptyComponent={(
                         <Text style={s.emptyText}>
                             Пока нет клиентов. Они будут появляться здесь после бронирований
