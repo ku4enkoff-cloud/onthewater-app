@@ -204,7 +204,13 @@ export default function OwnerBookingsScreen() {
         try {
             const res = await api.get('/owner/bookings');
             setBookings(Array.isArray(res.data) ? res.data : []);
-        } catch (_) {
+        } catch (e) {
+            console.log(
+                'Error fetching owner bookings',
+                e?.message,
+                e?.response?.status,
+                e?.response?.data,
+            );
             setBookings([]);
         } finally {
             setRefreshing(false);

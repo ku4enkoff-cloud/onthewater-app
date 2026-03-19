@@ -23,8 +23,8 @@ router.get('/bookings', authenticate, async (req, res, next) => {
              WHERE b.boat_id = boat.id
                AND b.status = 'pending'
                AND b.start_at IS NOT NULL
-               AND (b.start_at AT TIME ZONE COALESCE(boat.timezone, 'Europe/Moscow'))
-                   < (NOW() AT TIME ZONE COALESCE(boat.timezone, 'Europe/Moscow'))`
+               AND (b.start_at AT TIME ZONE 'Europe/Moscow')
+                   < (NOW() AT TIME ZONE 'Europe/Moscow')`
         );
         // Подтверждённые бронирования, время которых прошло — в завершённые
         await pool.query(
@@ -35,9 +35,9 @@ router.get('/bookings', authenticate, async (req, res, next) => {
                AND b.status = 'confirmed'
                AND b.start_at IS NOT NULL
                AND (
-                 (b.start_at AT TIME ZONE COALESCE(boat.timezone, 'Europe/Moscow'))
+                 (b.start_at AT TIME ZONE 'Europe/Moscow')
                  + (COALESCE(b.hours, 180)::int * interval '1 minute')
-               ) < (NOW() AT TIME ZONE COALESCE(boat.timezone, 'Europe/Moscow'))`
+               ) < (NOW() AT TIME ZONE 'Europe/Moscow')`
         );
         const { rows: rawRows } = await pool.query(
             `SELECT b.*, boat.schedule_work_days as boat_schedule_work_days,
