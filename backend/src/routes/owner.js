@@ -518,6 +518,78 @@ router.get('/unread-messages-count', authenticate, async (req, res, next) => {
     }
 });
 
+// Скорость ответов владельца:
+// среднее между скоростью обработки бронирований и скоростью ответа на сообщения.
+router.get('/response-rate', authenticate, async (req, res, next) => {
+    try {
+        const ownerId = parseInt(req.user.id, 10);
+        if (Number.isNaN(ownerId)) return res.status(400).json({ error: 'Invalid owner id' });
+
+        // 1) Бронирования: доля обработанных (не pending)
+        const { rows: bookingAggRows } = await pool.query(
+            `SELECT
+                COUNT(*)::int AS total,
+                COUNT(*) FILTER (WHERE status IN ('confirmed', 'completed', 'cancelled'))::int AS processed
+             FROM bookings
+             WHERE owner_id = $1`,
+            [ownerId]
+        );
+        const bookingTotal = Number(bookingAggRows[0]?.total || 0);
+        const bookingProcessed = Number(bookingAggRows[0]?.processed || 0);
+        const bookingRate = bookingTotal > 0 ? Math.round((bookingProcessed / bookingTotal) * 100) : null;
+
+        // 2) Сообщения: доля клиентских сообщений, на которые владелец ответил <= 60 минут
+        const { rows: msgAggRows } = await pool.query(
+            `WITH incoming AS (
+                SELECT m.id, m.chat_id, m.created_at
+                FROM messages m
+                JOIN chats c ON c.id = m.chat_id
+                WHERE c.owner_id = $1 AND m.sender = 'me'
+             ),
+             first_reply AS (
+                SELECT i.id AS incoming_id,
+                       MIN(m2.created_at) AS reply_at
+                FROM incoming i
+                LEFT JOIN messages m2
+                  ON m2.chat_id = i.chat_id
+                 AND m2.sender = 'owner'
+                 AND m2.created_at > i.created_at
+                GROUP BY i.id
+             )
+             SELECT
+                COUNT(*)::int AS total_incoming,
+                COUNT(*) FILTER (
+                    WHERE reply_at IS NOT NULL
+                      AND EXTRACT(EPOCH FROM (reply_at - (SELECT created_at FROM incoming WHERE id = incoming_id))) <= 3600
+                )::int AS fast_replied
+             FROM first_reply`,
+            [ownerId]
+        );
+        const incomingTotal = Number(msgAggRows[0]?.total_incoming || 0);
+        const fastReplied = Number(msgAggRows[0]?.fast_replied || 0);
+        const messageRate = incomingTotal > 0 ? Math.round((fastReplied / incomingTotal) * 100) : null;
+
+        let responseRate = null;
+        if (bookingRate != null && messageRate != null) {
+            responseRate = Math.round((bookingRate + messageRate) / 2);
+        } else if (bookingRate != null) {
+            responseRate = bookingRate;
+        } else if (messageRate != null) {
+            responseRate = messageRate;
+        }
+
+        res.json({
+            responseRate,
+            bookingRate,
+            messageRate,
+            bookingTotal,
+            incomingTotal,
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
 router.get('/chats', authenticate, async (req, res, next) => {
     try {
         // Показываем владельцу полное имя клиента (name или first_name+last_name), чтобы фамилия тоже отображалась

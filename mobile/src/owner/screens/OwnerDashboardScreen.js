@@ -38,17 +38,23 @@ export default function OwnerDashboardScreen({ navigation }) {
 
     const loadStats = async () => {
         try {
-            const [bookingsRes, reviewsRes, unreadRes] = await Promise.all([
+            const [bookingsRes, reviewsRes, unreadRes, responseRateRes] = await Promise.all([
                 api.get('/owner/bookings'),
                 api.get('/owner/reviews-count').catch(() => ({ data: { count: 0 } })),
                 api.get('/owner/unread-messages-count').catch(() => ({ data: { count: 0 } })),
+                api.get('/owner/response-rate').catch(() => ({ data: { responseRate: null } })),
             ]);
             const list = Array.isArray(bookingsRes.data) ? bookingsRes.data : [];
             const completedList = list.filter(b => b.status === 'completed');
             const pending = list.filter((b) => b && b.status === 'pending').length;
             const completed = completedList.length;
             const earnings = completedList.reduce((s, b) => s + (Number(b.total_price) || 0), 0);
-            setStats({ completed, earnings, responseRate: null });
+            const responseRate = responseRateRes?.data?.responseRate;
+            setStats({
+                completed,
+                earnings,
+                responseRate: Number.isFinite(Number(responseRate)) ? Number(responseRate) : null,
+            });
             setReviews(reviewsRes.data?.count ?? 0);
             setUnreadMessages(unreadRes.data?.count ?? 0);
             setPendingBookings(pending);

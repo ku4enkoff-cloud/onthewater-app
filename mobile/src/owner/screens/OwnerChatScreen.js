@@ -52,8 +52,14 @@ export default function OwnerChatScreen({ navigation }) {
             (chat.boat_title || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const normalizeAvatarSrc = (raw) => {
+        const val = typeof raw === 'string' ? raw.trim() : '';
+        if (!val || val === 'null' || val === 'undefined') return null;
+        return getPhotoUrl(val) || val;
+    };
+
     const renderChatItem = ({ item }) => {
-        const avatarSrc = getPhotoUrl(item.client_avatar) || item.client_avatar || null;
+        const avatarSrc = normalizeAvatarSrc(item.client_avatar);
         return (
             <TouchableOpacity
                 style={styles.chatItem}
@@ -63,10 +69,10 @@ export default function OwnerChatScreen({ navigation }) {
                     {avatarSrc ? (
                         <Image source={{ uri: avatarSrc }} style={styles.avatar} />
                     ) : (
-                    <View style={styles.avatarPlaceholder}>
-                        <User size={24} color={theme.colors.textMuted} />
-                    </View>
-                </View>
+                        <View style={styles.avatarPlaceholder}>
+                            <User size={24} color={theme.colors.textMuted} />
+                        </View>
+                    )}
                 {item.unread_count > 0 && (
                     <View style={styles.unreadBadge}>
                         <Text style={styles.unreadBadgeText}>{item.unread_count}</Text>
