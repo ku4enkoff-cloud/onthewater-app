@@ -257,6 +257,20 @@ async function migrate() {
         await client.query(`ALTER TABLE boats ADD COLUMN IF NOT EXISTS timezone TEXT`).catch(() => {});
         await client.query(`UPDATE boats SET timezone = 'Europe/Moscow' WHERE timezone IS NULL`).catch(() => {});
 
+        // Внутренняя база клиентов владельца
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS owner_clients (
+                id SERIAL PRIMARY KEY,
+                owner_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                user_id INT REFERENCES users(id) ON DELETE SET NULL,
+                name VARCHAR(255),
+                phone VARCHAR(50),
+                email VARCHAR(255),
+                note TEXT,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        `);
+
         // Непрочитанные сообщения в чатах (для владельца: сообщения от клиента)
         await client.query(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS read BOOLEAN DEFAULT false`).catch(() => {});
 

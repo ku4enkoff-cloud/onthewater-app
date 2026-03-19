@@ -64,7 +64,7 @@ export default function OwnerDashboardScreen({ navigation }) {
 
     const MENU = [
         { icon: User, label: 'Профиль', screen: 'Account' },
-        { icon: Users2, label: 'Клиенты', screen: null },
+        { icon: Users2, label: 'Клиенты', screen: 'OwnerClients' },
         { icon: Settings, label: 'Ресурсы владельца', screen: null },
     ];
 

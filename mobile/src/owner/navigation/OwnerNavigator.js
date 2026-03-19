@@ -13,6 +13,7 @@ import BoatMediaScreen from '../screens/BoatMediaScreen';
 import OwnerAccountInfoScreen from '../screens/OwnerAccountInfoScreen';
 import OwnerNotificationsScreen from '../screens/OwnerNotificationsScreen';
 import OwnerSupportScreen from '../screens/OwnerSupportScreen';
+import OwnerClientsScreen from '../screens/OwnerClientsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -30,6 +31,7 @@ export default function OwnerNavigator() {
             <Stack.Screen name="BoatDetail" component={BoatDetailScreen} />
             <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
             <Stack.Screen name="AccountInfo" component={OwnerAccountInfoScreen} />
+            <Stack.Screen name="OwnerClients" component={OwnerClientsScreen} />
             <Stack.Screen name="Notifications" component={OwnerNotificationsScreen} />
             <Stack.Screen name="Support" component={OwnerSupportScreen} />
         </Stack.Navigator>

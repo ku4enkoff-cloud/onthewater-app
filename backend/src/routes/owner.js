@@ -77,6 +77,159 @@ router.get('/bookings', authenticate, async (req, res, next) => {
     }
 });
 
+// Клиенты владельца: из бронирований + ручные записи
+router.get('/clients', authenticate, async (req, res, next) => {
+    try {
+        const ownerId = parseInt(req.user.id, 10);
+        if (Number.isNaN(ownerId)) return res.status(400).json({ error: 'Invalid owner id' });
+
+        // Клиенты из бронирований
+        const { rows: bookingClients } = await pool.query(
+            `SELECT
+                 u.id AS user_id,
+                 u.name,
+                 u.first_name,
+                 u.last_name,
+                 u.email,
+                 u.phone,
+                 COUNT(b.*)::int AS bookings_count,
+                 MAX(b.created_at) AS last_booking_at,
+                 MAX(b.boat_title) AS last_boat_title
+             FROM bookings b
+             JOIN users u ON u.id = b.user_id
+             WHERE b.owner_id = $1
+             GROUP BY u.id, u.name, u.first_name, u.last_name, u.email, u.phone`,
+            [ownerId]
+        );
+
+        // Ручные клиенты
+        const { rows: manualClients } = await pool.query(
+            `SELECT
+                 oc.id,
+                 oc.user_id,
+                 oc.name,
+                 oc.phone,
+                 oc.email,
+                 oc.note,
+                 oc.created_at
+             FROM owner_clients oc
+             WHERE oc.owner_id = $1`,
+            [ownerId]
+        );
+
+        const map = new Map();
+
+        bookingClients.forEach((c) => {
+            const fullName =
+                [c.first_name, c.last_name]
+                    .filter(Boolean)
+                    .map((v) => String(v).trim())
+                    .filter(Boolean)
+                    .join(' ')
+                    .trim() ||
+                (c.name && String(c.name).trim()) ||
+                (c.email && String(c.email).trim()) ||
+                'Клиент';
+            map.set(c.user_id, {
+                id: c.user_id,
+                user_id: c.user_id,
+                name: fullName,
+                phone: c.phone || null,
+                email: c.email || null,
+                note: null,
+                bookings_count: c.bookings_count,
+                last_booking_at: c.last_booking_at,
+                last_boat_title: c.last_boat_title || null,
+                source: 'booking',
+            });
+        });
+
+        manualClients.forEach((m) => {
+            const existing = m.user_id ? map.get(m.user_id) : null;
+            const baseName =
+                (m.name && String(m.name).trim()) ||
+                existing?.name ||
+                m.email ||
+                'Клиент';
+            const idKey = m.user_id || `manual-${m.id}`;
+            const merged = existing || {
+                id: idKey,
+                user_id: m.user_id || null,
+                bookings_count: 0,
+                last_booking_at: null,
+                last_boat_title: null,
+                source: 'manual',
+            };
+            map.set(idKey, {
+                ...merged,
+                name: baseName,
+                phone: m.phone || merged.phone || null,
+                email: m.email || merged.email || null,
+                note: m.note || merged.note || null,
+            });
+        });
+
+        const list = Array.from(map.values()).sort((a, b) => {
+            const aDate = a.last_booking_at || a.created_at;
+            const bDate = b.last_booking_at || b.created_at;
+            if (!aDate && !bDate) return 0;
+            if (!aDate) return 1;
+            if (!bDate) return -1;
+            return new Date(bDate) - new Date(aDate);
+        });
+
+        res.json(list);
+    } catch (err) {
+        next(err);
+    }
+});
+
+// Добавить/привязать клиента к базе владельца
+router.post('/clients', authenticate, async (req, res, next) => {
+    try {
+        const ownerId = parseInt(req.user.id, 10);
+        if (Number.isNaN(ownerId)) return res.status(400).json({ error: 'Invalid owner id' });
+        const { name, phone, email, note } = req.body || {};
+
+        if (!phone && !email && !name) {
+            return res.status(400).json({ error: 'Укажите хотя бы имя или телефон' });
+        }
+
+        let userId = null;
+        if (phone || email) {
+            const { rows: found } = await pool.query(
+                `SELECT id FROM users WHERE
+                    ($1::text IS NOT NULL AND phone = $1) OR
+                    ($2::text IS NOT NULL AND email = $2)
+                 LIMIT 1`,
+                [phone || null, email || null]
+            );
+            if (found.length > 0) {
+                userId = found[0].id;
+            } else {
+                const { rows: created } = await pool.query(
+                    `INSERT INTO users (name, phone, email)
+                     VALUES ($1, $2, $3)
+                     RETURNING id`,
+                    [name || null, phone || null, email || null]
+                );
+                userId = created[0].id;
+            }
+        }
+
+        const { rows } = await pool.query(
+            `INSERT INTO owner_clients (owner_id, user_id, name, phone, email, note)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING *`,
+            [ownerId, userId, name || null, phone || null, email || null, note || null]
+        );
+
+        res.status(201).json(rows[0]);
+    } catch (err) {
+        next(err);
+    }
+});
+
 // Открыть (или создать) чат с клиентом по бронированию
 router.post('/bookings/:id/chat', authenticate, async (req, res, next) => {
     try {
