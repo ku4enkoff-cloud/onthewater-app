@@ -211,7 +211,7 @@ router.post('/clients', authenticate, async (req, res, next) => {
             const { rows: found } = await pool.query(
                 `SELECT id
                  FROM users
-                 WHERE ($1::text IS NOT NULL AND REPLACE(REGEXP_REPLACE(COALESCE(phone, ''), '\\D', '', 'g'), '8', '7', 1) = $1)
+                 WHERE ($1::text IS NOT NULL AND regexp_replace(REGEXP_REPLACE(COALESCE(phone, ''), '\\D', '', 'g'), '^8', '7') = $1)
                     OR ($2::text IS NOT NULL AND LOWER(TRIM(COALESCE(email, ''))) = $2)
                  LIMIT 1`,
                 [normalizedPhone || null, normalizedEmail || null]
@@ -306,9 +306,9 @@ router.get('/clients/lookup', authenticate, async (req, res, next) => {
         const { rows } = await pool.query(
             `SELECT id, name, first_name, last_name, phone, email
              FROM users
-             WHERE ($1::text IS NOT NULL AND REPLACE(REGEXP_REPLACE(phone, '\\D', '', 'g'), '8', '7', 1) =
-                        REPLACE(REGEXP_REPLACE($1, '\\D', '', 'g'), '8', '7', 1))
-                OR ($2::text IS NOT NULL AND LOWER(email) = LOWER($2))
+             WHERE ($1::text IS NOT NULL AND regexp_replace(REGEXP_REPLACE(COALESCE(phone, ''), '\\D', '', 'g'), '^8', '7') =
+                        regexp_replace(REGEXP_REPLACE($1, '\\D', '', 'g'), '^8', '7'))
+                OR ($2::text IS NOT NULL AND LOWER(COALESCE(email, '')) = LOWER($2))
              LIMIT 1`,
             [phone || null, email || null]
         );
