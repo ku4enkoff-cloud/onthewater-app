@@ -203,14 +203,18 @@ router.post('/clients', authenticate, async (req, res, next) => {
             return res.status(400).json({ error: 'Укажите хотя бы имя или телефон' });
         }
 
+        const normalizedPhone = phone ? String(phone).replace(/\D/g, '').replace(/^8/, '7') : null;
+        const normalizedEmail = email ? String(email).trim().toLowerCase() : null;
+
         let userId = null;
-        if (phone || email) {
+        if (normalizedPhone || normalizedEmail) {
             const { rows: found } = await pool.query(
-                `SELECT id FROM users WHERE
-                    ($1::text IS NOT NULL AND phone = $1) OR
-                    ($2::text IS NOT NULL AND email = $2)
+                `SELECT id
+                 FROM users
+                 WHERE ($1::text IS NOT NULL AND REPLACE(REGEXP_REPLACE(COALESCE(phone, ''), '\\D', '', 'g'), '8', '7', 1) = $1)
+                    OR ($2::text IS NOT NULL AND LOWER(TRIM(COALESCE(email, ''))) = $2)
                  LIMIT 1`,
-                [phone || null, email || null]
+                [normalizedPhone || null, normalizedEmail || null]
             );
             if (found.length > 0) {
                 userId = found[0].id;
@@ -219,7 +223,7 @@ router.post('/clients', authenticate, async (req, res, next) => {
                     `INSERT INTO users (name, phone, email)
                      VALUES ($1, $2, $3)
                      RETURNING id`,
-                    [name || null, phone || null, email || null]
+                    [name || null, phone || null, normalizedEmail || null]
                 );
                 userId = created[0].id;
             }
@@ -242,7 +246,7 @@ router.post('/clients', authenticate, async (req, res, next) => {
                        AND (($2::text IS NOT NULL AND TRIM(COALESCE(phone,'')) = TRIM($2))
                             OR ($3::text IS NOT NULL AND LOWER(TRIM(COALESCE(email,''))) = LOWER(TRIM($3))))
                      LIMIT 1`,
-                    [ownerId, phone || null, email || null]
+                    [ownerId, phone || null, normalizedEmail || null]
                 );
                 if (existingManual.length > 0) {
                     return res.status(400).json({ error: 'Клиент с таким телефоном или email уже добавлен' });
@@ -261,6 +265,9 @@ router.post('/clients', authenticate, async (req, res, next) => {
 
         res.status(201).json(rows[0]);
     } catch (err) {
+        if (err && err.code === '23505') {
+            return res.status(400).json({ error: 'Клиент уже существует' });
+        }
         next(err);
     }
 });
