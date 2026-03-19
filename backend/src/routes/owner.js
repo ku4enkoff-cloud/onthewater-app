@@ -77,6 +77,76 @@ router.get('/bookings', authenticate, async (req, res, next) => {
     }
 });
 
+// Открыть (или создать) чат с клиентом по бронированию
+router.post('/bookings/:id/chat', authenticate, async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const ownerId = parseInt(req.user.id, 10);
+        if (Number.isNaN(id) || Number.isNaN(ownerId)) {
+            return res.status(400).json({ error: 'Invalid id' });
+        }
+
+        const { rows: bookingRows } = await pool.query(
+            `SELECT b.*, boat.title AS boat_title_db
+             FROM bookings b
+             LEFT JOIN boats boat ON boat.id = b.boat_id
+             WHERE b.id = $1 AND b.owner_id = $2`,
+            [id, ownerId]
+        );
+        if (bookingRows.length === 0) {
+            return res.status(404).json({ error: 'Бронирование не найдено' });
+        }
+        const booking = bookingRows[0];
+        const boatId = booking.boat_id;
+        const userId = booking.user_id;
+        if (!boatId || !userId) {
+            return res.status(400).json({ error: 'Для этого бронирования не найден клиент или катер' });
+        }
+
+        const { rows: existing } = await pool.query(
+            'SELECT * FROM chats WHERE user_id = $1 AND owner_id = $2 AND boat_id = $3 LIMIT 1',
+            [userId, ownerId, boatId]
+        );
+        if (existing.length > 0) {
+            return res.json(existing[0]);
+        }
+
+        const { rows: userRows } = await pool.query(
+            'SELECT name, first_name, last_name, email FROM users WHERE id = $1',
+            [userId]
+        );
+        const user = userRows[0] || {};
+        const userDisplayName =
+            [user.first_name, user.last_name]
+                .filter(Boolean)
+                .map((v) => String(v).trim())
+                .filter(Boolean)
+                .join(' ')
+                .trim() ||
+            (user.name && String(user.name).trim()) ||
+            (user.email && String(user.email).trim()) ||
+            'Клиент';
+
+        const ownerDisplayName =
+            (req.user.name && String(req.user.name).trim()) ||
+            (req.user.first_name && String(req.user.first_name).trim()) ||
+            (req.user.email && String(req.user.email).trim()) ||
+            'Владелец';
+
+        const boatTitle = booking.boat_title || booking.boat_title_db || '';
+
+        const { rows: inserted } = await pool.query(
+            `INSERT INTO chats (user_id, owner_id, boat_id, boat_title, user_name, owner_name)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING *`,
+            [userId, ownerId, boatId, boatTitle, userDisplayName, ownerDisplayName]
+        );
+        res.status(201).json(inserted[0]);
+    } catch (err) {
+        next(err);
+    }
+});
+
 router.post('/bookings/:id/confirm', authenticate, async (req, res, next) => {
     try {
         const { rows } = await pool.query(

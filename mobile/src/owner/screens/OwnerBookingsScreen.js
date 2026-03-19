@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Calendar, Clock, Timer, CheckCircle, XCircle, AlertCircle, Pencil, ChevronLeft, ChevronRight, X, Ship, Phone, Users } from 'lucide-react-native';
 import * as LucideIcons from 'lucide-react-native';
@@ -171,6 +172,7 @@ const EMPTY_MESSAGES = {
 
 export default function OwnerBookingsScreen() {
     const insets = useSafeAreaInsets();
+    const navigation = useNavigation();
     const [bookings, setBookings] = useState([]);
     const [boats, setBoats] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
@@ -407,6 +409,21 @@ export default function OwnerBookingsScreen() {
         return `${h} ч ${min} мин`;
     };
 
+    const openChatWithClient = async (item) => {
+        try {
+            const res = await api.post(`/owner/bookings/${item.id}/chat`);
+            const chat = res.data;
+            if (chat && chat.id) {
+                navigation.navigate('ChatDetail', { chatId: chat.id });
+            } else {
+                Alert.alert('Ошибка', 'Не удалось открыть чат');
+            }
+        } catch (e) {
+            const msg = e.response?.data?.error || e.message || 'Не удалось открыть чат';
+            Alert.alert('Ошибка', msg);
+        }
+    };
+
     const renderCard = ({ item }) => {
         const StatusIcon = getStatusIcon(item.status);
         const color = getStatusColor(item.status);
@@ -439,14 +456,23 @@ export default function OwnerBookingsScreen() {
                         const telNumber = digits ? `+${digits}` : String(phoneRaw).trim();
                         const telUrl = `tel:${telNumber}`;
                         return (
-                            <TouchableOpacity
-                                onPress={() => Linking.openURL(telUrl)}
-                                activeOpacity={0.7}
-                                style={s.cardClientPhoneWrap}
-                            >
-                                <Phone size={14} color={theme.colors.gray500} />
-                                <Text style={s.cardClientPhone}>{formatted}</Text>
-                            </TouchableOpacity>
+                            <>
+                                <TouchableOpacity
+                                    onPress={() => Linking.openURL(telUrl)}
+                                    activeOpacity={0.7}
+                                    style={s.cardClientPhoneWrap}
+                                >
+                                    <Phone size={14} color={theme.colors.gray500} />
+                                    <Text style={s.cardClientPhone}>{formatted}</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => openChatWithClient(item)}
+                                    activeOpacity={0.7}
+                                    style={s.cardClientChatWrap}
+                                >
+                                    <Text style={s.cardClientChat}>Написать клиенту</Text>
+                                </TouchableOpacity>
+                            </>
                         );
                     })()}
                 </View>
@@ -1077,6 +1103,14 @@ const s = StyleSheet.create({
         fontFamily: theme.fonts.medium,
         color: NAVY,
         textDecorationLine: 'underline',
+    },
+    cardClientChatWrap: {
+        marginTop: 4,
+    },
+    cardClientChat: {
+        fontSize: 13,
+        fontFamily: theme.fonts.medium,
+        color: TEAL,
     },
     cardDetails: { marginTop: 4 },
     detailRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
