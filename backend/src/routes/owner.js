@@ -102,20 +102,26 @@ router.get('/clients', authenticate, async (req, res, next) => {
             [ownerId]
         );
 
-        // Ручные клиенты
-        const { rows: manualClients } = await pool.query(
-            `SELECT
-                 oc.id,
-                 oc.user_id,
-                 oc.name,
-                 oc.phone,
-                 oc.email,
-                 oc.note,
-                 oc.created_at
-             FROM owner_clients oc
-             WHERE oc.owner_id = $1`,
-            [ownerId]
-        );
+        // Ручные клиенты (если таблица ещё не создана, просто пропускаем)
+        let manualClients = [];
+        try {
+            const resManual = await pool.query(
+                `SELECT
+                     oc.id,
+                     oc.user_id,
+                     oc.name,
+                     oc.phone,
+                     oc.email,
+                     oc.note,
+                     oc.created_at
+                 FROM owner_clients oc
+                 WHERE oc.owner_id = $1`,
+                [ownerId]
+            );
+            manualClients = resManual.rows || [];
+        } catch (_) {
+            manualClients = [];
+        }
 
         const map = new Map();
 
