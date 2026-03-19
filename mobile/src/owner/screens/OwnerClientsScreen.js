@@ -3,12 +3,20 @@ import {
     View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { UserPlus, Users2, Phone, Mail, Clock } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+import { UserPlus, Users2, Phone, Mail, Clock, ChevronLeft } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 
+let LinearGradient;
+try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
+
+const GRADIENT = ['#0A3D3D', '#0D5C5C', '#1A7A6E', '#3A9E7A'];
+const TEAL = '#0D5C5C';
+
 export default function OwnerClientsScreen() {
     const insets = useSafeAreaInsets();
+    const navigation = useNavigation();
     const [clients, setClients] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
@@ -151,12 +159,33 @@ export default function OwnerClientsScreen() {
 
     return (
         <View style={s.root}>
-            <View style={[s.header, { paddingTop: insets.top + 12 }]}>
-                <Text style={s.headerTitle}>Клиенты</Text>
-                <TouchableOpacity style={s.addBtn} onPress={openAddModal} activeOpacity={0.8}>
-                    <UserPlus size={18} color="#fff" />
-                    <Text style={s.addBtnText}>Добавить клиента</Text>
-                </TouchableOpacity>
+            <View style={s.headerWrap}>
+                {LinearGradient ? (
+                    <LinearGradient
+                        colors={GRADIENT}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={StyleSheet.absoluteFillObject}
+                    />
+                ) : (
+                    <View style={[StyleSheet.absoluteFillObject, { backgroundColor: TEAL }]} />
+                )}
+                <View style={[s.headerContent, { paddingTop: insets.top + 12 }]}>
+                    <View style={s.headerRow}>
+                        <TouchableOpacity
+                            style={s.backButton}
+                            onPress={() => navigation.goBack()}
+                            activeOpacity={0.7}
+                        >
+                            <ChevronLeft size={24} color="#fff" />
+                        </TouchableOpacity>
+                        <Text style={s.headerTitle}>Клиенты</Text>
+                    </View>
+                    <TouchableOpacity style={s.addBtn} onPress={openAddModal} activeOpacity={0.8}>
+                        <UserPlus size={18} color={TEAL} />
+                        <Text style={s.addBtnText}>Добавить клиента</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {loading ? (
@@ -236,24 +265,37 @@ export default function OwnerClientsScreen() {
 
 const s = StyleSheet.create({
     root: { flex: 1, backgroundColor: theme.colors.background },
-    header: {
-        paddingHorizontal: 20,
+    headerWrap: {
         paddingBottom: 12,
-        backgroundColor: '#fff',
-        borderBottomWidth: 0.5,
-        borderBottomColor: '#E5E7EB',
+        overflow: 'hidden',
+    },
+    headerContent: {
+        paddingHorizontal: 20,
+        paddingBottom: 16,
+    },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    backButton: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
     },
     headerTitle: {
         fontSize: 22,
         fontFamily: theme.fonts.bold,
-        color: '#111827',
-        marginBottom: 8,
+        color: '#fff',
     },
     addBtn: {
         flexDirection: 'row',
         alignItems: 'center',
         alignSelf: 'flex-start',
-        backgroundColor: '#0D5C5C',
+        backgroundColor: '#fff',
         paddingHorizontal: 12,
         paddingVertical: 8,
         borderRadius: 999,
@@ -262,7 +304,7 @@ const s = StyleSheet.create({
     addBtnText: {
         fontSize: 13,
         fontFamily: theme.fonts.medium,
-        color: '#fff',
+        color: TEAL,
     },
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     list: { paddingHorizontal: 20, paddingVertical: 12 },
