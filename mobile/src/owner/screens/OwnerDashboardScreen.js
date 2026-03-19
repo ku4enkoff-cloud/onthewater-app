@@ -32,6 +32,7 @@ export default function OwnerDashboardScreen({ navigation }) {
     const { user } = useContext(AuthContext);
     const [stats, setStats] = useState({ completed: 0, earnings: 0, responseRate: null });
     const [reviews, setReviews] = useState(0);
+    const [rating, setRating] = useState(null);
     const [unreadMessages, setUnreadMessages] = useState(0);
     const [pendingBookings, setPendingBookings] = useState(0);
     const [refreshing, setRefreshing] = useState(false);
@@ -110,7 +111,7 @@ export default function OwnerDashboardScreen({ navigation }) {
                                 <View style={s.reviewsBadge}>
                                     <Star size={12} color="#F5A623" fill="#F5A623" />
                                     <Text style={s.reviewsText}>
-                                        {reviewsLabel(reviews)}
+                                        {[rating != null && `${rating} ·`, reviewsLabel(reviews)].filter(Boolean).join(' ')}
                                     </Text>
                                 </View>
                             </View>

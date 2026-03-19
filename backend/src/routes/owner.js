@@ -491,13 +491,16 @@ router.patch('/bookings/:id', authenticate, async (req, res, next) => {
 router.get('/reviews-count', authenticate, async (req, res, next) => {
     try {
         const { rows } = await pool.query(
-            `SELECT COUNT(*)::int AS count
+            `SELECT COUNT(*)::int AS count,
+                    ROUND(AVG(r.rating)::numeric, 1) AS avg_rating
              FROM reviews r
              JOIN boats b ON b.id = r.boat_id AND b.owner_id = $1
              WHERE (r.status = 'approved' OR r.status IS NULL) AND COALESCE(r.spam, false) = false`,
             [req.user.id]
         );
-        res.json({ count: rows[0]?.count ?? 0 });
+        const count = rows[0]?.count ?? 0;
+        const avgRating = count > 0 && rows[0]?.avg_rating != null ? Number(rows[0].avg_rating) : null;
+        res.json({ count, avgRating });
     } catch (err) {
         next(err);
     }
