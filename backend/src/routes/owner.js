@@ -230,6 +230,53 @@ router.post('/clients', authenticate, async (req, res, next) => {
     }
 });
 
+// Поиск клиента по телефону/email для автозаполнения формы
+router.get('/clients/lookup', authenticate, async (req, res, next) => {
+    try {
+        const phone = (req.query.phone || '').trim();
+        const email = (req.query.email || '').trim();
+
+        if (!phone && !email) {
+            return res.status(400).json({ error: 'Укажите phone или email' });
+        }
+
+        const { rows } = await pool.query(
+            `SELECT id, name, first_name, last_name, phone, email
+             FROM users
+             WHERE ($1::text IS NOT NULL AND REPLACE(REGEXP_REPLACE(phone, '\\D', '', 'g'), '8', '7', 1) =
+                        REPLACE(REGEXP_REPLACE($1, '\\D', '', 'g'), '8', '7', 1))
+                OR ($2::text IS NOT NULL AND LOWER(email) = LOWER($2))
+             LIMIT 1`,
+            [phone || null, email || null]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Клиент не найден' });
+        }
+
+        const u = rows[0];
+        const fullName =
+            [u.first_name, u.last_name]
+                .filter(Boolean)
+                .map((v) => String(v).trim())
+                .filter(Boolean)
+                .join(' ')
+                .trim() ||
+            (u.name && String(u.name).trim()) ||
+            u.email ||
+            null;
+
+        res.json({
+            id: u.id,
+            name: fullName,
+            phone: u.phone,
+            email: u.email,
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
 // Открыть (или создать) чат с клиентом по бронированию
 router.post('/bookings/:id/chat', authenticate, async (req, res, next) => {
     try {

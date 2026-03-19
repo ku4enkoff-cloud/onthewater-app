@@ -13,6 +13,59 @@ export default function OwnerClientsScreen() {
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
     const [form, setForm] = useState({ name: '', phone: '', email: '', note: '' });
+    const [lookupInProgress, setLookupInProgress] = useState(false);
+
+    const formatPhone = (input) => {
+        const digitsOnly = (input || '').replace(/\D/g, '');
+        if (!digitsOnly) return '';
+        let d = digitsOnly;
+        if (d[0] === '8') {
+            d = '7' + d.slice(1);
+        } else if (d[0] !== '7') {
+            d = '7' + d;
+        }
+        d = d.slice(0, 11);
+        const parts = [];
+        parts.push('+7');
+        if (d.length > 1) {
+            const a = d.slice(1, 4);
+            parts.push(` (${a}`);
+            if (d.length >= 4) parts[parts.length - 1] += ')';
+        }
+        if (d.length > 4) {
+            const b = d.slice(4, 7);
+            parts.push(` ${b}`);
+        }
+        if (d.length > 7) {
+            const c = d.slice(7, 9);
+            parts.push(`-${c}`);
+        }
+        if (d.length > 9) {
+            const e = d.slice(9, 11);
+            parts.push(`-${e}`);
+        }
+        return parts.join('');
+    };
+
+    const tryLookupClientByPhone = async (formattedPhone) => {
+        const digits = (formattedPhone || '').replace(/\D/g, '');
+        if (digits.length < 11 || lookupInProgress) return;
+        try {
+            setLookupInProgress(true);
+            const res = await api.get('/owner/clients/lookup', { params: { phone: formattedPhone } });
+            const data = res.data || {};
+            setForm((prev) => ({
+                ...prev,
+                name: data.name || prev.name,
+                phone: formattedPhone || prev.phone,
+                email: (data.email || prev.email || '').trim().toLowerCase(),
+            }));
+        } catch (e) {
+            // 404 — это нормально, просто нет сохранённого клиента
+        } finally {
+            setLookupInProgress(false);
+        }
+    };
 
     const fetchClients = async () => {
         try {
@@ -145,7 +198,11 @@ export default function OwnerClientsScreen() {
                             placeholder="Телефон"
                             keyboardType="phone-pad"
                             value={form.phone}
-                            onChangeText={(text) => setForm((f) => ({ ...f, phone: text }))}
+                            onChangeText={(text) => {
+                                const masked = formatPhone(text);
+                                setForm((f) => ({ ...f, phone: masked }));
+                                tryLookupClientByPhone(masked);
+                            }}
                         />
                         <TextInput
                             style={s.input}
@@ -153,7 +210,7 @@ export default function OwnerClientsScreen() {
                             keyboardType="email-address"
                             autoCapitalize="none"
                             value={form.email}
-                            onChangeText={(text) => setForm((f) => ({ ...f, email: text }))}
+                            onChangeText={(text) => setForm((f) => ({ ...f, email: text.trim().toLowerCase() }))}
                         />
                         <TextInput
                             style={[s.input, s.inputMultiline]}
