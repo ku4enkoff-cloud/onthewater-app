@@ -147,6 +147,7 @@ router.get('/clients', authenticate, async (req, res, next) => {
                 last_booking_at: c.last_booking_at,
                 last_boat_title: c.last_boat_title || null,
                 source: 'booking',
+                owner_client_id: null,
             });
         });
 
@@ -165,6 +166,7 @@ router.get('/clients', authenticate, async (req, res, next) => {
                 last_booking_at: null,
                 last_boat_title: null,
                 source: 'manual',
+                owner_client_id: m.id,
             };
             map.set(idKey, {
                 ...merged,
@@ -223,6 +225,33 @@ router.post('/clients', authenticate, async (req, res, next) => {
             }
         }
 
+        // Не добавлять одного и того же клиента дважды
+        try {
+            if (userId != null) {
+                const { rows: existingByUser } = await pool.query(
+                    'SELECT id FROM owner_clients WHERE owner_id = $1 AND user_id = $2 LIMIT 1',
+                    [ownerId, userId]
+                );
+                if (existingByUser.length > 0) {
+                    return res.status(400).json({ error: 'Этот клиент уже добавлен в ваш список' });
+                }
+            } else {
+                const { rows: existingManual } = await pool.query(
+                    `SELECT id FROM owner_clients
+                     WHERE owner_id = $1 AND user_id IS NULL
+                       AND (($2::text IS NOT NULL AND TRIM(COALESCE(phone,'')) = TRIM($2))
+                            OR ($3::text IS NOT NULL AND LOWER(TRIM(COALESCE(email,''))) = LOWER(TRIM($3))))
+                     LIMIT 1`,
+                    [ownerId, phone || null, email || null]
+                );
+                if (existingManual.length > 0) {
+                    return res.status(400).json({ error: 'Клиент с таким телефоном или email уже добавлен' });
+                }
+            }
+        } catch (e) {
+            // таблица owner_clients может отсутствовать
+        }
+
         const { rows } = await pool.query(
             `INSERT INTO owner_clients (owner_id, user_id, name, phone, email, note)
              VALUES ($1, $2, $3, $4, $5, $6)
@@ -231,6 +260,27 @@ router.post('/clients', authenticate, async (req, res, next) => {
         );
 
         res.status(201).json(rows[0]);
+    } catch (err) {
+        next(err);
+    }
+});
+
+// Удалить клиента из базы владельца (только ручные записи owner_clients)
+router.delete('/clients/:id', authenticate, async (req, res, next) => {
+    try {
+        const ownerId = parseInt(req.user.id, 10);
+        const id = parseInt(req.params.id, 10);
+        if (Number.isNaN(ownerId) || Number.isNaN(id)) {
+            return res.status(400).json({ error: 'Invalid id' });
+        }
+        const { rowCount } = await pool.query(
+            'DELETE FROM owner_clients WHERE id = $1 AND owner_id = $2',
+            [id, ownerId]
+        );
+        if (rowCount === 0) {
+            return res.status(404).json({ error: 'Клиент не найден' });
+        }
+        res.status(204).send();
     } catch (err) {
         next(err);
     }

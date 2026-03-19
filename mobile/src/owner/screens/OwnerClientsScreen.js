@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
     View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert,
 } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { UserPlus, Users2, Phone, Mail, Clock, ChevronLeft } from 'lucide-react-native';
@@ -112,49 +113,91 @@ export default function OwnerClientsScreen() {
         }
     };
 
+    const confirmDeleteClient = (client) => {
+        if (!client.owner_client_id) return;
+        Alert.alert(
+            'Удалить клиента',
+            `Удалить клиента «${client.name || 'Клиент'}» из вашей базы?`,
+            [
+                { text: 'Отмена', style: 'cancel' },
+                {
+                    text: 'Удалить',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await api.delete(`/owner/clients/${client.owner_client_id}`);
+                            setClients((prev) => prev.filter((c) => c.owner_client_id !== client.owner_client_id));
+                        } catch (e) {
+                            const msg = e.response?.data?.error || e.message || 'Не удалось удалить клиента';
+                            Alert.alert('Ошибка', msg);
+                        }
+                    },
+                },
+            ],
+        );
+    };
+
+    const renderRightActions = (item) => {
+        if (!item.owner_client_id) return null;
+        return (
+            <TouchableOpacity
+                style={s.deleteAction}
+                activeOpacity={0.8}
+                onPress={() => confirmDeleteClient(item)}
+            >
+                <Text style={s.deleteActionText}>Удалить</Text>
+            </TouchableOpacity>
+        );
+    };
+
     const renderItem = ({ item }) => (
-        <View style={s.card}>
-            <View style={s.cardHeader}>
-                <View style={s.avatarCircle}>
-                    <Users2 size={18} color="#fff" />
+        <Swipeable
+            renderRightActions={() => renderRightActions(item)}
+            overshootRight={false}
+        >
+            <View style={s.card}>
+                <View style={s.cardHeader}>
+                    <View style={s.avatarCircle}>
+                        <Users2 size={18} color="#fff" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                        <Text style={s.name} numberOfLines={1}>{item.name || 'Клиент'}</Text>
+                        {!!item.last_boat_title && (
+                            <Text style={s.subtitle} numberOfLines={1}>Последний катер: {item.last_boat_title}</Text>
+                        )}
+                        {!!item.bookings_count && (
+                            <Text style={s.subtitle}>Бронирований: {item.bookings_count}</Text>
+                        )}
+                    </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                    <Text style={s.name} numberOfLines={1}>{item.name || 'Клиент'}</Text>
-                    {!!item.last_boat_title && (
-                        <Text style={s.subtitle} numberOfLines={1}>Последний катер: {item.last_boat_title}</Text>
+                <View style={s.infoRow}>
+                    {!!item.phone && (
+                        <View style={s.infoItem}>
+                            <Phone size={14} color={theme.colors.gray500} />
+                            <Text style={s.infoText}>{item.phone}</Text>
+                        </View>
                     )}
-                    {!!item.bookings_count && (
-                        <Text style={s.subtitle}>Бронирований: {item.bookings_count}</Text>
+                    {!!item.email && (
+                        <View style={s.infoItem}>
+                            <Mail size={14} color={theme.colors.gray500} />
+                            <Text style={s.infoText}>{item.email}</Text>
+                        </View>
                     )}
                 </View>
-            </View>
-            <View style={s.infoRow}>
-                {!!item.phone && (
+                {!!item.last_booking_at && (
                     <View style={s.infoItem}>
-                        <Phone size={14} color={theme.colors.gray500} />
-                        <Text style={s.infoText}>{item.phone}</Text>
+                        <Clock size={14} color={theme.colors.gray400} />
+                        <Text style={s.infoText}>
+                            Последнее бронирование:{' '}
+                            {new Date(item.last_booking_at).toLocaleDateString('ru-RU')}
+                        </Text>
                     </View>
                 )}
-                {!!item.email && (
-                    <View style={s.infoItem}>
-                        <Mail size={14} color={theme.colors.gray500} />
-                        <Text style={s.infoText}>{item.email}</Text>
-                    </View>
+                {!!item.note && (
+                    <Text style={s.note} numberOfLines={2}>{item.note}</Text>
                 )}
             </View>
-            {!!item.last_booking_at && (
-                <View style={s.infoItem}>
-                    <Clock size={14} color={theme.colors.gray400} />
-                    <Text style={s.infoText}>
-                        Последнее бронирование:{' '}
-                        {new Date(item.last_booking_at).toLocaleDateString('ru-RU')}
-                    </Text>
-                </View>
-            )}
-            {!!item.note && (
-                <Text style={s.note} numberOfLines={2}>{item.note}</Text>
-            )}
-        </View>
+        </Swipeable>
     );
 
     return (
@@ -358,6 +401,20 @@ const s = StyleSheet.create({
         fontSize: 12,
         fontFamily: theme.fonts.regular,
         color: theme.colors.gray500,
+    },
+    deleteAction: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 96,
+        marginBottom: 10,
+        backgroundColor: '#DC2626',
+        borderTopRightRadius: 16,
+        borderBottomRightRadius: 16,
+    },
+    deleteActionText: {
+        color: '#fff',
+        fontSize: 13,
+        fontFamily: theme.fonts.bold,
     },
     modalOverlay: {
         flex: 1,

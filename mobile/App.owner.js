@@ -12,6 +12,7 @@ import {
     Jost_700Bold,
 } from '@expo-google-fonts/jost';
 import { NavigationContainer } from '@react-navigation/native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, AuthContext } from './src/shared/context/AuthContext';
 import { NotificationsProvider, NotificationsContext } from './src/shared/context/NotificationsContext';
 import { theme } from './src/shared/theme';
@@ -108,14 +109,14 @@ export default function App() {
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
-        <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+        <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
           <AuthProvider>
             <NotificationsProvider>
               <OwnerRoot />
               <StatusBar style="light" />
             </NotificationsProvider>
           </AuthProvider>
-        </View>
+        </GestureHandlerRootView>
       </SafeAreaProvider>
     </ErrorBoundary>
   );
