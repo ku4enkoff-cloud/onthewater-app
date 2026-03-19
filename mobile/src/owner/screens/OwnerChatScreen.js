@@ -5,6 +5,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
+import { getPhotoUrl } from '../../shared/infrastructure/config';
 import { MessageCircle, User } from 'lucide-react-native';
 
 let LinearGradient;
@@ -51,38 +52,41 @@ export default function OwnerChatScreen({ navigation }) {
             (chat.boat_title || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const renderChatItem = ({ item }) => (
-        <TouchableOpacity
-            style={styles.chatItem}
-            onPress={() => navigation.navigate('ChatDetail', { chatId: item.id })}
-        >
-            <View style={styles.avatarContainer}>
-                {item.client_avatar ? (
-                    <Image source={{ uri: item.client_avatar }} style={styles.avatar} />
-                ) : (
+    const renderChatItem = ({ item }) => {
+        const avatarSrc = getPhotoUrl(item.client_avatar) || item.client_avatar || null;
+        return (
+            <TouchableOpacity
+                style={styles.chatItem}
+                onPress={() => navigation.navigate('ChatDetail', { chatId: item.id })}
+            >
+                <View style={styles.avatarContainer}>
+                    {avatarSrc ? (
+                        <Image source={{ uri: avatarSrc }} style={styles.avatar} />
+                    ) : (
                     <View style={styles.avatarPlaceholder}>
                         <User size={24} color={theme.colors.textMuted} />
                     </View>
-                )}
+                </View>
                 {item.unread_count > 0 && (
                     <View style={styles.unreadBadge}>
                         <Text style={styles.unreadBadgeText}>{item.unread_count}</Text>
                     </View>
                 )}
-            </View>
-            <View style={styles.chatContent}>
-                <View style={styles.chatHeader}>
-                    <Text style={styles.clientName}>{item.user_name || item.client_name || '—'}</Text>
-                    <Text style={styles.timeText}>{item.last_message_date || ''} • {item.last_message_time || ''}</Text>
                 </View>
-                <Text style={styles.boatTitle} numberOfLines={1}>{item.boat_title || 'Катер'}</Text>
-                <View style={styles.messageContainer}>
-                    <MessageCircle size={14} color={theme.colors.textMuted} />
-                    <Text style={styles.lastMessage} numberOfLines={1}>{item.last_message || ''}</Text>
+                <View style={styles.chatContent}>
+                    <View style={styles.chatHeader}>
+                        <Text style={styles.clientName}>{item.user_name || item.client_name || '—'}</Text>
+                        <Text style={styles.timeText}>{item.last_message_date || ''} • {item.last_message_time || ''}</Text>
+                    </View>
+                    <Text style={styles.boatTitle} numberOfLines={1}>{item.boat_title || 'Катер'}</Text>
+                    <View style={styles.messageContainer}>
+                        <MessageCircle size={14} color={theme.colors.textMuted} />
+                        <Text style={styles.lastMessage} numberOfLines={1}>{item.last_message || ''}</Text>
+                    </View>
                 </View>
-            </View>
-        </TouchableOpacity>
-    );
+            </TouchableOpacity>
+        );
+    };
 
     return (
         <View style={styles.container}>
