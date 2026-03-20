@@ -77,6 +77,117 @@ router.get('/bookings', authenticate, async (req, res, next) => {
     }
 });
 
+// Приводит часы (1-24) или минуты (30, 60, 120...) к минутам
+function normalizeDurationToMinutes(hours) {
+    if (hours == null) return 180;
+    const n = Number(hours);
+    if (Number.isNaN(n)) return 180;
+    // На клиенте могли прислать "часы" (раньше была логика в других местах)
+    if (Number.isInteger(n) && n >= 1 && n <= 24) return n * 60;
+    return n;
+}
+
+function getBoatPhoto(boat) {
+    try {
+        const photos = boat?.photos && Array.isArray(boat.photos)
+            ? boat.photos
+            : (typeof boat.photos === 'string' ? JSON.parse(boat.photos || '[]') : []);
+        const first = photos[0];
+        return typeof first === 'string'
+            ? first
+            : (first?.location || first?.url || first?.filename || '') || '';
+    } catch (_) {
+        return '';
+    }
+}
+
+// Ручное создание бронирования владельцем
+router.post('/bookings', authenticate, async (req, res, next) => {
+    try {
+        const ownerId = parseInt(req.user.id, 10);
+        const { boat_id, user_id, start_at, hours, passengers, captain, total_price, status } = req.body || {};
+
+        const boatId = parseInt(boat_id, 10);
+        const clientUserId = parseInt(user_id, 10);
+        if (Number.isNaN(ownerId) || Number.isNaN(boatId) || Number.isNaN(clientUserId)) {
+            return res.status(400).json({ error: 'Invalid ids' });
+        }
+        if (!start_at) return res.status(400).json({ error: 'Укажите start_at' });
+
+        const durationMinutes = normalizeDurationToMinutes(hours);
+        const startIso = new Date(start_at).toISOString();
+
+        const captainBool =
+            captain === true || captain === 'true' || captain === 1 || captain === '1';
+        const passengersInt = Number.isFinite(Number(passengers)) ? parseInt(passengers, 10) : 1;
+        const totalPriceInt = Number.isFinite(Number(total_price)) ? parseInt(total_price, 10) : 0;
+
+        const bookingStatus = status === 'pending' || status === 'confirmed' ? status : 'confirmed';
+
+        // Проверяем, что катер принадлежит текущему владельцу
+        const { rows: boatRows } = await pool.query(
+            'SELECT id, owner_id, title, photos FROM boats WHERE id = $1 LIMIT 1',
+            [boatId]
+        );
+        if (boatRows.length === 0) return res.status(404).json({ error: 'Катер не найден' });
+        const boat = boatRows[0];
+        if (Number(boat.owner_id) !== Number(ownerId)) return res.status(403).json({ error: 'Нет прав на этот катер' });
+
+        // Конфликты по времени (пересечение интервалов) среди pending/confirmed
+        const { rows: conflictRows } = await pool.query(
+            `SELECT id
+             FROM bookings
+             WHERE owner_id = $1
+               AND boat_id = $2
+               AND status IN ('pending', 'confirmed')
+               AND start_at IS NOT NULL
+               AND start_at < ($3::timestamptz + ($4::int * interval '1 minute'))
+               AND (start_at + (COALESCE(hours, 180)::int * interval '1 minute')) > $3::timestamptz
+             LIMIT 1`,
+            [ownerId, boatId, startIso, durationMinutes]
+        );
+        if (conflictRows.length > 0) {
+            return res.status(409).json({ error: 'В это время уже есть бронирование' });
+        }
+
+        const boatPhoto = getBoatPhoto(boat);
+
+        const { rows: inserted } = await pool.query(
+            `INSERT INTO bookings (user_id, owner_id, boat_id, boat_title, boat_photo, start_at, hours, passengers, captain, total_price, status)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+             RETURNING *`,
+            [
+                clientUserId,
+                ownerId,
+                boatId,
+                boat.title || 'Катер',
+                boatPhoto || null,
+                startIso,
+                durationMinutes,
+                passengersInt,
+                captainBool,
+                totalPriceInt,
+                bookingStatus,
+            ]
+        );
+
+        const booking = inserted[0];
+
+        if (bookingStatus === 'confirmed') {
+            sendBookingPushToClient(
+                booking.user_id,
+                'Бронирование подтверждено',
+                `Ваше бронирование «${booking.boat_title || 'Катер'}» подтверждено.`,
+                booking.id
+            );
+        }
+
+        res.status(201).json(booking);
+    } catch (err) {
+        next(err);
+    }
+});
+
 // Клиенты владельца: из бронирований + ручные записи
 router.get('/clients', authenticate, async (req, res, next) => {
     try {
