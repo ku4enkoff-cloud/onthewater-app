@@ -610,17 +610,32 @@ export default function OwnerBookingsScreen() {
             // Если по телефону не удалось получить `user_id` (из lookup),
             // создаём/привязываем клиента к базе владельца.
             if (!clientUserId) {
-                const created = await api.post('/owner/clients', {
-                    phone: addClientPhone.trim(),
-                    name: clientName || null,
-                    email: null,
-                });
+                if (!clientName || !String(clientName).trim()) {
+                    return Alert.alert('Ошибка', 'Если клиент не найден, укажите имя клиента');
+                }
+                let created;
+                try {
+                    created = await api.post('/owner/clients', {
+                        phone: addClientPhone.trim(),
+                        name: String(clientName).trim(),
+                        email: null,
+                    });
+                } catch (e) {
+                    const status = e?.response?.status;
+                    const errText =
+                        e?.response?.data?.error ||
+                        e?.response?.data?.message ||
+                        (typeof e?.response?.data === 'string' ? e.response.data : null) ||
+                        e?.message ||
+                        'Не удалось добавить клиента владельца';
+                    return Alert.alert('Ошибка', `Шаг clients: ${errText}${status ? ` (HTTP ${status})` : ''}`);
+                }
                 // Для бронирования нужен именно users.id (owner_clients.id не подходит).
                 clientUserId = created.data?.user_id ?? null;
                 clientName = created.data?.name ?? clientName;
             }
 
-            if (!clientUserId) return Alert.alert('Ошибка', 'Не удалось определить клиента');
+            if (!clientUserId) return Alert.alert('Ошибка', 'Клиент добавлен в базу владельца, но не зарегистрирован в приложении');
 
             // На всякий случай убеждаемся, что клиент привязан в owner_clients
             try {
@@ -643,16 +658,27 @@ export default function OwnerBookingsScreen() {
 
             const total_price = getPriceForDate(boat, addDate, addDuration);
 
-            await api.post('/owner/bookings', {
-                boat_id: addBoatId,
-                user_id: clientUserId,
-                start_at,
-                hours: addDuration,
-                passengers: addPassengers,
-                captain: finalCaptain,
-                total_price,
-                status: 'confirmed',
-            });
+            try {
+                await api.post('/owner/bookings', {
+                    boat_id: addBoatId,
+                    user_id: clientUserId,
+                    start_at,
+                    hours: addDuration,
+                    passengers: addPassengers,
+                    captain: finalCaptain,
+                    total_price,
+                    status: 'confirmed',
+                });
+            } catch (e) {
+                const status = e?.response?.status;
+                const errText =
+                    e?.response?.data?.error ||
+                    e?.response?.data?.message ||
+                    (typeof e?.response?.data === 'string' ? e.response.data : null) ||
+                    e?.message ||
+                    'Не удалось создать бронирование';
+                return Alert.alert('Ошибка', `Шаг bookings: ${errText}${status ? ` (HTTP ${status})` : ''}`);
+            }
 
             closeAddModal();
             fetchBookings();

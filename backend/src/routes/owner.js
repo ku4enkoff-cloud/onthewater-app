@@ -341,14 +341,16 @@ router.post('/clients', authenticate, async (req, res, next) => {
             );
             if (found.length > 0) {
                 userId = found[0].id;
-            } else {
-                const { rows: created } = await pool.query(
-                    `INSERT INTO users (name, phone, email)
-                     VALUES ($1, $2, $3)
-                     RETURNING id`,
-                    [name || null, phone || null, normalizedEmail || null]
-                );
-                userId = created[0].id;
+            }
+        }
+
+        // Если пользователя в общей базе нет — создаём только ручного клиента владельца.
+        // Для ручной записи обязательны имя и телефон.
+        if (userId == null) {
+            const safeName = String(name || '').trim();
+            const safePhone = String(phone || '').trim();
+            if (!safeName || !safePhone) {
+                return res.status(400).json({ error: 'Для ручного клиента обязательны имя и телефон' });
             }
         }
 
