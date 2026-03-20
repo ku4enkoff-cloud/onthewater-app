@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
     View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert, RefreshControl,
 } from 'react-native';
+import { Linking } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -158,6 +159,56 @@ export default function OwnerClientsScreen() {
         </TouchableOpacity>
     );
 
+    const getEmailForDisplay = (item) => {
+        const raw = String(item?.email || '').trim();
+        const lower = raw.toLowerCase();
+        const isPlaceholderEmail =
+            lower.startsWith('owner_manual_') ||
+            lower.endsWith('@placeholder.local');
+        // Для ручных/технических клиентов без реального email показываем прочерк.
+        if (!raw || isPlaceholderEmail) return '—';
+        return raw;
+    };
+
+    const isClientRegisteredInApp = (item) => {
+        if (!item?.user_id) return false;
+        const raw = String(item?.email || '').trim().toLowerCase();
+        const isPlaceholderEmail =
+            raw.startsWith('owner_manual_') ||
+            raw.endsWith('@placeholder.local');
+        return !isPlaceholderEmail;
+    };
+
+    const getPhoneForDisplay = (phone) => {
+        const digits = String(phone || '').replace(/\D/g, '');
+        if (!digits) return '—';
+        let d = digits;
+        if (d[0] === '8') d = '7' + d.slice(1);
+        if (d[0] !== '7') d = '7' + d;
+        d = d.slice(0, 11);
+        if (d.length < 11) return String(phone || '—');
+        return `+7 (${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7, 9)}-${d.slice(9, 11)}`;
+    };
+
+    const openChatWithClient = async (item) => {
+        try {
+            if (!item?.user_id) {
+                Alert.alert('Недоступно', 'Клиент не зарегистрирован в приложении');
+                return;
+            }
+            const res = await api.post(`/owner/clients/${item.user_id}/chat`);
+            const chat = res.data;
+            if (chat?.id) {
+                navigation.navigate('ChatDetail', { chatId: chat.id });
+                return;
+            }
+            Alert.alert('Ошибка', 'Не удалось открыть чат');
+        } catch (e) {
+            const msg = e?.response?.data?.error || e?.message || 'Не удалось открыть чат';
+            Alert.alert('Ошибка', msg);
+        }
+    };
+
     const renderItem = ({ item }) => (
         <Swipeable
             renderRightActions={() => renderRightActions(item)}
@@ -180,18 +231,29 @@ export default function OwnerClientsScreen() {
                 </View>
                 <View style={s.infoRow}>
                     {!!item.phone && (
-                        <View style={s.infoItem}>
+                        <TouchableOpacity
+                            style={s.infoItem}
+                            activeOpacity={0.7}
+                            onPress={() => {
+                                const digits = String(item.phone || '').replace(/\D/g, '');
+                                const tel = digits ? `+${digits}` : String(item.phone || '').trim();
+                                Linking.openURL(`tel:${tel}`).catch(() => {});
+                            }}
+                        >
                             <Phone size={14} color={theme.colors.gray500} />
-                            <Text style={s.infoText}>{item.phone}</Text>
-                        </View>
+                            <Text style={[s.infoText, s.phoneLink]}>{getPhoneForDisplay(item.phone)}</Text>
+                        </TouchableOpacity>
                     )}
-                    {!!item.email && (
-                        <View style={s.infoItem}>
-                            <Mail size={14} color={theme.colors.gray500} />
-                            <Text style={s.infoText}>{item.email}</Text>
-                        </View>
-                    )}
+                    <View style={s.infoItem}>
+                        <Mail size={14} color={theme.colors.gray500} />
+                        <Text style={s.infoText}>{getEmailForDisplay(item)}</Text>
+                    </View>
                 </View>
+                {isClientRegisteredInApp(item) && (
+                    <TouchableOpacity style={s.chatAction} activeOpacity={0.8} onPress={() => openChatWithClient(item)}>
+                        <Text style={s.chatActionText}>Написать клиенту</Text>
+                    </TouchableOpacity>
+                )}
                 {!!item.last_booking_at && (
                     <View style={s.infoItem}>
                         <Clock size={14} color={theme.colors.gray400} />
@@ -406,6 +468,18 @@ const s = StyleSheet.create({
         fontSize: 12,
         fontFamily: theme.fonts.regular,
         color: theme.colors.gray600,
+    },
+    phoneLink: {
+        textDecorationLine: 'underline',
+    },
+    chatAction: {
+        marginTop: 2,
+        marginBottom: 6,
+    },
+    chatActionText: {
+        fontSize: 13,
+        fontFamily: theme.fonts.medium,
+        color: TEAL,
     },
     note: {
         marginTop: 4,

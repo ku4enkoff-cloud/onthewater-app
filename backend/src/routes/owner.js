@@ -302,6 +302,11 @@ router.get('/clients', authenticate, async (req, res, next) => {
                 phone: merged.phone || m.phone || null,
                 email: merged.email || m.email || null,
                 note: m.note || merged.note || null,
+                // Важно: если у клиента есть ручная запись owner_clients,
+                // отдаём её id, чтобы в UI можно было удалить этого клиента.
+                owner_client_id: m.id,
+                source: 'manual',
+                created_at: merged.created_at || m.created_at || null,
             });
         });
 
@@ -566,6 +571,89 @@ router.get('/clients/lookup', authenticate, async (req, res, next) => {
             phone: u.phone,
             email: u.email,
         });
+    } catch (err) {
+        next(err);
+    }
+});
+
+// Открыть (или создать) чат с клиентом из списка клиентов
+router.post('/clients/:userId/chat', authenticate, async (req, res, next) => {
+    try {
+        const ownerId = parseInt(req.user.id, 10);
+        const userId = parseInt(req.params.userId, 10);
+        if (Number.isNaN(ownerId) || Number.isNaN(userId)) {
+            return res.status(400).json({ error: 'Invalid id' });
+        }
+
+        // Проверяем, что клиент действительно относится к владельцу
+        const { rows: relatedByBookings } = await pool.query(
+            'SELECT 1 FROM bookings WHERE owner_id = $1 AND user_id = $2 LIMIT 1',
+            [ownerId, userId]
+        );
+        let isRelated = relatedByBookings.length > 0;
+        if (!isRelated) {
+            try {
+                const { rows: relatedByOwnerClients } = await pool.query(
+                    'SELECT 1 FROM owner_clients WHERE owner_id = $1 AND user_id = $2 LIMIT 1',
+                    [ownerId, userId]
+                );
+                isRelated = relatedByOwnerClients.length > 0;
+            } catch (_) {
+                isRelated = false;
+            }
+        }
+        if (!isRelated) {
+            return res.status(404).json({ error: 'Клиент не найден в вашем списке' });
+        }
+
+        const { rows: existing } = await pool.query(
+            'SELECT * FROM chats WHERE owner_id = $1 AND user_id = $2 ORDER BY created_at DESC LIMIT 1',
+            [ownerId, userId]
+        );
+        if (existing.length > 0) {
+            return res.json(existing[0]);
+        }
+
+        const { rows: latestBooking } = await pool.query(
+            `SELECT boat_id, boat_title
+             FROM bookings
+             WHERE owner_id = $1 AND user_id = $2
+             ORDER BY created_at DESC
+             LIMIT 1`,
+            [ownerId, userId]
+        );
+        const boatId = latestBooking[0]?.boat_id ?? null;
+        const boatTitle = latestBooking[0]?.boat_title ?? '';
+
+        const { rows: userRows } = await pool.query(
+            'SELECT name, first_name, last_name, email FROM users WHERE id = $1',
+            [userId]
+        );
+        const user = userRows[0] || {};
+        const userDisplayName =
+            [user.first_name, user.last_name]
+                .filter(Boolean)
+                .map((v) => String(v).trim())
+                .filter(Boolean)
+                .join(' ')
+                .trim() ||
+            (user.name && String(user.name).trim()) ||
+            (user.email && String(user.email).trim()) ||
+            'Клиент';
+
+        const ownerDisplayName =
+            (req.user.name && String(req.user.name).trim()) ||
+            (req.user.first_name && String(req.user.first_name).trim()) ||
+            (req.user.email && String(req.user.email).trim()) ||
+            'Владелец';
+
+        const { rows: inserted } = await pool.query(
+            `INSERT INTO chats (user_id, owner_id, boat_id, boat_title, user_name, owner_name)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING *`,
+            [userId, ownerId, boatId, boatTitle, userDisplayName, ownerDisplayName]
+        );
+        res.status(201).json(inserted[0]);
     } catch (err) {
         next(err);
     }
