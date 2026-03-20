@@ -409,6 +409,9 @@ router.delete('/clients/:id', authenticate, async (req, res, next) => {
 // Поиск клиента по телефону/email для автозаполнения формы
 router.get('/clients/lookup', authenticate, async (req, res, next) => {
     try {
+        const ownerId = parseInt(req.user.id, 10);
+        if (Number.isNaN(ownerId)) return res.status(400).json({ error: 'Invalid owner id' });
+
         const phone = (req.query.phone || '').trim();
         const email = (req.query.email || '').trim();
 
@@ -416,6 +419,76 @@ router.get('/clients/lookup', authenticate, async (req, res, next) => {
             return res.status(400).json({ error: 'Укажите phone или email' });
         }
 
+        // 1) Сначала ищем среди ручной базы владельца `owner_clients`
+        // Возвращаем `id` как owner_clients.user_id (может быть null),
+        // но если user_id не проставлен, попытаемся подтянуть user_id из таблицы `users`,
+        // чтобы владелец мог создать бронь без ручного связывания.
+        const { rows: ownerClientRows } = await pool.query(
+            `SELECT
+                 oc.user_id AS owner_user_id,
+                 oc.name AS owner_name,
+                 oc.phone AS owner_phone,
+                 oc.email AS owner_email,
+                 u.id AS u_id,
+                 u.name AS u_name,
+                 u.first_name AS u_first_name,
+                 u.last_name AS u_last_name,
+                 u.email AS u_email
+             FROM owner_clients oc
+             LEFT JOIN users u ON u.id = oc.user_id
+             WHERE oc.owner_id = $1
+               AND (
+                    ($2::text IS NOT NULL AND regexp_replace(REGEXP_REPLACE(COALESCE(oc.phone, ''), '\\D', '', 'g'), '^8', '7') =
+                                            regexp_replace(REGEXP_REPLACE($2, '\\D', '', 'g'), '^8', '7'))
+                    OR ($3::text IS NOT NULL AND LOWER(COALESCE(oc.email, '')) = LOWER($3))
+               )
+             LIMIT 1`,
+            [ownerId, phone || null, email || null]
+        );
+
+        if (ownerClientRows.length > 0) {
+            const oc = ownerClientRows[0];
+            const ownerName = oc.owner_name || null;
+
+            // Стараемся вернуть user_id, даже если в owner_clients он не заполнен
+            let userId = oc.owner_user_id ?? null;
+            if (userId == null) {
+                const { rows: foundUsers } = await pool.query(
+                    `SELECT id, name, first_name, last_name, phone, email
+                     FROM users
+                     WHERE ($1::text IS NOT NULL AND regexp_replace(REGEXP_REPLACE(COALESCE(phone, ''), '\\D', '', 'g'), '^8', '7') =
+                                            regexp_replace(REGEXP_REPLACE($1, '\\D', '', 'g'), '^8', '7'))
+                        OR ($2::text IS NOT NULL AND LOWER(COALESCE(email, '')) = LOWER($2))
+                     LIMIT 1`,
+                    [phone || null, email || null]
+                );
+                if (foundUsers.length > 0) {
+                    userId = foundUsers[0]?.id ?? null;
+                }
+            }
+
+            const fullName =
+                ownerName ||
+                [oc.u_first_name, oc.u_last_name]
+                    .filter(Boolean)
+                    .map((v) => String(v).trim())
+                    .filter(Boolean)
+                    .join(' ')
+                    .trim() ||
+                (oc.u_name && String(oc.u_name).trim()) ||
+                (oc.u_email && String(oc.u_email).trim()) ||
+                (oc.owner_email && String(oc.owner_email).trim()) ||
+                null;
+
+            return res.json({
+                id: userId,
+                name: fullName,
+                phone: oc.owner_phone ?? null,
+                email: oc.owner_email ?? oc.u_email ?? null,
+            });
+        }
+
+        // 2) Если в owner_clients не нашли — ищем в общей базе `users` (как было раньше)
         const { rows } = await pool.query(
             `SELECT id, name, first_name, last_name, phone, email
              FROM users

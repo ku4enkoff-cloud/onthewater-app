@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, FlatList, TouchableOpacity,
     RefreshControl, ScrollView, Modal, Alert, Platform, TextInput,
@@ -58,6 +58,47 @@ const DEFAULT_PRICING_TIERS = [
 ];
 
 const isWeekend = (d) => d && (d.getDay() === 0 || d.getDay() === 6);
+
+// Маска RU телефона: +7 (___) ___-__-__ (используется для автопоиска)
+function formatPhoneRu(input) {
+    const digitsOnly = (input || '').replace(/\D/g, '');
+    if (!digitsOnly) return '';
+
+    // Приводим к формату РФ: 8xxxxxxxxxx -> 7xxxxxxxxxx, если пользователь начал с 8
+    // Если пользователь сразу ввел 7 — оставляем.
+    let d = digitsOnly;
+    if (d[0] === '8') d = '7' + d.slice(1);
+    else if (d[0] !== '7') d = '7' + d;
+
+    // Ожидаем 11 цифр (7 + 10 номера) для автопоиска
+    d = d.slice(0, 11);
+
+    const parts = [];
+    parts.push('+7');
+
+    if (d.length > 1) {
+        const a = d.slice(1, 4);
+        parts.push(` (${a}`);
+        if (d.length >= 4) parts[parts.length - 1] += ')';
+    }
+
+    if (d.length > 4) {
+        const b = d.slice(4, 7);
+        parts.push(` ${b}`);
+    }
+
+    if (d.length > 7) {
+        const c = d.slice(7, 9);
+        parts.push(`-${c}`);
+    }
+
+    if (d.length > 9) {
+        const e = d.slice(9, 11);
+        parts.push(`-${e}`);
+    }
+
+    return parts.join('');
+}
 
 // Рассчитать total_price для выбранной даты/длительности
 // Аналог логики из `client/screens/BoatDetailScreen.js`, но упрощённо и под минуты.
@@ -289,6 +330,7 @@ export default function OwnerBookingsScreen() {
     const [addClientNotFound, setAddClientNotFound] = useState(false);
     const [addPassengers, setAddPassengers] = useState(1);
     const [addCaptain, setAddCaptain] = useState(false);
+    const addClientLookupReqRef = useRef(0);
 
     useEffect(() => {
         fetchBookings();
@@ -453,21 +495,22 @@ export default function OwnerBookingsScreen() {
         setAddBusyIntervals([]);
     };
 
-    const lookupClientByPhone = async () => {
-        const phone = (addClientPhone || '').trim();
-        if (!phone) {
-            Alert.alert('Ошибка', 'Введите номер телефона');
-            return;
-        }
+    const lookupClientByPhone = async (phoneOverride, reqId) => {
+        const phone = (phoneOverride ?? addClientPhone ?? '').trim();
+        if (!phone) return;
 
         setAddClientLookupLoading(true);
         setAddClientNotFound(false);
         try {
             const res = await api.get('/owner/clients/lookup', { params: { phone } });
             const data = res.data || {};
+            if (reqId != null && reqId !== addClientLookupReqRef.current) return;
+
             setAddClientUserId(Number.isFinite(Number(data.id)) ? Number(data.id) : null);
             setAddClientName(data.name || null);
         } catch (e) {
+            if (reqId != null && reqId !== addClientLookupReqRef.current) return;
+
             setAddClientUserId(null);
             if (e?.response?.status === 404) {
                 setAddClientNotFound(true);
@@ -478,9 +521,31 @@ export default function OwnerBookingsScreen() {
                 Alert.alert('Ошибка', msg);
             }
         } finally {
-            setAddClientLookupLoading(false);
+            if (reqId == null || reqId === addClientLookupReqRef.current) {
+                setAddClientLookupLoading(false);
+            }
         }
     };
+
+    // Автопоиск клиента по телефону: ищем, когда номер “готовый” (>= 11 цифр).
+    // Это уменьшает число запросов к серверу.
+    useEffect(() => {
+        const digits = String(addClientPhone || '').replace(/\D/g, '');
+        if (digits.length < 11) {
+            addClientLookupReqRef.current++;
+            setAddClientLookupLoading(false);
+            setAddClientNotFound(false);
+            setAddClientUserId(null);
+            return;
+        }
+
+        const reqId = ++addClientLookupReqRef.current;
+        const t = setTimeout(() => {
+            lookupClientByPhone(addClientPhone, reqId);
+        }, 400);
+
+        return () => clearTimeout(t);
+    }, [addClientPhone]);
 
     const handleSaveAddBooking = async () => {
         if (!addBoatId) return Alert.alert('Ошибка', 'Выберите катер');
@@ -500,26 +565,16 @@ export default function OwnerBookingsScreen() {
             let clientUserId = addClientUserId;
             let clientName = addClientName;
 
-            // Lookup по телефону, если в UI ещё не нашли клиента
+            // Если по телефону не удалось получить `user_id` (из lookup),
+            // создаём/привязываем клиента к базе владельца.
             if (!clientUserId) {
-                try {
-                    const lookup = await api.get('/owner/clients/lookup', { params: { phone: addClientPhone.trim() } });
-                    clientUserId = lookup.data?.id ?? null;
-                    clientName = lookup.data?.name ?? null;
-                } catch (e) {
-                    // Если не нашли — создадим/привяжем через POST /owner/clients
-                    if (e?.response?.status === 404) {
-                        const created = await api.post('/owner/clients', {
-                            phone: addClientPhone.trim(),
-                            name: clientName || null,
-                            email: null,
-                        });
-                        clientUserId = created.data?.user_id ?? null;
-                        clientName = created.data?.name ?? clientName;
-                    } else {
-                        throw e;
-                    }
-                }
+                const created = await api.post('/owner/clients', {
+                    phone: addClientPhone.trim(),
+                    name: clientName || null,
+                    email: null,
+                });
+                clientUserId = created.data?.user_id ?? created.data?.id ?? null;
+                clientName = created.data?.name ?? clientName;
             }
 
             if (!clientUserId) return Alert.alert('Ошибка', 'Не удалось определить клиента');
@@ -821,7 +876,7 @@ export default function OwnerBookingsScreen() {
                     <View style={s.headerTopRow}>
                         <Text style={[s.headerTitle, { textAlign: 'left' }]}>Бронирования</Text>
                         <TouchableOpacity style={s.headerAddBtn} onPress={openAddModal} activeOpacity={0.8}>
-                            <FileText size={18} color="#fff" />
+                            <Pencil size={18} color="#fff" />
                             <Text style={s.headerAddText}>Добавить вручную</Text>
                         </TouchableOpacity>
                     </View>
@@ -1171,7 +1226,7 @@ export default function OwnerBookingsScreen() {
                     activeOpacity={1}
                     onPress={closeAddModal}
                 >
-                    <TouchableOpacity style={s.modalContent} activeOpacity={1} onPress={() => {}}>
+                    <View style={s.modalContent}>
                         <Text style={s.modalTitle}>Добавить бронирование вручную</Text>
                         <Text style={s.modalBoat}>Выберите катер, клиента, дату и время</Text>
 
@@ -1204,6 +1259,27 @@ export default function OwnerBookingsScreen() {
                             )}
                         </View>
 
+                        <Text style={s.modalLabel}>Телефон клиента</Text>
+                        <View style={s.clientLookupRow}>
+                            <TextInput
+                                style={s.phoneInput}
+                                value={addClientPhone}
+                                onChangeText={(t) => {
+                                    setAddClientPhone(formatPhoneRu(t));
+                                    setAddClientNotFound(false);
+                                    setAddClientUserId(null);
+                                }}
+                                placeholder="+7 ..."
+                                placeholderTextColor={theme.colors.gray400}
+                                keyboardType="phone-pad"
+                            />
+                            {addClientLookupLoading ? (
+                                <ActivityIndicator size="small" color={TEAL} />
+                            ) : null}
+                        </View>
+                        {addClientName && <Text style={s.clientFoundText}>Клиент: {addClientName}</Text>}
+                        {addClientNotFound && <Text style={s.clientNotFoundText}>Не найден — создадим по телефону</Text>}
+
                         <Text style={s.modalLabel}>Имя клиента</Text>
                         <TextInput
                             style={[s.phoneInput, { marginBottom: 8 }]}
@@ -1215,36 +1291,6 @@ export default function OwnerBookingsScreen() {
                             placeholder="Например, Иван"
                             placeholderTextColor={theme.colors.gray400}
                         />
-
-                        <Text style={s.modalLabel}>Телефон клиента</Text>
-                        <View style={s.clientLookupRow}>
-                            <TextInput
-                                style={s.phoneInput}
-                                value={addClientPhone}
-                                onChangeText={(t) => {
-                                    setAddClientPhone(t);
-                                    setAddClientNotFound(false);
-                                    setAddClientUserId(null);
-                                }}
-                                placeholder="+7 ..."
-                                placeholderTextColor={theme.colors.gray400}
-                                keyboardType="phone-pad"
-                            />
-                            <TouchableOpacity
-                                style={s.lookupBtn}
-                                onPress={lookupClientByPhone}
-                                disabled={!addClientPhone || !String(addClientPhone).trim() || addClientLookupLoading}
-                                activeOpacity={0.9}
-                            >
-                                {addClientLookupLoading ? (
-                                    <ActivityIndicator size="small" color="#fff" />
-                                ) : (
-                                    <Text style={s.lookupBtnText}>Найти</Text>
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                        {addClientName && <Text style={s.clientFoundText}>Клиент: {addClientName}</Text>}
-                        {addClientNotFound && <Text style={s.clientNotFoundText}>Не найден — создадим по телефону</Text>}
 
                         <View style={s.modalRow}>
                             <Text style={s.modalLabel}>Дата</Text>
@@ -1458,7 +1504,7 @@ export default function OwnerBookingsScreen() {
                                 {creatingBooking ? <ActivityIndicator size="small" color="#fff" /> : <Text style={s.modalSaveText}>Создать</Text>}
                             </TouchableOpacity>
                         </View>
-                    </TouchableOpacity>
+                    </View>
                 </TouchableOpacity>
             </Modal>
 
