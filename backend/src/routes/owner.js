@@ -13,6 +13,11 @@ async function sendBookingPushToClient(userId, title, body, bookingId) {
     } catch (_) {}
 }
 
+function makeFallbackEmailByPhone(phone) {
+    const digits = String(phone || '').replace(/\D/g, '').slice(-11) || 'no_phone';
+    return `owner_manual_${digits}_${Date.now()}@placeholder.local`;
+}
+
 router.get('/bookings', authenticate, async (req, res, next) => {
     try {
         // Неподтверждённые бронирования, срок которых уже прошёл — автоматически в отменённые
@@ -341,41 +346,69 @@ router.post('/clients', authenticate, async (req, res, next) => {
             );
             if (found.length > 0) {
                 userId = found[0].id;
+            } else {
+                // Вариант 1: авто-регистрируем технического пользователя, если не найден.
+                // Это позволяет создавать бронирование (bookings.user_id обязателен).
+                const emailForInsert = normalizedEmail || makeFallbackEmailByPhone(normalizedPhone || phone);
+                const { rows: created } = await pool.query(
+                    `INSERT INTO users (name, phone, email)
+                     VALUES ($1, $2, $3)
+                     RETURNING id`,
+                    [name || null, phone || null, emailForInsert]
+                );
+                userId = created[0].id;
             }
         }
 
-        // Если пользователя в общей базе нет — создаём только ручного клиента владельца.
-        // Для ручной записи обязательны имя и телефон.
         if (userId == null) {
-            const safeName = String(name || '').trim();
-            const safePhone = String(phone || '').trim();
-            if (!safeName || !safePhone) {
-                return res.status(400).json({ error: 'Для ручного клиента обязательны имя и телефон' });
-            }
+            return res.status(400).json({ error: 'Не удалось определить клиента' });
+        }
+
+        // Если уже есть запись owner_clients по user_id — возвращаем её как успешный результат.
+        const { rows: existingByUser } = await pool.query(
+            'SELECT * FROM owner_clients WHERE owner_id = $1 AND user_id = $2 LIMIT 1',
+            [ownerId, userId]
+        );
+        if (existingByUser.length > 0) {
+            return res.status(200).json(existingByUser[0]);
+        }
+
+        // Если есть ручная запись по тому же телефону/email (user_id NULL) — обновим её и привяжем к user_id.
+        const { rows: existingManualForLink } = await pool.query(
+            `SELECT * FROM owner_clients
+             WHERE owner_id = $1 AND user_id IS NULL
+               AND (($2::text IS NOT NULL AND TRIM(COALESCE(phone,'')) = TRIM($2))
+                    OR ($3::text IS NOT NULL AND LOWER(TRIM(COALESCE(email,''))) = LOWER(TRIM($3))))
+             LIMIT 1`,
+            [ownerId, phone || null, normalizedEmail || null]
+        );
+        if (existingManualForLink.length > 0) {
+            const manual = existingManualForLink[0];
+            const { rows: linked } = await pool.query(
+                `UPDATE owner_clients
+                 SET user_id = $1,
+                     name = COALESCE(NULLIF(TRIM($2), ''), name),
+                     phone = COALESCE(NULLIF(TRIM($3), ''), phone),
+                     email = COALESCE(NULLIF(TRIM($4), ''), email)
+                 WHERE id = $5
+                 RETURNING *`,
+                [userId, name || null, phone || null, normalizedEmail || null, manual.id]
+            );
+            return res.status(200).json(linked[0]);
         }
 
         // Не добавлять одного и того же клиента дважды
         try {
-            if (userId != null) {
-                const { rows: existingByUser } = await pool.query(
-                    'SELECT id FROM owner_clients WHERE owner_id = $1 AND user_id = $2 LIMIT 1',
-                    [ownerId, userId]
-                );
-                if (existingByUser.length > 0) {
-                    return res.status(400).json({ error: 'Этот клиент уже добавлен в ваш список' });
-                }
-            } else {
-                const { rows: existingManual } = await pool.query(
-                    `SELECT id FROM owner_clients
-                     WHERE owner_id = $1 AND user_id IS NULL
-                       AND (($2::text IS NOT NULL AND TRIM(COALESCE(phone,'')) = TRIM($2))
-                            OR ($3::text IS NOT NULL AND LOWER(TRIM(COALESCE(email,''))) = LOWER(TRIM($3))))
-                     LIMIT 1`,
-                    [ownerId, phone || null, normalizedEmail || null]
-                );
-                if (existingManual.length > 0) {
-                    return res.status(400).json({ error: 'Клиент с таким телефоном или email уже добавлен' });
-                }
+            const { rows: existingManual } = await pool.query(
+                `SELECT id FROM owner_clients
+                 WHERE owner_id = $1 AND user_id IS NULL
+                   AND (($2::text IS NOT NULL AND TRIM(COALESCE(phone,'')) = TRIM($2))
+                        OR ($3::text IS NOT NULL AND LOWER(TRIM(COALESCE(email,''))) = LOWER(TRIM($3))))
+                 LIMIT 1`,
+                [ownerId, phone || null, normalizedEmail || null]
+            );
+            if (existingManual.length > 0) {
+                return res.status(400).json({ error: 'Клиент с таким телефоном или email уже добавлен' });
             }
         } catch (e) {
             // таблица owner_clients может отсутствовать
