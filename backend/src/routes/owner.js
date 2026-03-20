@@ -41,7 +41,15 @@ router.get('/bookings', authenticate, async (req, res, next) => {
                AND b.start_at IS NOT NULL
                AND (
                  (b.start_at AT TIME ZONE 'Europe/Moscow')
-                 + (COALESCE(b.hours, 180)::int * interval '1 minute')
+                 + (
+                    CASE
+                      -- legacy: в старых данных hours могли храниться в часах
+                      WHEN COALESCE(b.hours, 180)::int BETWEEN 1 AND 24
+                        THEN (COALESCE(b.hours, 180)::int * 60)
+                      ELSE COALESCE(b.hours, 180)::int
+                    END
+                    * interval '1 minute'
+                 )
                ) < (NOW() AT TIME ZONE 'Europe/Moscow')`
         );
         const { rows: rawRows } = await pool.query(
