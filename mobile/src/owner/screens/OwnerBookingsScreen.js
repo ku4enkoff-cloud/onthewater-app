@@ -657,8 +657,13 @@ export default function OwnerBookingsScreen() {
             closeAddModal();
             fetchBookings();
         } catch (e) {
-            const msg = e?.response?.data?.error || e.message || 'Не удалось создать бронирование';
-            Alert.alert('Ошибка', msg);
+            const status = e?.response?.status;
+            const serverError =
+                e?.response?.data?.error ||
+                e?.response?.data?.message ||
+                (typeof e?.response?.data === 'string' ? e.response.data : null);
+            const msg = serverError || e.message || 'Не удалось создать бронирование';
+            Alert.alert('Ошибка', status ? `${msg} (HTTP ${status})` : msg);
         } finally {
             setCreatingBooking(false);
         }
