@@ -57,6 +57,8 @@ export default function OwnerDashboardScreen({ navigation }) {
                 responseRate: Number.isFinite(Number(responseRate)) ? Number(responseRate) : null,
             });
             setReviews(reviewsRes.data?.count ?? 0);
+            const r = reviewsRes.data?.avgRating;
+            setRating(r != null && Number.isFinite(Number(r)) ? Number(r) : null);
             setUnreadMessages(unreadRes.data?.count ?? 0);
             setPendingBookings(pending);
         } catch (_) {}
