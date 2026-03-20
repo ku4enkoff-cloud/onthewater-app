@@ -271,6 +271,48 @@ const formatTimeHHMMInBookingTz = (d) => {
     }
 };
 
+const getDatePartsInBookingTz = (d) => {
+    const date = new Date(d);
+    try {
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: BOOKING_TIME_ZONE,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }).formatToParts(date);
+        const get = (type) => parts.find((p) => p.type === type)?.value || '';
+        return { year: get('year'), month: get('month'), day: get('day') };
+    } catch {
+        return {
+            year: String(date.getFullYear()),
+            month: String(date.getMonth() + 1).padStart(2, '0'),
+            day: String(date.getDate()).padStart(2, '0'),
+        };
+    }
+};
+
+const isSameDayInBookingTz = (a, b) => {
+    const pa = getDatePartsInBookingTz(a);
+    const pb = getDatePartsInBookingTz(b);
+    return pa.year === pb.year && pa.month === pb.month && pa.day === pb.day;
+};
+
+const getNowMinutesInBookingTz = () => {
+    const now = new Date();
+    try {
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: BOOKING_TIME_ZONE,
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        }).formatToParts(now);
+        const get = (type) => Number(parts.find((p) => p.type === type)?.value || 0);
+        return get('hour') * 60 + get('minute');
+    } catch {
+        return now.getHours() * 60 + now.getMinutes();
+    }
+};
+
 const TABS = [
     { key: 'all',       label: 'Все',           status: null },
     { key: 'pending',   label: 'Ожидают',       status: 'pending' },
@@ -573,7 +615,8 @@ export default function OwnerBookingsScreen() {
                     name: clientName || null,
                     email: null,
                 });
-                clientUserId = created.data?.user_id ?? created.data?.id ?? null;
+                // Для бронирования нужен именно users.id (owner_clients.id не подходит).
+                clientUserId = created.data?.user_id ?? null;
                 clientName = created.data?.name ?? clientName;
             }
 
@@ -1221,14 +1264,21 @@ export default function OwnerBookingsScreen() {
 
             {/* ---- Modal: manual booking create ---- */}
             <Modal visible={addModalVisible} animationType="fade" transparent>
-                <TouchableOpacity
-                    style={[s.modalOverlay, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
-                    activeOpacity={1}
-                    onPress={closeAddModal}
-                >
-                    <View style={s.modalContent}>
-                        <Text style={s.modalTitle}>Добавить бронирование вручную</Text>
-                        <Text style={s.modalBoat}>Выберите катер, клиента, дату и время</Text>
+                <View style={[s.modalOverlay, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+                    {/* Фон кликабельный для закрытия модалки; контент должен быть поверх */}
+                    <TouchableOpacity
+                        style={StyleSheet.absoluteFillObject}
+                        activeOpacity={1}
+                        onPress={closeAddModal}
+                    />
+                    <View style={[s.modalContent, s.addModalSheet]}>
+                        <ScrollView
+                            showsVerticalScrollIndicator={false}
+                            keyboardShouldPersistTaps="handled"
+                            contentContainerStyle={s.addModalScrollContent}
+                        >
+                            <Text style={s.modalTitle}>Добавить бронирование вручную</Text>
+                            <Text style={s.modalBoat}>Выберите катер, клиента, дату и время</Text>
 
                         <Text style={s.modalLabel}>Катер</Text>
                         <View style={s.addBoatChips}>
@@ -1280,17 +1330,23 @@ export default function OwnerBookingsScreen() {
                         {addClientName && <Text style={s.clientFoundText}>Клиент: {addClientName}</Text>}
                         {addClientNotFound && <Text style={s.clientNotFoundText}>Не найден — создадим по телефону</Text>}
 
-                        <Text style={s.modalLabel}>Имя клиента</Text>
-                        <TextInput
-                            style={[s.phoneInput, { marginBottom: 8 }]}
-                            value={addClientName || ''}
-                            onChangeText={(t) => {
-                                setAddClientName(t);
-                                setAddClientNotFound(false);
-                            }}
-                            placeholder="Например, Иван"
-                            placeholderTextColor={theme.colors.gray400}
-                        />
+                        {addClientNotFound && (
+                            <>
+                                <Text style={s.modalLabel}>Имя клиента</Text>
+                                <TextInput
+                                    style={s.addModalNameInput}
+                                    value={addClientName ?? ''}
+                                    onChangeText={(t) => {
+                                        setAddClientName(t);
+                                        setAddClientNotFound(true);
+                                    }}
+                                    placeholder="Например, Иван"
+                                    placeholderTextColor={theme.colors.gray400}
+                                    editable
+                                    autoCorrect={false}
+                                />
+                            </>
+                        )}
 
                         <View style={s.modalRow}>
                             <Text style={s.modalLabel}>Дата</Text>
@@ -1485,27 +1541,28 @@ export default function OwnerBookingsScreen() {
                             Итого: {(addBoat ? getPriceForDate(addBoat, addDate, addDuration) : 0).toLocaleString('ru-RU')} ₽
                         </Text>
 
-                        <View style={s.modalActions}>
-                            <TouchableOpacity style={s.modalCancelBtn} onPress={closeAddModal} disabled={creatingBooking}>
-                                <Text style={s.modalCancelText}>Закрыть</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={s.modalSaveBtn}
-                                onPress={handleSaveAddBooking}
-                                disabled={
-                                    creatingBooking
-                                    || !addBoatId
-                                    || !addClientPhone || !String(addClientPhone).trim()
-                                    || !addPendingTime
-                                    || !addDate
-                                }
-                                activeOpacity={0.9}
-                            >
-                                {creatingBooking ? <ActivityIndicator size="small" color="#fff" /> : <Text style={s.modalSaveText}>Создать</Text>}
-                            </TouchableOpacity>
-                        </View>
+                            <View style={s.modalActions}>
+                                <TouchableOpacity style={s.modalCancelBtn} onPress={closeAddModal} disabled={creatingBooking}>
+                                    <Text style={s.modalCancelText}>Закрыть</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={s.modalSaveBtn}
+                                    onPress={handleSaveAddBooking}
+                                    disabled={
+                                        creatingBooking
+                                        || !addBoatId
+                                        || !addClientPhone || !String(addClientPhone).trim()
+                                        || !addPendingTime
+                                        || !addDate
+                                    }
+                                    activeOpacity={0.9}
+                                >
+                                    {creatingBooking ? <ActivityIndicator size="small" color="#fff" /> : <Text style={s.modalSaveText}>Создать</Text>}
+                                </TouchableOpacity>
+                            </View>
+                        </ScrollView>
                     </View>
-                </TouchableOpacity>
+                </View>
             </Modal>
 
             {/* Тайм-пикер модальное окно */}
@@ -1536,19 +1593,8 @@ export default function OwnerBookingsScreen() {
                                     const isBusy = isSlotInBusyInterval(slot, busyIntervals);
                                     const canStartBase = isStartTimeValid(slot, editDuration, busyIntervals);
 
-                                    const isToday = (() => {
-                                        const now = new Date();
-                                        const d = new Date(editDate);
-                                        return (
-                                            now.getFullYear() === d.getFullYear() &&
-                                            now.getMonth() === d.getMonth() &&
-                                            now.getDate() === d.getDate()
-                                        );
-                                    })();
-                                    const nowMinutes = (() => {
-                                        const n = new Date();
-                                        return n.getHours() * 60 + n.getMinutes();
-                                    })();
+                                    const isToday = isSameDayInBookingTz(editDate, new Date());
+                                    const nowMinutes = getNowMinutesInBookingTz();
                                     const slotMinutes = slotToMinutes(slot);
                                     const isPastToday = isToday && slotMinutes <= nowMinutes;
 
@@ -1632,19 +1678,8 @@ export default function OwnerBookingsScreen() {
                                     const isBusy = isSlotInBusyInterval(slot, addBusyIntervals);
                                     const canStartBase = isStartTimeValid(slot, addDuration, addBusyIntervals);
 
-                                    const isToday = (() => {
-                                        const now = new Date();
-                                        const d = new Date(addDate);
-                                        return (
-                                            now.getFullYear() === d.getFullYear() &&
-                                            now.getMonth() === d.getMonth() &&
-                                            now.getDate() === d.getDate()
-                                        );
-                                    })();
-                                    const nowMinutes = (() => {
-                                        const n = new Date();
-                                        return n.getHours() * 60 + n.getMinutes();
-                                    })();
+                                    const isToday = isSameDayInBookingTz(addDate, new Date());
+                                    const nowMinutes = getNowMinutesInBookingTz();
                                     const slotMinutes = slotToMinutes(slot);
                                     const isPastToday = isToday && slotMinutes <= nowMinutes;
 
@@ -1875,6 +1910,15 @@ const s = StyleSheet.create({
     modalContent: {
         backgroundColor: '#fff', borderRadius: 16, padding: 20,
     },
+    /** Карточка ручного бронирования: поверх затемнения (Android touch order) */
+    addModalSheet: {
+        zIndex: 2,
+        elevation: 12,
+        maxHeight: '88%',
+    },
+    addModalScrollContent: {
+        paddingBottom: 8,
+    },
     modalTitle: { fontSize: 18, fontFamily: theme.fonts.bold, color: NAVY, marginBottom: 4 },
     modalBoat: { fontSize: 14, fontFamily: theme.fonts.regular, color: theme.colors.gray500, marginBottom: 16 },
     modalRow: { marginBottom: 12 },
@@ -1905,6 +1949,19 @@ const s = StyleSheet.create({
         backgroundColor: '#F3F4F6',
         borderRadius: 10,
         fontFamily: theme.fonts.medium,
+        color: NAVY,
+    },
+    /** Полное имя: без flex:1 — иначе в колонке на Android высота может схлопнуться */
+    addModalNameInput: {
+        alignSelf: 'stretch',
+        minHeight: 48,
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+        marginBottom: 8,
+        backgroundColor: '#F3F4F6',
+        borderRadius: 10,
+        fontFamily: theme.fonts.medium,
+        fontSize: 16,
         color: NAVY,
     },
     lookupBtn: {

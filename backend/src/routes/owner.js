@@ -115,7 +115,14 @@ router.post('/bookings', authenticate, async (req, res, next) => {
         if (!start_at) return res.status(400).json({ error: 'Укажите start_at' });
 
         const durationMinutes = normalizeDurationToMinutes(hours);
-        const startIso = new Date(start_at).toISOString();
+        if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+            return res.status(400).json({ error: 'Некорректная длительность' });
+        }
+        const startDate = new Date(start_at);
+        if (Number.isNaN(startDate.getTime())) {
+            return res.status(400).json({ error: 'Некорректный start_at' });
+        }
+        const startIso = startDate.toISOString();
 
         const captainBool =
             captain === true || captain === 'true' || captain === 1 || captain === '1';
@@ -184,6 +191,9 @@ router.post('/bookings', authenticate, async (req, res, next) => {
 
         res.status(201).json(booking);
     } catch (err) {
+        if (err?.code === '23503') {
+            return res.status(400).json({ error: 'Клиент не найден в базе пользователей' });
+        }
         next(err);
     }
 });
