@@ -143,6 +143,7 @@ export default function OwnerChatScreen({ navigation }) {
     const renderChatItem = ({ item }) => {
         const avatarSrc = normalizeAvatarSrc(item.client_avatar);
         return (
+            <View style={styles.chatRowWrapper}>
             <Swipeable renderRightActions={() => renderRightActions(item)} overshootRight={false}>
             <TouchableOpacity
                 style={styles.chatItem}
@@ -175,6 +176,7 @@ export default function OwnerChatScreen({ navigation }) {
                 </View>
             </TouchableOpacity>
             </Swipeable>
+            </View>
         );
     };
 
@@ -367,12 +369,12 @@ const styles = StyleSheet.create({
     searchIcon: { marginRight: theme.spacing.xs },
     searchInput: { flex: 1, fontSize: 14, color: theme.colors.textMain, lineHeight: 18 },
     listContainer: { paddingHorizontal: theme.spacing.lg, paddingBottom: 100 },
+    chatRowWrapper: { marginBottom: theme.spacing.md },
     chatItem: {
         flexDirection: 'row',
         backgroundColor: theme.colors.surface,
         borderRadius: theme.borderRadius.lg,
         padding: theme.spacing.md,
-        marginBottom: theme.spacing.md,
         ...theme.shadows.card,
     },
     avatarContainer: { position: 'relative', marginRight: theme.spacing.md },
