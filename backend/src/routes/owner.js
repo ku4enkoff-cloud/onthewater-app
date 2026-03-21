@@ -318,23 +318,52 @@ router.get('/clients', authenticate, async (req, res, next) => {
             });
         });
 
-        // Дополнительная проверка: для клиентов с user_id, у которых owner_client_id ещё null,
-        // ищем запись в owner_clients по owner_id + user_id (клиент мог быть добавлен вручную
-        // и при этом иметь бронирования — в этом случае merge уже должен был сработать, но на всякий случай).
+        // Дополнительная проверка: для клиентов с owner_client_id=null ищем запись в owner_clients.
         const listPre = Array.from(map.values());
-        const userIdsWithoutOwnerClientId = listPre
-            .filter((c) => c.user_id != null && c.owner_client_id == null)
+        const withoutOwnerClientId = listPre.filter((c) => c.owner_client_id == null);
+
+        // 1) По user_id (клиент с бронированиями, но добавлен вручную)
+        const userIdsToLookup = withoutOwnerClientId
+            .filter((c) => c.user_id != null)
             .map((c) => c.user_id);
-        if (userIdsWithoutOwnerClientId.length > 0) {
+        if (userIdsToLookup.length > 0) {
             try {
                 const { rows: ocByUser } = await pool.query(
                     `SELECT id, user_id FROM owner_clients
                      WHERE owner_id = $1 AND user_id = ANY($2::int[])`,
-                    [ownerId, userIdsWithoutOwnerClientId]
+                    [ownerId, userIdsToLookup]
                 );
                 for (const oc of ocByUser) {
                     const entry = listPre.find((c) => c.user_id === oc.user_id);
                     if (entry) entry.owner_client_id = oc.id;
+                }
+            } catch (_) {}
+        }
+
+        // 2) По имени: для оставшихся без owner_client_id — возможно ручной клиент (user_id=null)
+        // с тем же именем. Сопоставляем только когда ровно одна запись owner_clients с таким именем.
+        const stillWithout = listPre.filter((c) => c.owner_client_id == null && c.name);
+        if (stillWithout.length > 0) {
+            try {
+                const namesToLookup = [...new Set(stillWithout.map((c) => String(c.name || '').trim().toLowerCase()).filter(Boolean))];
+                if (namesToLookup.length > 0) {
+                    const { rows: ocByName } = await pool.query(
+                        `SELECT id, LOWER(TRIM(COALESCE(name, ''))) AS name_lower
+                         FROM owner_clients
+                         WHERE owner_id = $1 AND user_id IS NULL
+                           AND LOWER(TRIM(COALESCE(name, ''))) = ANY($2::text[])`,
+                        [ownerId, namesToLookup]
+                    );
+                    const byName = {};
+                    for (const oc of ocByName) {
+                        if (!byName[oc.name_lower]) byName[oc.name_lower] = [];
+                        byName[oc.name_lower].push(oc.id);
+                    }
+                    for (const entry of stillWithout) {
+                        const nameKey = String(entry.name || '').trim().toLowerCase();
+                        const ids = byName[nameKey];
+                        if (ids && ids.length === 1) entry.owner_client_id = ids[0];
+                    }
                 }
             } catch (_) {}
         }
