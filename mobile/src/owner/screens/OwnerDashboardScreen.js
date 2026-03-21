@@ -5,7 +5,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     Mail, Settings, Star, User, Users2, CreditCard, Clock,
-    FileText, Anchor, ChevronRight,
+    FileText, Anchor, ChevronRight, CalendarPlus, Calendar,
 } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
@@ -72,6 +72,7 @@ export default function OwnerDashboardScreen({ navigation }) {
     const displayName = user?.name || user?.email?.split('@')[0] || 'Владелец';
 
     const MENU = [
+        { icon: CalendarPlus, label: 'Добавить бронирование', screen: 'AddBooking' },
         { icon: User, label: 'Профиль', screen: 'Account' },
         { icon: Users2, label: 'Клиенты', screen: 'OwnerClients' },
         { icon: Settings, label: 'Ресурсы владельца', screen: null },
@@ -175,7 +176,7 @@ export default function OwnerDashboardScreen({ navigation }) {
                         activeOpacity={0.7}
                     >
                         <View style={s.actionCardInner}>
-                            <Settings size={22} color={TEAL} strokeWidth={1.8} />
+                            <Calendar size={22} color={TEAL} strokeWidth={1.8} />
                             {pendingBookings > 0 && (
                                 <View style={s.unreadBadge}>
                                     <Text style={s.unreadBadgeText}>

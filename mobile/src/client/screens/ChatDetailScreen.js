@@ -12,12 +12,17 @@ import {
     ActivityIndicator,
     Image,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 import { AuthContext } from '../../shared/context/AuthContext';
 import { ChevronLeft, Send, Lock, User } from 'lucide-react-native';
 
+let LinearGradient;
+try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
+
+const GRADIENT = ['#0A3D3D', '#0D5C5C', '#1A7A6E', '#3A9E7A'];
+const TEAL = '#0D5C5C';
 const TEAL_BUBBLE = '#0D9488';
 const LIGHT_GRAY_BUBBLE = '#E5E7EB';
 
@@ -98,21 +103,46 @@ export default function ChatDetailScreen({ route, navigation }) {
     const clientName = chat?.user_name || chat?.client_name || 'Клиент';
     const clientAvatar = chat?.user_avatar || chat?.client_avatar || null;
 
-    const renderMessage = ({ item }) => {
-        // Backend пишет sender так: 'owner' для сообщений владельца и 'me' для сообщений клиента.
-        // Поэтому "я" зависит от роли текущего пользователя.
+    const tripLabel =
+        chat?.trip_date_formatted ||
+        chat?.trip_date ||
+        chat?.trip_date_short;
+
+    const headerTitle = currentUser?.role === 'owner'
+        ? (chat?.user_name || chat?.client_name || 'Клиент')
+        : (chat?.owner_name || 'Владелец');
+
+    const messagesReversed = React.useMemo(() => [...messages].reverse(), [messages]);
+
+    const renderMessage = ({ item, index }) => {
+        const nextItem = messagesReversed[index + 1];
+        const isLastInGroup = !nextItem || nextItem.sender !== item.sender;
         const isMe = item.sender === (currentUser?.role === 'owner' ? 'owner' : 'me');
         const timeStr = formatTime(item.created_at || item.createdAt);
         const isOwnerSender = item.sender === 'owner';
         const otherName = isOwnerSender ? ownerName : clientName;
         const otherRoleLabel = isOwnerSender ? 'Владелец' : 'Клиент';
         return (
-            <View style={[styles.messageRow, isMe ? styles.messageRowMe : styles.messageRowThem]}>
-                <View style={[styles.messageBubble, isMe ? styles.messageBubbleMe : styles.messageBubbleThem]}>
-                    <Text style={[styles.messageText, isMe && styles.messageTextMe]}>{item.text}</Text>
+            <View style={[
+                styles.messageRow,
+                isMe ? styles.messageRowMe : styles.messageRowThem,
+                isLastInGroup ? styles.messageRowGroupEnd : styles.messageRowGroupMid,
+            ]}>
+                <View style={[
+                    styles.messageBubble,
+                    isMe ? styles.messageBubbleMe : styles.messageBubbleThem,
+                    isLastInGroup && isMe && styles.messageBubbleMeTail,
+                    isLastInGroup && !isMe && styles.messageBubbleThemTail,
+                    !isLastInGroup && styles.messageBubbleGroupMid,
+                ]}>
+                    <Text style={[styles.messageText, isMe && styles.messageTextMe]}>
+                        {item.text || ''}
+                        {'  '}
+                        <Text style={[styles.bubbleTime, isMe ? styles.bubbleTimeMe : styles.bubbleTimeThem]}>{timeStr}</Text>
+                    </Text>
                 </View>
-                <View style={[styles.messageMeta, isMe ? styles.messageMetaMe : styles.messageMetaThem]}>
-                    {!isMe && (
+                {!isMe && (
+                    <View style={[styles.messageMeta, styles.messageMetaThem]}>
                         <View style={styles.avatarSmallWrap}>
                             {isOwnerSender ? (
                                 chat?.owner_avatar ? (
@@ -132,54 +162,34 @@ export default function ChatDetailScreen({ route, navigation }) {
                                 )
                             )}
                         </View>
-                    )}
-                    <View style={styles.messageMetaText}>
-                        {isMe ? (
-                            <>
-                                <Text style={styles.messageSender}>{myName}</Text>
-                                <Text style={styles.messageTime}>{timeStr}</Text>
-                            </>
-                        ) : (
-                            <Text style={styles.messageMetaLine}>
-                                <Text style={styles.messageSender}>{otherName}</Text>
-                                <Text style={styles.messageDot}> · </Text>
-                                <Text style={styles.messageSenderRole}>{otherRoleLabel}</Text>
-                                <Text style={styles.messageDot}> · </Text>
-                                <Text style={styles.messageTime}>{timeStr}</Text>
-                            </Text>
-                        )}
+                        <Text style={styles.messageMetaLine}>
+                            <Text style={styles.messageSender}>{otherName}</Text>
+                            <Text style={styles.messageDot}> · </Text>
+                            <Text style={styles.messageSenderRole}>{otherRoleLabel}</Text>
+                        </Text>
                     </View>
-                    {isMe && (
-                        <View style={styles.avatarSmallWrap}>
-                            {currentUser?.avatar ? (
-                                <Image source={{ uri: currentUser.avatar }} style={styles.avatarSmall} />
-                            ) : (
-                                <View style={styles.avatarSmallPlaceholder}>
-                                    <User size={12} color={theme.colors.gray500} />
-                                </View>
-                            )}
-                        </View>
-                    )}
-                </View>
+                )}
             </View>
         );
     };
 
-    const tripLabel =
-        chat?.trip_date_formatted ||
-        chat?.trip_date ||
-        chat?.trip_date_short;
-
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            <View style={[styles.header, { paddingTop: insets.top + theme.spacing.xs }]}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-                    <ChevronLeft size={24} color={theme.colors.gray900} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle} numberOfLines={1}>
-                    {chat?.owner_name || 'Владелец'}
-                </Text>
-                <View style={styles.headerSpacer} />
+        <View style={styles.container}>
+            <View style={[styles.headerWrap, { paddingTop: insets.top + 12 }]}>
+                {LinearGradient ? (
+                    <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFillObject} />
+                ) : (
+                    <View style={[StyleSheet.absoluteFillObject, { backgroundColor: TEAL }]} />
+                )}
+                <View style={styles.headerContent}>
+                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+                        <ChevronLeft size={24} color="#fff" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle} numberOfLines={1}>
+                        {headerTitle}
+                    </Text>
+                    <View style={styles.headerSpacer} />
+                </View>
             </View>
 
             {!loading && (
@@ -231,13 +241,14 @@ export default function ChatDetailScreen({ route, navigation }) {
                 >
                     <FlatList
                         ref={flatListRef}
-                        data={messages}
+                        data={messagesReversed}
                         renderItem={renderMessage}
                         keyExtractor={item => (item.id || item._id || Math.random()).toString()}
                         contentContainerStyle={styles.messagesList}
                         showsVerticalScrollIndicator={false}
-                        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+                        inverted
                         keyboardShouldPersistTaps="handled"
+                        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
                     />
                     <View style={[styles.inputRow, { paddingBottom: inputRowPaddingBottom }]}>
                         <TextInput
@@ -260,29 +271,38 @@ export default function ChatDetailScreen({ route, navigation }) {
                     </View>
                 </KeyboardAvoidingView>
             )}
-        </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    header: {
+    headerWrap: {
+        overflow: 'hidden',
+        paddingBottom: 12,
+        borderBottomLeftRadius: 24,
+        borderBottomRightRadius: 24,
+    },
+    headerContent: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.sm,
-        borderBottomWidth: 1,
-        borderBottomColor: theme.colors.border,
-        backgroundColor: theme.colors.background,
     },
-    backButton: { padding: theme.spacing.sm, marginLeft: -theme.spacing.sm },
+    backButton: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
+    },
     headerTitle: {
         flex: 1,
         textAlign: 'center',
         fontSize: 18,
         fontFamily: theme.fonts.semiBold,
-        color: theme.colors.gray900,
+        color: '#fff',
     },
     headerSpacer: { width: 40 },
     tripHeader: {
@@ -344,12 +364,19 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     messagesList: {
+        flexGrow: 1,
         paddingHorizontal: theme.spacing.lg,
         paddingTop: theme.spacing.md,
         paddingBottom: theme.spacing.md,
     },
     messageRow: {
-        marginBottom: theme.spacing.lg,
+        marginBottom: 4,
+    },
+    messageRowGroupEnd: {
+        marginBottom: 14,
+    },
+    messageRowGroupMid: {
+        marginBottom: 2,
     },
     messageRowMe: {
         alignItems: 'flex-end',
@@ -365,11 +392,19 @@ const styles = StyleSheet.create({
     },
     messageBubbleMe: {
         backgroundColor: LIGHT_GRAY_BUBBLE,
-        borderBottomRightRadius: 4,
     },
     messageBubbleThem: {
         backgroundColor: TEAL_BUBBLE,
-        borderBottomLeftRadius: 4,
+    },
+    messageBubbleMeTail: {
+        borderBottomRightRadius: 5,
+    },
+    messageBubbleThemTail: {
+        borderBottomLeftRadius: 5,
+    },
+    messageBubbleGroupMid: {
+        borderBottomLeftRadius: 18,
+        borderBottomRightRadius: 18,
     },
     messageText: {
         fontSize: 16,
@@ -378,6 +413,16 @@ const styles = StyleSheet.create({
     },
     messageTextMe: {
         color: theme.colors.gray900,
+    },
+    bubbleTime: {
+        fontSize: 11,
+        opacity: 0.85,
+    },
+    bubbleTimeMe: {
+        color: theme.colors.gray500,
+    },
+    bubbleTimeThem: {
+        color: 'rgba(255,255,255,0.8)',
     },
     messageMeta: {
         flexDirection: 'row',
@@ -411,7 +456,6 @@ const styles = StyleSheet.create({
     messageTime: {
         fontSize: 12,
         color: theme.colors.gray500,
-        marginTop: 1,
     },
     avatarSmallWrap: {
         marginLeft: 0,
@@ -458,7 +502,7 @@ const styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: theme.colors.primary,
+        backgroundColor: TEAL,
         justifyContent: 'center',
         alignItems: 'center',
     },

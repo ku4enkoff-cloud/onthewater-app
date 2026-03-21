@@ -160,6 +160,7 @@ async function migrate() {
         `);
 
         await client.query(`ALTER TABLE chats ADD COLUMN IF NOT EXISTS user_archived BOOLEAN DEFAULT FALSE`).catch(() => {});
+        await client.query(`ALTER TABLE chats ADD COLUMN IF NOT EXISTS owner_archived BOOLEAN DEFAULT FALSE`).catch(() => {});
 
         await client.query(`
             CREATE TABLE IF NOT EXISTS messages (

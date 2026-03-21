@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, FlatList, TouchableOpacity,
     RefreshControl, ScrollView, Modal, Alert, Platform, TextInput,
-    ActivityIndicator,
+    ActivityIndicator, useWindowDimensions,
 } from 'react-native';
 import { Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -350,9 +350,17 @@ const EMPTY_MESSAGES = {
     cancelled: 'Нет отменённых бронирований.',
 };
 
+const BREAKPOINT = 600;
+
 export default function OwnerBookingsScreen() {
     const insets = useSafeAreaInsets();
     const navigation = useNavigation();
+    const { width } = useWindowDimensions();
+    const isWide = width >= BREAKPOINT;
+    const numColumns = isWide ? 2 : 1;
+    const listPadding = 20;
+    const gap = 12;
+    const cardWidth = isWide ? (width - listPadding * 2 - gap) / 2 : undefined;
     const [bookings, setBookings] = useState([]);
     const [boats, setBoats] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
@@ -620,7 +628,7 @@ export default function OwnerBookingsScreen() {
         const StatusIcon = getStatusIcon(item.status);
         const color = getStatusColor(item.status);
         return (
-            <View style={s.card}>
+            <View style={[s.card, isWide && { width: cardWidth, marginBottom: 0 }]}>
                 <View style={s.cardHeader}>
                     <View style={s.statusRow}>
                         <StatusIcon size={14} color={color} />
@@ -1177,6 +1185,9 @@ export default function OwnerBookingsScreen() {
                 data={filtered}
                 renderItem={renderCard}
                 keyExtractor={item => String(item.id)}
+                numColumns={numColumns}
+                key={numColumns}
+                columnWrapperStyle={isWide ? { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 } : undefined}
                 contentContainerStyle={[s.list, { paddingBottom: insets.bottom + 100 }]}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={TEAL} />}
                 showsVerticalScrollIndicator={false}

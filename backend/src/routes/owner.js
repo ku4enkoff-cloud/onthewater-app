@@ -920,6 +920,7 @@ router.get('/response-rate', authenticate, async (req, res, next) => {
 
 router.get('/chats', authenticate, async (req, res, next) => {
     try {
+        const showArchived = req.query.archived === '1' || req.query.archived === 'true';
         // Показываем владельцу полное имя клиента (name или first_name+last_name), чтобы фамилия тоже отображалась
         // даже для уже созданных чатов.
         const { rows } = await pool.query(
@@ -932,8 +933,10 @@ router.get('/chats', authenticate, async (req, res, next) => {
              FROM chats c
              LEFT JOIN users u ON u.id = c.user_id
              WHERE c.owner_id = $1
+               AND (($2::boolean = true AND c.owner_archived = true)
+                   OR ($2::boolean = false AND (c.owner_archived = false OR c.owner_archived IS NULL)))
              ORDER BY c.created_at DESC`,
-            [req.user.id]
+            [req.user.id, showArchived]
         );
 
         const mapped = rows.map((c) => {
@@ -954,6 +957,66 @@ router.get('/chats', authenticate, async (req, res, next) => {
         });
 
         res.json(mapped);
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.patch('/chats/:id/archive', authenticate, async (req, res, next) => {
+    try {
+        const chatId = parseInt(req.params.id, 10);
+        const ownerId = parseInt(req.user?.id, 10);
+        if (Number.isNaN(chatId)) return res.status(400).json({ error: 'Неверный id чата' });
+        if (Number.isNaN(ownerId)) return res.status(401).json({ error: 'Не авторизован' });
+        const result = await pool.query(
+            'UPDATE chats SET owner_archived = true WHERE id = $1 AND owner_id = $2',
+            [chatId, ownerId]
+        );
+        const rowCount = result?.rowCount ?? 0;
+        if (rowCount === 0) return res.status(404).json({ error: 'Чат не найден' });
+        res.json({ ok: true });
+    } catch (err) {
+        if (err.code === '42703') {
+            return res.status(500).json({ error: 'Запустите миграцию БД: node src/migrate.js' });
+        }
+        next(err);
+    }
+});
+
+router.patch('/chats/:id/unarchive', authenticate, async (req, res, next) => {
+    try {
+        const chatId = parseInt(req.params.id, 10);
+        const ownerId = parseInt(req.user?.id, 10);
+        if (Number.isNaN(chatId)) return res.status(400).json({ error: 'Неверный id чата' });
+        if (Number.isNaN(ownerId)) return res.status(401).json({ error: 'Не авторизован' });
+        const result = await pool.query(
+            'UPDATE chats SET owner_archived = false WHERE id = $1 AND owner_id = $2',
+            [chatId, ownerId]
+        );
+        const rowCount = result?.rowCount ?? 0;
+        if (rowCount === 0) return res.status(404).json({ error: 'Чат не найден' });
+        res.json({ ok: true });
+    } catch (err) {
+        if (err.code === '42703') {
+            return res.status(500).json({ error: 'Запустите миграцию БД: node src/migrate.js' });
+        }
+        next(err);
+    }
+});
+
+router.delete('/chats/:id', authenticate, async (req, res, next) => {
+    try {
+        const chatId = parseInt(req.params.id, 10);
+        const ownerId = parseInt(req.user?.id, 10);
+        if (Number.isNaN(chatId)) return res.status(400).json({ error: 'Неверный id чата' });
+        if (Number.isNaN(ownerId)) return res.status(401).json({ error: 'Не авторизован' });
+        const result = await pool.query(
+            'DELETE FROM chats WHERE id = $1 AND owner_id = $2',
+            [chatId, ownerId]
+        );
+        const rowCount = result?.rowCount ?? 0;
+        if (rowCount === 0) return res.status(404).json({ error: 'Чат не найден' });
+        res.json({ ok: true });
     } catch (err) {
         next(err);
     }

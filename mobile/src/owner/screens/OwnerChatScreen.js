@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
-    View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Image, RefreshControl,
+    View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Image, RefreshControl, Alert, Modal, ActivityIndicator,
 } from 'react-native';
+import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 import { getPhotoUrl } from '../../shared/infrastructure/config';
-import { MessageCircle, User } from 'lucide-react-native';
+import { MessageCircle, User, Archive, Trash2, X, ArchiveRestore } from 'lucide-react-native';
 
 let LinearGradient;
 try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
@@ -17,6 +18,9 @@ export default function OwnerChatScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [archiveModalVisible, setArchiveModalVisible] = useState(false);
+    const [archivedChats, setArchivedChats] = useState([]);
+    const [archivedLoading, setArchivedLoading] = useState(false);
     const insets = useSafeAreaInsets();
 
     useEffect(() => {
@@ -46,6 +50,31 @@ export default function OwnerChatScreen({ navigation }) {
         fetchChats(true);
     };
 
+    const openArchiveModal = async () => {
+        setArchiveModalVisible(true);
+        setArchivedLoading(true);
+        try {
+            const res = await api.get('/owner/chats?archived=1');
+            setArchivedChats(Array.isArray(res.data) ? res.data : []);
+        } catch (e) {
+            console.log('Error fetching archived chats', e);
+            setArchivedChats([]);
+        } finally {
+            setArchivedLoading(false);
+        }
+    };
+
+    const handleUnarchiveChat = async (item) => {
+        try {
+            await api.patch(`/owner/chats/${item.id}/unarchive`);
+            setArchivedChats((prev) => prev.filter((c) => c.id !== item.id));
+            setChats((prev) => [item, ...prev]);
+        } catch (e) {
+            const msg = e.response?.data?.error || e.message || 'Не удалось восстановить чат';
+            Alert.alert('Ошибка', msg);
+        }
+    };
+
     const filteredChats = chats.filter(
         chat =>
             (chat.user_name || chat.client_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -58,9 +87,63 @@ export default function OwnerChatScreen({ navigation }) {
         return getPhotoUrl(val) || val;
     };
 
+    const handleArchive = async (item) => {
+        try {
+            await api.patch(`/owner/chats/${item.id}/archive`);
+            setChats((prev) => prev.filter((c) => c.id !== item.id));
+        } catch (e) {
+            const data = e.response?.data;
+            const msg = data?.error || data?.detail || e.message || 'Не удалось переместить в архив';
+            Alert.alert('Ошибка', msg);
+        }
+    };
+
+    const handleDelete = (item) => {
+        Alert.alert(
+            'Удалить чат',
+            `Удалить чат с «${item.user_name || item.client_name || 'Клиент'}»? Это действие нельзя отменить.`,
+            [
+                { text: 'Отмена', style: 'cancel' },
+                {
+                    text: 'Удалить',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await api.delete(`/owner/chats/${item.id}`);
+                            setChats((prev) => prev.filter((c) => c.id !== item.id));
+                        } catch (e) {
+                            const msg = e.response?.data?.error || e.message || 'Не удалось удалить чат';
+                            Alert.alert('Ошибка', msg);
+                        }
+                    },
+                },
+            ],
+        );
+    };
+
+    const renderRightActions = (item) => (
+        <View style={styles.swipeActions}>
+            <TouchableOpacity
+                style={[styles.swipeAction, styles.archiveAction]}
+                onPress={() => handleArchive(item)}
+            >
+                <Archive size={20} color="#fff" />
+                <Text style={styles.swipeActionText}>Архив</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={[styles.swipeAction, styles.deleteAction]}
+                onPress={() => handleDelete(item)}
+            >
+                <Trash2 size={20} color="#fff" />
+                <Text style={styles.swipeActionText}>Удалить</Text>
+            </TouchableOpacity>
+        </View>
+    );
+
     const renderChatItem = ({ item }) => {
         const avatarSrc = normalizeAvatarSrc(item.client_avatar);
         return (
+            <Swipeable renderRightActions={() => renderRightActions(item)} overshootRight={false}>
             <TouchableOpacity
                 style={styles.chatItem}
                 onPress={() => navigation.navigate('ChatDetail', { chatId: item.id })}
@@ -91,6 +174,7 @@ export default function OwnerChatScreen({ navigation }) {
                     </View>
                 </View>
             </TouchableOpacity>
+            </Swipeable>
         );
     };
 
@@ -108,10 +192,22 @@ export default function OwnerChatScreen({ navigation }) {
                     <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#0D5C5C' }]} />
                 )}
                 <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-                    <Text style={[theme.typography.h1, { color: '#fff' }]}>Сообщения</Text>
-                    <Text style={[theme.typography.body, { color: 'rgba(255,255,255,0.82)', marginTop: 4 }]}>
-                        Чаты с клиентами
-                    </Text>
+                    <View style={styles.headerContent}>
+                        <View>
+                            <Text style={[theme.typography.h1, { color: '#fff' }]}>Сообщения</Text>
+                            <Text style={[theme.typography.body, { color: 'rgba(255,255,255,0.82)', marginTop: 4 }]}>
+                                Чаты с клиентами
+                            </Text>
+                        </View>
+                        <TouchableOpacity
+                            style={styles.archiveIconButton}
+                            onPress={openArchiveModal}
+                            activeOpacity={0.7}
+                            accessibilityLabel="Архив сообщений"
+                        >
+                            <Archive size={24} color="rgba(255,255,255,0.9)" strokeWidth={1.5} />
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
 
@@ -157,6 +253,84 @@ export default function OwnerChatScreen({ navigation }) {
                     }
                 />
             )}
+
+            <Modal visible={archiveModalVisible} animationType="slide" transparent onRequestClose={() => setArchiveModalVisible(false)}>
+                <GestureHandlerRootView style={styles.modalOverlay}>
+                    <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setArchiveModalVisible(false)} />
+                    <View style={[styles.archiveModal, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24, maxHeight: '90%' }]}>
+                        <View style={styles.archiveModalHeader}>
+                            <Text style={styles.archiveModalTitle}>Архив диалогов</Text>
+                            <TouchableOpacity onPress={() => setArchiveModalVisible(false)} hitSlop={12}>
+                                <X size={24} color={theme.colors.gray700} />
+                            </TouchableOpacity>
+                        </View>
+                        {archivedLoading ? (
+                            <View style={styles.archiveModalLoading}>
+                                <ActivityIndicator size="large" color={theme.colors.primary} />
+                            </View>
+                        ) : archivedChats.length === 0 ? (
+                            <View style={styles.archiveModalEmpty}>
+                                <Archive size={48} color={theme.colors.gray400} />
+                                <Text style={styles.archiveModalEmptyText}>Нет заархивированных диалогов</Text>
+                            </View>
+                        ) : (
+                            <FlatList
+                                data={archivedChats}
+                                renderItem={({ item }) => {
+                                    const avatarSrc = normalizeAvatarSrc(item.client_avatar);
+                                    return (
+                                        <Swipeable
+                                            renderRightActions={() => (
+                                                <TouchableOpacity
+                                                    style={styles.unarchiveAction}
+                                                    onPress={() => handleUnarchiveChat(item)}
+                                                    activeOpacity={0.8}
+                                                >
+                                                    <ArchiveRestore size={22} color="#fff" strokeWidth={2} />
+                                                    <Text style={styles.unarchiveActionText}>Разархивировать</Text>
+                                                </TouchableOpacity>
+                                            )}
+                                            overshootRight={false}
+                                            friction={2}
+                                        >
+                                            <TouchableOpacity
+                                                style={styles.chatItem}
+                                                onPress={() => {
+                                                    setArchiveModalVisible(false);
+                                                    navigation.navigate('ChatDetail', { chatId: item.id });
+                                                }}
+                                                activeOpacity={0.7}
+                                            >
+                                                <View style={styles.avatarContainer}>
+                                                    {avatarSrc ? (
+                                                        <Image source={{ uri: avatarSrc }} style={styles.avatar} />
+                                                    ) : (
+                                                        <View style={styles.avatarPlaceholder}>
+                                                            <User size={24} color={theme.colors.textMuted} />
+                                                        </View>
+                                                    )}
+                                                </View>
+                                                <View style={styles.chatContent}>
+                                                    <View style={styles.chatHeader}>
+                                                        <Text style={styles.clientName}>{item.user_name || item.client_name || '—'}</Text>
+                                                    </View>
+                                                    <Text style={styles.boatTitle} numberOfLines={1}>{item.boat_title || 'Катер'}</Text>
+                                                    <View style={styles.messageContainer}>
+                                                        <MessageCircle size={14} color={theme.colors.textMuted} />
+                                                        <Text style={styles.lastMessage} numberOfLines={1}>{item.last_message || ''}</Text>
+                                                    </View>
+                                                </View>
+                                            </TouchableOpacity>
+                                        </Swipeable>
+                                    );
+                                }}
+                                keyExtractor={(item) => item.id.toString()}
+                                contentContainerStyle={styles.archiveListContent}
+                            />
+                        )}
+                    </View>
+                </GestureHandlerRootView>
+            </Modal>
         </View>
     );
 }
@@ -172,6 +346,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: theme.spacing.lg,
         paddingBottom: theme.spacing.md,
     },
+    headerContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+    },
+    archiveIconButton: { padding: theme.spacing.xs },
     searchContainer: { paddingHorizontal: theme.spacing.md, marginTop: theme.spacing.sm, marginBottom: theme.spacing.sm },
     searchInputContainer: {
         flexDirection: 'row',
@@ -225,4 +406,49 @@ const styles = StyleSheet.create({
     messageContainer: { flexDirection: 'row', alignItems: 'center' },
     lastMessage: { ...theme.typography.bodySm, color: theme.colors.textMain, marginLeft: 6, flex: 1 },
     emptyState: { alignItems: 'center', paddingVertical: theme.spacing.xl, paddingHorizontal: theme.spacing.xl },
+    swipeActions: { flexDirection: 'row', alignItems: 'stretch' },
+    swipeAction: {
+        width: 76,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: theme.borderRadius.lg,
+        marginLeft: 2,
+    },
+    archiveAction: { backgroundColor: '#E67E22', marginLeft: 0 },
+    deleteAction: { backgroundColor: '#C0392B' },
+    swipeActionText: { color: '#fff', fontSize: 12, marginTop: 4 },
+    modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'transparent' },
+    modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
+    archiveModal: {
+        backgroundColor: theme.colors.background,
+        borderTopLeftRadius: theme.borderRadius.xl,
+        borderTopRightRadius: theme.borderRadius.xl,
+        paddingHorizontal: theme.spacing.lg,
+        overflow: 'hidden',
+    },
+    archiveModalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: theme.spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.border,
+    },
+    archiveModalTitle: { ...theme.typography.h2, color: theme.colors.textMain },
+    archiveModalLoading: { paddingVertical: theme.spacing.xl, alignItems: 'center' },
+    archiveModalEmpty: {
+        alignItems: 'center',
+        paddingVertical: theme.spacing.xl,
+    },
+    archiveModalEmptyText: { ...theme.typography.body, color: theme.colors.textMuted, marginTop: theme.spacing.sm },
+    unarchiveAction: {
+        width: 120,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: theme.colors.primary,
+        marginBottom: theme.spacing.md,
+        borderRadius: theme.borderRadius.lg,
+    },
+    unarchiveActionText: { color: '#fff', fontSize: 12, marginTop: 4 },
+    archiveListContent: { paddingBottom: theme.spacing.xl },
 });

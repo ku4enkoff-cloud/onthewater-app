@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import {
     View, Text, StyleSheet, FlatList, Image,
     TouchableOpacity, RefreshControl, Platform,
+    useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -31,8 +32,17 @@ const getDurationLabel = (minutes) => {
     return `${h} часов`;
 };
 
+const BREAKPOINT = 600;
+
 export default function MyBoatsScreen({ navigation }) {
     const insets = useSafeAreaInsets();
+    const { width } = useWindowDimensions();
+    const isWide = width >= BREAKPOINT;
+    const numColumns = isWide ? 2 : 1;
+    const listPadding = 16;
+    const gap = 12;
+    const cardWidth = isWide ? (width - listPadding * 2 - gap) / 2 : undefined;
+
     const [boats, setBoats] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -54,7 +64,7 @@ export default function MyBoatsScreen({ navigation }) {
 
     const renderBoatCard = ({ item }) => (
         <TouchableOpacity
-            style={s.card}
+            style={[s.card, isWide && { width: cardWidth, marginBottom: 0 }]}
             onPress={() => navigation.navigate('BoatDetail', { boatId: item.id })}
             activeOpacity={0.85}
         >
@@ -149,7 +159,10 @@ export default function MyBoatsScreen({ navigation }) {
                 data={boats}
                 renderItem={renderBoatCard}
                 keyExtractor={(item) => String(item.id)}
+                numColumns={numColumns}
+                key={numColumns}
                 contentContainerStyle={s.list}
+                columnWrapperStyle={isWide ? { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 } : undefined}
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={TEAL} />}
             />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Alert, Platform, TextInput, ActivityIndicator,
 } from 'react-native';
@@ -285,6 +285,7 @@ export default function AddBookingScreen() {
     const [addPassengers, setAddPassengers] = useState(1);
     const [addCaptain, setAddCaptain] = useState(false);
     const addClientLookupReqRef = useRef(0);
+    const [boatDetailsCache, setBoatDetailsCache] = useState({});
 
     useEffect(() => {
         api.get('/boats').then((res) => setBoats(Array.isArray(res.data) ? res.data : [])).catch(() => setBoats([]));
@@ -297,7 +298,25 @@ export default function AddBookingScreen() {
     };
 
     const boatOptions = boats.map((b) => ({ id: b.id, title: b.title || 'Без названия' }));
-    const addBoat = findBoatById(addBoatId);
+    const listBoat = findBoatById(addBoatId);
+    // Приоритет: кэш деталей (актуальные price_tiers) > данные из списка
+    const addBoat = boatDetailsCache[addBoatId] ?? listBoat;
+
+    // При смене катера — если есть в списке, используем сразу; иначе подгружаем детали
+    useEffect(() => {
+        if (!addBoatId) return;
+        if (listBoat) {
+            setBoatDetailsCache((prev) => ({ ...prev, [addBoatId]: listBoat }));
+            return;
+        }
+        let cancelled = false;
+        api.get(`/boats/${addBoatId}`)
+            .then((res) => {
+                if (!cancelled && res?.data) setBoatDetailsCache((prev) => ({ ...prev, [addBoatId]: res.data }));
+            })
+            .catch(() => {});
+        return () => { cancelled = true; };
+    }, [addBoatId, listBoat]);
 
     useEffect(() => {
         const firstBoat = boats[0]?.id ?? null;
@@ -311,12 +330,17 @@ export default function AddBookingScreen() {
         }
     }, [boats]);
 
+    const durationOptions = useMemo(
+        () => getDurationOptionsFromBoat(addBoat),
+        [addBoat]
+    );
+
     // При смене катера — сбросить длительность, если её нет в опциях выбранного катера
     useEffect(() => {
         if (!addBoat) return;
         const opts = getDurationOptionsFromBoat(addBoat);
         setAddDuration((prev) => (opts.includes(prev) ? prev : Number(addBoat.schedule_min_duration) || 60));
-    }, [addBoatId]);
+    }, [addBoatId, addBoat]);
 
     const fetchAddBusyIntervals = async (date, boatId) => {
         if (!boatId || !date) {
@@ -661,7 +685,7 @@ export default function AddBookingScreen() {
                     contentContainerStyle={s.durationChipsScroll}
                     style={s.durationChipsWrap}
                 >
-                    {getDurationOptionsFromBoat(addBoat).map((mins) => (
+                    {durationOptions.map((mins) => (
                         <TouchableOpacity
                             key={mins}
                             style={[s.durationChip, addDuration === mins && s.durationChipActive]}

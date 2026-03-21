@@ -73,7 +73,20 @@ export default {
       './plugins/withYandexMapKitKey.js',
       './plugins/withPictureInPicture.js',
       ...(hasGoogleServices ? ['./plugins/withGoogleServices.js'] : []),
-      ['expo-build-properties', { android: { minSdkVersion: 26, usesCleartextTraffic: true } }],
+      [
+        'expo-build-properties',
+        {
+          android: {
+            minSdkVersion: 26,
+            usesCleartextTraffic: true,
+            // Target Android 15 (API 35) — требуется Google Play с 31.08.2025 и для поддержки страниц памяти 16 КБ.
+            compileSdkVersion: 35,
+            targetSdkVersion: 35,
+            buildToolsVersion: '35.0.0',
+            // useLegacyPackaging: false — по умолчанию; современная упаковка .so нужна для 16 КБ.
+          },
+        },
+      ],
       ['expo-notifications', { icon: './assets/icon.png', color: '#1B365D', sounds: [] }],
       [
         'expo-image-picker',
