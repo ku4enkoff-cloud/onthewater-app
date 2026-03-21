@@ -114,7 +114,20 @@ export default function OwnerClientsScreen() {
             }
             const res = await api.post('/owner/clients', form);
             const created = res.data;
-            setClients(prev => [created, ...prev]);
+            // API возвращает запись owner_clients: id — это owner_client_id для удаления
+            const clientForList = {
+                id: created.user_id || `manual-${created.id}`,
+                user_id: created.user_id || null,
+                name: created.name || form.name || 'Клиент',
+                phone: created.phone || form.phone || null,
+                email: created.email || form.email || null,
+                note: created.note || form.note || null,
+                owner_client_id: created.id,
+                bookings_count: 0,
+                last_booking_at: null,
+                last_boat_title: null,
+            };
+            setClients(prev => [clientForList, ...prev]);
             setModalVisible(false);
         } catch (e) {
             const msg = e.response?.data?.error || e.message || 'Не удалось сохранить клиента';
