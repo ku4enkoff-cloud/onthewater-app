@@ -318,7 +318,28 @@ router.get('/clients', authenticate, async (req, res, next) => {
             });
         });
 
-        const list = Array.from(map.values()).sort((a, b) => {
+        // Дополнительная проверка: для клиентов с user_id, у которых owner_client_id ещё null,
+        // ищем запись в owner_clients по owner_id + user_id (клиент мог быть добавлен вручную
+        // и при этом иметь бронирования — в этом случае merge уже должен был сработать, но на всякий случай).
+        const listPre = Array.from(map.values());
+        const userIdsWithoutOwnerClientId = listPre
+            .filter((c) => c.user_id != null && c.owner_client_id == null)
+            .map((c) => c.user_id);
+        if (userIdsWithoutOwnerClientId.length > 0) {
+            try {
+                const { rows: ocByUser } = await pool.query(
+                    `SELECT id, user_id FROM owner_clients
+                     WHERE owner_id = $1 AND user_id = ANY($2::int[])`,
+                    [ownerId, userIdsWithoutOwnerClientId]
+                );
+                for (const oc of ocByUser) {
+                    const entry = listPre.find((c) => c.user_id === oc.user_id);
+                    if (entry) entry.owner_client_id = oc.id;
+                }
+            } catch (_) {}
+        }
+
+        const list = listPre.sort((a, b) => {
             const aDate = a.last_booking_at || a.created_at;
             const bDate = b.last_booking_at || b.created_at;
             if (!aDate && !bDate) return 0;
