@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, FlatList, TouchableOpacity,
     RefreshControl, ScrollView, Modal, Alert, Platform, TextInput,
@@ -6,14 +6,35 @@ import {
 } from 'react-native';
 import { Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Calendar, Clock, Timer, CheckCircle, XCircle, AlertCircle, Pencil, ChevronLeft, ChevronRight, X, Ship, Phone, Users } from 'lucide-react-native';
 import * as LucideIcons from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 
-const DURATION_OPTIONS = [30, 60, 90, 120, 180, 240];
+/** Длительности из карточки катера: schedule_min_duration + price_tiers */
+const getDurationOptionsFromBoat = (boat) => {
+    if (!boat) return [60];
+    const minDuration = Number(boat.schedule_min_duration) || 60;
+    const serverTiersRaw = boat.price_tiers;
+    let serverTiers = [];
+    if (Array.isArray(serverTiersRaw)) serverTiers = serverTiersRaw;
+    else if (typeof serverTiersRaw === 'string') {
+        try { serverTiers = JSON.parse(serverTiersRaw || '[]'); } catch { serverTiers = []; }
+    }
+    const hasServerTiers = Array.isArray(serverTiers) && serverTiers.length > 0;
+    const durations = new Set([minDuration]);
+    if (hasServerTiers) {
+        serverTiers.forEach((t) => {
+            const d = Number(t.duration) || 0;
+            if (d > 0) durations.add(d);
+        });
+    } else {
+        DEFAULT_PRICING_TIERS.forEach((t) => durations.add(t.hours * 60));
+    }
+    return [...durations].sort((a, b) => a - b);
+};
 
 // Иконки из lucide: "field-time" и "time-slot" из макета.
 // Если конкретные экспорты не найдены, подстрахуемся `Clock`, чтобы UI не упал.
@@ -353,34 +374,18 @@ export default function OwnerBookingsScreen() {
     const [busySlotsLoading, setBusySlotsLoading] = useState(false);
     const [timeBoatId, setTimeBoatId] = useState(null);
 
-    // ---- Create booking (manual) ----
-    const [addModalVisible, setAddModalVisible] = useState(false);
-    const [creatingBooking, setCreatingBooking] = useState(false);
-    const [addBoatId, setAddBoatId] = useState(null);
-    const [addDate, setAddDate] = useState(new Date());
-    const [addCalendarMonth, setAddCalendarMonth] = useState(() => new Date());
-    const [addShowCalendarModal, setAddShowCalendarModal] = useState(false);
-    const [addDuration, setAddDuration] = useState(60); // минуты
-    const [addPendingTime, setAddPendingTime] = useState(null); // HH:mm wall time
-    const [addShowTimePicker, setAddShowTimePicker] = useState(false);
-    const [addBusyIntervals, setAddBusyIntervals] = useState([]);
-    const [addBusySlotsLoading, setAddBusySlotsLoading] = useState(false);
-    const [addClientPhone, setAddClientPhone] = useState('');
-    const [addClientUserId, setAddClientUserId] = useState(null);
-    const [addClientName, setAddClientName] = useState(null);
-    const [addClientLookupLoading, setAddClientLookupLoading] = useState(false);
-    const [addClientNotFound, setAddClientNotFound] = useState(false);
-    const [addPassengers, setAddPassengers] = useState(1);
-    const [addCaptain, setAddCaptain] = useState(false);
-    const addClientLookupReqRef = useRef(0);
-
     useEffect(() => {
         fetchBookings();
         fetchBoats();
-        // Периодическое обновление списка, пока экран смонтирован.
         const id = setInterval(fetchBookings, 30000);
         return () => clearInterval(id);
     }, []);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            fetchBookings();
+        }, [])
+    );
 
     const fetchBookings = async () => {
         try {
@@ -425,26 +430,6 @@ export default function OwnerBookingsScreen() {
             setBusyIntervals([]);
         } finally {
             setBusySlotsLoading(false);
-        }
-    };
-
-    const fetchAddBusyIntervals = async (date, boatId) => {
-        if (!boatId || !date) {
-            setAddBusyIntervals([]);
-            return;
-        }
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        const dateStr = `${y}-${m}-${d}`;
-        setAddBusySlotsLoading(true);
-        try {
-            const res = await api.get(`/boats/${boatId}/availability`, { params: { date: dateStr } });
-            setAddBusyIntervals(Array.isArray(res.data?.busy) ? res.data.busy : []);
-        } catch (_) {
-            setAddBusyIntervals([]);
-        } finally {
-            setAddBusySlotsLoading(false);
         }
     };
 
@@ -497,202 +482,6 @@ export default function OwnerBookingsScreen() {
         const nid = Number(id);
         if (!Number.isFinite(nid)) return null;
         return boats.find((b) => Number(b.id) === nid) || null;
-    };
-
-    const openAddModal = () => {
-        const firstBoat = boats[0]?.id ?? null;
-        const boat = findBoatById(addBoatId ?? firstBoat);
-
-        const now = new Date();
-        const minDuration = Number(boat?.schedule_min_duration) || 60;
-
-        const captainIncluded = boat?.captain_included === true || boat?.captain_included === 1 || boat?.captain_included === '1';
-
-        setAddModalVisible(true);
-        setAddBoatId(boat?.id ?? firstBoat);
-        setAddDate(now);
-        setAddCalendarMonth(new Date(now.getFullYear(), now.getMonth(), 1));
-        setAddDuration(minDuration);
-        setAddPendingTime(null);
-        setAddShowCalendarModal(false);
-        setAddShowTimePicker(false);
-        setAddBusyIntervals([]);
-        setAddBusySlotsLoading(false);
-
-        setAddClientPhone('');
-        setAddClientUserId(null);
-        setAddClientName(null);
-        setAddClientLookupLoading(false);
-        setAddClientNotFound(false);
-
-        setAddPassengers(1);
-        setAddCaptain(captainIncluded);
-    };
-
-    const closeAddModal = () => {
-        setAddModalVisible(false);
-        setAddShowCalendarModal(false);
-        setAddShowTimePicker(false);
-        setAddPendingTime(null);
-        setAddBusyIntervals([]);
-    };
-
-    const lookupClientByPhone = async (phoneOverride, reqId) => {
-        const phone = (phoneOverride ?? addClientPhone ?? '').trim();
-        if (!phone) return;
-
-        setAddClientLookupLoading(true);
-        setAddClientNotFound(false);
-        try {
-            const res = await api.get('/owner/clients/lookup', { params: { phone } });
-            const data = res.data || {};
-            if (reqId != null && reqId !== addClientLookupReqRef.current) return;
-
-            setAddClientUserId(Number.isFinite(Number(data.id)) ? Number(data.id) : null);
-            setAddClientName(data.name || null);
-        } catch (e) {
-            if (reqId != null && reqId !== addClientLookupReqRef.current) return;
-
-            setAddClientUserId(null);
-            if (e?.response?.status === 404) {
-                setAddClientNotFound(true);
-                // Имя может быть введено вручную — не сбрасываем.
-            } else {
-                setAddClientName(null);
-                const msg = e?.response?.data?.error || e.message || 'Не удалось найти клиента';
-                Alert.alert('Ошибка', msg);
-            }
-        } finally {
-            if (reqId == null || reqId === addClientLookupReqRef.current) {
-                setAddClientLookupLoading(false);
-            }
-        }
-    };
-
-    // Автопоиск клиента по телефону: ищем, когда номер “готовый” (>= 11 цифр).
-    // Это уменьшает число запросов к серверу.
-    useEffect(() => {
-        const digits = String(addClientPhone || '').replace(/\D/g, '');
-        if (digits.length < 11) {
-            addClientLookupReqRef.current++;
-            setAddClientLookupLoading(false);
-            setAddClientNotFound(false);
-            setAddClientUserId(null);
-            return;
-        }
-
-        const reqId = ++addClientLookupReqRef.current;
-        const t = setTimeout(() => {
-            lookupClientByPhone(addClientPhone, reqId);
-        }, 400);
-
-        return () => clearTimeout(t);
-    }, [addClientPhone]);
-
-    const handleSaveAddBooking = async () => {
-        if (!addBoatId) return Alert.alert('Ошибка', 'Выберите катер');
-        if (!addClientPhone || !String(addClientPhone).trim()) return Alert.alert('Ошибка', 'Введите телефон клиента');
-        if (!addPendingTime) return Alert.alert('Ошибка', 'Выберите время');
-        if (!addDate) return Alert.alert('Ошибка', 'Выберите дату');
-
-        const boat = findBoatById(addBoatId);
-        if (!boat) return Alert.alert('Ошибка', 'Катер не найден');
-
-        const captainIncluded = boat?.captain_included === true || boat?.captain_included === 1 || boat?.captain_included === '1';
-        const captainOptional = boat?.has_captain_option === true || boat?.has_captain_option === 1 || boat?.has_captain_option === '1';
-        const finalCaptain = captainIncluded ? true : captainOptional ? addCaptain : false;
-
-        setCreatingBooking(true);
-        try {
-            let clientUserId = addClientUserId;
-            let clientName = addClientName;
-
-            // Если по телефону не удалось получить `user_id` (из lookup),
-            // создаём/привязываем клиента к базе владельца.
-            if (!clientUserId) {
-                if (!clientName || !String(clientName).trim()) {
-                    return Alert.alert('Ошибка', 'Если клиент не найден, укажите имя клиента');
-                }
-                let created;
-                try {
-                    created = await api.post('/owner/clients', {
-                        phone: addClientPhone.trim(),
-                        name: String(clientName).trim(),
-                        email: null,
-                    });
-                } catch (e) {
-                    const status = e?.response?.status;
-                    const errText =
-                        e?.response?.data?.error ||
-                        e?.response?.data?.message ||
-                        (typeof e?.response?.data === 'string' ? e.response.data : null) ||
-                        e?.message ||
-                        'Не удалось добавить клиента владельца';
-                    return Alert.alert('Ошибка', `Шаг clients: ${errText}${status ? ` (HTTP ${status})` : ''}`);
-                }
-                // Для бронирования нужен именно users.id (owner_clients.id не подходит).
-                clientUserId = created.data?.user_id ?? null;
-                clientName = created.data?.name ?? clientName;
-            }
-
-            if (!clientUserId) return Alert.alert('Ошибка', 'Клиент добавлен в базу владельца, но не зарегистрирован в приложении');
-
-            // На всякий случай убеждаемся, что клиент привязан в owner_clients
-            try {
-                await api.post('/owner/clients', {
-                    phone: addClientPhone.trim(),
-                    name: clientName || null,
-                    email: null,
-                });
-            } catch (_) {}
-
-            const [hh, mm] = String(addPendingTime).split(':').map(Number);
-            const start_at = zonedWallTimeToIso(
-                BOOKING_TIME_ZONE,
-                addDate.getFullYear(),
-                addDate.getMonth(),
-                addDate.getDate(),
-                Number.isFinite(hh) ? hh : addDate.getHours(),
-                Number.isFinite(mm) ? mm : addDate.getMinutes()
-            );
-
-            const total_price = getPriceForDate(boat, addDate, addDuration);
-
-            try {
-                await api.post('/owner/bookings', {
-                    boat_id: addBoatId,
-                    user_id: clientUserId,
-                    start_at,
-                    hours: addDuration,
-                    passengers: addPassengers,
-                    captain: finalCaptain,
-                    total_price,
-                    status: 'confirmed',
-                });
-            } catch (e) {
-                const status = e?.response?.status;
-                const errText =
-                    e?.response?.data?.error ||
-                    e?.response?.data?.message ||
-                    (typeof e?.response?.data === 'string' ? e.response.data : null) ||
-                    e?.message ||
-                    'Не удалось создать бронирование';
-                return Alert.alert('Ошибка', `Шаг bookings: ${errText}${status ? ` (HTTP ${status})` : ''}`);
-            }
-
-            closeAddModal();
-            fetchBookings();
-        } catch (e) {
-            const status = e?.response?.status;
-            const serverError =
-                e?.response?.data?.error ||
-                e?.response?.data?.message ||
-                (typeof e?.response?.data === 'string' ? e.response.data : null);
-            const msg = serverError || e.message || 'Не удалось создать бронирование';
-            Alert.alert('Ошибка', status ? `${msg} (HTTP ${status})` : msg);
-        } finally {
-            setCreatingBooking(false);
-        }
     };
 
     const openEditModal = (item) => {
@@ -935,7 +724,6 @@ export default function OwnerBookingsScreen() {
         );
     };
 
-    const addBoat = findBoatById(addBoatId);
 
     return (
         <View style={s.root}>
@@ -949,7 +737,7 @@ export default function OwnerBookingsScreen() {
                 <View style={[s.headerContent, { paddingTop: insets.top + 12 }]}>
                     <View style={s.headerTopRow}>
                         <Text style={[s.headerTitle, { textAlign: 'left' }]}>Бронирования</Text>
-                        <TouchableOpacity style={s.headerAddBtn} onPress={openAddModal} activeOpacity={0.8}>
+                        <TouchableOpacity style={s.headerAddBtn} onPress={() => navigation.navigate('AddBooking')} activeOpacity={0.8}>
                             <Pencil size={18} color="#fff" />
                             <Text style={s.headerAddText}>Добавить вручную</Text>
                         </TouchableOpacity>
@@ -1265,8 +1053,13 @@ export default function OwnerBookingsScreen() {
                         </View>
                         {/* Тайм-пикер для изменения времени бронирования */}
                         <Text style={s.modalLabel}>Длительность</Text>
-                        <View style={s.durationChips}>
-                            {DURATION_OPTIONS.map((mins) => (
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={s.durationChipsScroll}
+                            style={s.durationChipsWrap}
+                        >
+                            {getDurationOptionsFromBoat(findBoatById(timeBoatId ?? editingBooking?.boat_id)).map((mins) => (
                                 <TouchableOpacity
                                     key={mins}
                                     style={[s.durationChip, editDuration === mins && s.durationChipActive]}
@@ -1277,7 +1070,7 @@ export default function OwnerBookingsScreen() {
                                     </Text>
                                 </TouchableOpacity>
                             ))}
-                        </View>
+                        </ScrollView>
                         <TouchableOpacity style={s.cancelBookingBtn} onPress={handleCancelBooking}>
                             <Text style={s.cancelBookingText}>Отменить бронирование</Text>
                         </TouchableOpacity>
@@ -1291,309 +1084,6 @@ export default function OwnerBookingsScreen() {
                         </View>
                     </TouchableOpacity>
                 </TouchableOpacity>
-            </Modal>
-
-            {/* ---- Modal: manual booking create ---- */}
-            <Modal visible={addModalVisible} animationType="fade" transparent>
-                <View style={[s.modalOverlay, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-                    {/* Фон кликабельный для закрытия модалки; контент должен быть поверх */}
-                    <TouchableOpacity
-                        style={StyleSheet.absoluteFillObject}
-                        activeOpacity={1}
-                        onPress={closeAddModal}
-                    />
-                    <View style={[s.modalContent, s.addModalSheet]}>
-                        <ScrollView
-                            showsVerticalScrollIndicator={false}
-                            keyboardShouldPersistTaps="handled"
-                            contentContainerStyle={s.addModalScrollContent}
-                        >
-                            <Text style={s.modalTitle}>Добавить бронирование вручную</Text>
-                            <Text style={s.modalBoat}>Выберите катер, клиента, дату и время</Text>
-
-                        <Text style={s.modalLabel}>Катер</Text>
-                        <View style={s.addBoatChips}>
-                            {boatOptions.length === 0 ? (
-                                <Text style={s.emptyText}>Нет доступных катеров</Text>
-                            ) : (
-                                boatOptions.map((b) => {
-                                    const active = addBoatId != null && Number(addBoatId) === Number(b.id);
-                                    return (
-                                        <TouchableOpacity
-                                            key={String(b.id)}
-                                            style={[s.boatChip, active && s.boatChipActive, { marginRight: 0 }]}
-                                            onPress={() => {
-                                                const boat = findBoatById(b.id);
-                                                setAddBoatId(b.id);
-                                                setAddPendingTime(null);
-                                                setAddPassengers(1);
-                                                setAddDuration(Number(boat?.schedule_min_duration) || 60);
-                                                const captainIncluded = boat?.captain_included === true || boat?.captain_included === 1 || boat?.captain_included === '1';
-                                                setAddCaptain(captainIncluded);
-                                            }}
-                                            activeOpacity={0.75}
-                                        >
-                                            <Text style={[s.boatChipText, active && s.boatChipTextActive]}>{b.title}</Text>
-                                        </TouchableOpacity>
-                                    );
-                                })
-                            )}
-                        </View>
-
-                        <Text style={s.modalLabel}>Телефон клиента</Text>
-                        <View style={s.clientLookupRow}>
-                            <TextInput
-                                style={s.phoneInput}
-                                value={addClientPhone}
-                                onChangeText={(t) => {
-                                    setAddClientPhone(formatPhoneRu(t));
-                                    setAddClientNotFound(false);
-                                    setAddClientUserId(null);
-                                }}
-                                placeholder="+7 ..."
-                                placeholderTextColor={theme.colors.gray400}
-                                keyboardType="phone-pad"
-                            />
-                            {addClientLookupLoading ? (
-                                <ActivityIndicator size="small" color={TEAL} />
-                            ) : null}
-                        </View>
-                        {addClientName && <Text style={s.clientFoundText}>Клиент: {addClientName}</Text>}
-                        {addClientNotFound && <Text style={s.clientNotFoundText}>Не найден — создадим по телефону</Text>}
-
-                        {addClientNotFound && (
-                            <>
-                                <Text style={s.modalLabel}>Имя клиента</Text>
-                                <TextInput
-                                    style={s.addModalNameInput}
-                                    value={addClientName ?? ''}
-                                    onChangeText={(t) => {
-                                        setAddClientName(t);
-                                        setAddClientNotFound(true);
-                                    }}
-                                    placeholder="Например, Иван"
-                                    placeholderTextColor={theme.colors.gray400}
-                                    editable
-                                    autoCorrect={false}
-                                />
-                            </>
-                        )}
-
-                        <View style={s.modalRow}>
-                            <Text style={s.modalLabel}>Дата</Text>
-                            <TouchableOpacity
-                                style={s.modalValueBtn}
-                                onPress={() => {
-                                    const base = addDate || new Date();
-                                    setAddCalendarMonth(new Date(base.getFullYear(), base.getMonth(), 1));
-                                    setAddShowCalendarModal(true);
-                                }}
-                            >
-                                <Text style={s.modalValue}>{addDate ? addDate.toLocaleDateString('ru-RU') : '—'}</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {addShowCalendarModal && addBoat && (() => {
-                            let wd = addBoat.schedule_work_days;
-                            if (typeof wd === 'string') try { wd = JSON.parse(wd); } catch { wd = null; }
-                            const workDays = wd && typeof wd === 'object' && !wd.dates
-                                ? { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true, ...wd }
-                                : { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true };
-                            const workDatesSet = wd?.dates && Array.isArray(wd.dates) ? new Set(wd.dates) : null;
-                            const isWorkingDay = (d) => workDatesSet ? workDatesSet.has(toDateKey(d)) : workDays[getWeekdayKey(d)] === true;
-
-                            const today = new Date();
-                            today.setHours(0, 0, 0, 0);
-                            const grid = getCalendarGrid(addCalendarMonth);
-                            const monthTitle = addCalendarMonth.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
-                            const prevMonth = () => setAddCalendarMonth(new Date(addCalendarMonth.getFullYear(), addCalendarMonth.getMonth() - 1, 1));
-                            const nextMonth = () => setAddCalendarMonth(new Date(addCalendarMonth.getFullYear(), addCalendarMonth.getMonth() + 1, 1));
-
-                            return (
-                                <Modal visible transparent animationType="fade">
-                                    <View style={s.calOverlay}>
-                                        <View style={s.calSheet}>
-                                            <View style={s.calHeader}>
-                                                <TouchableOpacity onPress={() => setAddShowCalendarModal(false)} hitSlop={12}>
-                                                    <X size={22} color={NAVY} />
-                                                </TouchableOpacity>
-                                                <Text style={s.calHeaderTitle}>Выберите дату</Text>
-                                                <View style={{ width: 22 }} />
-                                            </View>
-                                            <View style={s.calMonthRow}>
-                                                <TouchableOpacity onPress={prevMonth} style={s.calArrowBtn}>
-                                                    <ChevronLeft size={24} color={NAVY} />
-                                                </TouchableOpacity>
-                                                <Text style={s.calMonthTitle}>{monthTitle}</Text>
-                                                <TouchableOpacity onPress={nextMonth} style={s.calArrowBtn}>
-                                                    <ChevronRight size={24} color={NAVY} />
-                                                </TouchableOpacity>
-                                            </View>
-                                            <View style={s.calWeekdayRow}>
-                                                {WEEKDAY_LABELS.map((label, i) => (
-                                                    <Text key={label} style={[s.calWeekdayText, (i === 5 || i === 6) && s.calWeekdayWeekend]}>
-                                                        {label}
-                                                    </Text>
-                                                ))}
-                                            </View>
-                                            <View style={s.calGrid}>
-                                                {grid.map(({ date, isCurrentMonth }, idx) => {
-                                                    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-                                                    const isPast = dateOnly < today;
-                                                    const working = isWorkingDay(date);
-                                                    const unavailable = !working || isPast;
-                                                    const selectable = isCurrentMonth && !unavailable;
-                                                    const selected = addDate && sameDay(date, addDate);
-                                                    return (
-                                                        <TouchableOpacity
-                                                            key={idx}
-                                                            style={[
-                                                                s.calDayCell,
-                                                                !isCurrentMonth && s.calDayOtherMonth,
-                                                                selectable && s.calDayAvailable,
-                                                                unavailable && isCurrentMonth && s.calDayUnavailable,
-                                                                selected && s.calDaySelected,
-                                                            ]}
-                                                            onPress={() => {
-                                                                if (selectable) {
-                                                                    setAddDate(date);
-                                                                    fetchAddBusyIntervals(date, addBoatId);
-                                                                    setAddShowCalendarModal(false);
-                                                                }
-                                                            }}
-                                                            disabled={!selectable}
-                                                            activeOpacity={selectable ? 0.7 : 1}
-                                                        >
-                                                            <Text style={[
-                                                                s.calDayNum,
-                                                                !isCurrentMonth && s.calDayNumOther,
-                                                                selectable && s.calDayNumAvailable,
-                                                                unavailable && isCurrentMonth && s.calDayNumUnavailable,
-                                                                selected && s.calDayNumSelected,
-                                                            ]}>
-                                                                {date.getDate()}
-                                                            </Text>
-                                                        </TouchableOpacity>
-                                                    );
-                                                })}
-                                            </View>
-                                        </View>
-                                    </View>
-                                </Modal>
-                            );
-                        })()}
-
-                        <View style={s.modalRow}>
-                            <Text style={s.modalLabel}>Время</Text>
-                            <TouchableOpacity
-                                style={s.modalValueBtn}
-                                onPress={() => {
-                                    if (!addBoatId) return Alert.alert('Ошибка', 'Выберите катер');
-                                    fetchAddBusyIntervals(addDate, addBoatId);
-                                    setAddShowTimePicker(true);
-                                }}
-                            >
-                                <Text style={s.modalValue}>{addPendingTime || '—'}</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        <Text style={s.modalLabel}>Длительность</Text>
-                        <View style={s.durationChips}>
-                            {DURATION_OPTIONS.map((mins) => (
-                                <TouchableOpacity
-                                    key={mins}
-                                    style={[s.durationChip, addDuration === mins && s.durationChipActive]}
-                                    onPress={() => setAddDuration(mins)}
-                                >
-                                    <Text style={[s.durationChipText, addDuration === mins && s.durationChipTextActive]}>
-                                        {formatDuration(mins)}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-
-                        <Text style={s.modalLabel}>Пассажиры</Text>
-                        <View style={s.passengerRow}>
-                            <TouchableOpacity
-                                style={[s.stepBtn, addPassengers <= 1 && s.stepBtnDisabled]}
-                                onPress={() => setAddPassengers(Math.max(1, addPassengers - 1))}
-                                disabled={addPassengers <= 1}
-                                activeOpacity={0.8}
-                            >
-                                <Text style={[s.stepBtnText, addPassengers <= 1 && s.stepBtnTextDisabled]}>-</Text>
-                            </TouchableOpacity>
-                            <Text style={s.passengerText}>
-                                {addPassengers} {addPassengers === 1 ? 'гость' : addPassengers < 5 ? 'гостя' : 'гостей'}
-                            </Text>
-                            <TouchableOpacity
-                                style={[s.stepBtn, addBoat?.capacity != null && Number(addBoat.capacity) > 0 && addPassengers >= Number(addBoat.capacity) && s.stepBtnDisabled]}
-                                onPress={() => {
-                                    const max = Number(addBoat?.capacity) || 20;
-                                    setAddPassengers(Math.min(max, addPassengers + 1));
-                                }}
-                                disabled={addBoat?.capacity != null && Number(addBoat.capacity) > 0 && addPassengers >= Number(addBoat.capacity)}
-                                activeOpacity={0.8}
-                            >
-                                <Text style={s.stepBtnText}>+</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        <Text style={s.modalLabel}>Капитан</Text>
-                        {addBoat ? (() => {
-                            const captainIncluded = addBoat?.captain_included === true || addBoat?.captain_included === 1 || addBoat?.captain_included === '1';
-                            const captainOptional = addBoat?.has_captain_option === true || addBoat?.has_captain_option === 1 || addBoat?.has_captain_option === '1';
-                            if (captainIncluded) {
-                                return <Text style={s.clientFoundText}>С капитаном</Text>;
-                            }
-                            if (captainOptional) {
-                                return (
-                                    <View style={s.captainRow}>
-                                        <TouchableOpacity
-                                            style={[s.captainChip, addCaptain === false && s.captainChipActive]}
-                                            onPress={() => setAddCaptain(false)}
-                                            activeOpacity={0.8}
-                                        >
-                                            <Text style={[s.captainChipText, addCaptain === false && s.captainChipTextActive]}>Без капитана</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            style={[s.captainChip, addCaptain === true && s.captainChipActive]}
-                                            onPress={() => setAddCaptain(true)}
-                                            activeOpacity={0.8}
-                                        >
-                                            <Text style={[s.captainChipText, addCaptain === true && s.captainChipTextActive]}>С капитаном</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                );
-                            }
-                            return <Text style={s.clientFoundText}>Без капитана</Text>;
-                        })() : null}
-
-                        <Text style={s.modalPriceLine}>
-                            Итого: {(addBoat ? getPriceForDate(addBoat, addDate, addDuration) : 0).toLocaleString('ru-RU')} ₽
-                        </Text>
-
-                            <View style={s.modalActions}>
-                                <TouchableOpacity style={s.modalCancelBtn} onPress={closeAddModal} disabled={creatingBooking}>
-                                    <Text style={s.modalCancelText}>Закрыть</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={s.modalSaveBtn}
-                                    onPress={handleSaveAddBooking}
-                                    disabled={
-                                        creatingBooking
-                                        || !addBoatId
-                                        || !addClientPhone || !String(addClientPhone).trim()
-                                        || !addPendingTime
-                                        || !addDate
-                                    }
-                                    activeOpacity={0.9}
-                                >
-                                    {creatingBooking ? <ActivityIndicator size="small" color="#fff" /> : <Text style={s.modalSaveText}>Создать</Text>}
-                                </TouchableOpacity>
-                            </View>
-                        </ScrollView>
-                    </View>
-                </View>
             </Modal>
 
             {/* Тайм-пикер модальное окно */}
@@ -1681,88 +1171,8 @@ export default function OwnerBookingsScreen() {
                 </Modal>
             )}
 
-            {/* ---- Time picker: manual booking create ---- */}
-            {addShowTimePicker && (
-                <Modal visible animationType="slide" transparent onRequestClose={() => setAddShowTimePicker(false)}>
-                    <View style={s.timeOverlay}>
-                        <View style={[s.timeSheet, { paddingBottom: insets.bottom + 16 }]}>
-                            <View style={s.timeHeader}>
-                                <TouchableOpacity onPress={() => setAddShowTimePicker(false)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                                    <X size={22} color={NAVY} />
-                                </TouchableOpacity>
-                                <Text style={s.timeHeaderTitle}>Время начала</Text>
-                                <View style={{ width: 22 }} />
-                            </View>
-                            <View style={s.timeHint}>
-                                {addBusySlotsLoading ? (
-                                    <ActivityIndicator size="small" color={NAVY} style={{ marginVertical: 4 }} />
-                                ) : (
-                                    <Text style={s.timeHintText}>Показано текущее доступное время.</Text>
-                                )}
-                            </View>
-                            <ScrollView
-                                showsVerticalScrollIndicator={false}
-                                style={s.timeScroll}
-                                contentContainerStyle={s.timeGrid}
-                            >
-                                {TIME_SLOTS.map((slot) => {
-                                    const isBusy = isSlotInBusyInterval(slot, addBusyIntervals);
-                                    const canStartBase = isStartTimeValid(slot, addDuration, addBusyIntervals);
 
-                                    const isToday = isSameDayInBookingTz(addDate, new Date());
-                                    const nowMinutes = getNowMinutesInBookingTz();
-                                    const slotMinutes = slotToMinutes(slot);
-                                    const isPastToday = isToday && slotMinutes <= nowMinutes;
-
-                                    const canStart = canStartBase && !isPastToday;
-                                    const isSelected = addPendingTime === slot;
-                                    const disabled = !canStart;
-                                    return (
-                                        <TouchableOpacity
-                                            key={slot}
-                                            style={[
-                                                s.timeSlot,
-                                                isSelected && s.timeSlotSelected,
-                                                isBusy && s.timeSlotBusy,
-                                                canStart && !isSelected && s.timeSlotAvailable,
-                                            ]}
-                                            onPress={() => { if (canStart) setAddPendingTime(slot); }}
-                                            disabled={disabled}
-                                            activeOpacity={disabled ? 1 : 0.7}
-                                        >
-                                            <Text
-                                                style={[
-                                                    s.timeSlotText,
-                                                    isSelected && s.timeSlotTextSelected,
-                                                    isBusy && s.timeSlotTextBusy,
-                                                    canStart && !isSelected && s.timeSlotTextAvailable,
-                                                ]}
-                                            >
-                                                {slot}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    );
-                                })}
-                            </ScrollView>
-                            <View style={s.timeFooter}>
-                                <TouchableOpacity
-                                    style={[s.timeApplyBtn, !addPendingTime && s.timeApplyBtnDisabled]}
-                                    onPress={() => {
-                                        if (!addPendingTime) return;
-                                        setAddShowTimePicker(false);
-                                    }}
-                                    disabled={!addPendingTime}
-                                    activeOpacity={0.9}
-                                >
-                                    <Text style={s.timeApplyBtnText}>ПРИМЕНИТЬ</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </View>
-                </Modal>
-            )}
-
-            {/* List */}
+                        {/* List */}
             <FlatList
                 data={filtered}
                 renderItem={renderCard}
@@ -1956,7 +1366,8 @@ const s = StyleSheet.create({
     modalLabel: { fontSize: 13, fontFamily: theme.fonts.medium, color: theme.colors.gray500, marginBottom: 6 },
     modalValueBtn: { paddingVertical: 10, paddingHorizontal: 14, backgroundColor: '#F3F4F6', borderRadius: 10 },
     modalValue: { fontSize: 15, fontFamily: theme.fonts.medium, color: NAVY },
-    durationChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
+    durationChipsWrap: { marginTop: 6 },
+    durationChipsScroll: { flexDirection: 'row', gap: 8, paddingRight: 4 },
     durationChip: {
         paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10,
         borderWidth: 1.5, borderColor: '#D1D5DB', backgroundColor: '#fff',
