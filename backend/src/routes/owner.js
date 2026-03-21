@@ -393,29 +393,31 @@ router.post('/clients', authenticate, async (req, res, next) => {
                 userId = created[0].id;
             }
         }
-
-        if (userId == null) {
-            return res.status(400).json({ error: 'Не удалось определить клиента' });
-        }
+        // Если только имя — создаём ручную запись с user_id=null (клиент без телефона/email).
 
         // Если уже есть запись owner_clients по user_id — возвращаем её как успешный результат.
-        const { rows: existingByUser } = await pool.query(
-            'SELECT * FROM owner_clients WHERE owner_id = $1 AND user_id = $2 LIMIT 1',
-            [ownerId, userId]
-        );
-        if (existingByUser.length > 0) {
-            return res.status(200).json(existingByUser[0]);
+        if (userId != null) {
+            const { rows: existingByUser } = await pool.query(
+                'SELECT * FROM owner_clients WHERE owner_id = $1 AND user_id = $2 LIMIT 1',
+                [ownerId, userId]
+            );
+            if (existingByUser.length > 0) {
+                return res.status(200).json(existingByUser[0]);
+            }
         }
 
         // Если есть ручная запись по тому же телефону/email (user_id NULL) — обновим её и привяжем к user_id.
-        const { rows: existingManualForLink } = await pool.query(
+        // (только когда есть userId и phone/email для поиска)
+        const existingManualForLink = (userId != null && (phone || normalizedEmail))
+            ? (await pool.query(
             `SELECT * FROM owner_clients
              WHERE owner_id = $1 AND user_id IS NULL
                AND (($2::text IS NOT NULL AND TRIM(COALESCE(phone,'')) = TRIM($2))
                     OR ($3::text IS NOT NULL AND LOWER(TRIM(COALESCE(email,''))) = LOWER(TRIM($3))))
              LIMIT 1`,
             [ownerId, phone || null, normalizedEmail || null]
-        );
+        )).rows
+            : [];
         if (existingManualForLink.length > 0) {
             const manual = existingManualForLink[0];
             const { rows: linked } = await pool.query(
@@ -431,21 +433,23 @@ router.post('/clients', authenticate, async (req, res, next) => {
             return res.status(200).json(linked[0]);
         }
 
-        // Не добавлять одного и того же клиента дважды
-        try {
-            const { rows: existingManual } = await pool.query(
-                `SELECT id FROM owner_clients
-                 WHERE owner_id = $1 AND user_id IS NULL
-                   AND (($2::text IS NOT NULL AND TRIM(COALESCE(phone,'')) = TRIM($2))
-                        OR ($3::text IS NOT NULL AND LOWER(TRIM(COALESCE(email,''))) = LOWER(TRIM($3))))
-                 LIMIT 1`,
-                [ownerId, phone || null, normalizedEmail || null]
-            );
-            if (existingManual.length > 0) {
-                return res.status(400).json({ error: 'Клиент с таким телефоном или email уже добавлен' });
+        // Не добавлять одного и того же клиента дважды (по телефону/email)
+        if (phone || normalizedEmail) {
+            try {
+                const { rows: existingManual } = await pool.query(
+                    `SELECT id FROM owner_clients
+                     WHERE owner_id = $1 AND user_id IS NULL
+                       AND (($2::text IS NOT NULL AND TRIM(COALESCE(phone,'')) = TRIM($2))
+                            OR ($3::text IS NOT NULL AND LOWER(TRIM(COALESCE(email,''))) = LOWER(TRIM($3))))
+                     LIMIT 1`,
+                    [ownerId, phone || null, normalizedEmail || null]
+                );
+                if (existingManual.length > 0) {
+                    return res.status(400).json({ error: 'Клиент с таким телефоном или email уже добавлен' });
+                }
+            } catch (e) {
+                // таблица owner_clients может отсутствовать
             }
-        } catch (e) {
-            // таблица owner_clients может отсутствовать
         }
 
         const { rows } = await pool.query(
