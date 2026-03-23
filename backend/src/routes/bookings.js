@@ -13,6 +13,14 @@ async function sendBookingPushToClient(userId, title, body, bookingId) {
     } catch (_) {}
 }
 
+async function sendBookingPushToOwner(ownerId, title, body, bookingId) {
+    try {
+        const { rows } = await pool.query('SELECT push_token FROM users WHERE id = $1', [ownerId]);
+        const token = rows[0]?.push_token;
+        if (token) await sendPush(token, title, body, { bookingId, type: 'booking' });
+    } catch (_) {}
+}
+
 // В БД в колонке hours всегда храним длительность в МИНУТАХ (клиент присылает минуты: 30, 60, 120...).
 // Для совместимости: если пришло целое число 1–24, считаем это часами и переводим в минуты.
 function normalizeDurationToMinutes(hours) {
@@ -41,7 +49,19 @@ router.post('/', authenticate, async (req, res, next) => {
              RETURNING *`,
             [req.user.id, boat.owner_id, boat.id, boat.title, boatPhoto, start_at || new Date().toISOString(), durationMinutes, passengers || 1, !!captain, total_price || 0]
         );
-        res.json(rows[0]);
+        const booking = rows[0];
+        const clientName =
+            (req.user.name && String(req.user.name).trim()) ||
+            [req.user.first_name, req.user.last_name].filter(Boolean).join(' ').trim() ||
+            req.user.email ||
+            'Клиент';
+        await sendBookingPushToOwner(
+            booking.owner_id,
+            'Новое бронирование',
+            `${clientName} создал(а) бронирование «${booking.boat_title || 'Катер'}».`,
+            booking.id
+        );
+        res.json(booking);
     } catch (err) {
         next(err);
     }
@@ -114,6 +134,14 @@ router.post('/:id/cancel', authenticate, async (req, res, next) => {
                 ? `Владелец отменил бронирование «${booking.boat_title || 'Катер'}».`
                 : `Вы отменили бронирование «${booking.boat_title || 'Катер'}».`;
             await sendBookingPushToClient(booking.user_id, title, body, booking.id);
+            if (!cancelledByOwner) {
+                await sendBookingPushToOwner(
+                    booking.owner_id,
+                    'Отмена бронирования',
+                    `Клиент отменил(а) бронирование «${booking.boat_title || 'Катер'}».`,
+                    booking.id
+                );
+            }
         } catch (_) {}
 
         res.json(booking);

@@ -5,7 +5,14 @@ const path = require('path');
 const fs = require('fs');
 const variant = process.env.EXPO_PUBLIC_APP_VARIANT || 'client';
 const isOwner = variant === 'owner';
-const hasGoogleServices = fs.existsSync(path.join(__dirname, 'google-services.json'));
+// Файлы Firebase: можно использовать отдельные для client/owner или один объединённый
+const googleServicesClient = path.join(__dirname, 'google-services-client.json');
+const googleServicesOwner = path.join(__dirname, 'google-services-owner.json');
+const googleServicesMerged = path.join(__dirname, 'google-services.json');
+const googleServicesFile = isOwner
+  ? (fs.existsSync(googleServicesOwner) ? './google-services-owner.json' : fs.existsSync(googleServicesMerged) ? './google-services.json' : null)
+  : (fs.existsSync(googleServicesClient) ? './google-services-client.json' : fs.existsSync(googleServicesMerged) ? './google-services.json' : null);
+const hasGoogleServices = !!googleServicesFile;
 const versionCodesPath = path.join(__dirname, 'version-codes.json');
 
 function getAndroidVersionCode() {
@@ -51,7 +58,7 @@ export default {
       // Временный отказ от edge-to-edge: убирает предупреждение Google Play об устаревших API (setStatusBarColor и т.д.) на Android 15.
       // На Android 16 отказ станет недоступен — потребуется поддержка edge-to-edge.
       enableEdgeToEdge: false,
-      ...(hasGoogleServices && { googleServicesFile: './google-services.json' }),
+      ...(hasGoogleServices && { googleServicesFile }),
     },
     config: {
       googleMaps: { apiKey: 'YOUR_YANDEX_MAPS_OR_GOOGLE_MAPS_API_KEY_HERE' },
@@ -87,7 +94,7 @@ export default {
           },
         },
       ],
-      ['expo-notifications', { icon: './assets/icon.png', color: '#1B365D', sounds: [] }],
+      ['expo-notifications', { icon: isOwner ? './assets/icon-owner.png' : './assets/icon.png', color: isOwner ? '#0a6e82' : '#1B365D', sounds: [] }],
       [
         'expo-image-picker',
         {
