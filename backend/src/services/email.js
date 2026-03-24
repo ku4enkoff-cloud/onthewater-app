@@ -32,6 +32,10 @@ async function sendVerificationEmail(to, userName, token) {
   <p>Здравствуйте${userName ? ', ' + userName : ''}!</p>
   <p>Вы зарегистрировались в приложении ONTHEWATER. Для активации аккаунта перейдите по ссылке:</p>
   <p><a href="${verifyUrl}" style="color: #1B365D; font-weight: bold;">Подтвердить email</a></p>
+  <p style="margin-top: 8px; color: #4B5563; font-size: 13px; word-break: break-all;">
+    Если кнопка не открывается, скопируйте ссылку в браузер:<br>
+    <a href="${verifyUrl}" style="color: #1B365D;">${verifyUrl}</a>
+  </p>
   <p>Ссылка действительна 24 часа.</p>
   <p>Если вы не регистрировались — проигнорируйте это письмо.</p>
   <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
