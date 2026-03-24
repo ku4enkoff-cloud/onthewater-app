@@ -22,7 +22,7 @@ const defaultForm = () => ({
   location_country: '', location_region: '', location_city: '', location_address: '', location_yacht_club: '',
   lat: '', lng: '', price_per_hour: '', price_per_day: '', price_weekend: '',
   captain_included: false, has_captain_option: false, instant_booking: false,
-  rules: '', cancellation_policy: '', status: 'active', amenities: [],
+  rules: '', payment_policy: '', cancellation_policy: '', status: 'active', amenities: [],
   schedule_min_duration: 60, schedule_work_days: '[]', schedule_weekday_hours: '[]', schedule_weekend_hours: '[]',
   price_tiers: '[]', video_uris: '[]',
 });
@@ -47,6 +47,7 @@ function PhotoFilePreview({ file, className, children }) {
 
 export default function Boats() {
   const [list, setList] = useState([]);
+  const [amenitiesList, setAmenitiesList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(defaultForm());
@@ -57,8 +58,14 @@ export default function Boats() {
   const load = () => {
     api.get('/admin/boats').then((r) => setList(r.data || [])).catch(() => setList([])).finally(() => setLoading(false));
   };
+  const loadAmenities = () => {
+    api.get('/admin/amenities').then((r) => setAmenitiesList(r.data || [])).catch(() => setAmenitiesList([]));
+  };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    loadAmenities();
+  }, []);
 
   const openEdit = (b) => {
     setEditing(b);
@@ -86,6 +93,7 @@ export default function Boats() {
       has_captain_option: !!b.has_captain_option,
       instant_booking: !!b.instant_booking,
       rules: b.rules || '',
+      payment_policy: b.payment_policy ?? '',
       cancellation_policy: b.cancellation_policy ?? '',
       status: b.status || 'active',
       amenities: Array.isArray(b.amenities) ? b.amenities : [],
@@ -113,6 +121,17 @@ export default function Boats() {
     if (!files.length) return;
     setPhotos((p) => ({ ...p, newFiles: [...p.newFiles, ...files] }));
     e.target.value = '';
+  };
+
+  const toggleAmenity = (name) => {
+    setForm((prev) => {
+      const current = Array.isArray(prev.amenities) ? prev.amenities : [];
+      const exists = current.includes(name);
+      return {
+        ...prev,
+        amenities: exists ? current.filter((x) => x !== name) : [...current, name],
+      };
+    });
   };
 
   const setStatus = async (id, status) => {
@@ -150,6 +169,7 @@ export default function Boats() {
       formData.append('captain_included', form.captain_included ? '1' : '0');
       formData.append('has_captain_option', form.has_captain_option ? '1' : '0');
       formData.append('rules', form.rules);
+      formData.append('payment_policy', form.payment_policy);
       formData.append('status', form.status);
       formData.append('amenities', JSON.stringify(form.amenities));
       formData.append('manufacturer', form.manufacturer);
@@ -250,6 +270,10 @@ export default function Boats() {
               <input className={modalStyles.input} value={form.type_name} onChange={(e) => setForm({ ...form, type_name: e.target.value })} placeholder="Катер, Яхта, …" />
             </div>
             <div className={modalStyles.formRow}>
+              <label className={modalStyles.label}>ID типа судна</label>
+              <input className={modalStyles.input} value={form.type_id} onChange={(e) => setForm({ ...form, type_id: e.target.value })} placeholder="1" />
+            </div>
+            <div className={modalStyles.formRow}>
               <label className={modalStyles.label}>Страна</label>
               <input className={modalStyles.input} value={form.location_country} onChange={(e) => setForm({ ...form, location_country: e.target.value })} placeholder="Россия" />
             </div>
@@ -322,12 +346,34 @@ export default function Boats() {
               </select>
             </div>
             <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Удобства (каждое с новой строки)</label>
-              <textarea className={modalStyles.input} rows={3} value={Array.isArray(form.amenities) ? form.amenities.join('\n') : ''} onChange={(e) => setForm({ ...form, amenities: e.target.value.split('\n').map((s) => s.trim()).filter(Boolean) })} placeholder="Туалет, Кондиционер (каждое с новой строки)" />
+              <label className={modalStyles.label}>Удобства</label>
+              {amenitiesList.length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem 0.75rem' }}>
+                  {amenitiesList.map((item) => {
+                    const checked = Array.isArray(form.amenities) && form.amenities.includes(item.name);
+                    return (
+                      <label key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleAmenity(item.name)}
+                        />
+                        <span>{item.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p style={{ margin: 0, opacity: 0.75 }}>Нет доступных удобств. Добавьте их в разделе «Удобства».</p>
+              )}
             </div>
             <div className={modalStyles.formRow}>
               <label className={modalStyles.label}>Правила</label>
               <textarea className={modalStyles.input} rows={2} value={form.rules} onChange={(e) => setForm({ ...form, rules: e.target.value })} />
+            </div>
+            <div className={modalStyles.formRow}>
+              <label className={modalStyles.label}>Порядок оплаты</label>
+              <textarea className={modalStyles.input} rows={2} value={form.payment_policy} onChange={(e) => setForm({ ...form, payment_policy: e.target.value })} />
             </div>
             <div className={modalStyles.formRow}>
               <label className={modalStyles.label}>Политика отмены</label>

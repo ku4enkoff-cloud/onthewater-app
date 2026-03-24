@@ -570,6 +570,8 @@ export default function BoatDetailScreen({ route, navigation }) {
         }
     };
 
+    const paymentPolicyText = String(boat.payment_policy || '').trim();
+    const hasPaymentPolicy = paymentPolicyText.length > 0;
     const hasCancellationPolicy = !!(boat.cancellation_policy && String(boat.cancellation_policy).trim());
     const responseSpeedLabel = '—';
 
@@ -1121,13 +1123,19 @@ export default function BoatDetailScreen({ route, navigation }) {
                                 )}
                             </>
                         ) : null}
-                        {hasCancellationPolicy ? (
+                        {hasPaymentPolicy ? (
                             <View style={{ marginTop: boat.rules ? 16 : 0 }}>
+                                <Text style={styles.subSectionTitle}>Порядок оплаты</Text>
+                                <Text style={styles.bodyText}>{paymentPolicyText}</Text>
+                            </View>
+                        ) : null}
+                        {hasCancellationPolicy ? (
+                            <View style={{ marginTop: boat.rules || hasPaymentPolicy ? 16 : 0 }}>
                                 <Text style={styles.subSectionTitle}>Условия отмены бронирования</Text>
                                 <Text style={styles.bodyText}>{boat.cancellation_policy}</Text>
                             </View>
                         ) : null}
-                        {!boat.rules && !hasCancellationPolicy ? (
+                        {!boat.rules && !hasPaymentPolicy && !hasCancellationPolicy ? (
                             <Text style={styles.bodyText}>Информация не указана.</Text>
                         ) : null}
                     </View>

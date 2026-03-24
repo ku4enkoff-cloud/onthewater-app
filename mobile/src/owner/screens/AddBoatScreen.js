@@ -4,7 +4,7 @@ import {
     ScrollView, Alert, Platform, KeyboardAvoidingView, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, FileText, AlignLeft, ShieldCheck, Check, Anchor, XCircle } from 'lucide-react-native';
+import { ChevronLeft, FileText, AlignLeft, ShieldCheck, Check, Anchor, XCircle, Banknote } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
@@ -224,7 +224,7 @@ export default function AddBoatScreen({ navigation, route }) {
                     {/* Payment policy */}
                     <View style={s.fieldWrap}>
                         <View style={s.fieldHeader}>
-                            <FileText size={18} color={TEAL} />
+                            <Banknote size={18} color={TEAL} />
                             <Text style={s.fieldLabel}>Порядок оплаты</Text>
                         </View>
                         <Text style={s.fieldHint}>

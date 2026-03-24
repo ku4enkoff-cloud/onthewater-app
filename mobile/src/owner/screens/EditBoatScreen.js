@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import {
     ChevronLeft, ChevronRight, ChevronDown, FileText, AlignLeft, ShieldCheck, Camera, X, Trash2,
-    Ship, MapPin, Clock, Users, Wrench, ImageIcon, Check, Plus, XCircle, Anchor, Waves,
+    Ship, MapPin, Clock, Users, Wrench, ImageIcon, Check, Plus, XCircle, Anchor, Waves, Banknote,
 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../../shared/theme';
@@ -138,6 +138,7 @@ export default function EditBoatScreen({ route, navigation }) {
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
+    const [paymentPolicy, setPaymentPolicy] = useState('');
     const [rules, setRules] = useState('');
     const [cancellationPolicy, setCancellationPolicy] = useState('');
     const [captainOption, setCaptainOption] = useState('none');
@@ -216,6 +217,7 @@ export default function EditBoatScreen({ route, navigation }) {
             const b = res.data;
             setTitle(b.title || '');
             setDescription(b.description || '');
+            setPaymentPolicy(b.payment_policy || '');
             setRules(b.rules || '');
             setCancellationPolicy(b.cancellation_policy || '');
             const cap = b.captain_included === true || b.captain_included === 1 || b.captain_included === '1';
@@ -456,6 +458,7 @@ export default function EditBoatScreen({ route, navigation }) {
             const payload = new FormData();
             payload.append('title', title.trim());
             payload.append('description', description.trim());
+            payload.append('payment_policy', paymentPolicy.trim());
             payload.append('type_id', typeId);
             payload.append('type_name', boatTypes.find((t) => String(t.id) === typeId)?.name || 'Катер');
             payload.append('manufacturer', manufacturer);
@@ -983,6 +986,26 @@ export default function EditBoatScreen({ route, navigation }) {
                                 );
                             });
                         })()}
+                    </View>
+
+                    {/* Rules */}
+                    <View style={s.fieldWrap}>
+                        <View style={s.fieldHeader}>
+                            <Banknote size={18} color={TEAL} />
+                            <Text style={s.fieldLabel}>Порядок оплаты</Text>
+                        </View>
+                        <Text style={s.fieldHint}>Опишите условия оплаты, предоплаты и возврата средств</Text>
+                        <TextInput
+                            style={[s.input, s.textArea]}
+                            placeholder="Например: предоплата 30% при бронировании, остаток за 24 часа до выхода..."
+                            placeholderTextColor="#9CA3AF"
+                            value={paymentPolicy}
+                            onChangeText={setPaymentPolicy}
+                            multiline
+                            textAlignVertical="top"
+                            maxLength={1000}
+                        />
+                        <Text style={s.charCount}>{paymentPolicy.length}/1000</Text>
                     </View>
 
                     {/* Rules */}
