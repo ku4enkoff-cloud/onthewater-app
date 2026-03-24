@@ -1,6 +1,7 @@
 const path = require('path');
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const { pool } = require('../db');
 const { upload } = require('../middleware/upload');
 const validate = require('../middleware/validate');
@@ -9,6 +10,7 @@ const { registerSchema, loginSchema } = require('../schemas');
 const { generateToken } = require('../utils/jwt');
 const { authenticate } = require('../middleware/auth');
 const { sendPush } = require('../utils/push');
+const { sendVerificationEmail } = require('../services/email');
 
 const router = express.Router();
 
@@ -18,29 +20,63 @@ router.post('/register', authLimiter, validate(registerSchema), async (req, res,
     try {
         const client = await pool.connect();
         try {
+            await client.query('BEGIN');
             const existCheck = await client.query('SELECT id FROM users WHERE email = $1 OR phone = $2', [email, phone]);
             if (existCheck.rows.length > 0) {
+                await client.query('ROLLBACK');
                 return res.status(409).json({ error: 'Пользователь с таким email или телефоном уже существует' });
             }
 
             const salt = await bcrypt.genSalt(10);
             const hash = await bcrypt.hash(password, salt);
+            const safeRole = role || 'client';
+            const requiresEmailVerification = safeRole === 'owner';
+            const verificationToken = requiresEmailVerification ? crypto.randomBytes(32).toString('hex') : null;
 
             const result = await client.query(
                 `INSERT INTO users (email, phone, password_hash, name, role, email_verified, email_verify_token, email_verify_expires_at) 
-                 VALUES ($1, $2, $3, $4, $5, TRUE, NULL, NULL) 
-                 RETURNING id, email, name, role, first_name, last_name, phone`,
-                [email, phone || null, hash, name || email.split('@')[0], role || 'client']
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+                 RETURNING id, email, name, role, first_name, last_name, phone, email_verified`,
+                [
+                    email,
+                    phone || null,
+                    hash,
+                    name || email.split('@')[0],
+                    safeRole,
+                    !requiresEmailVerification,
+                    verificationToken,
+                    requiresEmailVerification ? new Date(Date.now() + 24 * 60 * 60 * 1000) : null,
+                ]
             );
 
             const user = result.rows[0];
+
+            if (requiresEmailVerification) {
+                const sent = await sendVerificationEmail(user.email, user.name || name || '', verificationToken);
+                if (!sent) {
+                    await client.query('ROLLBACK');
+                    return res.status(500).json({
+                        error: 'Не удалось отправить письмо для подтверждения email. Попробуйте позже.',
+                    });
+                }
+                await client.query('COMMIT');
+                return res.status(201).json({
+                    message: 'Аккаунт создан. Мы отправили письмо с подтверждением на ваш email. Подтвердите почту, чтобы войти.',
+                    requires_email_verification: true,
+                });
+            }
+
             const token = generateToken({ id: user.id, role: user.role });
+            await client.query('COMMIT');
 
             res.status(201).json({
                 message: 'Аккаунт создан.',
                 token,
                 user,
             });
+        } catch (innerErr) {
+            try { await client.query('ROLLBACK'); } catch (_) {}
+            throw innerErr;
         } finally {
             client.release();
         }
@@ -112,6 +148,11 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res, next)
 
         if (!isMatch) {
             return res.status(401).json({ error: 'Неверный логин или пароль' });
+        }
+        if (user.role === 'owner' && user.email_verified === false) {
+            return res.status(403).json({
+                error: 'Подтвердите email. Мы отправили письмо со ссылкой для активации аккаунта.',
+            });
         }
 
         const token = generateToken({ id: user.id, role: user.role });
