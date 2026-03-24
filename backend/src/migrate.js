@@ -298,6 +298,23 @@ async function migrate() {
         await client.query(`CREATE INDEX IF NOT EXISTS idx_account_deletion_audits_deleted_at ON account_deletion_audits(deleted_at DESC)`).catch(() => {});
         await client.query(`ALTER TABLE account_deletion_audits ADD COLUMN IF NOT EXISTS admin_actor_id INT`).catch(() => {});
 
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS legal_documents (
+                slug VARCHAR(64) PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                body TEXT NOT NULL DEFAULT '',
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+        `);
+        await client.query(`
+            INSERT INTO legal_documents (slug, title, body) VALUES
+            ('privacy_policy', 'Политика конфиденциальности', ''),
+            ('terms_of_service', 'Условия обслуживания', ''),
+            ('personal_data_processing', 'Условия обработки персональных данных', ''),
+            ('public_offer', 'Публичная оферта', '')
+            ON CONFLICT (slug) DO NOTHING
+        `).catch(() => {});
+
         console.log('Миграция успешно завершена!');
     } catch (err) {
         console.error('Ошибка миграции:', err);

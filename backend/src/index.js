@@ -105,6 +105,7 @@ const adminRoutes = require('./routes/admin');
 const boatTypesRoutes = require('./routes/boatTypes');
 const destinationsRoutes = require('./routes/destinations');
 const amenitiesRoutes = require('./routes/amenities');
+const legalDocumentsRoutes = require('./routes/legalDocuments');
 
 app.use('/auth', authRoutes);
 app.use('/boats', boatRoutes);
@@ -115,6 +116,7 @@ app.use('/admin', adminRoutes);
 app.use('/boat-types', boatTypesRoutes);
 app.use('/destinations', destinationsRoutes);
 app.use('/amenities', amenitiesRoutes);
+app.use('/legal-documents', legalDocumentsRoutes);
 
 app.use((req, res) => {
     res.status(404).json({ error: 'Not Found', path: req.path, hint: 'Use / or /health, /auth, /boats, etc.' });

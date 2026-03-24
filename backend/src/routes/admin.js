@@ -523,6 +523,59 @@ router.patch('/users/:id', async (req, res, next) => {
     }
 });
 
+const LEGAL_DOC_SLUGS = ['privacy_policy', 'terms_of_service', 'personal_data_processing', 'public_offer'];
+
+async function ensureLegalDocsExist() {
+    await pool.query(`
+        INSERT INTO legal_documents (slug, title, body) VALUES
+        ('privacy_policy', 'Политика конфиденциальности', ''),
+        ('terms_of_service', 'Условия обслуживания', ''),
+        ('personal_data_processing', 'Условия обработки персональных данных', ''),
+        ('public_offer', 'Публичная оферта', '')
+        ON CONFLICT (slug) DO NOTHING
+    `).catch(() => {});
+}
+
+router.get('/legal-documents', async (req, res, next) => {
+    try {
+        await ensureLegalDocsExist();
+        const { rows } = await pool.query(
+            'SELECT slug, title, body, updated_at FROM legal_documents WHERE slug = ANY($1::varchar[])',
+            [LEGAL_DOC_SLUGS]
+        );
+        const bySlug = Object.fromEntries(rows.map((r) => [r.slug, r]));
+        const ordered = LEGAL_DOC_SLUGS.map((s) => bySlug[s]).filter(Boolean);
+        res.json(ordered);
+    } catch (err) {
+        if (err.code === '42P01') {
+            return res.status(503).json({ error: 'Таблица legal_documents не найдена. Запустите npm run db:migrate' });
+        }
+        next(err);
+    }
+});
+
+router.put('/legal-documents/:slug', async (req, res, next) => {
+    try {
+        const slug = String(req.params.slug || '');
+        if (!LEGAL_DOC_SLUGS.includes(slug)) {
+            return res.status(400).json({ error: 'Неизвестный документ' });
+        }
+        const bodyText = req.body?.body;
+        if (bodyText === undefined) {
+            return res.status(400).json({ error: 'Укажите поле body' });
+        }
+        await ensureLegalDocsExist();
+        const { rows } = await pool.query(
+            `UPDATE legal_documents SET body = $1, updated_at = NOW() WHERE slug = $2 RETURNING slug, title, body, updated_at`,
+            [String(bodyText), slug]
+        );
+        if (rows.length === 0) return res.status(404).json({ error: 'Документ не найден' });
+        res.json(rows[0]);
+    } catch (err) {
+        next(err);
+    }
+});
+
 router.delete('/users/:id', async (req, res, next) => {
     try {
         const id = parseInt(req.params.id, 10);
