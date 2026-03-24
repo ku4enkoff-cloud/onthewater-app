@@ -93,6 +93,18 @@ export default function Users() {
     }
   };
 
+  const handleDeleteFromList = async (user) => {
+    if (!user) return;
+    if (!confirm(`Удалить пользователя ${user.email || user.id}? Данные будут безвозвратно удалены.`)) return;
+    try {
+      await api.delete(`/admin/users/${user.id}`);
+      if (editing?.id === user.id) setEditing(null);
+      load();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Ошибка удаления');
+    }
+  };
+
   if (loading) return <div className={styles.loading}>Загрузка…</div>;
 
   return (
@@ -132,7 +144,14 @@ export default function Users() {
                 <td><span className={styles.badge}>{ROLE_LABEL[u.role] || u.role}</span></td>
                 <td>{u.created_at ? new Date(u.created_at).toLocaleDateString('ru') : '—'}</td>
                 <td>
-                  <button type="button" className={styles.btn} onClick={() => openEdit(u)}>Редактировать</button>
+                  <button type="button" className={styles.btn} onClick={() => openEdit(u)} style={{ marginRight: '0.5rem' }}>Редактировать</button>
+                  <button
+                    type="button"
+                    className={`${styles.btn} ${modalStyles.btnSecondary}`}
+                    onClick={() => handleDeleteFromList(u)}
+                  >
+                    Удалить
+                  </button>
                 </td>
               </tr>
             ))}
