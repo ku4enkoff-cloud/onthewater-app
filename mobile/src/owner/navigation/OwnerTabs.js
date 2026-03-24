@@ -126,7 +126,10 @@ export default function OwnerTabs() {
                 name="Chat"
                 component={OwnerChatScreen}
                 options={{ title: 'Сообщения' }}
-                listeners={{ tabPress: refreshUnreadMessagesBadge }}
+                listeners={{
+                    tabPress: refreshUnreadMessagesBadge,
+                    focus: refreshUnreadMessagesBadge,
+                }}
             />
             <Tab.Screen name="Account" component={OwnerAccountScreen} options={{ title: 'Аккаунт' }} />
         </Tab.Navigator>

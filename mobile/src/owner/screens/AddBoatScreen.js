@@ -28,6 +28,7 @@ export default function AddBoatScreen({ navigation, route }) {
         boatInfo ? `${boatInfo.manufacturer} ${boatInfo.model}` : '',
     );
     const [description, setDescription] = useState('');
+    const [paymentPolicy, setPaymentPolicy] = useState('');
     const [rules, setRules] = useState('');
     const [cancellationPolicy, setCancellationPolicy] = useState('');
     const [captainOption, setCaptainOption] = useState('none');
@@ -56,6 +57,7 @@ export default function AddBoatScreen({ navigation, route }) {
             const payload = new FormData();
             payload.append('title', title.trim());
             payload.append('description', description.trim());
+            payload.append('payment_policy', paymentPolicy.trim());
             payload.append('type_id', boatType?.id || '1');
             payload.append('type_name', boatType?.name || 'Катер');
             payload.append('manufacturer', boatInfo?.manufacturer || '');
@@ -217,6 +219,28 @@ export default function AddBoatScreen({ navigation, route }) {
                             maxLength={2000}
                         />
                         <Text style={s.charCount}>{description.length}/2000</Text>
+                    </View>
+
+                    {/* Payment policy */}
+                    <View style={s.fieldWrap}>
+                        <View style={s.fieldHeader}>
+                            <FileText size={18} color={TEAL} />
+                            <Text style={s.fieldLabel}>Порядок оплаты</Text>
+                        </View>
+                        <Text style={s.fieldHint}>
+                            Опишите условия оплаты, предоплаты и возврата
+                        </Text>
+                        <TextInput
+                            style={[s.input, s.textArea]}
+                            placeholder="Например: предоплата 30% при бронировании, остаток за 24 часа до выхода..."
+                            placeholderTextColor="#9CA3AF"
+                            value={paymentPolicy}
+                            onChangeText={setPaymentPolicy}
+                            multiline
+                            textAlignVertical="top"
+                            maxLength={1000}
+                        />
+                        <Text style={s.charCount}>{paymentPolicy.length}/1000</Text>
                     </View>
 
                     {/* Rules */}

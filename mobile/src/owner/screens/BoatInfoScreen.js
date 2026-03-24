@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
     ScrollView, Platform, KeyboardAvoidingView,
@@ -6,10 +6,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     ChevronLeft, ChevronDown, Check,
-    Wifi, Music, Anchor as AnchorIcon, Droplets, UtensilsCrossed,
-    Sun, ShieldCheck, LifeBuoy, Bluetooth, Tv,
+    Waves,
 } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
+import { api } from '../../shared/infrastructure/api';
 
 let LinearGradient = null;
 try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
@@ -19,19 +19,11 @@ const TEAL = '#0D5C5C';
 
 const WATER_SPORTS_OPTIONS = ['Вейксерф', 'Вейкборд', 'Водные лыжи'];
 const isTugboat = (name) => (name || '').toLowerCase().includes('буксировщик');
-
-const AMENITIES = [
-    { id: 'gps',        label: 'GPS-навигация',  Icon: ShieldCheck },
-    { id: 'wifi',       label: 'Wi-Fi',           Icon: Wifi },
-    { id: 'bluetooth',  label: 'Bluetooth',       Icon: Bluetooth },
-    { id: 'audio',      label: 'Аудиосистема',    Icon: Music },
-    { id: 'tv',         label: 'Телевизор',       Icon: Tv },
-    { id: 'shower',     label: 'Душ',             Icon: Droplets },
-    { id: 'kitchen',    label: 'Кухня',           Icon: UtensilsCrossed },
-    { id: 'sunroof',    label: 'Тент от солнца',  Icon: Sun },
-    { id: 'anchor',     label: 'Якорь',           Icon: AnchorIcon },
-    { id: 'lifevest',   label: 'Спасжилеты',      Icon: LifeBuoy },
+const AMENITIES_FALLBACK = [
+    'Туалет', 'Кондиционер', 'Аудиосистема', 'Bluetooth', 'Спасательные жилеты',
+    'Трап для купания', 'Холодильник', 'Якорь', 'Климат-контроль', 'Розетки 220В',
 ];
+const isWaterSportOption = (name) => WATER_SPORTS_OPTIONS.includes(String(name || '').trim());
 
 export default function BoatInfoScreen({ navigation, route }) {
     const insets = useSafeAreaInsets();
@@ -44,10 +36,24 @@ export default function BoatInfoScreen({ navigation, route }) {
     const [capacity, setCapacity] = useState('');
     const [selectedAmenities, setSelectedAmenities] = useState([]);
     const [waterSports, setWaterSports] = useState([]);
+    const [amenitiesOptions, setAmenitiesOptions] = useState(AMENITIES_FALLBACK);
 
-    const toggleAmenity = (id) => {
+    useEffect(() => {
+        api.get('/amenities')
+            .then((r) => {
+                const items = Array.isArray(r.data) ? r.data : [];
+                const names = items
+                    .map((a) => (a?.name ? String(a.name).trim() : ''))
+                    .filter(Boolean)
+                    .filter((name) => !isWaterSportOption(name));
+                if (names.length > 0) setAmenitiesOptions(names);
+            })
+            .catch(() => {});
+    }, []);
+
+    const toggleAmenity = (name) => {
         setSelectedAmenities((prev) =>
-            prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id],
+            prev.includes(name) ? prev.filter((a) => a !== name) : [...prev, name],
         );
     };
 
@@ -232,19 +238,17 @@ export default function BoatInfoScreen({ navigation, route }) {
                     <Text style={s.sectionHint}>Выберите всё, что есть на борту</Text>
 
                     <View style={s.amenitiesGrid}>
-                        {AMENITIES.map((item) => {
-                            const active = selectedAmenities.includes(item.id);
-                            const IconComp = item.Icon;
+                        {amenitiesOptions.map((name) => {
+                            const active = selectedAmenities.includes(name);
                             return (
                                 <TouchableOpacity
-                                    key={item.id}
+                                    key={name}
                                     style={[s.amenityChip, active && s.amenityChipActive]}
-                                    onPress={() => toggleAmenity(item.id)}
+                                    onPress={() => toggleAmenity(name)}
                                     activeOpacity={0.7}
                                 >
-                                    <IconComp size={18} color={active ? '#fff' : TEAL} strokeWidth={1.8} />
                                     <Text style={[s.amenityLabel, active && s.amenityLabelActive]}>
-                                        {item.label}
+                                        {name}
                                     </Text>
                                     {active && (
                                         <Check size={14} color="#fff" strokeWidth={2.5} style={{ marginLeft: 2 }} />

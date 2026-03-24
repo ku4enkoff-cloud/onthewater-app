@@ -73,6 +73,7 @@ export default function OwnerDashboardScreen({ navigation }) {
 
     const MENU = [
         { icon: CalendarPlus, label: 'Добавить бронирование', screen: 'AddBooking' },
+        { icon: Calendar, label: 'Календарь бронирований', screen: 'BookingCalendar' },
         { icon: User, label: 'Профиль', screen: 'Account' },
         { icon: Users2, label: 'Клиенты', screen: 'OwnerClients' },
         { icon: Settings, label: 'Ресурсы владельца', screen: null },

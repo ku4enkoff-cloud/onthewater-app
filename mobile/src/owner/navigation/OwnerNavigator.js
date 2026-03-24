@@ -15,6 +15,7 @@ import OwnerNotificationsScreen from '../screens/OwnerNotificationsScreen';
 import OwnerSupportScreen from '../screens/OwnerSupportScreen';
 import OwnerClientsScreen from '../screens/OwnerClientsScreen';
 import AddBookingScreen from '../screens/AddBookingScreen';
+import OwnerBookingCalendarScreen from '../screens/OwnerBookingCalendarScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -34,6 +35,7 @@ export default function OwnerNavigator() {
             <Stack.Screen name="AccountInfo" component={OwnerAccountInfoScreen} />
             <Stack.Screen name="OwnerClients" component={OwnerClientsScreen} />
             <Stack.Screen name="AddBooking" component={AddBookingScreen} />
+            <Stack.Screen name="BookingCalendar" component={OwnerBookingCalendarScreen} />
             <Stack.Screen name="Notifications" component={OwnerNotificationsScreen} />
             <Stack.Screen name="Support" component={OwnerSupportScreen} />
         </Stack.Navigator>

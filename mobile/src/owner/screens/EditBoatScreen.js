@@ -27,6 +27,7 @@ const AMENITIES_FALLBACK = [
     'Трап для купания', 'Холодильник', 'Якорь', 'Климат-контроль', 'Розетки 220В',
 ];
 const WATER_SPORTS_OPTIONS = ['Вейксерф', 'Вейкборд', 'Водные лыжи'];
+const isWaterSportOption = (name) => WATER_SPORTS_OPTIONS.includes(String(name || '').trim());
 const isTugboat = (name) => (name || '').toLowerCase().includes('буксировщик');
 
 const WEEKDAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
@@ -195,7 +196,10 @@ export default function EditBoatScreen({ route, navigation }) {
         api.get('/amenities')
             .then((r) => {
                 const items = Array.isArray(r.data) ? r.data : [];
-                const names = items.map((a) => (a?.name ? String(a.name).trim() : '')).filter(Boolean);
+                const names = items
+                    .map((a) => (a?.name ? String(a.name).trim() : ''))
+                    .filter(Boolean)
+                    .filter((name) => !isWaterSportOption(name));
                 if (names.length > 0) setAmenitiesOptions(names);
             })
             .catch(() => {});
@@ -968,7 +972,7 @@ export default function EditBoatScreen({ route, navigation }) {
                     <View style={s.chipRow}>
                         {(() => {
                             const options = amenitiesOptions.length > 0 ? amenitiesOptions : AMENITIES_FALLBACK;
-                            const boatExtra = amenities.filter((a) => !options.includes(a));
+                            const boatExtra = amenities.filter((a) => !options.includes(a) && !isWaterSportOption(a));
                             const allOptions = [...options, ...boatExtra];
                             return allOptions.map((name) => {
                             const active = amenities.includes(name);
