@@ -373,9 +373,39 @@ router.delete('/account', authenticate, async (req, res, next) => {
         const userId = parseInt(req.user.id, 10);
         if (Number.isNaN(userId)) return res.status(400).json({ error: 'Неверный пользователь' });
 
+        const u = req.user || {};
+        const clientIp = (req.headers['x-forwarded-for'] || '')
+            .toString()
+            .split(',')[0]
+            .trim() || req.ip || null;
+        const userAgent = (req.headers['user-agent'] || '').toString().slice(0, 2000) || null;
+
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
+
+            await client.query(
+                `INSERT INTO account_deletion_audits
+                 (user_id, email, name, phone, role, user_created_at, ip_address, user_agent, source)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'self_service')`,
+                [
+                    userId,
+                    u.email || null,
+                    u.name || null,
+                    u.phone || null,
+                    u.role || null,
+                    u.created_at || null,
+                    clientIp,
+                    userAgent,
+                ]
+            ).catch((auditErr) => {
+                if (auditErr.code === '42P01') {
+                    console.error('[auth/account] Таблица account_deletion_audits не найдена. Запустите: npm run db:migrate');
+                } else {
+                    console.error('[auth/account] Ошибка записи аудита:', auditErr.message);
+                }
+                throw auditErr;
+            });
 
             // owner_id в chats не связан FK — удаляем вручную (messages удалятся по CASCADE)
             await client.query('DELETE FROM chats WHERE owner_id = $1', [userId]);

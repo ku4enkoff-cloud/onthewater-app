@@ -277,6 +277,27 @@ async function migrate() {
         // Непрочитанные сообщения в чатах (для владельца: сообщения от клиента)
         await client.query(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS read BOOLEAN DEFAULT false`).catch(() => {});
 
+        // Аудит самоудаления аккаунта (владелец/клиент через приложение)
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS account_deletion_audits (
+                id SERIAL PRIMARY KEY,
+                user_id INT NOT NULL,
+                email VARCHAR(255),
+                name VARCHAR(255),
+                phone VARCHAR(50),
+                role VARCHAR(50),
+                user_created_at TIMESTAMPTZ,
+                deleted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                ip_address TEXT,
+                user_agent TEXT,
+                source VARCHAR(50) NOT NULL DEFAULT 'self_service',
+                admin_actor_id INT
+            )
+        `);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_account_deletion_audits_user_id ON account_deletion_audits(user_id)`).catch(() => {});
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_account_deletion_audits_deleted_at ON account_deletion_audits(deleted_at DESC)`).catch(() => {});
+        await client.query(`ALTER TABLE account_deletion_audits ADD COLUMN IF NOT EXISTS admin_actor_id INT`).catch(() => {});
+
         console.log('Миграция успешно завершена!');
     } catch (err) {
         console.error('Ошибка миграции:', err);

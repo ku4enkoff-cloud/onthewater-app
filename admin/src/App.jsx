@@ -11,6 +11,7 @@ import Destinations from './pages/Destinations';
 import Amenities from './pages/Amenities';
 import Bookings from './pages/Bookings';
 import Reviews from './pages/Reviews';
+import AccountDeletionAudits from './pages/AccountDeletionAudits';
 
 function RequireAuth({ children }) {
   const token = getToken();
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="amenities" element={<Amenities />} />
         <Route path="bookings" element={<Bookings />} />
         <Route path="reviews" element={<Reviews />} />
+        <Route path="deletion-audits" element={<AccountDeletionAudits />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

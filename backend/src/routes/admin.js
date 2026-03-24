@@ -33,6 +33,25 @@ router.get('/users', async (req, res, next) => {
     }
 });
 
+router.get('/account-deletion-audits', async (req, res, next) => {
+    try {
+        const lim = Math.min(500, Math.max(1, parseInt(req.query.limit, 10) || 200));
+        const { rows } = await pool.query(
+            `SELECT id, user_id, email, name, phone, role, user_created_at, deleted_at, ip_address, user_agent, source, admin_actor_id
+             FROM account_deletion_audits
+             ORDER BY deleted_at DESC
+             LIMIT $1`,
+            [lim]
+        );
+        res.json(rows);
+    } catch (err) {
+        if (err.code === '42P01') {
+            return res.json([]);
+        }
+        next(err);
+    }
+});
+
 router.get('/boats', async (req, res, next) => {
     try {
         const { rows } = await pool.query(`SELECT * FROM boats WHERE status != 'deleted' ORDER BY id`);
@@ -507,8 +526,38 @@ router.patch('/users/:id', async (req, res, next) => {
 router.delete('/users/:id', async (req, res, next) => {
     try {
         const id = parseInt(req.params.id, 10);
+        const adminId = parseInt(req.user.id, 10);
         if (id === req.user.id) {
             return res.status(400).json({ error: 'Нельзя удалить себя' });
+        }
+        const { rows: targetRows } = await pool.query(
+            'SELECT id, email, name, phone, role, created_at FROM users WHERE id = $1',
+            [id]
+        );
+        if (targetRows.length === 0) return res.status(404).json({ error: 'Пользователь не найден' });
+        const t = targetRows[0];
+        const clientIp = (req.headers['x-forwarded-for'] || '').toString().split(',')[0].trim() || req.ip || null;
+        const userAgent = (req.headers['user-agent'] || '').toString().slice(0, 2000) || null;
+        try {
+            await pool.query(
+                `INSERT INTO account_deletion_audits
+                 (user_id, email, name, phone, role, user_created_at, ip_address, user_agent, source, admin_actor_id)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'admin_panel', $9)`,
+                [t.id, t.email, t.name, t.phone, t.role, t.created_at, clientIp, userAgent, adminId]
+            );
+        } catch (auditErr) {
+            if (auditErr.code === '42P01') {
+                console.error('[admin/users DELETE] Нет таблицы account_deletion_audits. Запустите npm run db:migrate');
+            } else if (auditErr.code === '42703') {
+                await pool.query(
+                    `INSERT INTO account_deletion_audits
+                     (user_id, email, name, phone, role, user_created_at, ip_address, user_agent, source)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'admin_panel')`,
+                    [t.id, t.email, t.name, t.phone, t.role, t.created_at, clientIp, userAgent]
+                ).catch(() => {});
+            } else {
+                throw auditErr;
+            }
         }
         // Удаляем чаты, где пользователь — владелец (у owner_id нет FK; сообщения удалятся по CASCADE)
         await pool.query('DELETE FROM chats WHERE owner_id = $1', [id]);
