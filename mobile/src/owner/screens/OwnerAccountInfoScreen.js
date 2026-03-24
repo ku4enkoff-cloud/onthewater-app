@@ -93,7 +93,6 @@ export default function OwnerAccountInfoScreen({ navigation }) {
         setAddressCountry(user.address_country || '');
     }, [user]);
 
-    const phoneVerified = !!user?.phone;
 
     const getErrorMsg = (e) => {
         if (e.response?.data?.error) return e.response.data.error;
@@ -192,14 +191,7 @@ export default function OwnerAccountInfoScreen({ navigation }) {
             <ViewField label="Email" value={email} />
             <View style={s.viewFieldBlock}>
                 <Text style={s.viewFieldLabel}>Телефон</Text>
-                {phoneVerified ? (
-                    <View style={s.verifiedRow}>
-                        <Text style={s.viewFieldValue}>{phone ? formatPhoneRu(phone) : '—'}</Text>
-                        <View style={s.verifiedBadge}><Text style={s.verifiedText}>ПОДТВЕРЖДЁН</Text></View>
-                    </View>
-                ) : (
-                    <Text style={s.viewFieldValue}>{phone ? formatPhoneRu(phone) : '—'}</Text>
-                )}
+                <Text style={s.viewFieldValue}>{phone ? formatPhoneRu(phone) : '—'}</Text>
             </View>
             <ViewField label="Дата рождения" value={birthdate ? formatDateRu(birthdate) : '—'} />
             <ViewField label="О вас" value={about || '—'} />
@@ -236,11 +228,6 @@ export default function OwnerAccountInfoScreen({ navigation }) {
                         keyboardType="phone-pad"
                         maxLength={18}
                     />
-                    {phoneVerified && (
-                        <View style={s.verifiedBadgeSmall}>
-                            <Text style={s.verifiedTextSmall}>ПОДТВЕРЖДЁН</Text>
-                        </View>
-                    )}
                 </View>
             </View>
             <View style={s.editFieldWrap}>
@@ -454,14 +441,6 @@ const s = StyleSheet.create({
     viewFieldValue: {
         fontSize: 17, fontFamily: theme.fonts.medium, color: NAVY,
     },
-    verifiedRow: { flexDirection: 'row', alignItems: 'center' },
-    verifiedBadge: {
-        backgroundColor: TEAL, paddingHorizontal: 10, paddingVertical: 3,
-        borderRadius: 4, marginLeft: 10,
-    },
-    verifiedText: {
-        fontSize: 11, fontFamily: theme.fonts.bold, color: '#fff', letterSpacing: 0.8,
-    },
 
     editRow: {
         alignItems: 'center', marginTop: 28,
@@ -496,14 +475,6 @@ const s = StyleSheet.create({
     editFieldInput: {
         flex: 1, fontSize: 17, fontFamily: theme.fonts.medium, color: NAVY,
         padding: 0,
-    },
-
-    verifiedBadgeSmall: {
-        backgroundColor: '#1B7A4A', paddingHorizontal: 8, paddingVertical: 2,
-        borderRadius: 4,
-    },
-    verifiedTextSmall: {
-        fontSize: 10, fontFamily: theme.fonts.bold, color: '#fff', letterSpacing: 0.6,
     },
 
     aboutWrap: {
