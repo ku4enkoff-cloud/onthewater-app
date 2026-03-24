@@ -59,6 +59,7 @@ export default function OwnerAccountInfoScreen({ navigation }) {
     const authCtx = useContext(AuthContext);
     const user = authCtx?.user;
     const refreshUser = authCtx?.refreshUser;
+    const logout = authCtx?.logout;
     const [activeTab, setActiveTab] = useState(0);
     const [editing, setEditing] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -173,7 +174,32 @@ export default function OwnerAccountInfoScreen({ navigation }) {
     };
 
     const handleDelete = () => {
-        Alert.alert('Удаление аккаунта', 'Эта функция пока недоступна.');
+        Alert.alert(
+            'Удаление аккаунта',
+            'Вы уверены? Аккаунт и связанные данные будут удалены без возможности восстановления.',
+            [
+                { text: 'Отмена', style: 'cancel' },
+                {
+                    text: 'Удалить',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            setSaving(true);
+                            await api.delete('/auth/account');
+                            if (logout) {
+                                await logout();
+                            } else {
+                                navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+                            }
+                        } catch (e) {
+                            Alert.alert('Ошибка', getErrorMsg(e));
+                        } finally {
+                            setSaving(false);
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     const handleTabChange = (idx) => {

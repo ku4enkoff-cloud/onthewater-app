@@ -367,4 +367,49 @@ router.patch('/password', authenticate, async (req, res, next) => {
     }
 });
 
+// Удалить собственный аккаунт
+router.delete('/account', authenticate, async (req, res, next) => {
+    try {
+        const userId = parseInt(req.user.id, 10);
+        if (Number.isNaN(userId)) return res.status(400).json({ error: 'Неверный пользователь' });
+
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            // owner_id в chats не связан FK — удаляем вручную (messages удалятся по CASCADE)
+            await client.query('DELETE FROM chats WHERE owner_id = $1', [userId]);
+
+            // Бронирования владельца (дублируем явным удалением для legacy-случаев)
+            await client.query('DELETE FROM bookings WHERE owner_id = $1', [userId]);
+
+            // Клиенты владельца
+            await client.query('DELETE FROM owner_clients WHERE owner_id = $1', [userId]).catch(() => {});
+
+            // Отзывы пользователя (если оставлял как клиент)
+            await client.query('DELETE FROM reviews WHERE user_id = $1', [userId]).catch(() => {});
+
+            // Катера владельца (связанные бронирования/отзывы удалятся каскадно)
+            await client.query('DELETE FROM boats WHERE owner_id = $1', [userId]);
+
+            // Удаление самого аккаунта
+            const { rowCount } = await client.query('DELETE FROM users WHERE id = $1', [userId]);
+            if (rowCount === 0) {
+                await client.query('ROLLBACK');
+                return res.status(404).json({ error: 'Пользователь не найден' });
+            }
+
+            await client.query('COMMIT');
+            res.json({ ok: true });
+        } catch (err) {
+            try { await client.query('ROLLBACK'); } catch (_) {}
+            throw err;
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        next(err);
+    }
+});
+
 module.exports = router;
