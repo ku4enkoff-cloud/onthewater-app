@@ -18,7 +18,15 @@ function getPhotoUrl(file) {
 
 router.get('/users', async (req, res, next) => {
     try {
-        const { rows } = await pool.query('SELECT id, email, name, first_name, last_name, phone, role, created_at FROM users ORDER BY id');
+        const { rows } = await pool.query(
+            `SELECT id, email, name, first_name, last_name, phone, role, created_at
+             FROM users
+             WHERE NOT (
+                 role = 'client'
+                 AND LOWER(COALESCE(email, '')) LIKE '%@placeholder.local'
+             )
+             ORDER BY id`
+        );
         res.json(rows.map((u) => ({ ...u, password_hash: undefined })));
     } catch (err) {
         next(err);
