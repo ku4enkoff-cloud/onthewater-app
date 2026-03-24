@@ -91,6 +91,7 @@ async function migrate() {
                 captain_included BOOLEAN DEFAULT FALSE,
                 has_captain_option BOOLEAN DEFAULT FALSE,
                 rules TEXT DEFAULT '',
+                payment_policy TEXT DEFAULT '',
                 cancellation_policy TEXT DEFAULT '',
                 photos JSONB DEFAULT '[]'::jsonb,
                 amenities JSONB DEFAULT '[]'::jsonb,
@@ -253,6 +254,7 @@ async function migrate() {
 
         // Добавить location_region для существующих БД
         await client.query(`ALTER TABLE boats ADD COLUMN IF NOT EXISTS location_region VARCHAR(255) DEFAULT ''`).catch(() => {});
+        await client.query(`ALTER TABLE boats ADD COLUMN IF NOT EXISTS payment_policy TEXT DEFAULT ''`).catch(() => {});
 
         // Таймзона катера (для локального времени авто-отмены бронирований)
         await client.query(`ALTER TABLE boats ADD COLUMN IF NOT EXISTS timezone TEXT`).catch(() => {});
