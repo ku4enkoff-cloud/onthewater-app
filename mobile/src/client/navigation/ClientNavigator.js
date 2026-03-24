@@ -12,6 +12,7 @@ import ClientAccountScreen from '../screens/ClientAccountScreen';
 import ClientAccountInfoScreen from '../screens/ClientAccountInfoScreen';
 import OwnerNotificationsScreen from '../../owner/screens/OwnerNotificationsScreen';
 import OwnerSupportScreen from '../../owner/screens/OwnerSupportScreen';
+import OwnerLegalDocumentScreen from '../../owner/screens/OwnerLegalDocumentScreen';
 import LoginScreen from '../../auth/screens/LoginScreen';
 import RegisterScreen from '../../auth/screens/RegisterScreen';
 
@@ -25,6 +26,7 @@ export default function ClientNavigator() {
             <Stack.Screen name="ClientAccountInfo" component={ClientAccountInfoScreen} />
             <Stack.Screen name="ClientNotifications" component={OwnerNotificationsScreen} />
             <Stack.Screen name="ClientSupport" component={OwnerSupportScreen} />
+            <Stack.Screen name="LegalDocument" component={OwnerLegalDocumentScreen} />
             <Stack.Screen name="BoatDetail" component={BoatDetailScreen} />
             <Stack.Screen name="BookingDetail" component={BookingDetailScreen} />
             <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />

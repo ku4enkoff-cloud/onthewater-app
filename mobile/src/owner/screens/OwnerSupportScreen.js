@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-    ChevronLeft, Phone, Mail, HelpCircle, AlertTriangle, Anchor, FileText, Shield,
+    ChevronLeft, Phone, Mail, HelpCircle, AlertTriangle, Anchor, FileText, Shield, Lock, Scale,
 } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 
@@ -14,6 +14,13 @@ try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (
 const GRADIENT = ['#0A3D3D', '#0D5C5C', '#1A7A6E'];
 const TEAL = '#0D5C5C';
 const NAVY = '#1B365D';
+
+const LEGAL_MENU = [
+    { slug: 'privacy_policy', title: 'Политика конфиденциальности', Icon: Shield },
+    { slug: 'terms_of_service', title: 'Условия обслуживания', Icon: FileText },
+    { slug: 'personal_data_processing', title: 'Условия обработки персональных данных', Icon: Lock },
+    { slug: 'public_offer', title: 'Публичная оферта', Icon: Scale },
+];
 
 export default function OwnerSupportScreen({ navigation }) {
     const insets = useSafeAreaInsets();
@@ -91,17 +98,22 @@ export default function OwnerSupportScreen({ navigation }) {
                 <View style={s.section}>
                     <Text style={s.sectionTitle}>Юридическая информация</Text>
 
-                    <TouchableOpacity style={s.row} onPress={() => {}} activeOpacity={0.6}>
-                        <Shield size={20} color={TEAL} strokeWidth={1.6} />
-                        <Text style={s.rowText}>Политика конфиденциальности</Text>
-                    </TouchableOpacity>
-                    <View style={s.rowDivider} />
-
-                    <TouchableOpacity style={s.row} onPress={() => {}} activeOpacity={0.6}>
-                        <FileText size={20} color={TEAL} strokeWidth={1.6} />
-                        <Text style={s.rowText}>Условия обслуживания</Text>
-                    </TouchableOpacity>
-                    <View style={s.rowDivider} />
+                    {LEGAL_MENU.map((item, index) => {
+                        const Icon = item.Icon;
+                        return (
+                            <React.Fragment key={item.slug}>
+                                <TouchableOpacity
+                                    style={s.row}
+                                    onPress={() => navigation.navigate('LegalDocument', { slug: item.slug, title: item.title })}
+                                    activeOpacity={0.6}
+                                >
+                                    <Icon size={20} color={TEAL} strokeWidth={1.6} />
+                                    <Text style={s.rowText}>{item.title}</Text>
+                                </TouchableOpacity>
+                                {index < LEGAL_MENU.length - 1 ? <View style={s.rowDivider} /> : null}
+                            </React.Fragment>
+                        );
+                    })}
                 </View>
             </ScrollView>
         </View>
