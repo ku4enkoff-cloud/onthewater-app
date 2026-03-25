@@ -24,6 +24,25 @@ function formatDate(iso) {
     }
 }
 
+function normalizeDisplayName(raw) {
+    const s = String(raw || '').replace(/\s+/g, ' ').trim();
+    if (!s) return '';
+
+    // Если имя повторено целиком: "Антон Ку... Антон Ку..."
+    const m = s.match(/^(.+)\s+\1$/);
+    if (m && m[1]) return m[1].trim();
+
+    // Если повторяется половина набора слов: "A B A B"
+    const words = s.split(' ').filter(Boolean);
+    if (words.length >= 2 && words.length % 2 === 0) {
+        const half = words.length / 2;
+        const first = words.slice(0, half).join(' ');
+        const second = words.slice(half).join(' ');
+        if (first === second) return first;
+    }
+    return s;
+}
+
 export default function OwnerReviewsScreen({ navigation }) {
     const insets = useSafeAreaInsets();
     const [list, setList] = useState([]);
@@ -116,7 +135,7 @@ export default function OwnerReviewsScreen({ navigation }) {
                                     <View style={{ flex: 1 }}>
                                         <Text style={styles.boatTitle}>{r.boat_title || 'Катер'}</Text>
                                         <Text style={styles.meta}>
-                                            {r.user_name ? `От: ${r.user_name}` : 'Клиент'}{r.created_at ? ` · ${formatDate(r.created_at)}` : ''}
+                                            {r.user_name ? `От: ${normalizeDisplayName(r.user_name)}` : 'Клиент'}{r.created_at ? ` · ${formatDate(r.created_at)}` : ''}
                                         </Text>
                                     </View>
                                     <View style={styles.ratingWrap}>
@@ -174,7 +193,7 @@ const styles = StyleSheet.create({
     meta: { fontSize: 12, fontFamily: theme.fonts.regular, color: theme.colors.gray500 },
 
     ratingWrap: { flexDirection: 'row', alignItems: 'center', marginLeft: 10 },
-    ratingText: { fontSize: 14, fontFamily: theme.fonts.semiBold, color: NAVY },
+    ratingText: { fontSize: 14, fontFamily: theme.fonts.semiBold, color: NAVY, marginLeft: 8 },
 
     statusRow: { marginTop: 10, marginBottom: 10 },
     statusText: { fontSize: 12, fontFamily: theme.fonts.medium, color: TEAL },

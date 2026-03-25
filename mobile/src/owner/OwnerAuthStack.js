@@ -4,6 +4,7 @@ import WelcomeScreen from '../auth/screens/WelcomeScreen';
 import LoginScreen from '../auth/screens/LoginScreen';
 import RegisterScreen from '../auth/screens/RegisterScreen';
 import ForgotPasswordScreen from '../auth/screens/ForgotPasswordScreen';
+import OwnerLegalDocumentScreen from './screens/OwnerLegalDocumentScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -13,6 +14,7 @@ export default function OwnerAuthStack() {
             <Stack.Screen name="Welcome" component={WelcomeScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            <Stack.Screen name="LegalDocument" component={OwnerLegalDocumentScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
         </Stack.Navigator>
     );

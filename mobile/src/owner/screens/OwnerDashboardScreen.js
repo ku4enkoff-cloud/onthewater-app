@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-    Mail, Settings, Star, User, Users2, CreditCard, Clock,
+    Mail, Star, User, Users2, CreditCard, Clock,
     FileText, Anchor, ChevronRight, CalendarPlus, Calendar,
 } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
@@ -77,7 +77,6 @@ export default function OwnerDashboardScreen({ navigation }) {
         { icon: User, label: 'Профиль', screen: 'Account' },
         { icon: Users2, label: 'Клиенты', screen: 'OwnerClients' },
         { icon: Star, label: 'Отзывы', screen: 'OwnerReviews' },
-        { icon: Settings, label: 'Ресурсы владельца', screen: null },
     ];
 
     return (

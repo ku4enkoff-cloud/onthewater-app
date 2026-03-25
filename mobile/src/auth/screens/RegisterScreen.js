@@ -33,6 +33,7 @@ function isValidEmail(str) {
 
 export default function RegisterScreen({ navigation, route }) {
     const { register } = useContext(AuthContext);
+    const [acceptedLegal, setAcceptedLegal] = useState(false);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
@@ -84,6 +85,10 @@ export default function RegisterScreen({ navigation, route }) {
 
     const handleRegister = async () => {
         if (!validate()) return;
+        if (appVariant === 'owner' && !acceptedLegal) {
+            Alert.alert('Ошибка', 'Чтобы зарегистрироваться, подтвердите согласие с юридическими документами.');
+            return;
+        }
         setLoading(true);
         try {
             const phoneDigits = getPhoneDigits(phone);
@@ -154,7 +159,54 @@ export default function RegisterScreen({ navigation, route }) {
                         <Text style={styles.label}>Повторите пароль</Text>
                         <TextInput style={styles.input} placeholder="Повторите пароль" value={passwordRepeat} onChangeText={setPasswordRepeat} secureTextEntry autoComplete="new-password" />
                     </View>
-                    <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleRegister} disabled={loading}>
+
+                    {appVariant === 'owner' ? (
+                        <View style={styles.legalWrap}>
+                            <TouchableOpacity
+                                style={styles.checkboxRow}
+                                onPress={() => setAcceptedLegal((v) => !v)}
+                                activeOpacity={0.8}
+                            >
+                                <View style={[styles.checkboxBox, acceptedLegal && styles.checkboxBoxChecked]}>
+                                    {acceptedLegal ? <Text style={styles.checkboxCheck}>✓</Text> : null}
+                                </View>
+
+                                <Text style={styles.legalText}>
+                                    Я принимаю{' '}
+                                    <TouchableOpacity
+                                        onPress={() => navigation.navigate('LegalDocument', { slug: 'privacy_policy', title: 'Политика конфиденциальности' })}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Text style={styles.legalLink}>Политику конфиденциальности</Text>
+                                    </TouchableOpacity>
+                                    ,{' '}
+                                    <TouchableOpacity
+                                        onPress={() => navigation.navigate('LegalDocument', { slug: 'terms_of_service', title: 'Условия обслуживания' })}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Text style={styles.legalLink}>Условия обслуживания</Text>
+                                    </TouchableOpacity>
+                                    {' '}и{' '}
+                                    <TouchableOpacity
+                                        onPress={() => navigation.navigate('LegalDocument', { slug: 'personal_data_processing', title: 'Условия обработки персональных данных' })}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Text style={styles.legalLink}>Условия обработки персональных данных</Text>
+                                    </TouchableOpacity>
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : null}
+
+                    <TouchableOpacity
+                        style={[
+                            styles.button,
+                            loading && styles.buttonDisabled,
+                            appVariant === 'owner' && !acceptedLegal && !loading ? { opacity: 0.55 } : null,
+                        ]}
+                        onPress={handleRegister}
+                        disabled={loading || (appVariant === 'owner' && !acceptedLegal)}
+                    >
                         <Text style={styles.buttonText}>{loading ? 'Регистрация...' : 'Зарегистрироваться'}</Text>
                     </TouchableOpacity>
                     <View style={styles.footer}>
@@ -182,6 +234,33 @@ const styles = StyleSheet.create({
     button: { backgroundColor: theme.colors.primary, padding: 16, borderRadius: theme.borderRadius.md, alignItems: 'center', marginTop: 8 },
     buttonDisabled: { opacity: 0.7 },
     buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+    legalWrap: { marginBottom: 12 },
+    checkboxRow: { flexDirection: 'row', alignItems: 'flex-start' },
+    checkboxBox: {
+        width: 22,
+        height: 22,
+        borderRadius: 5,
+        borderWidth: 1.5,
+        borderColor: theme.colors.border,
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 2,
+        marginRight: 10,
+    },
+    checkboxBoxChecked: {
+        borderColor: theme.colors.primary,
+        backgroundColor: theme.colors.primary,
+    },
+    checkboxCheck: { color: '#fff', fontSize: 14, fontWeight: 'bold', lineHeight: 16 },
+    legalText: {
+        flex: 1,
+        fontFamily: theme.fonts.regular,
+        fontSize: 13,
+        color: theme.colors.textMuted,
+        lineHeight: 18,
+    },
+    legalLink: { color: theme.colors.primary, fontFamily: theme.fonts.medium, textDecorationLine: 'underline' },
     footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 32 },
     linkText: { ...theme.typography.body, color: theme.colors.primary, fontWeight: 'bold' },
 });

@@ -162,7 +162,7 @@ export default function ClientAccountScreen({ navigation }) {
                     >
                         <Text style={s.logoutText}>Выйти</Text>
                     </TouchableOpacity>
-                    <Text style={s.versionText}>Версия 2.0.0</Text>
+                    <Text style={s.versionText}>Версия 2.0.1</Text>
                 </View>
             </ScrollView>
         </View>

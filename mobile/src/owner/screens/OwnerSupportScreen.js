@@ -57,12 +57,6 @@ export default function OwnerSupportScreen({ navigation }) {
                 <View style={s.section}>
                     <Text style={s.sectionTitle}>Вопросы и поддержка</Text>
 
-                    <TouchableOpacity style={s.row} onPress={openPhone} activeOpacity={0.6}>
-                        <Phone size={20} color={TEAL} strokeWidth={1.6} />
-                        <Text style={s.rowText}>Позвонить: +7 (800) 123-45-67</Text>
-                    </TouchableOpacity>
-                    <View style={s.rowDivider} />
-
                     <TouchableOpacity style={s.row} onPress={openEmail} activeOpacity={0.6}>
                         <Mail size={20} color={TEAL} strokeWidth={1.6} />
                         <Text style={s.rowText}>support@onthewater.ru</Text>
@@ -83,12 +77,6 @@ export default function OwnerSupportScreen({ navigation }) {
                     <TouchableOpacity style={s.row} onPress={openEmergency} activeOpacity={0.6}>
                         <AlertTriangle size={20} color={TEAL} strokeWidth={1.6} />
                         <Text style={s.rowText}>112 — Экстренные службы</Text>
-                    </TouchableOpacity>
-                    <View style={s.rowDivider} />
-
-                    <TouchableOpacity style={s.row} onPress={() => {}} activeOpacity={0.6}>
-                        <Anchor size={20} color={TEAL} strokeWidth={1.6} />
-                        <Text style={s.rowText}>ГИМС (поддержка на воде)</Text>
                     </TouchableOpacity>
                     <View style={s.rowDivider} />
                 </View>
