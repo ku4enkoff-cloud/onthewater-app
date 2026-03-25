@@ -18,7 +18,22 @@ const registerSchema = z.object({
     }),
 });
 
+const requestPasswordResetSchema = z.object({
+    body: z.object({
+        email: z.string().email('Некорректный email'),
+    }),
+});
+
+const resetPasswordSchema = z.object({
+    body: z.object({
+        token: z.string().min(8, 'Некорректный токен'),
+        new_password: z.string().min(3, 'Пароль минимум 3 символа'),
+    }),
+});
+
 module.exports = {
     loginSchema,
     registerSchema,
+    requestPasswordResetSchema,
+    resetPasswordSchema,
 };

@@ -62,9 +62,66 @@ async function sendVerificationEmail(to, userName, token) {
     }
 }
 
+/**
+ * Отправить письмо с токеном восстановления пароля.
+ * @param {string} to
+ * @param {string} userName
+ * @param {string} token
+ */
+async function sendPasswordResetEmail(to, userName, token) {
+    const subject = 'Восстановление пароля — ONTHEWATER';
+    // Для приложения токен будет вводиться вручную. Ссылка может быть опциональной.
+    const resetHintUrl = `${APP_URL}/auth/reset-password?token=${encodeURIComponent(token)}`;
+    const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Восстановление пароля</title></head>
+<body style="font-family: sans-serif; max-width: 560px; margin: 0 auto; padding: 20px;">
+  <h2 style="color: #1B365D;">Восстановление пароля</h2>
+  <p>Здравствуйте${userName ? ', ' + userName : ''}!</p>
+  <p>Мы получили запрос на восстановление пароля для аккаунта ONTHEWATER.</p>
+  <p style="margin-top: 12px; color: #111827; font-size: 14px;">
+    Токен восстановления (введите его в приложении):
+  </p>
+  <p style="font-family: monospace; background: #F3F4F6; padding: 12px; border-radius: 10px; word-break: break-all; color: #0D5C5C; margin: 8px 0;">
+    ${token}
+  </p>
+  <p style="margin-top: 10px; color: #4B5563; font-size: 13px;">
+    Если кнопка/ссылка не открывается, всё равно используйте токен выше.
+  </p>
+  <p style="margin-top: 8px; font-size: 13px;">
+    ${resetHintUrl
+        ? '<a href="' + resetHintUrl + '" style="color: #1B365D; font-weight: bold;">' + resetHintUrl + '</a>'
+        : ''}
+  </p>
+  <p style="margin-top: 14px; color: #888; font-size: 12px;">Ссылка/токен действительны ограниченное время.</p>
+  <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+  <p style="color: #888; font-size: 12px;">ONTHEWATER</p>
+</body>
+</html>`;
+    const text = `Восстановление пароля — ONTHEWATER\n\nТокен восстановления:\n${token}\n\n${
+        resetHintUrl ? 'Ссылка подсказки: ' + resetHintUrl + '\n\n' : ''
+    }Токен действителен ограниченное время.`;
+
+    try {
+        await transporter.sendMail({
+            from: FROM,
+            to,
+            subject,
+            text,
+            html,
+        });
+        console.log('[email] Письмо восстановления отправлено на', to);
+        return true;
+    } catch (err) {
+        console.error('[email] Ошибка отправки письма восстановления:', err.message);
+        return false;
+    }
+}
+
 /** Проверить подключение к SMTP (для отладки). Возвращает true или бросает ошибку. */
 async function verifyConnection() {
     await transporter.verify();
 }
 
-module.exports = { sendVerificationEmail, verifyConnection };
+module.exports = { sendVerificationEmail, sendPasswordResetEmail, verifyConnection };

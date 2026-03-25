@@ -6,11 +6,11 @@ const { pool } = require('../db');
 const { upload } = require('../middleware/upload');
 const validate = require('../middleware/validate');
 const { authLimiter } = require('../middleware/rateLimiter');
-const { registerSchema, loginSchema } = require('../schemas');
+const { registerSchema, loginSchema, requestPasswordResetSchema, resetPasswordSchema } = require('../schemas');
 const { generateToken } = require('../utils/jwt');
 const { authenticate } = require('../middleware/auth');
 const { sendPush } = require('../utils/push');
-const { sendVerificationEmail } = require('../services/email');
+const { sendVerificationEmail, sendPasswordResetEmail } = require('../services/email');
 
 const router = express.Router();
 
@@ -124,6 +124,80 @@ router.get('/verify-email', async (req, res, next) => {
             <p>Ваш аккаунт активирован. Теперь вы можете войти в приложение ONTHEWATER.</p>
             </body></html>
         `);
+    } catch (err) {
+        next(err);
+    }
+});
+
+// Восстановление пароля (для всех ролей, без авторизации)
+router.post('/request-password-reset', authLimiter, validate(requestPasswordResetSchema), async (req, res, next) => {
+    const { email } = req.body || {};
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    if (!normalizedEmail) return res.json({ message: 'Если аккаунт существует, мы отправили токен для восстановления.' });
+
+    try {
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            const { rows } = await client.query('SELECT id, email, name FROM users WHERE email = $1', [normalizedEmail]);
+            const user = rows[0];
+
+            const token = crypto.randomBytes(32).toString('hex');
+            const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 час
+
+            if (user) {
+                await client.query(
+                    'INSERT INTO password_reset_tokens (user_id, email, token, expires_at) VALUES ($1, $2, $3, $4)',
+                    [user.id, user.email, token, expiresAt]
+                );
+
+                const sent = await sendPasswordResetEmail(user.email, user.name || user.email.split('@')[0] || '', token);
+                if (!sent) {
+                    await client.query('ROLLBACK');
+                    return res.status(500).json({ error: 'Не удалось отправить письмо для восстановления пароля. Попробуйте позже.' });
+                }
+            }
+
+            await client.query('COMMIT');
+            // Успех одинаковый, чтобы не раскрывать существование аккаунта
+            res.json({ message: 'Если аккаунт существует, мы отправили токен для восстановления.' });
+        } catch (innerErr) {
+            try { await client.query('ROLLBACK'); } catch (_) {}
+            throw innerErr;
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.post('/reset-password', validate(resetPasswordSchema), async (req, res, next) => {
+    const { token, new_password } = req.body || {};
+    const resetToken = String(token || '').trim();
+    const newPass = String(new_password || '');
+
+    if (!resetToken) return res.status(400).json({ error: 'Токен восстановления не указан' });
+
+    try {
+        const { rows } = await pool.query(
+            'SELECT user_id, expires_at, used FROM password_reset_tokens WHERE token = $1 AND expires_at > NOW() AND used = FALSE',
+            [resetToken]
+        );
+        if (!rows || rows.length === 0) {
+            return res.status(400).json({ error: 'Токен недействителен или истек.' });
+        }
+
+        const userId = rows[0].user_id;
+
+        const salt = await bcrypt.genSalt(10);
+        const hash = await bcrypt.hash(newPass, salt);
+
+        await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, userId]);
+        await pool.query('UPDATE password_reset_tokens SET used = TRUE WHERE token = $1', [resetToken]);
+
+        res.json({ message: 'Пароль успешно обновлён' });
     } catch (err) {
         next(err);
     }

@@ -298,6 +298,21 @@ async function migrate() {
         await client.query(`CREATE INDEX IF NOT EXISTS idx_account_deletion_audits_deleted_at ON account_deletion_audits(deleted_at DESC)`).catch(() => {});
         await client.query(`ALTER TABLE account_deletion_audits ADD COLUMN IF NOT EXISTS admin_actor_id INT`).catch(() => {});
 
+        // Токены восстановления пароля
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                id SERIAL PRIMARY KEY,
+                user_id INT REFERENCES users(id) ON DELETE CASCADE,
+                email VARCHAR(255) NOT NULL,
+                token VARCHAR(128) NOT NULL UNIQUE,
+                expires_at TIMESTAMPTZ NOT NULL,
+                used BOOLEAN NOT NULL DEFAULT FALSE,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+        `);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_id ON password_reset_tokens(user_id)`).catch(() => {});
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_expires_at ON password_reset_tokens(expires_at)`).catch(() => {});
+
         await client.query(`
             CREATE TABLE IF NOT EXISTS legal_documents (
                 slug VARCHAR(64) PRIMARY KEY,

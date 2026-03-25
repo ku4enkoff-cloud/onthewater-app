@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import WelcomeScreen from '../auth/screens/WelcomeScreen';
 import LoginScreen from '../auth/screens/LoginScreen';
 import RegisterScreen from '../auth/screens/RegisterScreen';
+import ForgotPasswordScreen from '../auth/screens/ForgotPasswordScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -11,6 +12,7 @@ export default function OwnerAuthStack() {
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="Welcome" component={WelcomeScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
         </Stack.Navigator>
     );
