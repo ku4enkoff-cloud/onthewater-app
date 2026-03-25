@@ -162,39 +162,42 @@ export default function RegisterScreen({ navigation, route }) {
 
                     {appVariant === 'owner' ? (
                         <View style={styles.legalWrap}>
-                            <TouchableOpacity
-                                style={styles.checkboxRow}
-                                onPress={() => setAcceptedLegal((v) => !v)}
-                                activeOpacity={0.8}
-                            >
-                                <View style={[styles.checkboxBox, acceptedLegal && styles.checkboxBoxChecked]}>
-                                    {acceptedLegal ? <Text style={styles.checkboxCheck}>✓</Text> : null}
-                                </View>
+                            <View style={styles.checkboxRow}>
+                                <TouchableOpacity
+                                    onPress={() => setAcceptedLegal((v) => !v)}
+                                    activeOpacity={0.85}
+                                    style={styles.checkboxTouch}
+                                >
+                                    <View style={[styles.checkboxBox, acceptedLegal && styles.checkboxBoxChecked]}>
+                                        {acceptedLegal ? <Text style={styles.checkboxCheck}>✓</Text> : null}
+                                    </View>
+                                </TouchableOpacity>
 
-                                <Text style={styles.legalText}>
-                                    Я принимаю{' '}
+                                <View style={styles.legalLinks}>
+                                    <Text style={styles.legalText}>Я принимаю</Text>
+
                                     <TouchableOpacity
                                         onPress={() => navigation.navigate('LegalDocument', { slug: 'privacy_policy', title: 'Политика конфиденциальности' })}
                                         activeOpacity={0.7}
                                     >
-                                        <Text style={styles.legalLink}>Политику конфиденциальности</Text>
+                                        <Text style={styles.legalLinkLine}>Политику конфиденциальности</Text>
                                     </TouchableOpacity>
-                                    ,{' '}
+
                                     <TouchableOpacity
                                         onPress={() => navigation.navigate('LegalDocument', { slug: 'terms_of_service', title: 'Условия обслуживания' })}
                                         activeOpacity={0.7}
                                     >
-                                        <Text style={styles.legalLink}>Условия обслуживания</Text>
+                                        <Text style={styles.legalLinkLine}>Условия обслуживания</Text>
                                     </TouchableOpacity>
-                                    {' '}и{' '}
+
                                     <TouchableOpacity
                                         onPress={() => navigation.navigate('LegalDocument', { slug: 'personal_data_processing', title: 'Условия обработки персональных данных' })}
                                         activeOpacity={0.7}
                                     >
-                                        <Text style={styles.legalLink}>Условия обработки персональных данных</Text>
+                                        <Text style={styles.legalLinkLine}>Условия обработки персональных данных</Text>
                                     </TouchableOpacity>
-                                </Text>
-                            </TouchableOpacity>
+                                </View>
+                            </View>
                         </View>
                     ) : null}
 
@@ -253,14 +256,17 @@ const styles = StyleSheet.create({
         backgroundColor: theme.colors.primary,
     },
     checkboxCheck: { color: '#fff', fontSize: 14, fontWeight: 'bold', lineHeight: 16 },
+    legalLinks: { flex: 1, paddingTop: 2 },
     legalText: {
         flex: 1,
         fontFamily: theme.fonts.regular,
         fontSize: 13,
         color: theme.colors.textMuted,
         lineHeight: 18,
+        marginBottom: 8,
     },
-    legalLink: { color: theme.colors.primary, fontFamily: theme.fonts.medium, textDecorationLine: 'underline' },
+    legalLinkLine: { color: theme.colors.primary, fontFamily: theme.fonts.medium, textDecorationLine: 'underline', lineHeight: 20 },
+    checkboxTouch: { paddingTop: 2 },
     footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 32 },
     linkText: { ...theme.typography.body, color: theme.colors.primary, fontWeight: 'bold' },
 });
