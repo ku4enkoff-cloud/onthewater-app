@@ -523,15 +523,14 @@ router.patch('/users/:id', async (req, res, next) => {
     }
 });
 
-const LEGAL_DOC_SLUGS = ['privacy_policy', 'terms_of_service', 'personal_data_processing', 'public_offer'];
+const LEGAL_DOC_SLUGS = ['privacy_policy', 'terms_of_service', 'personal_data_processing'];
 
 async function ensureLegalDocsExist() {
     await pool.query(`
         INSERT INTO legal_documents (slug, title, body) VALUES
         ('privacy_policy', 'Политика конфиденциальности', ''),
         ('terms_of_service', 'Условия обслуживания', ''),
-        ('personal_data_processing', 'Условия обработки персональных данных', ''),
-        ('public_offer', 'Публичная оферта', '')
+        ('personal_data_processing', 'Условия обработки персональных данных', '')
         ON CONFLICT (slug) DO NOTHING
     `).catch(() => {});
 }

@@ -32,14 +32,14 @@ function buildHtmlDocument(body) {
     const raw = (body || '').trim();
     if (!raw) {
         return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<style>body{margin:0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:16px;padding:16px;color:#64748b;line-height:1.5;}</style></head>
+<style>body{margin:0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:16px;padding:16px;color:#000;line-height:1.5;}</style></head>
 <body><p>Текст документа пока не заполнен. Его можно добавить в админ-панели (раздел «Документы»).</p></body></html>`;
     }
     const inner = looksLikeHtml(raw)
         ? raw
         : `<div style="white-space:pre-wrap;">${escapeHtml(raw)}</div>`;
     return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<style>body{margin:0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:16px;color:#0d5c5c;line-height:1.55;padding:16px;} a{color:#0d5c5c;}</style></head><body>${inner}</body></html>`;
+<style>body{margin:0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:16px;color:#000;line-height:1.55;padding:16px;} a{color:#000;}</style></head><body>${inner}</body></html>`;
 }
 
 export default function OwnerLegalDocumentScreen({ navigation, route }) {

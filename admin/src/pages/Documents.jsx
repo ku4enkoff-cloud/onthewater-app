@@ -62,7 +62,7 @@ export default function Documents() {
     <>
       <h1 className={tableStyles.title}>Документы</h1>
       <p className={tableStyles.desc}>
-        Юридические тексты для приложения (в т.ч. политика, оферта, условия). Доступны публично по API{' '}
+        Юридические тексты для приложения (политика, условия, обработка ПДн). Доступны публично по API{' '}
         <code style={{ fontSize: '0.85em' }}>/legal-documents</code>.
       </p>
       {flash.text && (

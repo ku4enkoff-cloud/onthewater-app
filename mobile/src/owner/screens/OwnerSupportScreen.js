@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-    ChevronLeft, Phone, Mail, HelpCircle, AlertTriangle, Anchor, FileText, Shield, Lock, Scale,
+    ChevronLeft, Phone, Mail, HelpCircle, AlertTriangle, Anchor, FileText, Shield, Lock,
 } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 
@@ -19,7 +19,6 @@ const LEGAL_MENU = [
     { slug: 'privacy_policy', title: 'Политика конфиденциальности', Icon: Shield },
     { slug: 'terms_of_service', title: 'Условия обслуживания', Icon: FileText },
     { slug: 'personal_data_processing', title: 'Условия обработки персональных данных', Icon: Lock },
-    { slug: 'public_offer', title: 'Публичная оферта', Icon: Scale },
 ];
 
 export default function OwnerSupportScreen({ navigation }) {
