@@ -885,6 +885,29 @@ router.get('/reviews-count', authenticate, async (req, res, next) => {
     }
 });
 
+// Список отзывов владельца (по его судам)
+router.get('/reviews', authenticate, async (req, res, next) => {
+    try {
+        const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
+        const { rows } = await pool.query(
+            `
+            SELECT
+                r.*,
+                b.title AS boat_title
+            FROM reviews r
+            JOIN boats b ON b.id = r.boat_id AND b.owner_id = $1
+            WHERE (r.status = 'approved' OR r.status IS NULL) AND COALESCE(r.spam, false) = false
+            ORDER BY r.created_at DESC
+            LIMIT $2
+            `,
+            [req.user.id, limit]
+        );
+        res.json(rows);
+    } catch (err) {
+        next(err);
+    }
+});
+
 router.get('/unread-messages-count', authenticate, async (req, res, next) => {
     try {
         const { rows } = await pool.query(

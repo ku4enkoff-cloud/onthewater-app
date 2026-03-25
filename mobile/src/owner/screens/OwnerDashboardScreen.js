@@ -76,6 +76,7 @@ export default function OwnerDashboardScreen({ navigation }) {
         { icon: Calendar, label: 'Календарь бронирований', screen: 'BookingCalendar' },
         { icon: User, label: 'Профиль', screen: 'Account' },
         { icon: Users2, label: 'Клиенты', screen: 'OwnerClients' },
+        { icon: Star, label: 'Отзывы', screen: 'OwnerReviews' },
         { icon: Settings, label: 'Ресурсы владельца', screen: null },
     ];
 
