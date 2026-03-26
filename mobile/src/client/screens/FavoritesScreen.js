@@ -10,6 +10,58 @@ import UnauthorizedCard from '../../shared/components/UnauthorizedCard';
 
 const resolvePhotoUri = (src) => getPhotoUrl(src);
 
+const formatCardLocation = (item) => {
+    const city = String(item?.location_city || item?.location_name || '').trim();
+    const region = String(item?.location_region || '').trim();
+    if (!city && !region) return '—';
+    if (!city) return region;
+    if (!region) return city;
+    if (city.toLowerCase() === region.toLowerCase()) return city;
+    return `${city}, ${region}`;
+};
+
+const normalizeBoatTiers = (boat) => {
+    const raw = boat?.price_tiers;
+    let tiers = raw;
+    if (typeof raw === 'string') {
+        try { tiers = JSON.parse(raw); } catch (_) { tiers = []; }
+    }
+    if (!Array.isArray(tiers)) tiers = [];
+    return tiers
+        .map((t) => ({
+            duration: Number(t?.duration) || 0,
+            price: Number(t?.price) || 0,
+        }))
+        .filter((t) => t.duration > 0 && t.price > 0);
+};
+
+const formatDuration = (mins) => {
+    const m = Number(mins) || 0;
+    if (m <= 0) return '—';
+    if (m < 60) return `${m} мин`;
+    const h = Math.floor(m / 60);
+    const mm = m % 60;
+    if (mm === 0) return h === 1 ? '1 ч' : `${h} ч`;
+    return `${h} ч ${mm} мин`;
+};
+
+const getDurationRangeLabel = (boat) => {
+    const minDur = Number(boat?.schedule_min_duration) || 0;
+    const tierDurations = normalizeBoatTiers(boat).map((t) => t.duration);
+    const durations = [...new Set([minDur, ...tierDurations].filter((d) => d > 0))].sort((a, b) => a - b);
+    if (durations.length === 0) return '—';
+    if (durations.length === 1) return formatDuration(durations[0]);
+    return `${formatDuration(durations[0])} - ${formatDuration(durations[durations.length - 1])}`;
+};
+
+const getMinDurationPrice = (boat) => {
+    const minDuration = Number(boat?.schedule_min_duration) || 60;
+    const base = Number(boat?.price_per_hour) || 0;
+    if (minDuration === 60) return base;
+    const tier = normalizeBoatTiers(boat).find((t) => t.duration === minDuration);
+    return tier?.price || base;
+};
+
 export default function FavoritesScreen({ navigation }) {
     const insets = useSafeAreaInsets();
     const { user } = useContext(AuthContext);
@@ -65,12 +117,12 @@ export default function FavoritesScreen({ navigation }) {
                     </View>
                     <View style={styles.locationRow}>
                         <MapPin size={12} color={theme.colors.gray500} />
-                        <Text style={styles.locationText} numberOfLines={1}>{item.location_city || item.location_name || '—'}</Text>
+                        <Text style={styles.locationText} numberOfLines={1}>{formatCardLocation(item)}</Text>
                     </View>
                     <View style={styles.metaRow}>
                         <View style={styles.metaItem}>
                             <Clock size={12} color={theme.colors.gray500} />
-                            <Text style={styles.metaItemText}>2–8 ч</Text>
+                            <Text style={styles.metaItemText}>{getDurationRangeLabel(item)}</Text>
                         </View>
                         <View style={styles.metaItem}>
                             <Users size={12} color={theme.colors.gray500} />
@@ -85,11 +137,9 @@ export default function FavoritesScreen({ navigation }) {
                         </View>
                         <Text style={styles.priceText}>
                             {(() => {
-                                const weekday = Number(item.price_per_hour) || 0;
-                                const weekend = (item.price_weekend != null && String(item.price_weekend).trim() !== '')
-                                    ? Number(item.price_weekend) : weekday;
-                                const minPrice = Math.min(weekday, weekend);
-                                return <>от {minPrice.toLocaleString('ru-RU')} ₽<Text style={styles.priceUnit}>/час</Text></>;
+                                const minPrice = getMinDurationPrice(item);
+                                const minDuration = Number(item?.schedule_min_duration) || 60;
+                                return <>от {minPrice.toLocaleString('ru-RU')} ₽<Text style={styles.priceUnit}>/{formatDuration(minDuration)}</Text></>;
                             })()}
                         </Text>
                     </View>

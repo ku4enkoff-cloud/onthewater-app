@@ -324,7 +324,7 @@ export default function BoatDetailScreen({ route, navigation }) {
     const [fullyBookedDates, setFullyBookedDates] = useState(new Set());
     const [bookHours, setBookHours] = useState(60);
     const [bookCaptain, setBookCaptain] = useState(true);
-    const [bookPassengers, setBookPassengers] = useState(4);
+    const [bookPassengers, setBookPassengers] = useState(1);
     const [busyIntervals, setBusyIntervals] = useState([]);
     const [busySlotsLoading, setBusySlotsLoading] = useState(false);
     const [mapModalVisible, setMapModalVisible] = useState(false);
@@ -861,14 +861,14 @@ export default function BoatDetailScreen({ route, navigation }) {
                                 <Text style={styles.sectionTitle}>Удобства</Text>
                                 <View style={styles.amenitiesGrid}>
                                     {(featuresExpanded ? amenities : amenities.slice(0, 6)).map((nameOrId, i) => {
-                                        const IconComp = AMENITY_ICONS[nameOrId] || CheckCircle2;
+                                        const IconComp = CheckCircle2;
                                         const label = typeof nameOrId === 'string' ? nameOrId : '';
                                         return (
                                             <View key={i} style={styles.amenityItem}>
                                                 <View style={styles.amenityIconWrap}>
                                                     <IconComp size={20} color={NAVY} strokeWidth={1.8} />
                                                 </View>
-                                                <Text style={styles.amenityItemLabel} numberOfLines={2}>{label}</Text>
+                                                <Text style={styles.amenityItemLabel} numberOfLines={1}>{label}</Text>
                                             </View>
                                         );
                                     })}
@@ -1160,8 +1160,14 @@ export default function BoatDetailScreen({ route, navigation }) {
                     {/* ============ THINGS TO KNOW (rules + cancellation) ============ */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Важно знать</Text>
+                        {hasPaymentPolicy ? (
+                            <View style={{ marginTop: 0 }}>
+                                <Text style={styles.subSectionTitle}>Порядок оплаты</Text>
+                                <Text style={styles.bodyText}>{paymentPolicyText}</Text>
+                            </View>
+                        ) : null}
                         {boat.rules ? (
-                            <>
+                            <View style={{ marginTop: hasPaymentPolicy ? 16 : 0 }}>
                                 <Text style={styles.subSectionTitle}>Правила поведения на катере</Text>
                                 <Text style={styles.bodyText}>
                                     {rulesExpanded ? rulesText : rulesShort}
@@ -1173,16 +1179,10 @@ export default function BoatDetailScreen({ route, navigation }) {
                                         </Text>
                                     </TouchableOpacity>
                                 )}
-                            </>
-                        ) : null}
-                        {hasPaymentPolicy ? (
-                            <View style={{ marginTop: boat.rules ? 16 : 0 }}>
-                                <Text style={styles.subSectionTitle}>Порядок оплаты</Text>
-                                <Text style={styles.bodyText}>{paymentPolicyText}</Text>
                             </View>
                         ) : null}
                         {hasCancellationPolicy ? (
-                            <View style={{ marginTop: boat.rules || hasPaymentPolicy ? 16 : 0 }}>
+                            <View style={{ marginTop: hasPaymentPolicy || boat.rules ? 16 : 0 }}>
                                 <Text style={styles.subSectionTitle}>Условия отмены бронирования</Text>
                                 <Text style={styles.bodyText}>{boat.cancellation_policy}</Text>
                             </View>
@@ -1808,13 +1808,13 @@ const styles = StyleSheet.create({
         paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
     },
     featureText: { fontSize: 15, fontFamily: theme.fonts.regular, color: theme.colors.gray700 },
-    amenitiesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 8 },
-    amenityItem: { width: '30%', alignItems: 'center', gap: 6 },
+    amenitiesGrid: { marginBottom: 8, gap: 14 },
+    amenityItem: { flexDirection: 'row', alignItems: 'center' },
     amenityIconWrap: {
-        width: 44, height: 44, borderRadius: 12,
-        backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center',
+        width: 26, height: 26, borderRadius: 13,
+        alignItems: 'center', justifyContent: 'center',
     },
-    amenityItemLabel: { fontSize: 12, fontFamily: theme.fonts.regular, color: theme.colors.gray700, textAlign: 'center' },
+    amenityItemLabel: { fontSize: 16, fontFamily: theme.fonts.regular, color: theme.colors.gray700, marginLeft: 10, flex: 1 },
 
     /* Collapsible */
     collapsibleHeader: {

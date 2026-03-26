@@ -43,7 +43,7 @@ export default function BookingsScreen({ navigation }) {
     };
 
     const getStatusColor = (status) => {
-        const colors = { 'pending_payment': theme.colors.textMuted, 'pending': '#FF9800', 'confirmed': theme.colors.success, 'active': theme.colors.primary, 'completed': theme.colors.textMuted, 'cancelled': theme.colors.error };
+        const colors = { 'pending_payment': theme.colors.textMuted, 'pending': '#FF9800', 'confirmed': theme.colors.success, 'active': theme.colors.primary, 'completed': '#16A34A', 'cancelled': theme.colors.error };
         return colors[status] || theme.colors.textMuted;
     };
 

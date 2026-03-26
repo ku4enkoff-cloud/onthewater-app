@@ -50,6 +50,61 @@ const BOAT_CARD_W = width * 0.78;
 
 const PLACEHOLDER_IMG = 'https://placehold.co/400x300/e2e8f0/64748b?text=';
 
+const formatCardLocation = (item) => {
+    const city = String(item?.location_city || '').trim();
+    const region = String(item?.location_region || '').trim();
+    if (!city && !region) return '—';
+    if (!city) return region;
+    if (!region) return city;
+    if (city.toLowerCase() === region.toLowerCase()) return city;
+    return `${city}, ${region}`;
+};
+
+const normalizeBoatTiers = (boat) => {
+    const raw = boat?.price_tiers;
+    let tiers = raw;
+    if (typeof raw === 'string') {
+        try { tiers = JSON.parse(raw); } catch (_) { tiers = []; }
+    }
+    if (!Array.isArray(tiers)) tiers = [];
+    return tiers
+        .map((t) => Number(t?.duration) || 0)
+        .filter((d) => d > 0);
+};
+
+const formatDuration = (mins) => {
+    const m = Number(mins) || 0;
+    if (m <= 0) return '—';
+    if (m < 60) return `${m} мин`;
+    const h = Math.floor(m / 60);
+    const mm = m % 60;
+    if (mm === 0) return h === 1 ? '1 ч' : `${h} ч`;
+    return `${h} ч ${mm} мин`;
+};
+
+const getBookingPeriodLabel = (boat) => {
+    const minDur = Number(boat?.schedule_min_duration) || 0;
+    const durations = [...new Set([minDur, ...normalizeBoatTiers(boat)].filter((d) => d > 0))].sort((a, b) => a - b);
+    if (durations.length === 0) return '—';
+    if (durations.length === 1) return formatDuration(durations[0]);
+    return `${formatDuration(durations[0])} - ${formatDuration(durations[durations.length - 1])}`;
+};
+
+const getMinDurationPrice = (boat) => {
+    const minDuration = Number(boat?.schedule_min_duration) || 60;
+    const base = Number(boat?.price_per_hour) || 0;
+    if (minDuration === 60) return base;
+    const raw = boat?.price_tiers;
+    let tiers = raw;
+    if (typeof raw === 'string') {
+        try { tiers = JSON.parse(raw); } catch (_) { tiers = []; }
+    }
+    if (!Array.isArray(tiers)) tiers = [];
+    const match = tiers.find((t) => (Number(t?.duration) || 0) === minDuration);
+    const tierPrice = Number(match?.price) || 0;
+    return tierPrice > 0 ? tierPrice : base;
+};
+
 function DestinationImage({ uri, style, refreshKey: _ }) {
     const [failed, setFailed] = React.useState(false);
     const src = !uri ? null : uri;
@@ -185,34 +240,29 @@ export default function SearchScreen({ navigation }) {
                             fill={favorite ? '#ef4444' : 'transparent'}
                         />
                     </TouchableOpacity>
+                    <View style={styles.imagePriceBadge}>
+                        <Text style={styles.imagePriceMain}>
+                            от {formatPrice(getMinDurationPrice(item))} ₽
+                        </Text>
+                        <Text style={styles.imagePriceUnit}>/{minDurationLabel(item)}</Text>
+                    </View>
                 </View>
                 <View style={styles.cardInfo}>
                     <Text style={styles.cardTitle} numberOfLines={1}>{item.title || 'Катер'}</Text>
                     <View style={styles.cardMetaRow}>
                         <MapPin size={12} color={theme.colors.gray500} />
                         <Text style={styles.cardLocation} numberOfLines={1}>
-                            {item.location_city || '—'}
+                            {formatCardLocation(item)}
                         </Text>
                     </View>
                     <View style={styles.cardMetaRow2}>
                         <View style={styles.cardMetaItem}>
                             <Clock size={12} color={theme.colors.gray500} />
-                            <Text style={styles.cardMetaText}>2–8 ч</Text>
+                            <Text style={styles.cardMetaText}>{getBookingPeriodLabel(item)}</Text>
                         </View>
                         <View style={styles.cardMetaItem}>
                             <Users size={12} color={theme.colors.gray500} />
                             <Text style={styles.cardMetaText}>до {item.capacity ?? '—'}</Text>
-                        </View>
-                    </View>
-                    <View style={styles.cardFooter}>
-                        <View style={styles.cardPriceBlock}>
-                            <Text style={styles.cardPriceLine}>
-                                от {formatPrice(item.price_per_hour)} ₽
-                            </Text>
-                            <Text style={styles.cardDurationLine}>{minDurationLabel(item)}</Text>
-                        </View>
-                        <View style={styles.viewBtn}>
-                            <Text style={styles.viewBtnText}>Смотреть</Text>
                         </View>
                     </View>
                 </View>
@@ -255,7 +305,7 @@ export default function SearchScreen({ navigation }) {
             </View>
 
             {/* Recommended boats header */}
-            <Text style={styles.sectionTitle}>Рекомендуемые катера</Text>
+            <Text style={styles.sectionTitle}>Популярные катера</Text>
         </>
     );
 
@@ -495,7 +545,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: theme.spacing.lg,
     },
     boatsSection: {
-        height: 400,
+        height: 320,
         marginBottom: theme.spacing.sm,
     },
     boatsListContent: {
@@ -508,6 +558,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         marginBottom: theme.spacing.lg,
         overflow: 'hidden',
+        alignSelf: 'flex-start',
         ...theme.shadows.card,
     },
     cardImageWrap: {
@@ -552,6 +603,29 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    imagePriceBadge: {
+        position: 'absolute',
+        right: 12,
+        bottom: 12,
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        backgroundColor: 'rgba(15, 23, 42, 0.7)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 10,
+    },
+    imagePriceMain: {
+        fontSize: 14,
+        fontFamily: theme.fonts.bold,
+        color: '#FFFFFF',
+        lineHeight: 18,
+    },
+    imagePriceUnit: {
+        fontSize: 9,
+        fontFamily: theme.fonts.regular,
+        color: 'rgba(255,255,255,0.92)',
+        marginLeft: 2,
+    },
     cardInfo: {
         padding: 16,
     },
@@ -588,40 +662,6 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontFamily: theme.fonts.regular,
         color: theme.colors.gray500,
-    },
-    cardFooter: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingTop: 12,
-        borderTopWidth: 1,
-        borderTopColor: theme.colors.gray100,
-    },
-    cardPriceBlock: {
-        flexDirection: 'column',
-        justifyContent: 'center',
-    },
-    cardPriceLine: {
-        fontSize: 22,
-        fontFamily: theme.fonts.bold,
-        color: NAVY,
-        marginBottom: 2,
-    },
-    cardDurationLine: {
-        fontSize: 13,
-        fontFamily: theme.fonts.regular,
-        color: theme.colors.gray500,
-    },
-    viewBtn: {
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        backgroundColor: NAVY,
-        borderRadius: 12,
-    },
-    viewBtnText: {
-        fontSize: 14,
-        fontFamily: theme.fonts.semiBold,
-        color: '#fff',
     },
     emptyHint: {
         paddingVertical: theme.spacing.xxl,

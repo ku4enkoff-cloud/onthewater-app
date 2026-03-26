@@ -94,6 +94,15 @@ router.post('/', authenticate, async (req, res, next) => {
 
 router.get('/', authenticate, async (req, res, next) => {
     try {
+        // Просроченные заявки "на рассмотрении" автоматически переводим в отменённые
+        await pool.query(
+            `UPDATE bookings
+             SET status = 'cancelled'
+             WHERE status = 'pending'
+               AND start_at IS NOT NULL
+               AND start_at < NOW()`
+        );
+
         await pool.query(
             `UPDATE bookings SET status = 'completed'
              WHERE status = 'confirmed' AND start_at IS NOT NULL
@@ -126,6 +135,18 @@ function enrichBookingPhoto(r) {
 
 router.get('/:id', authenticate, async (req, res, next) => {
     try {
+        // Для детального экрана тоже актуализируем просроченный pending-статус
+        await pool.query(
+            `UPDATE bookings
+             SET status = 'cancelled'
+             WHERE id = $1
+               AND user_id = $2
+               AND status = 'pending'
+               AND start_at IS NOT NULL
+               AND start_at < NOW()`,
+            [parseInt(req.params.id, 10), req.user.id]
+        );
+
         const { rows } = await pool.query(
             `SELECT b.*, boat.location_city, boat.location_address, boat.location_yacht_club, boat.location_country, boat.location_region, boat.lat, boat.lng, boat.photos AS boat_photos
              FROM bookings b
