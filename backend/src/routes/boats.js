@@ -54,6 +54,58 @@ async function attachLiveBookingsCount(boats) {
     return boats;
 }
 
+async function getOwnerResponseRate(ownerId) {
+    const oid = parseInt(ownerId, 10);
+    if (!Number.isFinite(oid)) return null;
+
+    const { rows: bookingAggRows } = await pool.query(
+        `SELECT
+            COUNT(*)::int AS total,
+            COUNT(*) FILTER (WHERE status IN ('confirmed', 'completed', 'cancelled'))::int AS processed
+         FROM bookings
+         WHERE owner_id = $1`,
+        [oid]
+    );
+    const bookingTotal = Number(bookingAggRows[0]?.total || 0);
+    const bookingProcessed = Number(bookingAggRows[0]?.processed || 0);
+    const bookingRate = bookingTotal > 0 ? Math.round((bookingProcessed / bookingTotal) * 100) : null;
+
+    const { rows: msgAggRows } = await pool.query(
+        `WITH incoming AS (
+            SELECT m.id, m.chat_id, m.created_at
+            FROM messages m
+            JOIN chats c ON c.id = m.chat_id
+            WHERE c.owner_id = $1 AND m.sender = 'me'
+         ),
+         first_reply AS (
+            SELECT i.id AS incoming_id,
+                   MIN(m2.created_at) AS reply_at
+            FROM incoming i
+            LEFT JOIN messages m2
+              ON m2.chat_id = i.chat_id
+             AND m2.sender = 'owner'
+             AND m2.created_at > i.created_at
+            GROUP BY i.id
+         )
+         SELECT
+            COUNT(*)::int AS total_incoming,
+            COUNT(*) FILTER (
+                WHERE reply_at IS NOT NULL
+                  AND EXTRACT(EPOCH FROM (reply_at - (SELECT created_at FROM incoming WHERE id = incoming_id))) <= 3600
+            )::int AS fast_replied
+         FROM first_reply`,
+        [oid]
+    );
+    const incomingTotal = Number(msgAggRows[0]?.total_incoming || 0);
+    const fastReplied = Number(msgAggRows[0]?.fast_replied || 0);
+    const messageRate = incomingTotal > 0 ? Math.round((fastReplied / incomingTotal) * 100) : null;
+
+    if (bookingRate != null && messageRate != null) return Math.round((bookingRate + messageRate) / 2);
+    if (bookingRate != null) return bookingRate;
+    if (messageRate != null) return messageRate;
+    return null;
+}
+
 router.get('/', async (req, res, next) => {
     try {
         const { lat, lng, radius, popular, limit, region, city } = req.query;
@@ -174,6 +226,7 @@ router.get('/:id', async (req, res, next) => {
                 boat.owner_name = full && full.trim() ? full.trim() : (u.email || 'Владелец');
             }
         }
+        boat.response_rate = await getOwnerResponseRate(boat.owner_id);
         await ensureTypeNames([boat]);
         await attachLiveBookingsCount([boat]);
         res.json({

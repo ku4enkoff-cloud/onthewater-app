@@ -243,9 +243,11 @@ export default function ProfileScreen({ navigation }) {
                     <View style={styles.profileInfo}>
                         <Text style={styles.profileName}>{user?.name || 'Пользователь'}</Text>
                         <Text style={styles.profileEmail}>{user?.email || ''}</Text>
-                        <View style={styles.verifiedBadge}>
-                            <Text style={styles.verifiedText}>Verified</Text>
-                        </View>
+                        {user?.email_verified === true ? (
+                            <View style={styles.verifiedBadge}>
+                                <Text style={styles.verifiedText}>Подтвержден</Text>
+                            </View>
+                        ) : null}
                     </View>
                 </View>
                 <View style={styles.statsRow}>
@@ -431,12 +433,12 @@ const styles = StyleSheet.create({
     verifiedBadge: {
         alignSelf: 'flex-start',
         marginTop: 8,
-        backgroundColor: 'rgba(27, 54, 93, 0.1)',
+        backgroundColor: 'rgba(22, 163, 74, 0.14)',
         paddingVertical: 4,
         paddingHorizontal: 10,
         borderRadius: 8,
     },
-    verifiedText: { fontSize: 12, fontFamily: theme.fonts.semiBold, color: theme.colors.primary },
+    verifiedText: { fontSize: 12, fontFamily: theme.fonts.semiBold, color: '#15803D' },
     statsRow: {
         flexDirection: 'row',
         justifyContent: 'space-around',

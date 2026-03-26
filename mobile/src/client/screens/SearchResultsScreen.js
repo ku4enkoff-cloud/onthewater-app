@@ -108,6 +108,16 @@ const pluralizeBookings = (n) => {
     return 'бронирований';
 };
 
+const formatCardLocation = (item) => {
+    const city = String(item?.location_city || '').trim();
+    const region = String(item?.location_region || '').trim();
+    if (!city && !region) return '';
+    if (!city) return region.toUpperCase();
+    if (!region) return city.toUpperCase();
+    if (city.toLowerCase() === region.toLowerCase()) return city.toUpperCase();
+    return `${city}, ${region}`.toUpperCase();
+};
+
 export default function SearchResultsScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
     const { cityName, dateISO, useMyLocation, boatTypeId, boatTypeName, allRegions } = route.params || {};
@@ -539,11 +549,11 @@ export default function SearchResultsScreen({ route, navigation }) {
                         {hasTopOwner && (
                             <View style={styles.topOwnerBadge}>
                                 <Text style={styles.topOwnerIcon}>🏆</Text>
-                                <Text style={styles.topOwnerText}>Владелец</Text>
+                                <Text style={styles.topOwnerText}>Бывалый</Text>
                             </View>
                         )}
                         <Text style={styles.locationText}>
-                            {(item.location_city || '').toUpperCase()}
+                            {formatCardLocation(item)}
                         </Text>
                     </View>
 

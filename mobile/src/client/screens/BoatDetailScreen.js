@@ -271,6 +271,21 @@ function pluralizeBookings(n) {
     return 'бронирований';
 }
 
+function normalizeDisplayName(raw) {
+    const s = String(raw || '').replace(/\s+/g, ' ').trim();
+    if (!s) return '';
+    const m = s.match(/^(.+)\s+\1$/);
+    if (m && m[1]) return m[1].trim();
+    const words = s.split(' ').filter(Boolean);
+    if (words.length >= 2 && words.length % 2 === 0) {
+        const half = words.length / 2;
+        const first = words.slice(0, half).join(' ');
+        const second = words.slice(half).join(' ');
+        if (first === second) return first;
+    }
+    return s;
+}
+
 export default function BoatDetailScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
     const { user } = useContext(AuthContext);
@@ -573,7 +588,10 @@ export default function BoatDetailScreen({ route, navigation }) {
     const paymentPolicyText = String(boat.payment_policy || '').trim();
     const hasPaymentPolicy = paymentPolicyText.length > 0;
     const hasCancellationPolicy = !!(boat.cancellation_policy && String(boat.cancellation_policy).trim());
-    const responseSpeedLabel = '—';
+    const responseSpeedLabel =
+        boat?.response_rate != null && Number.isFinite(Number(boat.response_rate))
+            ? `${Math.round(Number(boat.response_rate))}%`
+            : '—';
 
     return (
         <View style={styles.container}>
@@ -942,11 +960,11 @@ export default function BoatDetailScreen({ route, navigation }) {
                                         <View style={styles.reviewCardHeader}>
                                             <View style={styles.reviewAvatar}>
                                                 <Text style={styles.reviewAvatarText}>
-                                                    {(r.user_name || 'Г').charAt(0)}
+                                                    {(normalizeDisplayName(r.user_name) || 'Г').charAt(0)}
                                                 </Text>
                                             </View>
                                             <View style={{ flex: 1 }}>
-                                                <Text style={styles.reviewAuthor}>{r.user_name || 'Гость'}</Text>
+                                                <Text style={styles.reviewAuthor}>{normalizeDisplayName(r.user_name) || 'Гость'}</Text>
                                                 <Text style={styles.reviewDate}>
                                                     {r.created_at
                                                         ? new Date(r.created_at).toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' })
@@ -1083,7 +1101,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                                         {rating >= 4.8 && (
                                             <View style={styles.topOwnerBadge}>
                                                 <Text style={styles.topOwnerIcon}>🏆</Text>
-                                                <Text style={styles.topOwnerText}>Владелец</Text>
+                                                <Text style={styles.topOwnerText}>Бывалый</Text>
                                             </View>
                                         )}
                                         <Star size={14} color={theme.colors.star} fill={theme.colors.star} />
@@ -1186,7 +1204,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                                             {sb.rating >= 4.8 && (
                                                 <View style={styles.topOwnerBadgeSmall}>
                                                     <Text style={{ fontSize: 10 }}>🏆</Text>
-                                                    <Text style={styles.topOwnerTextSmall}>Владелец</Text>
+                                                    <Text style={styles.topOwnerTextSmall}>Бывалый</Text>
                                                 </View>
                                             )}
                                             <View style={styles.similarTitleRow}>
@@ -1635,11 +1653,11 @@ export default function BoatDetailScreen({ route, navigation }) {
                                         <View style={styles.reviewCardHeader}>
                                             <View style={styles.reviewAvatar}>
                                                 <Text style={styles.reviewAvatarText}>
-                                                    {(item.user_name || 'Г').charAt(0)}
+                                                    {(normalizeDisplayName(item.user_name) || 'Г').charAt(0)}
                                                 </Text>
                                             </View>
                                             <View style={{ flex: 1 }}>
-                                                <Text style={styles.reviewAuthor}>{item.user_name || 'Гость'}</Text>
+                                                <Text style={styles.reviewAuthor}>{normalizeDisplayName(item.user_name) || 'Гость'}</Text>
                                                 <View style={styles.reviewStarsRow}>
                                                     {[1, 2, 3, 4, 5].map((n) => (
                                                         <Star

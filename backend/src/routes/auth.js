@@ -247,7 +247,6 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res, next)
 
         const token = generateToken({ id: user.id, role: user.role });
         delete user.password_hash;
-        delete user.email_verified;
 
         res.json({ token, user });
     } catch (err) {
