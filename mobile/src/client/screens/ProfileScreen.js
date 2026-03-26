@@ -11,7 +11,33 @@ import { api } from '../../shared/infrastructure/api';
 import { registerPushTokenNow } from '../hooks/useRegisterPushToken';
 import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
 import { theme } from '../../shared/theme';
-import { User, Heart, HelpCircle, LogOut, ChevronRight, Calendar, Star, Shield, FileText, Bell, X, Pencil, Trash2, Lock } from 'lucide-react-native';
+import { User, Heart, HelpCircle, LogOut, ChevronRight, Calendar, Star, Shield, FileText, Bell, X, Pencil, Trash2, Lock, Clock3, CheckCircle2, XCircle } from 'lucide-react-native';
+
+function getReviewStatusMeta(status) {
+    const s = String(status || '').toLowerCase();
+    if (s === 'approved') {
+        return {
+            label: 'Одобрен',
+            bg: '#DCFCE7',
+            fg: '#166534',
+            Icon: CheckCircle2,
+        };
+    }
+    if (s === 'rejected') {
+        return {
+            label: 'Отклонен',
+            bg: '#FEE2E2',
+            fg: '#B91C1C',
+            Icon: XCircle,
+        };
+    }
+    return {
+        label: 'На модерации',
+        bg: '#FEF3C7',
+        fg: '#92400E',
+        Icon: Clock3,
+    };
+}
 
 export default function ProfileScreen({ navigation }) {
     const insets = useSafeAreaInsets();
@@ -341,6 +367,16 @@ export default function ProfileScreen({ navigation }) {
                             renderItem={({ item }) => (
                                 <View style={styles.reviewCard}>
                                     <Text style={styles.reviewCardBoat}>{item.boat_title || 'Катер'}</Text>
+                                    {(() => {
+                                        const statusMeta = getReviewStatusMeta(item.status);
+                                        const StatusIcon = statusMeta.Icon;
+                                        return (
+                                            <View style={[styles.reviewStatusBadge, { backgroundColor: statusMeta.bg }]}>
+                                                <StatusIcon size={13} color={statusMeta.fg} />
+                                                <Text style={[styles.reviewStatusText, { color: statusMeta.fg }]}>{statusMeta.label}</Text>
+                                            </View>
+                                        );
+                                    })()}
                                     <View style={styles.reviewCardStars}>
                                         {[1, 2, 3, 4, 5].map((n) => (
                                             <Star key={n} size={16} color={n <= (item.rating || 0) ? theme.colors.primary : theme.colors.border} fill={n <= (item.rating || 0) ? theme.colors.primary : 'transparent'} />
@@ -489,7 +525,13 @@ const styles = StyleSheet.create({
         paddingVertical: theme.spacing.md,
         backgroundColor: '#fff',
         borderRadius: 20,
-        ...theme.shadows.card,
+        borderWidth: 1,
+        borderColor: '#EEF2F7',
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
+        elevation: 2,
     },
     logoutButtonDisabled: { opacity: 0.5 },
     logoutText: { color: theme.colors.error, fontFamily: theme.fonts.semiBold, fontSize: 16 },
@@ -512,6 +554,8 @@ const styles = StyleSheet.create({
     reviewsListContent: { paddingVertical: theme.spacing.md, paddingBottom: theme.spacing.xl },
     reviewCard: { backgroundColor: theme.colors.gray50, borderRadius: 16, padding: theme.spacing.md, marginBottom: theme.spacing.sm },
     reviewCardBoat: { fontSize: 16, fontFamily: theme.fonts.semiBold, color: theme.colors.gray900, marginBottom: 4 },
+    reviewStatusBadge: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, borderRadius: 999, paddingVertical: 4, paddingHorizontal: 10, marginBottom: 8 },
+    reviewStatusText: { fontSize: 12, fontFamily: theme.fonts.semiBold },
     reviewCardStars: { flexDirection: 'row', gap: 2, marginBottom: 8 },
     reviewCardText: { fontSize: 14, color: theme.colors.gray700, marginBottom: 4 },
     reviewCardDate: { fontSize: 12, color: theme.colors.gray400, marginBottom: 12 },

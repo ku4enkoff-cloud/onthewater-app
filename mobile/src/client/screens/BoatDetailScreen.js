@@ -5,6 +5,7 @@ import {
     Text,
     StyleSheet,
     ScrollView,
+    RefreshControl,
     Image,
     TouchableOpacity,
     ActivityIndicator,
@@ -327,6 +328,7 @@ export default function BoatDetailScreen({ route, navigation }) {
     const [busyIntervals, setBusyIntervals] = useState([]);
     const [busySlotsLoading, setBusySlotsLoading] = useState(false);
     const [mapModalVisible, setMapModalVisible] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
     const scrollRef = useRef(null);
 
     const fetchBusyIntervals = useCallback(async (date) => {
@@ -389,6 +391,16 @@ export default function BoatDetailScreen({ route, navigation }) {
             setLoading(false);
         }
     };
+
+    const onRefresh = useCallback(async () => {
+        if (!boatId) return;
+        setRefreshing(true);
+        try {
+            await fetchBoat();
+        } finally {
+            setRefreshing(false);
+        }
+    }, [boatId]);
 
     const fetchSimilar = async (currentBoat) => {
         try {
@@ -611,6 +623,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                 ref={scrollRef}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
             >
                 {/* ============ HERO PHOTO ============ */}
                 <View style={styles.gallery}>

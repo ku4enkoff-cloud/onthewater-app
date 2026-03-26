@@ -15,12 +15,19 @@ import OwnerSupportScreen from '../../owner/screens/OwnerSupportScreen';
 import OwnerLegalDocumentScreen from '../../owner/screens/OwnerLegalDocumentScreen';
 import LoginScreen from '../../auth/screens/LoginScreen';
 import RegisterScreen from '../../auth/screens/RegisterScreen';
+import ForgotPasswordScreen from '../../auth/screens/ForgotPasswordScreen';
 
 const Stack = createNativeStackNavigator();
 
 export default function ClientNavigator() {
     return (
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Navigator
+            screenOptions={{
+                headerShown: false,
+                gestureEnabled: true,
+                fullScreenGestureEnabled: true,
+            }}
+        >
             <Stack.Screen name="MainTabs" component={ClientTabs} />
             <Stack.Screen name="ClientAccount" component={ClientAccountScreen} />
             <Stack.Screen name="ClientAccountInfo" component={ClientAccountInfoScreen} />
@@ -39,6 +46,7 @@ export default function ClientNavigator() {
             />
             <Stack.Screen name="LocationSelect" component={LocationSelectScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
         </Stack.Navigator>
     );

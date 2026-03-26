@@ -23,7 +23,13 @@ const Stack = createNativeStackNavigator();
 
 export default function OwnerNavigator() {
     return (
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Navigator
+            screenOptions={{
+                headerShown: false,
+                gestureEnabled: true,
+                fullScreenGestureEnabled: true,
+            }}
+        >
             <Stack.Screen name="MainTabs" component={OwnerTabs} />
             <Stack.Screen name="BoatType" component={BoatTypeScreen} />
             <Stack.Screen name="BoatInfo" component={BoatInfoScreen} />

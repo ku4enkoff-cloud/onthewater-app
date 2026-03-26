@@ -9,7 +9,6 @@ import {
     Platform,
     Alert,
 } from 'react-native';
-import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthContext } from '../../shared/context/AuthContext';
 import { theme } from '../../shared/theme';
@@ -17,12 +16,10 @@ import { API_BASE } from '../../shared/infrastructure/config';
 
 export default function LoginScreen({ navigation, route }) {
     const { login } = useContext(AuthContext);
-    const appVariant = Constants.expoConfig?.extra?.appVariant || process.env.EXPO_PUBLIC_APP_VARIANT || 'client';
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const fromProfile = route?.params?.fromProfile;
-    const isOwner = appVariant === 'owner';
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -75,11 +72,9 @@ export default function LoginScreen({ navigation, route }) {
                     <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleLogin} disabled={loading}>
                         <Text style={styles.buttonText}>{loading ? 'Вход...' : 'Войти'}</Text>
                     </TouchableOpacity>
-                    {isOwner ? (
-                        <TouchableOpacity style={styles.forgotRow} onPress={() => navigation.navigate('ForgotPassword')} disabled={loading}>
-                            <Text style={styles.forgotText}>Забыли пароль?</Text>
-                        </TouchableOpacity>
-                    ) : null}
+                    <TouchableOpacity style={styles.forgotRow} onPress={() => navigation.navigate('ForgotPassword')} disabled={loading}>
+                        <Text style={styles.forgotText}>Забыли пароль?</Text>
+                    </TouchableOpacity>
                     <View style={styles.footer}>
                         <Text style={theme.typography.body}>Нет аккаунта? </Text>
                         <TouchableOpacity onPress={() => navigation.navigate('Register')}>
