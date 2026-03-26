@@ -46,41 +46,63 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  padding: 18px 40px;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.28);
+  gap: 18px;
+  padding: 10px 18px;
+  background: #fff;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
 }
 
-.logo {
-  font-size: 14px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  color: #0d335f;
+.logoWrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.logoMark {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid #0d4c7f;
+  color: #0d4c7f;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logoWord {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #0f4d81;
+  line-height: 1;
 }
 
 .nav {
   display: flex;
-  gap: 24px;
-  font-size: 14px;
-  color: #475569;
+  gap: 22px;
+  font-size: 12px;
+  color: #0f2740;
 }
 
-.auth {
+.topRight {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
 }
 
-.btn {
-  border-radius: 999px;
-  border: 1px solid transparent;
-  padding: 10px 16px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+.avatarTop {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(140deg, #dbeafe, #bfdbfe);
+  color: #0b3258;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(148, 163, 184, 0.45);
 }
 
 .btn.primary {
@@ -126,6 +148,98 @@ main {
     radial-gradient(circle at 18% 20%, rgba(42, 157, 244, 0.15), transparent 42%),
     linear-gradient(130deg, #eaf5ff 0%, #f8fcff 45%, #eef8ff 100%);
   border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.heroClassic {
+  display: block;
+  min-height: 420px;
+  padding: 0;
+  background:
+    linear-gradient(rgba(238, 245, 248, 0.45), rgba(238, 245, 248, 0.2)),
+    url('./assets/hero.png') center / cover no-repeat;
+  position: relative;
+}
+
+.heroClassicOverlay {
+  width: 100%;
+  min-height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 16px 40px;
+}
+
+.heroClassicInner {
+  width: min(980px, 100%);
+  text-align: center;
+}
+
+.heroClassicInner h1 {
+  margin: 0;
+  font-size: clamp(40px, 5.2vw, 58px);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: #0f2f57;
+  font-weight: 700;
+}
+
+.heroClassicInner p {
+  margin: 14px 0 0;
+  font-size: clamp(14px, 1.6vw, 34px);
+  color: #243d5f;
+}
+
+.heroSearchBar {
+  margin: 92px auto 0;
+  width: min(760px, 100%);
+  background: #fff;
+  border-radius: 999px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 14px 36px rgba(11, 47, 87, 0.16);
+}
+
+.heroSearchInputWrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding-left: 12px;
+}
+
+.heroSearchPin {
+  color: #94a3b8;
+  font-size: 22px;
+  line-height: 1;
+  margin-right: 8px;
+}
+
+.heroSearchInput {
+  flex: 1;
+  border: 0;
+  outline: none;
+  padding: 12px 8px;
+  border-radius: 999px;
+  font-size: 14px;
+  color: #1e293b;
+}
+
+.heroSearchButton {
+  border: 0;
+  background: #0d56b8;
+  color: #fff;
+  border-radius: 999px;
+  padding: 14px 28px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.heroSearchButton:hover {
+  background: #0a4799;
 }
 
 .eyebrow {
@@ -231,9 +345,9 @@ main {
 }
 
 .section-muted {
-  background: #f1f6fb;
-  border-top: 1px solid rgba(148, 163, 184, 0.28);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.28);
+  background: #f3f4f6;
+  border-top: 0;
+  border-bottom: 0;
 }
 
 .section-head {
@@ -246,8 +360,8 @@ main {
 
 .section-head h2 {
   margin: 0;
-  font-size: clamp(22px, 2.3vw, 32px);
-  color: #0d335f;
+  font-size: clamp(24px, 2.1vw, 42px);
+  color: #16253f;
 }
 
 .section-head a {
@@ -256,62 +370,141 @@ main {
   color: #0d5c8f;
 }
 
+.sectionSub {
+  margin: 8px 0 0;
+  color: #4b5563;
+  font-size: 16px;
+}
+
+.destinationsSection {
+  background: #f3f4f6;
+}
+
+.destinationsContainer {
+  width: min(1100px, 100%);
+  margin: 0 auto;
+}
+
+.destinationsNav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.navCircle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.navCircle:hover {
+  background: #eef2f7;
+}
+
 .destinations-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
 }
 
 .destination-card {
-  padding: 12px;
-  background: #fff;
-  border-radius: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: transparent;
+  border-radius: 12px;
 }
 
 .destination-thumb {
-  height: 120px;
-  border-radius: 12px;
+  height: 132px;
+  border-radius: 10px;
   background:
-    linear-gradient(145deg, rgba(14, 116, 144, 0.42), rgba(8, 66, 114, 0.58)),
+    linear-gradient(145deg, rgba(14, 116, 144, 0.22), rgba(8, 66, 114, 0.28)),
     url('./assets/hero.png') center / cover no-repeat;
 }
 
 .destination-card h3 {
-  margin: 10px 0 4px;
-  font-size: 20px;
-  color: #0d335f;
-}
-
-.destination-card p {
-  margin: 0;
-  color: #64748b;
-  font-size: 14px;
+  margin: 10px 0 0;
+  font-size: 28px;
+  color: #111827;
+  font-weight: 600;
 }
 
 .trust-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
 
 .trust-card {
-  background: #fff;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  border-radius: 16px;
-  padding: 18px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 8px 14px;
 }
 
 .trust-card h3 {
   margin: 0 0 8px;
-  color: #0d335f;
+  color: #1f2937;
   font-size: 18px;
+  line-height: 1.22;
 }
 
 .trust-card p {
   margin: 0;
-  color: #475569;
+  color: #374151;
   font-size: 14px;
+  line-height: 1.5;
+}
+
+.promiseContainer {
+  width: min(1100px, 100%);
+  margin: 0 auto;
+  position: relative;
+  padding-top: 24px;
+}
+
+.promiseBadge {
+  width: 340px;
+  max-width: 88%;
+  height: 118px;
+  background: #e7f0f6;
+  border-radius: 2px;
+  color: #173d71;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+  text-transform: lowercase;
+  display: flex;
+  align-items: center;
+  padding: 18px 18px 16px;
+  letter-spacing: 0.01em;
+}
+
+.promisePanel {
+  margin-top: -36px;
+  margin-left: 72px;
+  background: #fff;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 14px;
+  padding: 22px 22px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.07);
+}
+
+.trustIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid #8aa0ba;
+  border-radius: 50%;
+  color: #314c72;
+  font-size: 14px;
+  margin-bottom: 10px;
 }
 
 .category-chips {
@@ -335,6 +528,115 @@ main {
   background: #0d335f;
   color: #fff;
   border-color: #0d335f;
+}
+
+.boatTypesSection {
+  background: #f5f2ea;
+}
+
+.boatTypesContainer {
+  width: min(1100px, 100%);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 190px 1fr 62px;
+  gap: 14px;
+  align-items: start;
+  position: relative;
+}
+
+.boatTypesTitleWrap h2 {
+  margin: 52px 0 0;
+  font-size: 46px;
+  line-height: 1.08;
+  color: #111827;
+}
+
+.boatTypesGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(2, 116px);
+  gap: 10px;
+}
+
+.boatTypeCard {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  min-height: 116px;
+  background: #dbeafe;
+}
+
+.boatTypeCardWide {
+  grid-column: span 2;
+}
+
+.boatTypeCard1 {
+  grid-column: 2 / 3;
+  grid-row: 1;
+}
+
+.boatTypeCard2 {
+  grid-column: 3 / 5;
+  grid-row: 1;
+}
+
+.boatTypeCard3 {
+  grid-column: 1 / 2;
+  grid-row: 2;
+}
+
+.boatTypeCard4 {
+  grid-column: 2 / 3;
+  grid-row: 2;
+}
+
+.boatTypeCard5 {
+  grid-column: 3 / 4;
+  grid-row: 2;
+}
+
+.boatTypeThumb {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(10, 23, 40, 0.04) 45%, rgba(10, 23, 40, 0.55) 100%),
+    url('./assets/hero.png') center / cover no-repeat;
+}
+
+.boatTypeCard1 .boatTypeThumb { background-position: left 18% center; }
+.boatTypeCard2 .boatTypeThumb { background-position: center; }
+.boatTypeCard3 .boatTypeThumb { background-position: left 32% bottom; }
+.boatTypeCard4 .boatTypeThumb { background-position: center 62%; }
+.boatTypeCard5 .boatTypeThumb { background-position: right 26% center; }
+
+.boatTypeCard h3 {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  margin: 0;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  z-index: 1;
+}
+
+.boatTypesNav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  align-self: center;
+  padding-right: 2px;
+}
+
+.boatTypesDecor {
+  position: absolute;
+  left: -34px;
+  top: 86px;
+  width: 28px;
+  height: 140px;
+  background:
+    radial-gradient(ellipse 8px 3px at 50% 6px, rgba(237, 204, 128, 0.85), rgba(237, 204, 128, 0) 70%) 0 0 / 100% 16px repeat-y;
+  opacity: 0.9;
 }
 
 .footer {
@@ -376,6 +678,16 @@ main {
     padding-top: 32px;
   }
 
+  .heroClassic {
+    min-height: 360px;
+    padding: 0;
+  }
+
+  .heroClassicOverlay {
+    min-height: 360px;
+    padding-top: 34px;
+  }
+
   .hero-search {
     grid-template-columns: 1fr;
   }
@@ -384,14 +696,138 @@ main {
     padding-inline: 16px;
   }
 
+  .destinations-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .promiseBadge {
+    font-size: 24px;
+    height: 108px;
+    width: 280px;
+  }
+
+  .promisePanel {
+    margin-left: 28px;
+    margin-top: -24px;
+  }
+
+  .trust-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .footer {
     padding-inline: 16px;
     flex-direction: column;
   }
+
+  .boatTypesContainer {
+    grid-template-columns: 1fr;
+  }
+
+  .boatTypesTitleWrap h2 {
+    margin-top: 0;
+    font-size: 34px;
+  }
+
+  .boatTypesGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
+  }
+
+  .boatTypesNav {
+    justify-content: flex-end;
+    padding-right: 0;
+  }
+
+  .boatTypeCard1,
+  .boatTypeCard2,
+  .boatTypeCard3,
+  .boatTypeCard4,
+  .boatTypeCard5 {
+    grid-column: auto;
+    grid-row: auto;
+    min-height: 120px;
+  }
+
+  .boatTypesDecor {
+    display: none;
+  }
 }
 
 @media (max-width: 760px) {
-  .nav {
+  .navTop {
     display: none;
+  }
+
+  .logoWord {
+    font-size: 24px;
+  }
+
+  .heroClassicInner h1 {
+    font-size: 40px;
+  }
+
+  .heroSearchBar {
+    flex-direction: column;
+    border-radius: 16px;
+    padding: 10px;
+    margin-top: 36px;
+  }
+
+  .heroSearchInputWrap,
+  .heroSearchInput,
+  .heroSearchButton {
+    width: 100%;
+  }
+
+  .heroSearchInput {
+    border-radius: 12px;
+  }
+
+  .heroSearchButton {
+    border-radius: 12px;
+  }
+
+  .destinations-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .destinationsNav {
+    display: none;
+  }
+
+  .boatTypesGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .boatTypeCard h3 {
+    font-size: 16px;
+  }
+
+  .boatTypesNav {
+    display: none;
+  }
+
+  .promiseBadge {
+    width: 100%;
+    height: auto;
+    min-height: 88px;
+    font-size: 22px;
+  }
+
+  .promisePanel {
+    margin-left: 0;
+    margin-top: 10px;
+    padding: 14px;
+  }
+
+  .trust-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .trust-card {
+    padding: 8px 4px;
   }
 }

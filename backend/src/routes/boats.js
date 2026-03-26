@@ -33,6 +33,27 @@ async function ensureTypeNames(boats) {
     return boats;
 }
 
+async function attachLiveBookingsCount(boats) {
+    if (!Array.isArray(boats) || boats.length === 0) return boats;
+    const ids = [...new Set(boats.map((b) => parseInt(b?.id, 10)).filter((v) => Number.isFinite(v)))];
+    if (ids.length === 0) return boats;
+
+    const { rows } = await pool.query(
+        `SELECT boat_id, COUNT(*)::int AS cnt
+         FROM bookings
+         WHERE boat_id = ANY($1)
+           AND status IN ('pending', 'confirmed', 'completed')
+         GROUP BY boat_id`,
+        [ids]
+    );
+    const byBoatId = new Map(rows.map((r) => [Number(r.boat_id), Number(r.cnt) || 0]));
+    for (const boat of boats) {
+        const id = Number(boat?.id);
+        boat.bookings_count = byBoatId.get(id) ?? 0;
+    }
+    return boats;
+}
+
 router.get('/', async (req, res, next) => {
     try {
         const { lat, lng, radius, popular, limit, region, city } = req.query;
@@ -72,6 +93,7 @@ router.get('/', async (req, res, next) => {
 
         const { rows } = await pool.query(query, params);
         await ensureTypeNames(rows);
+        await attachLiveBookingsCount(rows);
         res.json(rows);
     } catch (err) {
         next(err);
@@ -153,6 +175,7 @@ router.get('/:id', async (req, res, next) => {
             }
         }
         await ensureTypeNames([boat]);
+        await attachLiveBookingsCount([boat]);
         res.json({
             manufacturer: '', model: '', year: '', location_country: '', location_region: '',
             location_address: '', location_yacht_club: '', rules: '', payment_policy: '', cancellation_policy: '',
