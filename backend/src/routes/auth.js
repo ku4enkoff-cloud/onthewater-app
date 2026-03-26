@@ -209,7 +209,7 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res, next)
 
     try {
         const result = await pool.query(
-            'SELECT id, email, password_hash, name, role, first_name, last_name, phone, email_verified, avatar FROM users WHERE email = $1 OR phone = $1',
+            'SELECT id, email, password_hash, name, role, first_name, last_name, phone, email_verified, email_verify_token, email_verify_expires_at, avatar FROM users WHERE email = $1 OR phone = $1',
             [loginValue]
         );
 
@@ -224,8 +224,24 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res, next)
             return res.status(401).json({ error: 'Неверный логин или пароль' });
         }
         if ((user.role === 'owner' || user.role === 'client') && user.email_verified === false) {
+            let verificationToken = user.email_verify_token;
+            const expiresAt = user.email_verify_expires_at ? new Date(user.email_verify_expires_at) : null;
+            const tokenExpired = !expiresAt || Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= Date.now();
+            if (!verificationToken || tokenExpired) {
+                verificationToken = crypto.randomBytes(32).toString('hex');
+                await pool.query(
+                    'UPDATE users SET email_verify_token = $1, email_verify_expires_at = $2 WHERE id = $3',
+                    [verificationToken, new Date(Date.now() + 24 * 60 * 60 * 1000), user.id]
+                );
+            }
+            const sent = await sendVerificationEmail(user.email, user.name || '', verificationToken);
+            if (!sent) {
+                return res.status(500).json({
+                    error: 'Не удалось отправить письмо для подтверждения email. Попробуйте позже.',
+                });
+            }
             return res.status(403).json({
-                error: 'Подтвердите email. Мы отправили письмо со ссылкой для активации аккаунта.',
+                error: 'Подтвердите email. Мы повторно отправили письмо со ссылкой для активации аккаунта.',
             });
         }
 
