@@ -30,7 +30,7 @@ router.post('/register', authLimiter, validate(registerSchema), async (req, res,
             const salt = await bcrypt.genSalt(10);
             const hash = await bcrypt.hash(password, salt);
             const safeRole = role || 'client';
-            const requiresEmailVerification = safeRole === 'owner';
+            const requiresEmailVerification = safeRole === 'owner' || safeRole === 'client';
             const verificationToken = requiresEmailVerification ? crypto.randomBytes(32).toString('hex') : null;
 
             const result = await client.query(
@@ -223,7 +223,7 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res, next)
         if (!isMatch) {
             return res.status(401).json({ error: 'Неверный логин или пароль' });
         }
-        if (user.role === 'owner' && user.email_verified === false) {
+        if ((user.role === 'owner' || user.role === 'client') && user.email_verified === false) {
             return res.status(403).json({
                 error: 'Подтвердите email. Мы отправили письмо со ссылкой для активации аккаунта.',
             });

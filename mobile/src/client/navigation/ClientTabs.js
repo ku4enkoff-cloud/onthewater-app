@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Anchor, Heart, Compass, MessageSquare, User } from 'lucide-react-native';
+import { Anchor, Heart, Calendar, MessageSquare, User } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import SearchScreen from '../screens/SearchScreen';
 import FavoritesScreen from '../screens/FavoritesScreen';
@@ -40,7 +40,7 @@ export default function ClientTabs() {
                     let Icon;
                     if (route.name === 'Search') Icon = Anchor;
                     else if (route.name === 'Favorites') Icon = Heart;
-                    else if (route.name === 'Bookings') Icon = Compass;
+                    else if (route.name === 'Bookings') Icon = Calendar;
                     else if (route.name === 'Chat') Icon = MessageSquare;
                     else if (route.name === 'Profile') Icon = User;
 
