@@ -27,8 +27,7 @@ const resolvePhotoUri = (src) => getPhotoUrl(src);
 const { width } = Dimensions.get('window');
 
 const NAVY = '#1B365D';
-const HERO_IMAGE_REMOTE = { uri: 'https://onthewater.ru/app/images/hero.webp' };
-const HERO_IMAGE_LOCAL = require('../../../assets/341.webp');
+const HERO_IMAGE = require('../../../assets/hero.webp');
 
 const FALLBACK_DESTINATIONS = [
     { id: 'moscow', name: 'Москва', image: 'https://images.unsplash.com/photo-1513326738677-9646ab0f3b3b?w=400' },
@@ -74,7 +73,6 @@ export default function SearchScreen({ navigation }) {
     const [refreshing, setRefreshing] = useState(false);
     const refreshKey = 0; // оставлено для совместимости (не меняем — без моргания картинок)
     const [locationModalVisible, setLocationModalVisible] = useState(false);
-    const [heroImageFailed, setHeroImageFailed] = useState(false);
 
     const fetchBoatCategories = useCallback(async () => {
         try {
@@ -227,10 +225,9 @@ export default function SearchScreen({ navigation }) {
             {/* Hero: full-width image with text overlay (Boatsetter style) */}
             <View style={[styles.heroWrap, { paddingTop: insets.top }]}>
                 <Image
-                    source={heroImageFailed ? HERO_IMAGE_LOCAL : HERO_IMAGE_REMOTE}
+                    source={HERO_IMAGE}
                     style={styles.heroImage}
                     resizeMode="cover"
-                    onError={() => setHeroImageFailed(true)}
                 />
                 <LinearGradient
                     colors={['rgba(251,248,243,0.85)', 'rgba(251,248,243,0.5)', 'transparent']}
