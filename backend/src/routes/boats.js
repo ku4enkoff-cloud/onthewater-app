@@ -217,13 +217,14 @@ router.get('/:id', async (req, res, next) => {
         // Всегда подставляем актуальное имя владельца из users (name/first_name+last_name/email)
         if (boat.owner_id) {
             const { rows: userRows } = await pool.query(
-                'SELECT name, first_name, last_name, email FROM users WHERE id = $1',
+                'SELECT name, first_name, last_name, email, avatar FROM users WHERE id = $1',
                 [boat.owner_id]
             );
             if (userRows.length > 0) {
                 const u = userRows[0];
                 const full = [u.name, [u.first_name, u.last_name].filter(Boolean).join(' ').trim()].find(Boolean);
                 boat.owner_name = full && full.trim() ? full.trim() : (u.email || 'Владелец');
+                boat.owner_avatar = u.avatar || null;
             }
         }
         boat.response_rate = await getOwnerResponseRate(boat.owner_id);

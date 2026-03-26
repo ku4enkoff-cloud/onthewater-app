@@ -592,6 +592,18 @@ export default function BoatDetailScreen({ route, navigation }) {
         boat?.response_rate != null && Number.isFinite(Number(boat.response_rate))
             ? `${Math.round(Number(boat.response_rate))}%`
             : '—';
+    const responseRateValue =
+        boat?.response_rate != null && Number.isFinite(Number(boat.response_rate))
+            ? Math.round(Number(boat.response_rate))
+            : null;
+    const responseBadgeColors =
+        responseRateValue == null
+            ? { bg: '#E5E7EB', fg: '#4B5563' }
+            : responseRateValue < 50
+                ? { bg: '#FEE2E2', fg: '#B91C1C' }
+                : responseRateValue < 80
+                    ? { bg: '#FFEDD5', fg: '#C2410C' }
+                    : { bg: '#DCFCE7', fg: '#166534' };
 
     return (
         <View style={styles.container}>
@@ -782,8 +794,8 @@ export default function BoatDetailScreen({ route, navigation }) {
                     {/* ============ INFO GRID 2x2 ============ */}
                     <View style={styles.infoGrid}>
                         <View style={styles.infoCell}>
-                            <View style={[styles.infoBadge, { backgroundColor: '#E5E7EB' }]}>
-                                <Text style={[styles.infoBadgeText, { color: '#4B5563' }]}>{responseSpeedLabel}</Text>
+                            <View style={[styles.infoBadge, { backgroundColor: responseBadgeColors.bg }]}>
+                                <Text style={[styles.infoBadgeText, { color: responseBadgeColors.fg }]}>{responseSpeedLabel}</Text>
                             </View>
                             <Text style={styles.infoCellLabel}>Скорость{'\n'}ответа</Text>
                         </View>
@@ -814,7 +826,7 @@ export default function BoatDetailScreen({ route, navigation }) {
 
                     {/* ============ THE BOAT (DESCRIPTION) ============ */}
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>О катере</Text>
+                        <Text style={styles.sectionTitle}>Описание</Text>
                         <Text style={styles.bodyText}>
                             {descExpanded ? description : descShort}
                         </Text>
@@ -1104,12 +1116,21 @@ export default function BoatDetailScreen({ route, navigation }) {
                                                 <Text style={styles.topOwnerText}>Бывалый</Text>
                                             </View>
                                         )}
-                                        <Star size={14} color={theme.colors.star} fill={theme.colors.star} />
-                                        <Text style={styles.crewRating}>{rating} ({reviewsCount} оценок)</Text>
+                                        <TouchableOpacity style={styles.crewRatingPress} onPress={openReviewsModal} activeOpacity={0.7}>
+                                            <Star size={14} color={theme.colors.star} fill={theme.colors.star} />
+                                            <Text style={styles.crewRating}>{rating} ({reviewsCount} оценок)</Text>
+                                        </TouchableOpacity>
                                     </View>
                                 </View>
                                 <View style={styles.crewAvatar}>
-                                    <User size={28} color={theme.colors.gray400} />
+                                    {boat.owner_avatar ? (
+                                        <Image
+                                            source={{ uri: getPhotoUrl(boat.owner_avatar) || boat.owner_avatar }}
+                                            style={styles.crewAvatarImage}
+                                        />
+                                    ) : (
+                                        <User size={28} color={theme.colors.gray400} />
+                                    )}
                                 </View>
                             </View>
                             <TouchableOpacity
@@ -1916,11 +1937,13 @@ const styles = StyleSheet.create({
     },
     topOwnerIcon: { fontSize: 12 },
     topOwnerText: { fontSize: 11, fontFamily: theme.fonts.bold, color: '#92400E', letterSpacing: 0.5 },
+    crewRatingPress: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     crewRating: { fontSize: 13, fontFamily: theme.fonts.regular, color: theme.colors.textMuted },
     crewAvatar: {
         width: 52, height: 52, borderRadius: 26, backgroundColor: '#F3F4F6',
-        justifyContent: 'center', alignItems: 'center',
+        justifyContent: 'center', alignItems: 'center', overflow: 'hidden',
     },
+    crewAvatarImage: { width: '100%', height: '100%' },
     messageBtn: {
         borderWidth: 1.5, borderColor: NAVY, borderRadius: 12,
         paddingVertical: 14, alignItems: 'center',
