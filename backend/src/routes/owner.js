@@ -2,6 +2,7 @@ const express = require('express');
 const { pool } = require('../db');
 const { authenticate } = require('../middleware/auth');
 const { sendPush } = require('../utils/push');
+const { sendBookingStatusEmail } = require('../services/email');
 
 const router = express.Router();
 
@@ -10,6 +11,30 @@ async function sendBookingPushToClient(userId, title, body, bookingId) {
         const { rows } = await pool.query('SELECT push_token FROM users WHERE id = $1', [userId]);
         const token = rows[0]?.push_token;
         if (token) await sendPush(token, title, body, { bookingId, type: 'booking' });
+    } catch (_) {}
+}
+
+async function sendBookingEmailToClient(userId, booking, reason) {
+    try {
+        const { rows } = await pool.query('SELECT email, name, first_name, last_name FROM users WHERE id = $1', [userId]);
+        const u = rows[0];
+        if (!u?.email) return;
+        let enrichedBooking = { ...(booking || {}) };
+        const boatId = enrichedBooking.boat_id ? parseInt(enrichedBooking.boat_id, 10) : null;
+        if (boatId) {
+            const { rows: boatRows } = await pool.query(
+                `SELECT location_country, location_region, location_city, location_address, location_yacht_club
+                 FROM boats
+                 WHERE id = $1`,
+                [boatId]
+            );
+            if (boatRows[0]) enrichedBooking = { ...enrichedBooking, ...boatRows[0] };
+        }
+        const displayName =
+            (u.name && String(u.name).trim()) ||
+            [u.first_name, u.last_name].filter(Boolean).join(' ').trim() ||
+            '';
+        await sendBookingStatusEmail(u.email, displayName, enrichedBooking, reason);
     } catch (_) {}
 }
 
@@ -199,6 +224,11 @@ router.post('/bookings', authenticate, async (req, res, next) => {
                 'Бронирование подтверждено',
                 `Ваше бронирование «${booking.boat_title || 'Катер'}» подтверждено.`,
                 booking.id
+            );
+            sendBookingEmailToClient(
+                booking.user_id,
+                booking,
+                `Владелец подтвердил бронирование «${booking.boat_title || 'Катер'}».`
             );
         }
 
@@ -805,6 +835,11 @@ router.post('/bookings/:id/confirm', authenticate, async (req, res, next) => {
             `Ваше бронирование «${booking.boat_title || 'Катер'}» подтверждено.`,
             booking.id
         );
+        sendBookingEmailToClient(
+            booking.user_id,
+            booking,
+            `Владелец подтвердил бронирование «${booking.boat_title || 'Катер'}».`
+        );
         res.json(booking);
     } catch (err) {
         next(err);
@@ -820,6 +855,11 @@ router.post('/bookings/:id/decline', authenticate, async (req, res, next) => {
         const { rows } = await pool.query('DELETE FROM bookings WHERE id = $1 AND owner_id = $2 RETURNING id', [id, req.user.id]);
         if (rows.length === 0) return res.status(404).json({ error: 'Not found' });
         sendBookingPushToClient(b.user_id, 'Бронирование отменено', `«${b.boat_title || 'Катер'}» отменено владельцем.`, b.id);
+        sendBookingEmailToClient(
+            b.user_id,
+            { ...b, status: 'cancelled' },
+            `Владелец отменил бронирование «${b.boat_title || 'Катер'}».`
+        );
         res.json({ ok: true });
     } catch (err) {
         next(err);

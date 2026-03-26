@@ -119,9 +119,107 @@ async function sendPasswordResetEmail(to, userName, token) {
     }
 }
 
+function formatBookingDateTime(dt) {
+    if (!dt) return 'Не указано';
+    const date = new Date(dt);
+    if (Number.isNaN(date.getTime())) return String(dt);
+    return date.toLocaleString('ru-RU', {
+        timeZone: 'Europe/Moscow',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+function statusLabel(status) {
+    const map = {
+        pending: 'Ожидает подтверждения',
+        confirmed: 'Подтверждено',
+        cancelled: 'Отменено',
+        completed: 'Завершено',
+    };
+    return map[String(status || '').toLowerCase()] || String(status || 'Обновлено');
+}
+
+/**
+ * Уведомление клиенту об изменении статуса бронирования.
+ * @param {string} to
+ * @param {string} userName
+ * @param {{id?: number|string, boat_title?: string, status?: string, start_at?: string|Date, hours?: number|string, total_price?: number|string}} booking
+ * @param {string} reason
+ */
+async function sendBookingStatusEmail(to, userName, booking, reason) {
+    if (!to) return false;
+    const b = booking || {};
+    const subject = `Статус бронирования обновлен — ONTHEWATER`;
+    const boatTitle = b.boat_title || 'Катер';
+    const bookingId = b.id || '—';
+    const dateLabel = formatBookingDateTime(b.start_at);
+    const hoursRaw = Number(b.hours);
+    const durationMinutes = Number.isFinite(hoursRaw) ? (hoursRaw >= 1 && hoursRaw <= 24 && Number.isInteger(hoursRaw) ? hoursRaw * 60 : hoursRaw) : null;
+    const durationText = durationMinutes == null ? '—' : `${durationMinutes} мин`;
+    const priceText = b.total_price != null && b.total_price !== '' ? `${Number(b.total_price).toLocaleString('ru-RU')} ₽` : '—';
+    const statusText = statusLabel(b.status);
+    const addressText = [
+        b.location_country,
+        b.location_region,
+        b.location_city,
+        b.location_address,
+        b.location_yacht_club,
+    ].filter(Boolean).join(', ') || '—';
+    const extraReason = reason ? `<p style="margin-top: 0; color: #374151;">${reason}</p>` : '';
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Статус бронирования</title></head>
+<body style="font-family: sans-serif; max-width: 560px; margin: 0 auto; padding: 20px;">
+  <h2 style="color: #1B365D;">Обновление статуса бронирования</h2>
+  <p>Здравствуйте${userName ? ', ' + userName : ''}!</p>
+  <p>Статус вашего бронирования изменился: <strong>${statusText}</strong>.</p>
+  ${extraReason}
+  <table style="width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px;">
+    <tr><td style="padding: 8px 0; color: #6B7280;">Номер брони</td><td style="padding: 8px 0; text-align: right;">${bookingId}</td></tr>
+    <tr><td style="padding: 8px 0; color: #6B7280;">Судно</td><td style="padding: 8px 0; text-align: right;">${boatTitle}</td></tr>
+    <tr><td style="padding: 8px 0; color: #6B7280;">Дата и время</td><td style="padding: 8px 0; text-align: right;">${dateLabel} (МСК)</td></tr>
+    <tr><td style="padding: 8px 0; color: #6B7280;">Адрес стоянки</td><td style="padding: 8px 0; text-align: right;">${addressText}</td></tr>
+    <tr><td style="padding: 8px 0; color: #6B7280;">Длительность</td><td style="padding: 8px 0; text-align: right;">${durationText}</td></tr>
+    <tr><td style="padding: 8px 0; color: #6B7280;">Стоимость</td><td style="padding: 8px 0; text-align: right;">${priceText}</td></tr>
+  </table>
+  <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+  <p style="color: #888; font-size: 12px;">ONTHEWATER</p>
+</body>
+</html>`;
+
+    const text = `Статус вашего бронирования изменился: ${statusText}.
+${reason ? `${reason}\n` : ''}Номер брони: ${bookingId}
+Судно: ${boatTitle}
+Дата и время (МСК): ${dateLabel}
+Адрес стоянки: ${addressText}
+Длительность: ${durationText}
+Стоимость: ${priceText}`;
+
+    try {
+        await transporter.sendMail({
+            from: FROM,
+            to,
+            subject,
+            text,
+            html,
+        });
+        console.log('[email] Письмо о статусе бронирования отправлено на', to);
+        return true;
+    } catch (err) {
+        console.error('[email] Ошибка отправки письма о статусе бронирования:', err.message);
+        return false;
+    }
+}
+
 /** Проверить подключение к SMTP (для отладки). Возвращает true или бросает ошибку. */
 async function verifyConnection() {
     await transporter.verify();
 }
 
-module.exports = { sendVerificationEmail, sendPasswordResetEmail, verifyConnection };
+module.exports = { sendVerificationEmail, sendPasswordResetEmail, sendBookingStatusEmail, verifyConnection };

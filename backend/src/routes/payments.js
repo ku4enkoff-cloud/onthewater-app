@@ -1,6 +1,7 @@
 const express = require('express');
 const { pool } = require('../db');
 const { sendPush } = require('../utils/push');
+const { sendBookingStatusEmail } = require('../services/email');
 
 const router = express.Router();
 
@@ -14,6 +15,28 @@ async function sendBookingStatusPushToClient(bookingId, title, body) {
         if (token) {
             await sendPush(token, title, body, { bookingId, type: 'booking' });
         }
+    } catch (_) {}
+}
+
+async function sendBookingStatusEmailToClient(bookingId, reason) {
+    try {
+        const { rows } = await pool.query(
+            `SELECT b.id, b.user_id, b.boat_title, b.status, b.start_at, b.hours, b.total_price,
+                    u.email, u.name, u.first_name, u.last_name,
+                    boat.location_country, boat.location_region, boat.location_city, boat.location_address, boat.location_yacht_club
+             FROM bookings b
+             LEFT JOIN users u ON u.id = b.user_id
+             LEFT JOIN boats boat ON boat.id = b.boat_id
+             WHERE b.id = $1`,
+            [bookingId]
+        );
+        const row = rows[0];
+        if (!row?.email) return;
+        const displayName =
+            (row.name && String(row.name).trim()) ||
+            [row.first_name, row.last_name].filter(Boolean).join(' ').trim() ||
+            '';
+        await sendBookingStatusEmail(row.email, displayName, row, reason);
     } catch (_) {}
 }
 
@@ -40,11 +63,19 @@ router.post('/webhook', express.json(), async (req, res, next) => {
                 'Бронирование подтверждено',
                 'Ваше бронирование успешно оплачено и подтверждено.'
             );
+            await sendBookingStatusEmailToClient(
+                bookingId,
+                'Оплата успешно прошла, бронирование подтверждено.'
+            );
         } else if (event === 'payment.canceled') {
             await pool.query("UPDATE bookings SET status = 'cancelled' WHERE id = $1", [bookingId]);
             await sendBookingStatusPushToClient(
                 bookingId,
                 'Бронирование отменено',
+                'Оплата не прошла, бронирование отменено.'
+            );
+            await sendBookingStatusEmailToClient(
+                bookingId,
                 'Оплата не прошла, бронирование отменено.'
             );
         }
