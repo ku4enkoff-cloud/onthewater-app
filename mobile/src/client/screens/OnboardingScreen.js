@@ -1,49 +1,49 @@
 import React, { useState, useRef } from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity, Dimensions,
-    Image, FlatList, Platform,
+    View, Text, StyleSheet, TouchableOpacity, ImageBackground, FlatList, Platform, useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Anchor, Waves, Ship, ChevronRight } from 'lucide-react-native';
+import { ChevronRight } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { theme } from '../../shared/theme';
 
-const { width } = Dimensions.get('window');
 const CARD_RADIUS = 28;
 const FOOTER_PADDING_H = 20;
+const ONBOARDING_BG = require('../../../assets/341.webp');
 
 const SLIDES = [
     {
         id: '1',
-        Icon: Anchor,
         title: 'Откройте для себя\nлучшие катера',
-        description: 'Тысячи лодок и яхт в аренду в 600+ локациях по всему миру.',
+        description: 'Тысячи лодок и яхт в аренду в 600+ локациях по всей России.',
         accent: ['#0ea5e9', '#06b6d4'],
-        image: 'https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?w=800&q=80',
+        image: ONBOARDING_BG,
     },
     {
         id: '2',
-        Icon: Waves,
         title: 'Бронируйте\nза минуты',
-        description: 'Подтверждение моментально, безопасная оплата.',
+        description: 'Быстрое подтверждение бронирования, оповещения по имейл и пуш уведомления.',
         accent: ['#34d399', '#10b981'],
-        image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&q=80',
+        image: ONBOARDING_BG,
     },
     {
         id: '3',
-        Icon: Ship,
         title: 'Незабываемые\nвпечатления',
         description: 'Создавайте воспоминания с семьёй и друзьями на воде.',
         accent: ['#a78bfa', '#f472b6'],
-        image: 'https://images.unsplash.com/photo-1502680390469-be75c86b636f?w=800&q=80',
+        image: ONBOARDING_BG,
     },
 ];
 
 export default function OnboardingScreen({ onFinish }) {
     const insets = useSafeAreaInsets();
+    const { width, height } = useWindowDimensions();
     const [current, setCurrent] = useState(0);
     const flatRef = useRef(null);
+    const screenRatio = height / width;
+    const bgScale = screenRatio >= 2.1 ? 1.12 : screenRatio >= 1.9 ? 1.07 : 1.02;
+    const bgShiftY = screenRatio >= 2.1 ? -height * 0.04 : screenRatio >= 1.9 ? -height * 0.02 : 0;
 
     const next = () => {
         if (current < SLIDES.length - 1) {
@@ -60,7 +60,6 @@ export default function OnboardingScreen({ onFinish }) {
     const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
 
     const slide = SLIDES[current];
-    const Icon = slide?.Icon;
 
     return (
         <View style={[styles.container, { paddingBottom: insets.bottom }]}>
@@ -77,7 +76,14 @@ export default function OnboardingScreen({ onFinish }) {
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
                     <View style={[styles.slide, { width }]}>
-                        <Image source={{ uri: item.image }} style={styles.slideImage} />
+                        <ImageBackground
+                            source={item.image}
+                            style={styles.slideImage}
+                            imageStyle={[
+                                styles.slideImageInner,
+                                { transform: [{ translateY: bgShiftY }, { scale: bgScale }] },
+                            ]}
+                        />
                         <LinearGradient
                             colors={['transparent', 'rgba(0,0,0,0.4)', 'rgba(0,0,0,0.85)']}
                             locations={[0.2, 0.5, 1]}
@@ -96,14 +102,6 @@ export default function OnboardingScreen({ onFinish }) {
             </TouchableOpacity>
 
             <View style={[styles.logoWrap, { top: insets.top + 8 }]}>
-                <LinearGradient
-                    colors={['#0ea5e9', '#1B365D']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.logoBox}
-                >
-                    <Anchor size={22} color="#fff" strokeWidth={2} />
-                </LinearGradient>
                 <Text style={styles.logoText}>ONTHEWATER</Text>
             </View>
 
@@ -126,16 +124,6 @@ export default function OnboardingScreen({ onFinish }) {
                                 />
                             ))}
                         </View>
-                        {Icon && (
-                            <LinearGradient
-                                colors={slide.accent || ['#0ea5e9', '#1B365D']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 1 }}
-                                style={styles.iconWrap}
-                            >
-                                <Icon size={28} color="#fff" strokeWidth={1.8} />
-                            </LinearGradient>
-                        )}
                         {slide && (
                             <>
                                 <Text style={styles.title}>{slide.title}</Text>
@@ -176,7 +164,8 @@ const styles = StyleSheet.create({
     },
     slideImage: {
         ...StyleSheet.absoluteFillObject,
-        width,
+    },
+    slideImageInner: {
         resizeMode: 'cover',
     },
     skip: {
