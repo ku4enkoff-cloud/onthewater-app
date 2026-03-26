@@ -17,13 +17,8 @@ import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 import { AuthContext } from '../../shared/context/AuthContext';
 import { ChevronLeft, Send, Lock, User } from 'lucide-react-native';
-
-let LinearGradient;
-try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
-
-const GRADIENT = ['#0A3D3D', '#0D5C5C', '#1A7A6E', '#3A9E7A'];
-const TEAL = '#0D5C5C';
-const TEAL_BUBBLE = '#0D9488';
+const BLUE = '#1E5DB8';
+const BLUE_BUBBLE = '#2B74D8';
 const LIGHT_GRAY_BUBBLE = '#E5E7EB';
 
 export default function ChatDetailScreen({ route, navigation }) {
@@ -176,14 +171,9 @@ export default function ChatDetailScreen({ route, navigation }) {
     return (
         <View style={styles.container}>
             <View style={[styles.headerWrap, { paddingTop: insets.top + 12 }]}>
-                {LinearGradient ? (
-                    <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFillObject} />
-                ) : (
-                    <View style={[StyleSheet.absoluteFillObject, { backgroundColor: TEAL }]} />
-                )}
                 <View style={styles.headerContent}>
                     <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-                        <ChevronLeft size={24} color="#fff" />
+                        <ChevronLeft size={24} color={theme.colors.gray900} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle} numberOfLines={1}>
                         {headerTitle}
@@ -281,8 +271,14 @@ const styles = StyleSheet.create({
     headerWrap: {
         overflow: 'hidden',
         paddingBottom: 12,
+        backgroundColor: '#FFFFFF',
         borderBottomLeftRadius: 24,
         borderBottomRightRadius: 24,
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 10,
+        elevation: 6,
     },
     headerContent: {
         flexDirection: 'row',
@@ -302,7 +298,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontSize: 18,
         fontFamily: theme.fonts.semiBold,
-        color: '#fff',
+        color: theme.colors.gray900,
     },
     headerSpacer: { width: 40 },
     tripHeader: {
@@ -350,7 +346,7 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: TEAL_BUBBLE,
+        backgroundColor: BLUE_BUBBLE,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: theme.spacing.md,
@@ -394,7 +390,7 @@ const styles = StyleSheet.create({
         backgroundColor: LIGHT_GRAY_BUBBLE,
     },
     messageBubbleThem: {
-        backgroundColor: TEAL_BUBBLE,
+        backgroundColor: BLUE_BUBBLE,
     },
     messageBubbleMeTail: {
         borderBottomRightRadius: 5,
@@ -502,7 +498,7 @@ const styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: TEAL,
+        backgroundColor: BLUE,
         justifyContent: 'center',
         alignItems: 'center',
     },

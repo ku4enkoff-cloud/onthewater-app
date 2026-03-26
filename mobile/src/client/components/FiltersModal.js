@@ -18,6 +18,7 @@ const SCREEN_W = Dimensions.get('window').width;
 const SLIDER_H_PAD = 24;
 const TRACK_W = SCREEN_W - SLIDER_H_PAD * 2 - 48;
 const THUMB_R = 12;
+const WATER_SPORTS_OPTIONS = ['Вейкборд', 'Вейксерф', 'Водные лыжи'];
 
 function formatDurationLabel(mins) {
     if (mins < 60) return `${mins} мин`;
@@ -144,6 +145,8 @@ export default function FiltersModal({
     const [priceHigh, setPriceHigh] = useState(filters?.priceHigh ?? max);
     const [passengers, setPassengers] = useState(filters?.passengers ?? 1);
     const [duration, setDuration] = useState(filters?.duration ?? null);
+    const [captain, setCaptain] = useState(filters?.captain ?? null);
+    const [waterSports, setWaterSports] = useState(Array.isArray(filters?.waterSports) ? filters.waterSports : []);
 
     const handlePriceChange = useCallback((low, high) => {
         setPriceLow(low);
@@ -157,6 +160,10 @@ export default function FiltersModal({
         if (!visible) return;
         setPriceLow(filtersPriceLow ?? min);
         setPriceHigh(filtersPriceHigh ?? max);
+        setPassengers(filters?.passengers ?? 1);
+        setDuration(filters?.duration ?? null);
+        setCaptain(filters?.captain ?? null);
+        setWaterSports(Array.isArray(filters?.waterSports) ? filters.waterSports : []);
     }, [visible, filtersPriceLow, filtersPriceHigh, min, max]);
 
     const countActive = () => {
@@ -164,6 +171,8 @@ export default function FiltersModal({
         if (priceLow > min || priceHigh < max) n++;
         if (passengers !== 1) n++;
         if (duration) n++;
+        if (captain) n++;
+        if (waterSports.length > 0) n++;
         return n;
     };
 
@@ -172,6 +181,8 @@ export default function FiltersModal({
         setPriceHigh(max);
         setPassengers(1);
         setDuration(null);
+        setCaptain(null);
+        setWaterSports([]);
     };
 
     const handleApply = () => {
@@ -180,6 +191,8 @@ export default function FiltersModal({
             priceHigh,
             passengers,
             duration,
+            captain,
+            waterSports,
         });
         onClose();
     };
@@ -266,7 +279,11 @@ export default function FiltersModal({
                         {/* Duration — варианты из катеров категории */}
                         <View style={styles.section}>
                             <Text style={styles.sectionTitle}>Длительность</Text>
-                            <View style={styles.chipGrid}>
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.durationChipRow}
+                            >
                                 {durationOptions.map((mins) => (
                                     <TouchableOpacity
                                         key={mins}
@@ -288,12 +305,80 @@ export default function FiltersModal({
                                         </Text>
                                     </TouchableOpacity>
                                 ))}
-                            </View>
+                            </ScrollView>
                         </View>
 
                         <View style={styles.divider} />
 
                         {/* Captain options */}
+                        <View style={styles.section}>
+                            <Text style={styles.sectionTitle}>Капитан</Text>
+                            <View style={styles.chipGrid}>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.optionChip,
+                                        captain === 'С капитаном' && styles.optionChipActive,
+                                    ]}
+                                    onPress={() => setCaptain(captain === 'С капитаном' ? null : 'С капитаном')}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.optionChipText,
+                                            captain === 'С капитаном' && styles.optionChipTextActive,
+                                        ]}
+                                    >
+                                        С капитаном
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.optionChip,
+                                        captain === 'Без капитана' && styles.optionChipActive,
+                                    ]}
+                                    onPress={() => setCaptain(captain === 'Без капитана' ? null : 'Без капитана')}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.optionChipText,
+                                            captain === 'Без капитана' && styles.optionChipTextActive,
+                                        ]}
+                                    >
+                                        Без капитана
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        <View style={styles.divider} />
+
+                        <View style={styles.section}>
+                            <Text style={styles.sectionTitle}>Водные виды спорта</Text>
+                            <View style={styles.chipGrid}>
+                                {WATER_SPORTS_OPTIONS.map((sport) => {
+                                    const selected = waterSports.includes(sport);
+                                    return (
+                                        <TouchableOpacity
+                                            key={sport}
+                                            style={[styles.optionChip, selected && styles.optionChipActive]}
+                                            onPress={() =>
+                                                setWaterSports((prev) =>
+                                                    prev.includes(sport)
+                                                        ? prev.filter((s) => s !== sport)
+                                                        : [...prev, sport]
+                                                )
+                                            }
+                                        >
+                                            <Text style={[styles.optionChipText, selected && styles.optionChipTextActive]}>
+                                                {sport}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                        </View>
+
+                        <View style={styles.divider} />
+
                         {/* Activities */}
                     </ScrollView>
 
@@ -435,6 +520,12 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
         gap: 10,
         marginTop: 4,
+    },
+    durationChipRow: {
+        flexDirection: 'row',
+        gap: 10,
+        marginTop: 4,
+        paddingRight: 8,
     },
     optionChip: {
         paddingVertical: 12,

@@ -93,6 +93,7 @@ const DEFAULT_FILTERS = {
     passengers: 1,
     duration: null,
     captain: null,
+    waterSports: [],
     boatTypeId: null,
     boatTypeName: null,
 };
@@ -118,6 +119,55 @@ const formatCardLocation = (item) => {
     return `${city}, ${region}`.toUpperCase();
 };
 
+const normalizeBoatTiers = (boat) => {
+    const raw = boat?.price_tiers;
+    let tiers = raw;
+    if (typeof raw === 'string') {
+        try { tiers = JSON.parse(raw); } catch (_) { tiers = []; }
+    }
+    if (!Array.isArray(tiers)) tiers = [];
+    return tiers
+        .map((t) => ({
+            duration: Number(t?.duration) || 0,
+            price: Number(t?.price) || 0,
+        }))
+        .filter((t) => t.duration > 0 && t.price > 0);
+};
+
+const getExactPriceForDuration = (boat, durationMin) => {
+    const d = Number(durationMin) || 0;
+    if (d <= 0) return null;
+    const minDuration = Number(boat?.schedule_min_duration) || 60;
+    if (d === minDuration) {
+        const base = Number(boat?.price_per_hour) || 0;
+        return base > 0 ? base : null;
+    }
+    const tier = normalizeBoatTiers(boat).find((t) => t.duration === d);
+    return tier?.price || null;
+};
+
+const formatDurationChipLabel = (mins) => {
+    const m = Number(mins) || 60;
+    if (m === 60) return 'час';
+    if (m < 60) return `${m} мин`;
+    const h = Math.floor(m / 60);
+    const mm = m % 60;
+    if (mm === 0) return h === 1 ? 'час' : `${h} ч`;
+    return `${h} ч ${mm} мин`;
+};
+
+const getBoatAmenities = (boat) => {
+    const raw = boat?.amenities;
+    if (Array.isArray(raw)) return raw.map((v) => String(v || '').trim()).filter(Boolean);
+    if (typeof raw === 'string') {
+        try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) return parsed.map((v) => String(v || '').trim()).filter(Boolean);
+        } catch (_) {}
+    }
+    return [];
+};
+
 export default function SearchResultsScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
     const { cityName, dateISO, useMyLocation, boatTypeId, boatTypeName, allRegions } = route.params || {};
@@ -128,6 +178,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     const [priceModalVisible, setPriceModalVisible] = useState(false);
     const [passengersModalVisible, setPassengersModalVisible] = useState(false);
     const [durationModalVisible, setDurationModalVisible] = useState(false);
+    const [captainModalVisible, setCaptainModalVisible] = useState(false);
     const [boatTypeModalVisible, setBoatTypeModalVisible] = useState(false);
     const [locationDateModalVisible, setLocationDateModalVisible] = useState(false);
     const [filters, setFilters] = useState(DEFAULT_FILTERS);
@@ -425,7 +476,9 @@ export default function SearchResultsScreen({ route, navigation }) {
         const { priceLow, priceHigh, passengers, captain } = filters;
         if (priceLow > priceRange.min || priceHigh < priceRange.max) {
             list = list.filter((b) => {
-                const p = Number(b.price_per_hour) || 0;
+                const p = filters.duration
+                    ? (getExactPriceForDuration(b, filters.duration) ?? 0)
+                    : (Number(b.price_per_hour) || 0);
                 return p >= priceLow && p <= priceHigh;
             });
         }
@@ -433,7 +486,14 @@ export default function SearchResultsScreen({ route, navigation }) {
             list = list.filter((b) => (Number(b.capacity) || 0) >= passengers);
         }
         if (filters.duration) {
-            list = list.filter((b) => (Number(b.schedule_min_duration) || 60) <= filters.duration);
+            list = list.filter((b) => getExactPriceForDuration(b, filters.duration) != null);
+        }
+        if (Array.isArray(filters.waterSports) && filters.waterSports.length > 0) {
+            const selected = filters.waterSports.map((s) => String(s || '').trim().toLowerCase()).filter(Boolean);
+            list = list.filter((b) => {
+                const am = getBoatAmenities(b).map((s) => s.toLowerCase());
+                return selected.some((s) => am.includes(s));
+            });
         }
         if (captain === 'С капитаном') {
             list = list.filter((b) => b.captain_included);
@@ -460,6 +520,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     const isPassengersFilterActive = filters.passengers !== 1;
     const isDurationFilterActive = !!filters.duration;
     const isBoatTypeFilterActive = !!filters.boatTypeId || !!filters.boatTypeName;
+    const isCaptainFilterActive = !!filters.captain;
 
     const formatPriceShort = (v) => {
         const n = Number(v) || 0;
@@ -521,22 +582,14 @@ export default function SearchResultsScreen({ route, navigation }) {
                     )}
                     <View style={styles.priceBadge}>
                         {(() => {
-                            const weekday = Number(item.price_per_hour) || 0;
-                            const weekend = (item.price_weekend != null && String(item.price_weekend).trim() !== '')
-                                ? Number(item.price_weekend) : weekday;
-                            const minPrice = Math.min(weekday, weekend);
-                            const dur = (() => {
-                                const m = Number(item.schedule_min_duration) || 60;
-                                if (m === 60) return 'час';
-                                if (m < 60) return `${m} мин`;
-                                const h = Math.floor(m / 60);
-                                const min = m % 60;
-                                if (min === 0) return h === 1 ? 'час' : `${h} ч`;
-                                return `${h} ч ${min} мин`;
-                            })();
+                            const activeDuration = filters.duration || (Number(item.schedule_min_duration) || 60);
+                            const activePrice =
+                                getExactPriceForDuration(item, activeDuration) ??
+                                (Number(item.price_per_hour) || 0);
+                            const dur = formatDurationChipLabel(activeDuration);
                             return (
                                 <>
-                                    <Text style={styles.priceBadgeText}>от {minPrice.toLocaleString('ru-RU')} ₽</Text>
+                                    <Text style={styles.priceBadgeText}>от {activePrice.toLocaleString('ru-RU')} ₽</Text>
                                     <Text style={styles.priceUnit}>/{dur}</Text>
                                 </>
                             );
@@ -750,6 +803,16 @@ export default function SearchResultsScreen({ route, navigation }) {
                     ) : (
                         <FilterChip label="Длительность" onPress={() => setDurationModalVisible(true)} />
                     )}
+                    <TouchableOpacity
+                        style={isCaptainFilterActive ? styles.filterChipActive : styles.filterChip}
+                        activeOpacity={0.7}
+                        onPress={() => setCaptainModalVisible(true)}
+                    >
+                        <Text style={isCaptainFilterActive ? styles.filterChipActiveText : styles.filterChipText}>
+                            Капитан
+                        </Text>
+                        <ChevronDown size={14} color={isCaptainFilterActive ? NAVY : theme.colors.gray700} />
+                    </TouchableOpacity>
                 </ScrollView>
             </View>
 
@@ -786,6 +849,39 @@ export default function SearchResultsScreen({ route, navigation }) {
                 durationOptions={durationOptions}
                 onApply={(p) => setFilters((prev) => ({ ...prev, ...p }))}
             />
+            <Modal visible={captainModalVisible} animationType="slide" transparent>
+                <View style={styles.captainModalOverlay}>
+                    <TouchableOpacity style={styles.captainModalBackdrop} activeOpacity={1} onPress={() => setCaptainModalVisible(false)} />
+                    <View style={[styles.captainModalSheet, { paddingBottom: insets.bottom + 20 }]}>
+                        <View style={styles.captainModalHeader}>
+                            <Text style={styles.captainModalTitle}>Капитан</Text>
+                            <TouchableOpacity onPress={() => setCaptainModalVisible(false)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                                <X size={24} color={NAVY} />
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.captainModalContent}>
+                            <TouchableOpacity
+                                style={[styles.captainOption, filters.captain === 'С капитаном' && styles.captainOptionActive]}
+                                onPress={() => { setFilters((prev) => ({ ...prev, captain: 'С капитаном' })); setCaptainModalVisible(false); }}
+                            >
+                                <Text style={[styles.captainOptionText, filters.captain === 'С капитаном' && styles.captainOptionTextActive]}>С капитаном</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.captainOption, filters.captain === 'Без капитана' && styles.captainOptionActive]}
+                                onPress={() => { setFilters((prev) => ({ ...prev, captain: 'Без капитана' })); setCaptainModalVisible(false); }}
+                            >
+                                <Text style={[styles.captainOptionText, filters.captain === 'Без капитана' && styles.captainOptionTextActive]}>Без капитана</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.captainClearBtn}
+                                onPress={() => { setFilters((prev) => ({ ...prev, captain: null })); setCaptainModalVisible(false); }}
+                            >
+                                <Text style={styles.captainClearText}>Сбросить</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
             <BoatTypeFilterModal
                 visible={boatTypeModalVisible}
                 onClose={() => setBoatTypeModalVisible(false)}
@@ -1506,4 +1602,35 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+    captainModalOverlay: { flex: 1, justifyContent: 'flex-end' },
+    captainModalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
+    captainModalSheet: {
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        paddingHorizontal: 24,
+    },
+    captainModalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 18,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F3F4F6',
+    },
+    captainModalTitle: { fontSize: 18, fontFamily: theme.fonts.bold, color: NAVY },
+    captainModalContent: { paddingTop: 16, gap: 10 },
+    captainOption: {
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        borderRadius: 12,
+        borderWidth: 1.5,
+        borderColor: '#D1D5DB',
+        backgroundColor: '#fff',
+    },
+    captainOptionActive: { borderColor: NAVY, backgroundColor: 'rgba(27,54,93,0.06)' },
+    captainOptionText: { fontSize: 16, fontFamily: theme.fonts.medium, color: theme.colors.gray700 },
+    captainOptionTextActive: { color: NAVY, fontFamily: theme.fonts.semiBold },
+    captainClearBtn: { alignSelf: 'flex-start', paddingVertical: 10 },
+    captainClearText: { fontSize: 15, fontFamily: theme.fonts.medium, color: NAVY, textDecorationLine: 'underline' },
 });

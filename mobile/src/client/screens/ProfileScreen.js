@@ -12,6 +12,7 @@ import { registerPushTokenNow } from '../hooks/useRegisterPushToken';
 import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
 import { theme } from '../../shared/theme';
 import { User, Heart, HelpCircle, LogOut, ChevronRight, Calendar, Star, Shield, FileText, Bell, X, Pencil, Trash2, Lock, Clock3, CheckCircle2, XCircle } from 'lucide-react-native';
+import { WebView } from 'react-native-webview';
 
 function getReviewStatusMeta(status) {
     const s = String(status || '').toLowerCase();
@@ -59,6 +60,41 @@ export default function ProfileScreen({ navigation }) {
     const [emailBooking, setEmailBooking] = useState(true);
     const [emailMessages, setEmailMessages] = useState(true);
     const [emailNews, setEmailNews] = useState(true);
+    const [legalModalVisible, setLegalModalVisible] = useState(false);
+    const [legalLoading, setLegalLoading] = useState(false);
+    const [legalError, setLegalError] = useState('');
+    const [legalTitle, setLegalTitle] = useState('');
+    const [legalBody, setLegalBody] = useState('');
+
+    const buildLegalHtml = (body = '') => {
+        const text = String(body || '').trim();
+        const escaped = text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+        const content = escaped
+            ? `<div style="white-space: pre-wrap;">${escaped}</div>`
+            : '<p>Текст документа пока не заполнен.</p>';
+        return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;padding:16px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:16px;line-height:1.55;color:#000;background:#fff;}a{color:#000;}</style></head><body>${content}</body></html>`;
+    };
+
+    const openLegalModal = useCallback(async (slug, fallbackTitle) => {
+        setLegalModalVisible(true);
+        setLegalLoading(true);
+        setLegalError('');
+        setLegalTitle(fallbackTitle);
+        setLegalBody('');
+        try {
+            const { data } = await api.get(`/legal-documents/${encodeURIComponent(slug)}`);
+            setLegalTitle(data?.title || fallbackTitle);
+            setLegalBody(typeof data?.body === 'string' ? data.body : '');
+        } catch (e) {
+            setLegalError(e.response?.data?.error || e.message || 'Не удалось загрузить документ');
+        } finally {
+            setLegalLoading(false);
+        }
+    }, []);
 
     const handlePickAvatar = useCallback(async () => {
         try {
@@ -223,8 +259,24 @@ export default function ProfileScreen({ navigation }) {
         { id: 'notifications', icon: Bell, title: 'Уведомления', onPress: () => setNotificationsModalVisible(true) },
         { id: 'account', icon: User, title: 'Данные аккаунта', onPress: () => navigation.navigate('ClientAccountInfo') },
         { id: 'help', icon: HelpCircle, title: 'Помощь', onPress: () => {} },
-        { id: 'privacy', icon: Shield, title: 'Политика конфиденциальности', onPress: () => {} },
-        { id: 'terms', icon: FileText, title: 'Условия использования', onPress: () => {} },
+        {
+            id: 'privacy',
+            icon: Shield,
+            title: 'Политика конфиденциальности',
+            onPress: () => openLegalModal('privacy-policy', 'Политика конфиденциальности'),
+        },
+        {
+            id: 'terms',
+            icon: FileText,
+            title: 'Условия обслуживания',
+            onPress: () => openLegalModal('terms-of-service', 'Условия обслуживания'),
+        },
+        {
+            id: 'personal-data-terms',
+            icon: FileText,
+            title: 'Условия обработки персональных данных',
+            onPress: () => openLegalModal('personal-data-processing-terms', 'Условия обработки персональных данных'),
+        },
     ];
 
     const stats = [
@@ -445,6 +497,40 @@ export default function ProfileScreen({ navigation }) {
                 </View>
             </View>
         </Modal>
+
+        <Modal visible={legalModalVisible} animationType="slide" transparent onRequestClose={() => setLegalModalVisible(false)}>
+            <View style={styles.modalOverlay}>
+                <View style={[styles.legalModal, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16 }]}>
+                    <View style={styles.legalModalHeader}>
+                        <Text style={styles.legalModalTitle} numberOfLines={2}>{legalTitle || 'Документ'}</Text>
+                        <TouchableOpacity onPress={() => setLegalModalVisible(false)} hitSlop={12}>
+                            <X size={24} color={theme.colors.gray700} />
+                        </TouchableOpacity>
+                    </View>
+                    {legalLoading ? (
+                        <View style={styles.legalCentered}>
+                            <ActivityIndicator size="large" color={theme.colors.primary} />
+                        </View>
+                    ) : legalError ? (
+                        <View style={styles.legalCentered}>
+                            <Text style={styles.legalErrorText}>{legalError}</Text>
+                        </View>
+                    ) : (
+                        <WebView
+                            source={{ html: buildLegalHtml(legalBody) }}
+                            style={styles.legalWebView}
+                            originWhitelist={['*']}
+                            startInLoadingState
+                            renderLoading={() => (
+                                <View style={styles.legalCentered}>
+                                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                                </View>
+                            )}
+                        />
+                    )}
+                </View>
+            </View>
+        </Modal>
     </>
     );
 }
@@ -584,4 +670,42 @@ const styles = StyleSheet.create({
     notificationRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.gray100 },
     notificationRowLeft: { flexDirection: 'row', alignItems: 'center' },
     notificationLabel: { fontSize: 16, fontFamily: theme.fonts.medium, color: theme.colors.gray900 },
+    legalModal: {
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        height: '90%',
+        overflow: 'hidden',
+    },
+    legalModalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: theme.spacing.lg,
+        paddingBottom: theme.spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.gray100,
+    },
+    legalModalTitle: {
+        flex: 1,
+        fontSize: 19,
+        fontFamily: theme.fonts.bold,
+        color: theme.colors.gray900,
+        marginRight: theme.spacing.sm,
+    },
+    legalWebView: {
+        flex: 1,
+        backgroundColor: '#fff',
+    },
+    legalCentered: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: theme.spacing.lg,
+    },
+    legalErrorText: {
+        fontSize: 15,
+        color: theme.colors.error,
+        textAlign: 'center',
+    },
 });

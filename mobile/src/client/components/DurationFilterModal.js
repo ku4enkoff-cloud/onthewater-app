@@ -5,6 +5,7 @@ import {
     StyleSheet,
     Modal,
     TouchableOpacity,
+    FlatList,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
@@ -63,10 +64,14 @@ export default function DurationFilterModal({
                     </View>
 
                     <View style={styles.content}>
-                        <View style={styles.chipGrid}>
-                            {durationOptions.map((mins) => (
+                        <FlatList
+                            horizontal
+                            data={durationOptions}
+                            keyExtractor={(mins) => String(mins)}
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.chipRow}
+                            renderItem={({ item: mins }) => (
                                 <TouchableOpacity
-                                    key={mins}
                                     style={[
                                         styles.optionChip,
                                         value === mins && styles.optionChipActive,
@@ -82,8 +87,8 @@ export default function DurationFilterModal({
                                         {formatDurationLabel(mins)}
                                     </Text>
                                 </TouchableOpacity>
-                            ))}
-                        </View>
+                            )}
+                        />
                     </View>
 
                     <View style={styles.footer}>
@@ -141,10 +146,8 @@ const styles = StyleSheet.create({
         color: NAVY,
         marginBottom: 14,
     },
-    chipGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 10,
+    chipRow: {
+        paddingRight: 8,
     },
     optionChip: {
         paddingVertical: 12,
@@ -153,6 +156,7 @@ const styles = StyleSheet.create({
         borderWidth: 1.5,
         borderColor: '#D1D5DB',
         backgroundColor: '#fff',
+        marginRight: 10,
     },
     optionChipActive: {
         borderColor: NAVY,

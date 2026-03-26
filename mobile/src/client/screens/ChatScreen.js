@@ -16,6 +16,7 @@ import { api } from '../../shared/infrastructure/api';
 import { AuthContext } from '../../shared/context/AuthContext';
 import UnauthorizedCard from '../../shared/components/UnauthorizedCard';
 import { MessageCircle, User, Archive, ChevronRight, X, ArchiveRestore } from 'lucide-react-native';
+const BLUE_PRIMARY = '#1E5DB8';
 
 export default function ChatScreen({ navigation }) {
     const insets = useSafeAreaInsets();
@@ -332,7 +333,7 @@ const styles = StyleSheet.create({
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: theme.colors.primary,
+        backgroundColor: BLUE_PRIMARY,
     },
     chatContent: { flex: 1, justifyContent: 'center', minWidth: 0 },
     chatHeader: {
@@ -410,7 +411,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     unarchiveAction: {
-        backgroundColor: theme.colors.primary,
+        backgroundColor: BLUE_PRIMARY,
         justifyContent: 'center',
         alignItems: 'center',
         width: 120,
