@@ -62,9 +62,10 @@ export default function OnboardingScreen({ onFinish }) {
     const slide = SLIDES[current];
 
     return (
-        <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+        <View style={styles.container}>
             <StatusBar style="light" />
             <FlatList
+                style={styles.slider}
                 ref={flatRef}
                 data={SLIDES}
                 horizontal
@@ -159,8 +160,12 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#030712',
     },
+    slider: {
+        flex: 1,
+    },
     slide: {
         flex: 1,
+        height: '100%',
     },
     slideImage: {
         ...StyleSheet.absoluteFillObject,

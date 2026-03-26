@@ -1,52 +1,31 @@
 import React from 'react';
-import { View, Text, ActivityIndicator, Image, StyleSheet } from 'react-native';
-import { theme } from '../theme';
+import { View, ActivityIndicator, ImageBackground, StyleSheet } from 'react-native';
 
-const logo = require('../../../assets/icon.png');
+const splashImage = require('../../../assets/splash-owner.png');
 
 export default function AppSplashScreen() {
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        <Image source={logo} style={styles.logo} resizeMode="contain" />
-        <Text style={styles.title}>ONTHEWATER</Text>
-        <Text style={styles.subtitle}>Аренда яхт и катеров</Text>
-      </View>
+    <ImageBackground source={splashImage} style={styles.container} imageStyle={styles.image}>
+      <View style={styles.overlay} />
       <ActivityIndicator size="large" color="#FFFFFF" style={styles.loader} />
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.waveDark,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
-  content: {
-    alignItems: 'center',
-    marginBottom: 48,
+  image: {
+    resizeMode: 'cover',
   },
-  logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontFamily: theme.fonts.bold,
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
-  },
-  subtitle: {
-    fontSize: 15,
-    fontFamily: theme.fonts.regular,
-    color: 'rgba(255,255,255,0.85)',
-    marginTop: 6,
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 8, 24, 0.18)',
   },
   loader: {
-    position: 'absolute',
-    bottom: 48,
+    marginBottom: 48,
+    alignSelf: 'center',
   },
 });
