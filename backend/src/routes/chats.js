@@ -2,6 +2,7 @@ const express = require('express');
 const { pool } = require('../db');
 const { authenticate } = require('../middleware/auth');
 const { sendPush } = require('../utils/push');
+const { sendNewMessageEmail } = require('../services/email');
 
 const router = express.Router();
 
@@ -12,6 +13,30 @@ async function sendMessagePushToRecipient(recipientId, senderName, textPreview, 
         if (!token) return;
         const body = textPreview && textPreview.length > 50 ? textPreview.slice(0, 47) + '…' : (textPreview || 'Новое сообщение');
         await sendPush(token, `${senderName || 'Сообщение'}:`, body, { chatId, type: 'message' });
+    } catch (_) {}
+}
+
+async function sendMessageEmailToClientIfEnabled({ recipientId, senderName, textPreview, chatId, boatTitle }) {
+    try {
+        const { rows } = await pool.query(
+            `SELECT id, role, email, name, first_name, email_message_notifications
+             FROM users
+             WHERE id = $1`,
+            [recipientId]
+        );
+        const u = rows[0];
+        if (!u) return;
+        if (u.role !== 'client') return;
+        if (!u.email) return;
+        if (u.email_message_notifications === false) return;
+
+        const recipientName = u.first_name || u.name || '';
+        await sendNewMessageEmail(u.email, recipientName, {
+            senderName,
+            chatId,
+            boatTitle,
+            text: textPreview,
+        });
     } catch (_) {}
 }
 
@@ -176,6 +201,13 @@ router.post('/:id/messages', authenticate, async (req, res, next) => {
         );
         await pool.query('UPDATE chats SET last_message = $1 WHERE id = $2', [text, chatId]);
         sendMessagePushToRecipient(recipientId, senderName, text, chatId);
+        sendMessageEmailToClientIfEnabled({
+            recipientId,
+            senderName,
+            textPreview: text,
+            chatId,
+            boatTitle: chat.boat_title || '',
+        });
         res.status(201).json(rows[0]);
     } catch (err) {
         next(err);

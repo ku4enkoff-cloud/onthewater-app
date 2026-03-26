@@ -9,11 +9,7 @@ import { AuthContext } from '../../shared/context/AuthContext';
 import { api } from '../../shared/infrastructure/api';
 import { theme } from '../../shared/theme';
 
-let LinearGradient;
-try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
-
 const NAVY = theme.colors.primary;
-const GRADIENT = [theme.colors.primary, theme.colors.primaryLight || '#2A4A7F'];
 const TABS = ['Контакты', 'Пароль'];
 
 function formatPhoneRu(raw) {
@@ -170,15 +166,10 @@ export default function ClientAccountInfoScreen({ navigation }) {
 
     return (
         <View style={s.root}>
-            <View style={s.headerWrap}>
-                {LinearGradient ? (
-                    <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFillObject} />
-                ) : (
-                    <View style={[StyleSheet.absoluteFillObject, { backgroundColor: NAVY }]} />
-                )}
-                <View style={[s.headerInner, { paddingTop: insets.top + 4 }]}>
+            <View style={[s.headerWrap, { paddingTop: insets.top + 4 }]}>
+                <View style={s.headerInner}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                        <ChevronLeft size={24} color="#fff" />
+                        <ChevronLeft size={24} color={theme.colors.gray900} />
                         <Text style={s.backText}>Назад</Text>
                     </TouchableOpacity>
                     <Text style={s.headerTitle}>Данные аккаунта</Text>
@@ -271,14 +262,19 @@ function EditField({ label, value, onChangeText, placeholder, editable = true, s
 
 const s = StyleSheet.create({
     root: { flex: 1, backgroundColor: theme.colors.gray50 || '#F5F5F5' },
-    headerWrap: { overflow: 'hidden' },
+    headerWrap: {
+        overflow: 'hidden',
+        backgroundColor: '#fff',
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: '#E5E7EB',
+    },
     headerInner: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: 16, paddingBottom: 14,
+        paddingHorizontal: 16, paddingBottom: 10,
     },
     backBtn: { flexDirection: 'row', alignItems: 'center', width: 70 },
-    backText: { fontSize: 15, fontFamily: theme.fonts.regular, color: '#fff', marginLeft: 2 },
-    headerTitle: { fontSize: 17, fontFamily: theme.fonts.bold, color: '#fff' },
+    backText: { ...theme.typography.bodySm, color: theme.colors.gray700, marginLeft: 2 },
+    headerTitle: { ...theme.typography.h3, color: theme.colors.gray900 },
     tabsRow: {
         flexDirection: 'row', backgroundColor: '#fff',
         borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E5E7EB',
@@ -288,11 +284,11 @@ const s = StyleSheet.create({
         borderBottomWidth: 2.5, borderBottomColor: 'transparent',
     },
     tabActive: { borderBottomColor: NAVY },
-    tabText: { fontSize: 14, fontFamily: theme.fonts.medium, color: theme.colors.gray400 },
+    tabText: { ...theme.typography.bodySm, fontFamily: theme.fonts.medium, color: theme.colors.gray400 },
     tabTextActive: { color: NAVY, fontFamily: theme.fonts.semiBold },
     scroll: { flex: 1 },
     sectionTitle: {
-        fontSize: 20, fontFamily: theme.fonts.bold, color: NAVY,
+        ...theme.typography.h2, color: NAVY,
         marginBottom: 16,
     },
     viewFieldBlock: {
@@ -300,11 +296,11 @@ const s = StyleSheet.create({
         paddingBottom: 14, paddingTop: 14,
     },
     viewFieldLabel: {
-        fontSize: 13, fontFamily: theme.fonts.regular, color: theme.colors.gray400,
+        ...theme.typography.bodySm, color: theme.colors.gray400,
         marginBottom: 4,
     },
     viewFieldValue: {
-        fontSize: 17, fontFamily: theme.fonts.medium, color: NAVY,
+        ...theme.typography.body, fontFamily: theme.fonts.medium, color: NAVY,
     },
     editRow: {
         alignItems: 'center', marginTop: 28,

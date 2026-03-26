@@ -258,6 +258,77 @@ router.get('/me', authenticate, (req, res) => {
     res.json(req.user);
 });
 
+router.get('/notification-settings', authenticate, async (req, res, next) => {
+    try {
+        const { rows } = await pool.query(
+            `SELECT
+                COALESCE(email_booking_notifications, TRUE) AS email_booking_notifications,
+                COALESCE(email_message_notifications, TRUE) AS email_message_notifications,
+                COALESCE(email_news_notifications, TRUE) AS email_news_notifications
+             FROM users
+             WHERE id = $1`,
+            [req.user.id]
+        );
+        const row = rows[0] || {};
+        res.json({
+            email_booking_notifications: row.email_booking_notifications !== false,
+            email_message_notifications: row.email_message_notifications !== false,
+            email_news_notifications: row.email_news_notifications !== false,
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.patch('/notification-settings', authenticate, async (req, res, next) => {
+    try {
+        const body = req.body || {};
+        const hasEmailBooking = typeof body.email_booking_notifications === 'boolean';
+        const hasEmailMessages = typeof body.email_message_notifications === 'boolean';
+        const hasEmailNews = typeof body.email_news_notifications === 'boolean';
+
+        if (!hasEmailBooking && !hasEmailMessages && !hasEmailNews) {
+            return res.status(400).json({ error: 'Нет корректных полей для обновления' });
+        }
+
+        const sets = [];
+        const vals = [];
+        let idx = 1;
+        if (hasEmailBooking) {
+            sets.push(`email_booking_notifications = $${idx++}`);
+            vals.push(body.email_booking_notifications);
+        }
+        if (hasEmailMessages) {
+            sets.push(`email_message_notifications = $${idx++}`);
+            vals.push(body.email_message_notifications);
+        }
+        if (hasEmailNews) {
+            sets.push(`email_news_notifications = $${idx++}`);
+            vals.push(body.email_news_notifications);
+        }
+        vals.push(req.user.id);
+
+        const { rows } = await pool.query(
+            `UPDATE users
+             SET ${sets.join(', ')}
+             WHERE id = $${idx}
+             RETURNING
+                COALESCE(email_booking_notifications, TRUE) AS email_booking_notifications,
+                COALESCE(email_message_notifications, TRUE) AS email_message_notifications,
+                COALESCE(email_news_notifications, TRUE) AS email_news_notifications`,
+            vals
+        );
+        const row = rows[0] || {};
+        res.json({
+            email_booking_notifications: row.email_booking_notifications !== false,
+            email_message_notifications: row.email_message_notifications !== false,
+            email_news_notifications: row.email_news_notifications !== false,
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
 // Сохранение Expo Push Token для уведомлений (клиентское приложение)
 router.post('/push-token', authenticate, async (req, res, next) => {
     try {

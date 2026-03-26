@@ -217,9 +217,76 @@ ${reason ? `${reason}\n` : ''}Номер брони: ${bookingId}
     }
 }
 
+/**
+ * Email-уведомление о новом личном сообщении.
+ * @param {string} to
+ * @param {string} recipientName
+ * @param {{ senderName?: string, chatId?: number|string, boatTitle?: string, text?: string }} payload
+ */
+async function sendNewMessageEmail(to, recipientName, payload) {
+    if (!to) return false;
+    const p = payload || {};
+    const senderName = p.senderName || 'Пользователь';
+    const chatId = p.chatId || '—';
+    const boatTitle = p.boatTitle || 'Чат';
+    const rawText = String(p.text || '').trim();
+    const textPreview = rawText.length > 220 ? `${rawText.slice(0, 217)}...` : (rawText || 'Новое сообщение');
+
+    const subject = `Новое сообщение в ONTHEWATER`;
+    const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Новое сообщение</title></head>
+<body style="font-family: sans-serif; max-width: 560px; margin: 0 auto; padding: 20px;">
+  <h2 style="color: #1B365D;">У вас новое сообщение</h2>
+  <p>Здравствуйте${recipientName ? `, ${recipientName}` : ''}!</p>
+  <p>Вы получили новое сообщение от <strong>${senderName}</strong>.</p>
+  <table style="width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px;">
+    <tr><td style="padding: 8px 0; color: #6B7280;">Чат</td><td style="padding: 8px 0; text-align: right;">#${chatId}</td></tr>
+    <tr><td style="padding: 8px 0; color: #6B7280;">Поездка</td><td style="padding: 8px 0; text-align: right;">${boatTitle}</td></tr>
+  </table>
+  <p style="margin-top: 14px; color: #6B7280; font-size: 13px;">Текст сообщения:</p>
+  <p style="background: #F3F4F6; border-radius: 10px; padding: 12px; color: #111827; white-space: pre-wrap;">${textPreview}</p>
+  <p style="margin-top: 16px;">Откройте приложение ONTHEWATER, чтобы ответить.</p>
+  <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+  <p style="color: #888; font-size: 12px;">ONTHEWATER</p>
+</body>
+</html>`;
+
+    const text = `У вас новое сообщение в ONTHEWATER.
+От: ${senderName}
+Чат: #${chatId}
+Поездка: ${boatTitle}
+
+${textPreview}
+
+Откройте приложение ONTHEWATER, чтобы ответить.`;
+
+    try {
+        await transporter.sendMail({
+            from: FROM,
+            to,
+            subject,
+            text,
+            html,
+        });
+        console.log('[email] Письмо о новом сообщении отправлено на', to);
+        return true;
+    } catch (err) {
+        console.error('[email] Ошибка отправки письма о новом сообщении:', err.message);
+        return false;
+    }
+}
+
 /** Проверить подключение к SMTP (для отладки). Возвращает true или бросает ошибку. */
 async function verifyConnection() {
     await transporter.verify();
 }
 
-module.exports = { sendVerificationEmail, sendPasswordResetEmail, sendBookingStatusEmail, verifyConnection };
+module.exports = {
+    sendVerificationEmail,
+    sendPasswordResetEmail,
+    sendBookingStatusEmail,
+    sendNewMessageEmail,
+    verifyConnection,
+};

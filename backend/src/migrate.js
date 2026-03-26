@@ -52,6 +52,9 @@ async function migrate() {
                 address_street TEXT,
                 address_zip TEXT,
                 address_country TEXT,
+                email_booking_notifications BOOLEAN NOT NULL DEFAULT TRUE,
+                email_message_notifications BOOLEAN NOT NULL DEFAULT TRUE,
+                email_news_notifications BOOLEAN NOT NULL DEFAULT TRUE,
                 created_at TIMESTAMPTZ DEFAULT NOW()
             )
         `);
@@ -64,6 +67,9 @@ async function migrate() {
         console.log('Колонки email_verified добавлены.');
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT`).catch(() => {});
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS push_token TEXT`).catch(() => {});
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_booking_notifications BOOLEAN NOT NULL DEFAULT TRUE`).catch(() => {});
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_message_notifications BOOLEAN NOT NULL DEFAULT TRUE`).catch(() => {});
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_news_notifications BOOLEAN NOT NULL DEFAULT TRUE`).catch(() => {});
 
         await client.query(`
             CREATE TABLE IF NOT EXISTS boats (
