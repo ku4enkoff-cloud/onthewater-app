@@ -45,8 +45,15 @@ const FALLBACK_CATEGORIES = [
 ];
 
 const DEST_CARD_W = 170;
-const CAT_CARD_W = (width - 48 - 16) / 2;
-const BOAT_CARD_W = width * 0.78;
+const IS_TABLET = width >= 768;
+const CAT_COLUMNS = IS_TABLET ? 3 : 2;
+const CAT_GAP = 16;
+const CAT_CARD_W = IS_TABLET
+    ? (width - 48 - CAT_GAP * (CAT_COLUMNS - 1)) / CAT_COLUMNS
+    : (width - 48 - 16) / 2;
+const BOAT_CARD_W = IS_TABLET
+    ? Math.min(420, Math.max(320, width * 0.36))
+    : width * 0.78;
 
 const PLACEHOLDER_IMG = 'https://placehold.co/400x300/e2e8f0/64748b?text=';
 
@@ -465,11 +472,14 @@ const styles = StyleSheet.create({
         bottom: 56,
         left: theme.spacing.lg,
         right: theme.spacing.lg,
+        alignItems: 'center',
     },
     searchBar: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#fff',
+        width: '100%',
+        maxWidth: 760,
         paddingVertical: 16,
         paddingHorizontal: 20,
         borderRadius: 999,
@@ -519,7 +529,7 @@ const styles = StyleSheet.create({
     catGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 16,
+        gap: CAT_GAP,
         marginBottom: theme.spacing.md,
     },
     catCard: {
@@ -530,11 +540,11 @@ const styles = StyleSheet.create({
     },
     catImage: {
         width: '100%',
-        height: 110,
+        height: IS_TABLET ? 128 : 110,
         resizeMode: 'cover',
     },
     catName: {
-        fontSize: 14,
+        fontSize: IS_TABLET ? 15 : 14,
         fontFamily: theme.fonts.semiBold,
         color: NAVY,
         paddingVertical: 10,

@@ -7,6 +7,7 @@ import {
     Modal,
     Platform,
     ScrollView,
+    useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -28,6 +29,8 @@ const CITIES = [
 
 export default function CityBoatsScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
+    const { width } = useWindowDimensions();
+    const isTablet = width >= 768;
     const { cityName: initialCity, useMyLocation: initialUseLocation, boatTypeId, boatTypeName, dateISO: initialDateISO } = route.params || {};
 
     const [selectedCity, setSelectedCity] = useState(
@@ -69,7 +72,7 @@ export default function CityBoatsScreen({ route, navigation }) {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
-            <View style={styles.header}>
+            <View style={[styles.header, isTablet && styles.headerTablet]}>
                 <TouchableOpacity
                     style={styles.backButton}
                     onPress={() => navigation.goBack()}
@@ -202,6 +205,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: theme.spacing.lg,
         paddingTop: 8,
         paddingBottom: theme.spacing.lg,
+    },
+    headerTablet: {
+        width: '100%',
+        maxWidth: 860,
+        alignSelf: 'center',
     },
     backButton: {
         width: 36,

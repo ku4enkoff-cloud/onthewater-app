@@ -8,6 +8,7 @@ import {
     ScrollView,
     Dimensions,
     PanResponder,
+    useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Minus, Plus } from 'lucide-react-native';
@@ -39,6 +40,13 @@ function RangeSlider({ low, high, min, max, onChange }) {
     const trackRef = useRef(null);
     const layoutX = useRef(0);
     const layoutW = useRef(TRACK_W);
+    const lowRef = useRef(low);
+    const highRef = useRef(high);
+
+    React.useEffect(() => {
+        lowRef.current = low;
+        highRef.current = high;
+    }, [low, high]);
 
     const toX = (val) => ((val - min) / (max - min)) * layoutW.current;
     const toVal = (x) => Math.round((x / layoutW.current) * (max - min) + min);
@@ -52,9 +60,11 @@ function RangeSlider({ low, high, min, max, onChange }) {
                 const x = clamp(g.moveX - layoutX.current, 0, layoutW.current);
                 const val = toVal(x);
                 if (isHigh) {
-                    onChange(low, Math.max(val, low + 500));
+                    const currentLow = lowRef.current;
+                    onChange(currentLow, Math.max(val, currentLow + 500));
                 } else {
-                    onChange(Math.min(val, high - 500), high);
+                    const currentHigh = highRef.current;
+                    onChange(Math.min(val, currentHigh - 500), currentHigh);
                 }
             },
         });
@@ -139,6 +149,8 @@ export default function FiltersModal({
     durationOptions = [30, 60, 120, 180, 240, 360, 480],
 }) {
     const insets = useSafeAreaInsets();
+    const { width } = useWindowDimensions();
+    const isTablet = width >= 768;
     const min = priceMin;
     const max = priceMax > min ? priceMax : min + 1000;
     const [priceLow, setPriceLow] = useState(filters?.priceLow ?? min);
@@ -205,7 +217,7 @@ export default function FiltersModal({
     return (
         <Modal visible={visible} animationType="slide" transparent>
             <View style={styles.overlay}>
-                <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
+                <View style={[styles.sheet, isTablet && styles.sheetTablet, { paddingBottom: insets.bottom + 16 }]}>
                     {/* Header */}
                     <View style={styles.header}>
                         <TouchableOpacity
@@ -414,6 +426,11 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         maxHeight: '92%',
+    },
+    sheetTablet: {
+        width: '100%',
+        maxWidth: 920,
+        alignSelf: 'center',
     },
 
     /* Header */

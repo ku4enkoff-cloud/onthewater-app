@@ -6,6 +6,7 @@ import {
     Modal,
     TouchableOpacity,
     FlatList,
+    useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
@@ -31,6 +32,8 @@ export default function DurationFilterModal({
     onApply,
 }) {
     const insets = useSafeAreaInsets();
+    const { width } = useWindowDimensions();
+    const isTablet = width >= 768;
     const [value, setValue] = useState(duration);
 
     React.useEffect(() => {
@@ -52,7 +55,7 @@ export default function DurationFilterModal({
         <Modal visible={visible} animationType="slide" transparent>
             <View style={styles.overlay}>
                 <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
-                <View style={[styles.sheet, { paddingBottom: insets.bottom + 24 }]}>
+                <View style={[styles.sheet, isTablet && styles.sheetTablet, { paddingBottom: insets.bottom + 24 }]}>
                     <View style={styles.header}>
                         <Text style={styles.headerTitle}>Длительность</Text>
                         <TouchableOpacity
@@ -123,6 +126,11 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         paddingHorizontal: 24,
+    },
+    sheetTablet: {
+        width: '100%',
+        maxWidth: 920,
+        alignSelf: 'center',
     },
     header: {
         flexDirection: 'row',

@@ -11,6 +11,7 @@ import {
     NativeModules,
     ActivityIndicator,
     InteractionManager,
+    useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Rect, Text as SvgText } from 'react-native-svg';
@@ -170,6 +171,14 @@ const getBoatAmenities = (boat) => {
 
 export default function SearchResultsScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
+    const { width } = useWindowDimensions();
+    const isTablet = width >= 768;
+    const tabletColumns = isTablet ? (width >= 1300 ? 3 : 2) : 1;
+    const gridGap = 12;
+    const listSidePadding = theme.spacing.md;
+    const cardWidth = isTablet
+        ? Math.floor((width - listSidePadding * 2 - gridGap * (tabletColumns - 1)) / tabletColumns)
+        : null;
     const { cityName, dateISO, useMyLocation, boatTypeId, boatTypeName, allRegions } = route.params || {};
     const { toggleFavorite, isFavorite } = useContext(FavoritesContext);
     const [allBoats, setAllBoats] = useState([]);
@@ -546,7 +555,7 @@ export default function SearchResultsScreen({ route, navigation }) {
 
         return (
             <TouchableOpacity
-                style={styles.card}
+                style={[styles.card, isTablet && { width: cardWidth }]}
                 onPress={() => navigation.navigate('BoatDetail', { boatId: item.id })}
                 activeOpacity={0.95}
             >
@@ -852,7 +861,7 @@ export default function SearchResultsScreen({ route, navigation }) {
             <Modal visible={captainModalVisible} animationType="slide" transparent>
                 <View style={styles.captainModalOverlay}>
                     <TouchableOpacity style={styles.captainModalBackdrop} activeOpacity={1} onPress={() => setCaptainModalVisible(false)} />
-                    <View style={[styles.captainModalSheet, { paddingBottom: insets.bottom + 20 }]}>
+                    <View style={[styles.captainModalSheet, isTablet && styles.captainModalSheetTablet, { paddingBottom: insets.bottom + 20 }]}>
                         <View style={styles.captainModalHeader}>
                             <Text style={styles.captainModalTitle}>Капитан</Text>
                             <TouchableOpacity onPress={() => setCaptainModalVisible(false)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
@@ -909,11 +918,15 @@ export default function SearchResultsScreen({ route, navigation }) {
 
             {/* Boat list */}
             <FlatList
+                key={`boats-${tabletColumns}`}
                 data={boats}
                 renderItem={renderBoatCard}
                 keyExtractor={(item, index) => `boat-${item.id}-${index}`}
+                numColumns={tabletColumns}
+                columnWrapperStyle={tabletColumns > 1 ? styles.gridRow : undefined}
                 contentContainerStyle={[
                     styles.list,
+                    { paddingHorizontal: listSidePadding },
                     { paddingBottom: insets.bottom + 80 },
                 ]}
                 showsVerticalScrollIndicator={false}
@@ -1237,6 +1250,10 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.07,
         shadowRadius: 8,
         elevation: 3,
+    },
+    gridRow: {
+        justifyContent: 'space-between',
+        marginBottom: 0,
     },
     cardImageWrap: {
         width: '100%',
@@ -1609,6 +1626,11 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         paddingHorizontal: 24,
+    },
+    captainModalSheetTablet: {
+        width: '100%',
+        maxWidth: 920,
+        alignSelf: 'center',
     },
     captainModalHeader: {
         flexDirection: 'row',
