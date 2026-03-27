@@ -40,24 +40,55 @@ function RangeSlider({ low, high, min, max, onChange }) {
     const trackRef = useRef(null);
     const layoutX = useRef(0);
     const layoutW = useRef(TRACK_W);
+    const [trackW, setTrackW] = useState(TRACK_W);
+    const lowDragOffset = useRef(0);
+    const highDragOffset = useRef(0);
     const lowRef = useRef(low);
     const highRef = useRef(high);
+    const measureTrack = () => {
+        trackRef.current?.measureInWindow?.((x, _y, w) => {
+            layoutX.current = x;
+            if (w > 0) {
+                layoutW.current = w;
+                setTrackW(w);
+            }
+        });
+    };
+
 
     React.useEffect(() => {
         lowRef.current = low;
         highRef.current = high;
     }, [low, high]);
 
-    const toX = (val) => ((val - min) / (max - min)) * layoutW.current;
-    const toVal = (x) => Math.round((x / layoutW.current) * (max - min) + min);
+    const effectiveW = () => Math.max(0, trackW - THUMB_R * 2);
+    const toX = (val) => {
+        const w = effectiveW();
+        if (w <= 0) return THUMB_R;
+        return THUMB_R + ((val - min) / (max - min)) * w;
+    };
+    const toVal = (x) => {
+        const w = effectiveW();
+        if (w <= 0) return min;
+        const rel = (x - THUMB_R) / w;
+        return Math.round(rel * (max - min) + min);
+    };
 
     const makeResponder = (isHigh) =>
         PanResponder.create({
             onStartShouldSetPanResponder: () => true,
             onMoveShouldSetPanResponder: () => true,
-            onPanResponderGrant: () => {},
+            onPanResponderGrant: (_, g) => {
+                measureTrack();
+                const currentValue = isHigh ? highRef.current : lowRef.current;
+                const thumbCenterX = toX(currentValue);
+                const offset = g.x0 - (layoutX.current + thumbCenterX);
+                if (isHigh) highDragOffset.current = offset;
+                else lowDragOffset.current = offset;
+            },
             onPanResponderMove: (_, g) => {
-                const x = clamp(g.moveX - layoutX.current, 0, layoutW.current);
+                const dragOffset = isHigh ? highDragOffset.current : lowDragOffset.current;
+                const x = clamp(g.moveX - layoutX.current - dragOffset, THUMB_R, trackW - THUMB_R);
                 const val = toVal(x);
                 if (isHigh) {
                     const currentLow = lowRef.current;
@@ -73,20 +104,24 @@ function RangeSlider({ low, high, min, max, onChange }) {
     const highResp = useRef(makeResponder(true)).current;
 
     const onLayout = (e) => {
-        trackRef.current?.measureInWindow?.((x, _y, w) => {
-            layoutX.current = x;
+        const w = e.nativeEvent.layout.width;
+        if (w > 0) {
             layoutW.current = w;
-        });
-        layoutW.current = e.nativeEvent.layout.width;
+            setTrackW(w);
+        }
+        measureTrack();
     };
 
     const lowX = toX(low);
     const highX = toX(high);
+    const maxThumbLeft = Math.max(0, trackW - THUMB_R * 2);
+    const lowThumbLeft = clamp(lowX - THUMB_R, 0, maxThumbLeft);
+    const highThumbLeft = clamp(highX - THUMB_R, 0, maxThumbLeft);
 
     return (
         <View
             ref={trackRef}
-            style={sliderStyles.track}
+            style={[sliderStyles.track, { width: '100%' }]}
             onLayout={onLayout}
         >
             <View style={sliderStyles.trackBg} />
@@ -98,11 +133,11 @@ function RangeSlider({ low, high, min, max, onChange }) {
             />
             <View
                 {...lowResp.panHandlers}
-                style={[sliderStyles.thumb, { left: lowX - THUMB_R }]}
+                style={[sliderStyles.thumb, { left: lowThumbLeft }]}
             />
             <View
                 {...highResp.panHandlers}
-                style={[sliderStyles.thumb, { left: highX - THUMB_R }]}
+                style={[sliderStyles.thumb, { left: highThumbLeft }]}
             />
         </View>
     );
