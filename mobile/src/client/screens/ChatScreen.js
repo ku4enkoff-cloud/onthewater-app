@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
     View,
     Text,
@@ -30,6 +31,13 @@ export default function ChatScreen({ navigation }) {
     const [archivedLoading, setArchivedLoading] = useState(false);
 
     useEffect(() => { if (user) fetchChats(); else setLoading(false); }, [user]);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            if (!user) return;
+            fetchChats();
+        }, [user])
+    );
 
     const openArchiveModal = async () => {
         setArchiveModalVisible(true);
