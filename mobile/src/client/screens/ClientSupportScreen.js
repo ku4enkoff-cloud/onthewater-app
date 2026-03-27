@@ -10,8 +10,8 @@ import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 import { WebView } from 'react-native-webview';
 
-const BLUE = '#1E40AF';
-const TITLE = '#111827';
+const BLUE = theme.colors.primary;
+const TITLE = theme.colors.primary;
 
 const LEGAL_MENU = [
     { slug: 'privacy_policy', title: 'Политика конфиденциальности', Icon: Shield },

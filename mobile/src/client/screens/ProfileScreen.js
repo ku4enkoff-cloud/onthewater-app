@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
     avatarPlaceholder: { width: 80, height: 80, borderRadius: 40, backgroundColor: theme.colors.gray100, justifyContent: 'center', alignItems: 'center' },
     avatar: { width: 80, height: 80, borderRadius: 40 },
     profileInfo: { flex: 1 },
-    profileName: { fontSize: 20, fontFamily: theme.fonts.bold, color: theme.colors.gray900 },
+    profileName: { fontSize: 20, fontFamily: theme.fonts.bold, color: theme.colors.primary },
     profileEmail: { fontSize: 14, color: theme.colors.gray500, marginTop: 4 },
     verifiedBadge: {
         alignSelf: 'flex-start',
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginBottom: 8,
     },
-    statValue: { fontSize: 20, fontFamily: theme.fonts.bold, color: theme.colors.gray900 },
+    statValue: { fontSize: 20, fontFamily: theme.fonts.bold, color: theme.colors.primary },
     statLabel: { fontSize: 12, color: theme.colors.gray500, marginTop: 2 },
     menuCard: {
         marginHorizontal: theme.spacing.md,
@@ -602,12 +602,12 @@ const styles = StyleSheet.create({
     editReviewSaveText: { fontSize: 16, fontFamily: theme.fonts.semiBold, color: '#fff' },
     notificationsModal: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '90%', paddingHorizontal: theme.spacing.lg },
     notificationsModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: theme.spacing.md, borderBottomWidth: 1, borderBottomColor: theme.colors.gray100 },
-    notificationsModalTitle: { fontSize: 20, fontFamily: theme.fonts.bold, color: theme.colors.gray900 },
+    notificationsModalTitle: { fontSize: 20, fontFamily: theme.fonts.bold, color: theme.colors.primary },
     notificationsScroll: { paddingVertical: theme.spacing.md },
-    notificationsSectionTitle: { fontSize: 18, fontFamily: theme.fonts.bold, color: theme.colors.gray900 },
+    notificationsSectionTitle: { fontSize: 18, fontFamily: theme.fonts.bold, color: theme.colors.primary },
     notificationsSectionSubtitle: { fontSize: 14, color: theme.colors.gray500, marginTop: 4 },
     notificationsHint: { fontSize: 14, color: theme.colors.gray600, marginTop: 8, marginBottom: 16 },
     notificationRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.gray100 },
     notificationRowLeft: { flexDirection: 'row', alignItems: 'center' },
-    notificationLabel: { fontSize: 16, fontFamily: theme.fonts.medium, color: theme.colors.gray900 },
+    notificationLabel: { fontSize: 16, fontFamily: theme.fonts.medium, color: theme.colors.primary },
 });
