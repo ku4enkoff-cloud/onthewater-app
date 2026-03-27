@@ -5,14 +5,13 @@ import {
     StyleSheet,
     TouchableOpacity,
     Modal,
-    Platform,
     ScrollView,
     useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { ChevronLeft, MapPin, Check } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
+import DatePickerModal from '../components/DatePickerModal';
 
 const NAVY = '#1B365D';
 
@@ -43,11 +42,6 @@ export default function CityBoatsScreen({ route, navigation }) {
 
     const formatDate = (d) =>
         d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-
-    const onDateChange = (event, selectedDate) => {
-        setShowDatePicker(Platform.OS === 'ios');
-        if (selectedDate) setDate(selectedDate);
-    };
 
     const handleCitySelect = (city) => {
         if (city.isLocation) {
@@ -151,47 +145,14 @@ export default function CityBoatsScreen({ route, navigation }) {
                 </TouchableOpacity>
             </Modal>
 
-            {/* Date picker */}
-            {showDatePicker && (
-                <>
-                    {Platform.OS === 'android' && (
-                        <DateTimePicker
-                            value={date}
-                            mode="date"
-                            display="calendar"
-                            onChange={onDateChange}
-                            minimumDate={new Date()}
-                            locale="ru-RU"
-                        />
-                    )}
-                    {Platform.OS === 'ios' && (
-                        <Modal visible transparent animationType="slide">
-                            <TouchableOpacity
-                                style={styles.modalOverlay}
-                                activeOpacity={1}
-                                onPress={() => setShowDatePicker(false)}
-                            >
-                                <View style={styles.datePickerModal}>
-                                    <View style={styles.datePickerHeader}>
-                                        <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                                            <Text style={styles.datePickerDone}>Готово</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                    <DateTimePicker
-                                        value={date}
-                                        mode="date"
-                                        display="spinner"
-                                        onChange={onDateChange}
-                                        minimumDate={new Date()}
-                                        locale="ru-RU"
-                                        style={styles.iosDatePicker}
-                                    />
-                                </View>
-                            </TouchableOpacity>
-                        </Modal>
-                    )}
-                </>
-            )}
+            <DatePickerModal
+                visible={showDatePicker}
+                onClose={() => setShowDatePicker(false)}
+                initialDate={date.toISOString()}
+                onSelect={(selectedDate) => {
+                    if (selectedDate) setDate(selectedDate);
+                }}
+            />
         </View>
     );
 }
@@ -301,27 +262,4 @@ const styles = StyleSheet.create({
         color: NAVY,
     },
 
-    /* Date picker */
-    datePickerModal: {
-        backgroundColor: '#fff',
-        borderTopLeftRadius: 16,
-        borderTopRightRadius: 16,
-        paddingBottom: 34,
-    },
-    datePickerHeader: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        paddingHorizontal: theme.spacing.lg,
-        paddingVertical: theme.spacing.md,
-        borderBottomWidth: 1,
-        borderBottomColor: theme.colors.border,
-    },
-    datePickerDone: {
-        fontSize: 17,
-        fontFamily: theme.fonts.semiBold,
-        color: NAVY,
-    },
-    iosDatePicker: {
-        height: 200,
-    },
 });

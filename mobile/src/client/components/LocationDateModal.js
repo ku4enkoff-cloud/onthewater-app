@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
@@ -17,6 +17,8 @@ export default function LocationDateModal({
     onApply,
 }) {
     const insets = useSafeAreaInsets();
+    const { width } = useWindowDimensions();
+    const isTablet = width >= 768;
     const [selectedCity, setSelectedCity] = useState(
         initialUseLocation ? 'Моё местоположение' : (initialCity || 'Москва'),
     );
@@ -69,7 +71,7 @@ export default function LocationDateModal({
                     />
                 ) : (
                     <>
-                        <View style={[styles.sheet, { paddingBottom: insets.bottom + 24 }]}>
+                        <View style={[styles.sheet, isTablet && styles.sheetTablet, { paddingBottom: insets.bottom + 24 }]}>
                             <View style={styles.header}>
                                 <TouchableOpacity
                                     onPress={onClose}
@@ -136,6 +138,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
         paddingTop: 12,
         alignSelf: 'stretch',
+    },
+    sheetTablet: {
+        width: '100%',
+        maxWidth: 920,
+        alignSelf: 'center',
     },
     header: {
         flexDirection: 'row',

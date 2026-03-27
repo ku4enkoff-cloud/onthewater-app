@@ -11,6 +11,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     Dimensions,
+    useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Search, MapPin, Navigation } from 'lucide-react-native';
@@ -46,6 +47,8 @@ function useDebounce(value, delay) {
 
 export default function LocationPickerModal({ visible, onClose, onSelect }) {
     const insets = useSafeAreaInsets();
+    const { width } = useWindowDimensions();
+    const isTablet = width >= 768;
     const [query, setQuery] = useState('');
     const [locationList, setLocationList] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
@@ -204,13 +207,18 @@ export default function LocationPickerModal({ visible, onClose, onSelect }) {
     return (
         <Modal
             visible={visible}
-            animationType="slide"
-            presentationStyle="fullScreen"
+            animationType={isTablet ? 'fade' : 'slide'}
+            presentationStyle={isTablet ? 'overFullScreen' : 'fullScreen'}
+            transparent={isTablet}
             onRequestClose={onClose}
         >
-            <View style={[styles.wrapper, { height: SCREEN_HEIGHT }]}>
+            <View style={[styles.wrapper, isTablet && styles.wrapperTablet, { height: SCREEN_HEIGHT }]}>
                 <KeyboardAvoidingView
-                    style={[styles.container, { paddingTop: insets.top, flex: 1 }]}
+                    style={[
+                        styles.container,
+                        isTablet && styles.containerTablet,
+                        { paddingTop: insets.top, flex: 1 },
+                    ]}
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                     keyboardVerticalOffset={0}
                 >
@@ -272,9 +280,24 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#FFFFFF',
     },
+    wrapperTablet: {
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+        paddingVertical: 16,
+    },
     container: {
         flex: 1,
         backgroundColor: '#FFFFFF',
+    },
+    containerTablet: {
+        width: '100%',
+        maxWidth: 920,
+        borderRadius: 20,
+        overflow: 'hidden',
+        flex: 0,
+        maxHeight: '92%',
     },
     header: {
         flexDirection: 'row',

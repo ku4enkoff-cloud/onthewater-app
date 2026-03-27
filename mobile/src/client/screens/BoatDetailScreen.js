@@ -18,6 +18,7 @@ import {
     KeyboardAvoidingView,
     Linking,
     NativeModules,
+    useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -289,6 +290,8 @@ function normalizeDisplayName(raw) {
 
 export default function BoatDetailScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
+    const { width: viewportWidth } = useWindowDimensions();
+    const isTablet = viewportWidth >= 768;
     const { user } = useContext(AuthContext);
     const favCtx = useContext(FavoritesContext);
     const toggleFavorite = favCtx?.toggleFavorite || (() => {});
@@ -805,7 +808,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                     </TouchableOpacity>
 
                     {/* ============ INFO GRID 2x2 ============ */}
-                    <View style={styles.infoGrid}>
+                    <View style={[styles.infoGrid, isTablet && styles.infoGridTablet]}>
                         <View style={styles.infoCell}>
                             <View style={[styles.infoBadge, { backgroundColor: responseBadgeColors.bg }]}>
                                 <Text style={[styles.infoBadgeText, { color: responseBadgeColors.fg }]}>{responseSpeedLabel}</Text>
@@ -913,7 +916,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                     {/* ============ BOOKING OPTIONS ============ */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Варианты бронирования</Text>
-                        <View style={styles.bookingCard}>
+                        <View style={[styles.bookingCard, isTablet && styles.bookingCardTablet]}>
                             <Text style={styles.bookingCardTitle}>
                                 {boat.captain_included ? 'С капитаном' : 'Аренда'}
                             </Text>
@@ -956,7 +959,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                         {displayTiers.length > 4 && (
                             <TouchableOpacity
                                 onPress={() => setBookingOptionsExpanded(!bookingOptionsExpanded)}
-                                style={styles.viewAllBtn}
+                                style={[styles.viewAllBtn, isTablet && styles.viewAllBtnTablet]}
                                 activeOpacity={0.7}
                             >
                                 <Text style={[styles.viewAll, { marginTop: 0, fontFamily: theme.fonts.semiBold }]}>
@@ -1114,7 +1117,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                     {/* ============ OWNER ============ */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Владелец</Text>
-                        <View style={styles.crewCard}>
+                        <View style={[styles.crewCard, isTablet && styles.crewCardTablet]}>
                             <View style={styles.crewTop}>
                                 <View style={{ flex: 1 }}>
                                     <Text style={styles.crewName}>
@@ -1780,6 +1783,11 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 14,
         marginBottom: 24, overflow: 'hidden',
     },
+    infoGridTablet: {
+        width: '100%',
+        maxWidth: 720,
+        alignSelf: 'center',
+    },
     infoCell: {
         width: '50%', paddingVertical: 18, alignItems: 'center', justifyContent: 'center', gap: 8,
     },
@@ -1799,6 +1807,11 @@ const styles = StyleSheet.create({
         marginTop: 12, paddingVertical: 12, paddingHorizontal: 16,
         backgroundColor: 'rgba(27,54,93,0.08)', borderRadius: 12, borderWidth: 1.5, borderColor: NAVY,
         alignItems: 'center',
+    },
+    viewAllBtnTablet: {
+        width: '100%',
+        maxWidth: 720,
+        alignSelf: 'center',
     },
     divider: { height: 1, backgroundColor: '#F3F4F6', marginVertical: 20 },
 
@@ -1834,6 +1847,11 @@ const styles = StyleSheet.create({
     /* Booking options */
     bookingCard: {
         borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 14, overflow: 'hidden',
+    },
+    bookingCardTablet: {
+        width: '100%',
+        maxWidth: 720,
+        alignSelf: 'center',
     },
     bookingCardTitle: {
         fontSize: 16, fontFamily: theme.fonts.semiBold, color: NAVY, textAlign: 'center', paddingVertical: 16,
@@ -1940,6 +1958,11 @@ const styles = StyleSheet.create({
     /* Crew / owner */
     crewCard: {
         borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 14, padding: 20,
+    },
+    crewCardTablet: {
+        width: '100%',
+        maxWidth: 720,
+        alignSelf: 'center',
     },
     crewTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
     crewName: { fontSize: 16, fontFamily: theme.fonts.bold, color: NAVY, marginBottom: 6 },

@@ -5,8 +5,8 @@ import {
     StyleSheet,
     TouchableOpacity,
     Modal,
-    ScrollView,
     Dimensions,
+    useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
@@ -42,6 +42,8 @@ const getCalendarGrid = (monthDate) => {
 
 export default function DatePickerModal({ visible, onClose, initialDate = null, onSelect }) {
     const insets = useSafeAreaInsets();
+    const { width } = useWindowDimensions();
+    const isTablet = width >= 768;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -76,16 +78,25 @@ export default function DatePickerModal({ visible, onClose, initialDate = null, 
         onClose?.();
     };
 
+    const handlePickDate = (pickedDate) => {
+        setSelectedDate(pickedDate);
+        // В этом флоу после выбора даты сразу возвращаемся назад.
+        onSelect?.(pickedDate);
+        onClose?.();
+    };
+
     if (!visible) return null;
 
     return (
         <Modal
             visible={visible}
-            animationType="slide"
-            presentationStyle="fullScreen"
+            animationType={isTablet ? 'fade' : 'slide'}
+            presentationStyle={isTablet ? 'overFullScreen' : 'fullScreen'}
+            transparent={isTablet}
             onRequestClose={onClose}
         >
-            <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + 24 }]}>
+            <View style={[styles.wrapper, isTablet && styles.wrapperTablet]}>
+                <View style={[styles.container, isTablet && styles.containerTablet, { paddingTop: insets.top, paddingBottom: insets.bottom + 24 }]}>
                 <View style={styles.header}>
                     <TouchableOpacity
                         onPress={onClose}
@@ -133,7 +144,7 @@ export default function DatePickerModal({ visible, onClose, initialDate = null, 
                                     !selectable && isCurrentMonth && styles.dayUnavailable,
                                     selected && styles.daySelected,
                                 ]}
-                                onPress={() => selectable && setSelectedDate(date)}
+                                onPress={() => selectable && handlePickDate(date)}
                                 disabled={!selectable}
                                 activeOpacity={selectable ? 0.7 : 1}
                             >
@@ -160,16 +171,36 @@ export default function DatePickerModal({ visible, onClose, initialDate = null, 
                 >
                     <Text style={styles.applyBtnText}>ПОИСК</Text>
                 </TouchableOpacity>
+                </View>
             </View>
         </Modal>
     );
 }
 
 const styles = StyleSheet.create({
+    wrapper: {
+        flex: 1,
+        backgroundColor: '#fff',
+    },
+    wrapperTablet: {
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+        paddingVertical: 16,
+    },
     container: {
         flex: 1,
         backgroundColor: '#fff',
         paddingHorizontal: 24,
+    },
+    containerTablet: {
+        width: '100%',
+        maxWidth: 920,
+        borderRadius: 20,
+        overflow: 'hidden',
+        flex: 0,
+        maxHeight: '92%',
     },
     header: {
         flexDirection: 'row',
