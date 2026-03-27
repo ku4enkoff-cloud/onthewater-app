@@ -45,8 +45,16 @@ router.get('/', authenticate, async (req, res, next) => {
         const showArchived = req.query.archived === '1';
         const { rows } = await pool.query(
             showArchived
-                ? 'SELECT * FROM chats WHERE user_id = $1 AND user_archived = true ORDER BY created_at DESC'
-                : 'SELECT * FROM chats WHERE user_id = $1 AND (user_archived = false OR user_archived IS NULL) ORDER BY created_at DESC',
+                ? `SELECT c.*, u.avatar AS owner_avatar
+                   FROM chats c
+                   LEFT JOIN users u ON u.id = c.owner_id
+                   WHERE c.user_id = $1 AND c.user_archived = true
+                   ORDER BY c.created_at DESC`
+                : `SELECT c.*, u.avatar AS owner_avatar
+                   FROM chats c
+                   LEFT JOIN users u ON u.id = c.owner_id
+                   WHERE c.user_id = $1 AND (c.user_archived = false OR c.user_archived IS NULL)
+                   ORDER BY c.created_at DESC`,
             [req.user.id]
         );
         res.json(rows);
