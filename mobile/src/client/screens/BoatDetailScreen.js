@@ -1077,7 +1077,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                             >
                                 <Image
                                     source={{
-                                        uri: `https://static-maps.yandex.ru/1.x/?ll=${boat.lng},${boat.lat}&size=${Math.round(width)},180&z=13&l=map&pt=${boat.lng},${boat.lat}`,
+                                        uri: `https://static-maps.yandex.ru/1.x/?ll=${boat.lng},${boat.lat}&size=${Math.min(650, Math.max(280, Math.round(viewportWidth - 40)))},180&z=13&l=map&pt=${boat.lng},${boat.lat}`,
                                     }}
                                     style={styles.staticMap}
                                     resizeMode="cover"
@@ -1141,7 +1141,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                                     ) : (
                                         <Image
                                             source={{
-                                                uri: `https://static-maps.yandex.ru/1.x/?ll=${boat.lng},${boat.lat}&size=${Math.round(width)},${Math.round(height * 0.5)}&z=14&l=map&pt=${boat.lng},${boat.lat}`,
+                                                uri: `https://static-maps.yandex.ru/1.x/?ll=${boat.lng},${boat.lat}&size=${Math.min(650, Math.max(320, Math.round(viewportWidth - 80)))},${Math.min(450, Math.max(220, Math.round((viewportHeight - insets.top - insets.bottom) * 0.5)))}&z=14&l=map&pt=${boat.lng},${boat.lat}`,
                                             }}
                                             style={styles.mapModalImage}
                                             resizeMode="cover"
@@ -1980,7 +1980,11 @@ const styles = StyleSheet.create({
         flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20,
     },
     mapModalContent: {
-        backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden', maxHeight: '90%',
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        overflow: 'hidden',
+        width: '100%',
+        height: '82%',
     },
     mapModalHeader: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -1989,7 +1993,11 @@ const styles = StyleSheet.create({
     mapModalTitle: { fontSize: 18, fontFamily: theme.fonts.bold, color: NAVY },
     mapModalClose: { padding: 4 },
     mapModalImage: {
-        width: '100%', height: 300, marginTop: 0, overflow: 'hidden',
+        width: '100%',
+        flex: 1,
+        minHeight: 320,
+        marginTop: 0,
+        overflow: 'hidden',
     },
     mapModalAddress: {
         fontSize: 14, fontFamily: theme.fonts.regular, color: theme.colors.gray700,
