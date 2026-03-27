@@ -235,7 +235,13 @@ router.post('/:id/messages', authenticate, async (req, res, next) => {
             `INSERT INTO messages (chat_id, text, sender, is_own) VALUES ($1, $2, $3, $4) RETURNING *`,
             [chatId, text, sender, isOwn]
         );
-        await pool.query('UPDATE chats SET last_message = $1 WHERE id = $2', [text, chatId]);
+        await pool.query(
+            `UPDATE chats
+             SET last_message = $1,
+                 user_archived = false
+             WHERE id = $2`,
+            [text, chatId]
+        );
         sendMessagePushToRecipient(recipientId, senderName, text, chatId);
         sendMessageEmailToClientIfEnabled({
             recipientId,
