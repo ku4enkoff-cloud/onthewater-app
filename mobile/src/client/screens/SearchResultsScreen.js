@@ -111,13 +111,16 @@ const pluralizeBookings = (n) => {
 };
 
 const formatCardLocation = (item) => {
-    const city = String(item?.location_city || '').trim();
-    const region = String(item?.location_region || '').trim();
-    if (!city && !region) return '';
-    if (!city) return region.toUpperCase();
-    if (!region) return city.toUpperCase();
-    if (city.toLowerCase() === region.toLowerCase()) return city.toUpperCase();
-    return `${city}, ${region}`.toUpperCase();
+    const city = String(item?.location_city || item?.locationCity || '').trim();
+    const region = String(item?.location_region || item?.locationRegion || '').trim();
+    const country = String(item?.location_country || item?.locationCountry || '').trim();
+    const address = String(item?.location_address || item?.locationAddress || '').trim();
+    if (city && region && city.toLowerCase() !== region.toLowerCase()) return `${city}, ${region}`.toUpperCase();
+    if (city) return city.toUpperCase();
+    if (region) return region.toUpperCase();
+    if (country) return country.toUpperCase();
+    if (address) return address.toUpperCase();
+    return '—';
 };
 
 const normalizeBoatTiers = (boat) => {

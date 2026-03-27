@@ -59,13 +59,16 @@ const BOAT_CARD_W = IS_TABLET
 const PLACEHOLDER_IMG = 'https://placehold.co/400x300/e2e8f0/64748b?text=';
 
 const formatCardLocation = (item) => {
-    const city = String(item?.location_city || '').trim();
-    const region = String(item?.location_region || '').trim();
-    if (!city && !region) return '—';
-    if (!city) return region;
-    if (!region) return city;
-    if (city.toLowerCase() === region.toLowerCase()) return city;
-    return `${city}, ${region}`;
+    const city = String(item?.location_city || item?.locationCity || '').trim();
+    const region = String(item?.location_region || item?.locationRegion || '').trim();
+    const country = String(item?.location_country || item?.locationCountry || '').trim();
+    const address = String(item?.location_address || item?.locationAddress || '').trim();
+    if (city && region && city.toLowerCase() !== region.toLowerCase()) return `${city}, ${region}`;
+    if (city) return city;
+    if (region) return region;
+    if (country) return country;
+    if (address) return address;
+    return '—';
 };
 
 const normalizeBoatTiers = (boat) => {
@@ -132,6 +135,11 @@ export default function SearchScreen({ navigation }) {
     const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
     const isLargeViewport = viewportWidth >= 600;
     const isTabletPortrait = isLargeViewport && viewportHeight >= viewportWidth;
+    const categoryGap = 16;
+    const categoryColumns = isLargeViewport ? (isTabletPortrait ? 2 : 3) : 2;
+    const categoryCardWidth = Math.floor(
+        (viewportWidth - theme.spacing.lg * 2 - categoryGap * (categoryColumns - 1)) / categoryColumns
+    );
     const boatCardWidth = isLargeViewport
         ? (isTabletPortrait
             ? Math.min(320, Math.max(240, viewportWidth * 0.42))
@@ -373,11 +381,11 @@ export default function SearchScreen({ navigation }) {
 
             {/* Top boating categories */}
             <Text style={styles.sectionTitle}>Категории катеров</Text>
-            <View style={styles.catGrid}>
+            <View style={[styles.catGrid, { gap: categoryGap }]}>
                 {(boatCategories.length ? boatCategories : FALLBACK_CATEGORIES).map((c, i) => (
                     <TouchableOpacity
                         key={`cat-${c.id}-${i}`}
-                        style={styles.catCard}
+                        style={[styles.catCard, { width: categoryCardWidth }]}
                         activeOpacity={0.9}
                         onPress={() => {
                             navigation.navigate('SearchResults', {

@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Pressable, Image, ScrollView, Alert, Modal, FlatList, TextInput, ActivityIndicator, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, Image, ScrollView, Alert, Modal, FlatList, TextInput, ActivityIndicator, Switch, useWindowDimensions } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthContext } from '../../shared/context/AuthContext';
@@ -41,6 +41,8 @@ function getReviewStatusMeta(status) {
 
 export default function ProfileScreen({ navigation }) {
     const insets = useSafeAreaInsets();
+    const { width, height } = useWindowDimensions();
+    const isTabletLandscape = width >= 768 && width > height;
     const { user, logout, refreshUser } = useContext(AuthContext);
     const { pushEnabled, setPushEnabled } = useContext(NotificationsContext);
     const { favoriteBoats } = useContext(FavoritesContext);
@@ -260,16 +262,24 @@ export default function ProfileScreen({ navigation }) {
 
     if (!user) {
         return (
-            <ScrollView style={styles.container} contentContainerStyle={[styles.guestContainer, { paddingTop: insets.top + 24 }]} showsVerticalScrollIndicator={false}>
+            <ScrollView
+                style={styles.container}
+                contentContainerStyle={[
+                    styles.guestContainer,
+                    { paddingTop: insets.top + 24 },
+                    isTabletLandscape && styles.tabletCenteredContent,
+                ]}
+                showsVerticalScrollIndicator={false}
+            >
                 <View style={styles.guestHeader}>
                     <View style={styles.avatarPlaceholder}><User size={60} color={theme.colors.gray400} /></View>
                     <Text style={styles.guestTitle}>Гость</Text>
                     <Text style={styles.guestSubtitle}>Войдите, чтобы бронировать катера и управлять профилем</Text>
                 </View>
-                <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate('Login', { fromProfile: true })}>
+                <TouchableOpacity style={[styles.loginButton, isTabletLandscape && styles.tabletButton]} onPress={() => navigation.navigate('Login', { fromProfile: true })}>
                     <Text style={styles.loginButtonText}>Войти</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.registerButton} onPress={() => navigation.navigate('Register', { fromProfile: true })}>
+                <TouchableOpacity style={[styles.registerButton, isTabletLandscape && styles.tabletButton]} onPress={() => navigation.navigate('Register', { fromProfile: true })}>
                     <Text style={styles.registerButtonText}>Регистрация</Text>
                 </TouchableOpacity>
                 <View style={styles.versionContainer}><Text style={styles.versionText}>ONTHEWATER v2.0.1</Text></View>
@@ -279,8 +289,16 @@ export default function ProfileScreen({ navigation }) {
 
     return (
         <>
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingTop: insets.top + 16 }} keyboardShouldPersistTaps="handled">
-            <View style={styles.profileCard}>
+        <ScrollView
+            style={styles.container}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[
+                { paddingBottom: insets.bottom + 32, paddingTop: insets.top + 16 },
+                isTabletLandscape && styles.tabletCenteredContent,
+            ]}
+            keyboardShouldPersistTaps="handled"
+        >
+            <View style={[styles.profileCard, isTabletLandscape && styles.tabletCard]}>
                 <View style={styles.profileRow}>
                     <Pressable onPress={handlePickAvatar} disabled={uploadingAvatar} style={({ pressed }) => [styles.avatarTouch, pressed && styles.avatarTouchPressed]} android_ripple={null}>
                         {user?.avatar ? (
@@ -323,7 +341,7 @@ export default function ProfileScreen({ navigation }) {
                     })}
                 </View>
             </View>
-            <View style={styles.menuCard}>
+            <View style={[styles.menuCard, isTabletLandscape && styles.tabletCard]}>
                 {menuItems.map((item, index) => {
                     const Icon = item.icon;
                     return (
@@ -335,7 +353,7 @@ export default function ProfileScreen({ navigation }) {
                     );
                 })}
             </View>
-            <TouchableOpacity style={[styles.logoutButton, loading && styles.logoutButtonDisabled]} onPress={handleLogout} disabled={loading}>
+            <TouchableOpacity style={[styles.logoutButton, isTabletLandscape && styles.tabletCard, loading && styles.logoutButtonDisabled]} onPress={handleLogout} disabled={loading}>
                 <LogOut size={20} color={theme.colors.error} />
                 <Text style={styles.logoutText}>Выйти</Text>
             </TouchableOpacity>
@@ -477,6 +495,19 @@ export default function ProfileScreen({ navigation }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.gray50 },
+    tabletCenteredContent: {
+        alignItems: 'center',
+    },
+    tabletCard: {
+        width: '100%',
+        maxWidth: 760,
+        alignSelf: 'center',
+    },
+    tabletButton: {
+        width: '100%',
+        maxWidth: 520,
+        alignSelf: 'center',
+    },
     profileCard: {
         marginHorizontal: theme.spacing.md,
         backgroundColor: '#fff',
