@@ -88,7 +88,19 @@ router.post('/', authenticate, async (req, res, next) => {
             [userId, boatId]
         );
         if (existing.length > 0) {
-            return res.status(200).json(existing[0]);
+            const existingChat = existing[0];
+            // If the client previously archived this dialog, restore it when opening chat again.
+            if (existingChat.user_archived === true) {
+                const { rows: restoredRows } = await pool.query(
+                    `UPDATE chats
+                     SET user_archived = false
+                     WHERE id = $1
+                     RETURNING *`,
+                    [existingChat.id]
+                );
+                return res.status(200).json(restoredRows[0] || existingChat);
+            }
+            return res.status(200).json(existingChat);
         }
         const { rows: ownerRows } = await pool.query(
             'SELECT name FROM users WHERE id = $1',

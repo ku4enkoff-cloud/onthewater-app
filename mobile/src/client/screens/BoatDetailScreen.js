@@ -290,8 +290,9 @@ function normalizeDisplayName(raw) {
 
 export default function BoatDetailScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
-    const { width: viewportWidth } = useWindowDimensions();
+    const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
     const isTablet = viewportWidth >= 768;
+    const isTabletLandscape = isTablet && viewportWidth > viewportHeight;
     const gallerySideInset = isTablet ? 16 : 0;
     const galleryGap = isTablet ? 12 : 0;
     const heroCardWidth = isTablet
@@ -635,7 +636,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
             >
                 {/* ============ HERO PHOTO ============ */}
-                <View style={[styles.gallery, isTablet && { marginTop: Math.max(insets.top + 12, 24) }]}>
+                <View style={[styles.gallery, { marginTop: insets.top }]}>
                     <ScrollView
                         horizontal
                         pagingEnabled={!isTablet}
@@ -682,7 +683,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                         style={[
                             styles.topNav,
                             {
-                                paddingTop: isTablet ? 8 : insets.top + 8,
+                                paddingTop: 8,
                                 left: gallerySideInset,
                                 right: gallerySideInset,
                             },
@@ -729,6 +730,10 @@ export default function BoatDetailScreen({ route, navigation }) {
                     animationType="fade"
                     onRequestClose={() => setPhotoGalleryVisible(false)}
                 >
+                    {(() => {
+                        const gallerySlideHeight = Math.max(240, viewportHeight - insets.top - insets.bottom - 40);
+                        return (
+                    <>
                     <View style={[fsGalleryStyles.overlay, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
                         <TouchableOpacity
                             style={[fsGalleryStyles.closeBtn, { top: insets.top + 8 }]}
@@ -738,6 +743,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                             <X size={28} color="#fff" />
                         </TouchableOpacity>
                         <FlatList
+                            key={`gallery-${viewportWidth}x${viewportHeight}`}
                             ref={galleryFlatListRef}
                             data={photos}
                             keyExtractor={(_, i) => String(i)}
@@ -745,13 +751,17 @@ export default function BoatDetailScreen({ route, navigation }) {
                             pagingEnabled
                             showsHorizontalScrollIndicator={false}
                             initialScrollIndex={Math.min(photoIndex, photos.length - 1)}
-                            getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+                            getItemLayout={(_, index) => ({ length: viewportWidth, offset: viewportWidth * index, index })}
                             onMomentumScrollEnd={(e) =>
-                                setPhotoIndex(Math.round(e.nativeEvent.contentOffset.x / width))
+                                setPhotoIndex(Math.round(e.nativeEvent.contentOffset.x / viewportWidth))
                             }
                             renderItem={({ item: uri }) => (
-                                <View style={fsGalleryStyles.slide}>
-                                    <Image source={{ uri }} style={fsGalleryStyles.fullImage} resizeMode="contain" />
+                                <View style={[fsGalleryStyles.slide, { width: viewportWidth, height: gallerySlideHeight }]}>
+                                    <Image
+                                        source={{ uri }}
+                                        style={[fsGalleryStyles.fullImage, { width: viewportWidth, height: gallerySlideHeight }]}
+                                        resizeMode="contain"
+                                    />
                                 </View>
                             )}
                         />
@@ -787,6 +797,9 @@ export default function BoatDetailScreen({ route, navigation }) {
                             </>
                         )}
                     </View>
+                    </>
+                        );
+                    })()}
                 </Modal>
 
                 <View style={styles.content}>
@@ -1303,6 +1316,7 @@ export default function BoatDetailScreen({ route, navigation }) {
 
             {/* ============ STICKY BOTTOM BAR ============ */}
             <View style={[styles.bottomBar, { paddingBottom: 12 + insets.bottom }]}>
+                <View style={[styles.bottomBarInner, isTablet && styles.bottomBarInnerTablet]}>
                 <View>
                     {(() => {
                         const activeDuration = selectedDuration || displayTiers[0]?.durationMin || 60;
@@ -1322,12 +1336,13 @@ export default function BoatDetailScreen({ route, navigation }) {
                 <TouchableOpacity style={styles.bookBtn} onPress={handleBook} activeOpacity={0.9}>
                     <Text style={styles.bookBtnText}>ЗАБРОНИРОВАТЬ</Text>
                 </TouchableOpacity>
+                </View>
             </View>
 
             {/* ============ BOOKING MODAL ============ */}
             <Modal visible={bookingVisible} animationType="slide" transparent onRequestClose={() => setBookingVisible(false)}>
-                <View style={bk.overlay}>
-                    <View style={[bk.sheet, { paddingBottom: insets.bottom + 16 }]}>
+                <View style={[bk.overlay, isTabletLandscape && bk.overlayTabletLandscape]}>
+                    <View style={[bk.sheet, isTabletLandscape && bk.sheetTabletLandscape, { paddingBottom: insets.bottom + 16 }]}>
                         {/* Header */}
                         <View style={bk.header}>
                             <TouchableOpacity onPress={() => setBookingVisible(false)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
@@ -1557,8 +1572,8 @@ export default function BoatDetailScreen({ route, navigation }) {
 
             {/* ============ TIME PICKER MODAL ============ */}
             <Modal visible={bookShowTimePicker} animationType="slide" transparent onRequestClose={() => setBookShowTimePicker(false)}>
-                <View style={tp.overlay}>
-                    <View style={[tp.sheet, { paddingBottom: insets.bottom + 16 }]}>
+                <View style={[tp.overlay, isTabletLandscape && tp.overlayTabletLandscape]}>
+                    <View style={[tp.sheet, isTabletLandscape && tp.sheetTabletLandscape, { paddingBottom: insets.bottom + 16 }]}>
                         <View style={tp.header}>
                             <TouchableOpacity onPress={() => setBookShowTimePicker(false)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                                 <X size={22} color={NAVY} />
@@ -2056,9 +2071,18 @@ const styles = StyleSheet.create({
     /* Bottom bar */
     bottomBar: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
         backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#E5E7EB',
         paddingHorizontal: 20, paddingTop: 14,
+    },
+    bottomBarInner: {
+        width: '100%',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    bottomBarInnerTablet: {
+        maxWidth: 720,
     },
     bottomPriceLabel: { fontSize: 12, fontFamily: theme.fonts.regular, color: theme.colors.textMuted, marginBottom: 2 },
     bottomPrice: { fontSize: 22, fontFamily: theme.fonts.bold, color: NAVY },
@@ -2146,7 +2170,15 @@ const fsGalleryStyles = StyleSheet.create({
 
 const bk = StyleSheet.create({
     overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+    overlayTabletLandscape: { justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 16 },
     sheet: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '95%' },
+    sheetTabletLandscape: {
+        width: '100%',
+        maxWidth: 760,
+        alignSelf: 'center',
+        borderRadius: 20,
+        maxHeight: '90%',
+    },
     header: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
@@ -2204,9 +2236,17 @@ const bk = StyleSheet.create({
 
 const tp = StyleSheet.create({
     overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
+    overlayTabletLandscape: { justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 16 },
     sheet: {
         backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20,
         paddingTop: 16, maxHeight: '80%',
+    },
+    sheetTabletLandscape: {
+        width: '100%',
+        maxWidth: 760,
+        alignSelf: 'center',
+        borderRadius: 20,
+        maxHeight: '90%',
     },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

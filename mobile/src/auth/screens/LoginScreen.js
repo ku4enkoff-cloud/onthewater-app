@@ -8,6 +8,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     Alert,
+    useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthContext } from '../../shared/context/AuthContext';
@@ -15,6 +16,8 @@ import { theme } from '../../shared/theme';
 import { API_BASE } from '../../shared/infrastructure/config';
 
 export default function LoginScreen({ navigation, route }) {
+    const { width, height } = useWindowDimensions();
+    const isTabletLandscape = width >= 768 && width > height;
     const { login } = useContext(AuthContext);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -56,7 +59,7 @@ export default function LoginScreen({ navigation, route }) {
     return (
         <SafeAreaView style={styles.container}>
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
-                <View style={styles.content}>
+                <View style={[styles.content, isTabletLandscape && styles.contentTabletLandscape]}>
                     <Text style={[theme.typography.h1, { marginBottom: 8 }]}>Добро пожаловать</Text>
                     <Text style={[theme.typography.body, { color: theme.colors.textMuted, marginBottom: 32 }]}>
                         Войдите, чтобы продолжить
@@ -91,6 +94,11 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
     keyboardView: { flex: 1 },
     content: { flex: 1, paddingHorizontal: theme.spacing.lg, justifyContent: 'center' },
+    contentTabletLandscape: {
+        width: '100%',
+        maxWidth: 640,
+        alignSelf: 'center',
+    },
     inputContainer: { marginBottom: theme.spacing.md },
     label: { ...theme.typography.bodySm, fontWeight: 'bold', marginBottom: 8 },
     input: { borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.borderRadius.md, padding: 14, fontSize: 16, backgroundColor: theme.colors.surface },

@@ -172,8 +172,8 @@ const getBoatAmenities = (boat) => {
 export default function SearchResultsScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
     const { width } = useWindowDimensions();
-    const isTablet = width >= 768;
-    const tabletColumns = isTablet ? (width >= 1300 ? 3 : 2) : 1;
+    const isTablet = width >= 600;
+    const tabletColumns = isTablet ? (width >= 1200 ? 3 : 2) : 1;
     const gridGap = 12;
     const listSidePadding = theme.spacing.md;
     const cardWidth = isTablet

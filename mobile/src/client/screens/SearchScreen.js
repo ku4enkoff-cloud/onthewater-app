@@ -11,6 +11,7 @@ import {
     ScrollView,
     RefreshControl,
     AppState,
+    useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -128,6 +129,14 @@ function DestinationImage({ uri, style, refreshKey: _ }) {
 
 export default function SearchScreen({ navigation }) {
     const insets = useSafeAreaInsets();
+    const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
+    const isLargeViewport = viewportWidth >= 600;
+    const isTabletPortrait = isLargeViewport && viewportHeight >= viewportWidth;
+    const boatCardWidth = isLargeViewport
+        ? (isTabletPortrait
+            ? Math.min(320, Math.max(240, viewportWidth * 0.42))
+            : Math.min(380, Math.max(280, viewportWidth * 0.34)))
+        : viewportWidth * 0.78;
     const { toggleFavorite, isFavorite } = useContext(FavoritesContext);
     const [boats, setBoats] = useState([]);
     const [boatCategories, setBoatCategories] = useState([]);
@@ -220,7 +229,7 @@ export default function SearchScreen({ navigation }) {
 
         return (
             <TouchableOpacity
-                style={[styles.card, horizontal && { width: BOAT_CARD_W, marginRight: 16, marginBottom: 0 }]}
+                style={[styles.card, horizontal && { width: boatCardWidth, marginRight: 16, marginBottom: 0 }]}
                 onPress={() => navigation.navigate('BoatDetail', { boatId: item.id })}
                 activeOpacity={0.95}
             >

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, RefreshControl, Linking, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, RefreshControl, Linking, Alert, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
@@ -12,6 +12,15 @@ const resolvePhotoUri = (src) => getPhotoUrl(src) || 'https://placehold.co/400x2
 
 export default function BookingsScreen({ navigation }) {
     const insets = useSafeAreaInsets();
+    const { width, height } = useWindowDimensions();
+    const isPortrait = height >= width;
+    const isTabletPortrait = width >= 600 && isPortrait;
+    const isTabletLandscape = width >= 900 && !isPortrait;
+    const columns = isTabletLandscape ? 3 : (isTabletPortrait ? 2 : 1);
+    const gridGap = 12;
+    const cardWidth = columns > 1
+        ? Math.floor((width - theme.spacing.lg * 2 - gridGap * (columns - 1)) / columns)
+        : null;
     const { user } = useContext(AuthContext);
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -90,7 +99,11 @@ export default function BookingsScreen({ navigation }) {
         const photoSrc = item.boat_photo || item.boat_image;
         const photoUri = resolvePhotoUri(typeof photoSrc === 'string' ? photoSrc : (photoSrc?.location || photoSrc?.url)) || 'https://placehold.co/400x200?text=Фото';
         return (
-        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('BookingDetail', { bookingId: item.id })} activeOpacity={0.8}>
+        <TouchableOpacity
+            style={[styles.card, columns > 1 && { width: cardWidth }]}
+            onPress={() => navigation.navigate('BookingDetail', { bookingId: item.id })}
+            activeOpacity={0.8}
+        >
             <Image source={{ uri: photoUri }} style={styles.cardImage} />
             <View style={styles.cardContent}>
                 <View style={styles.cardHeader}>
@@ -178,6 +191,9 @@ export default function BookingsScreen({ navigation }) {
                 data={bookings}
                 renderItem={renderBookingCard}
                 keyExtractor={item => item.id.toString()}
+                key={columns}
+                numColumns={columns}
+                columnWrapperStyle={columns > 1 ? styles.gridRow : undefined}
                 contentContainerStyle={[styles.listContainer, { paddingBottom: insets.bottom + 88 }]}
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />}
@@ -212,6 +228,10 @@ const styles = StyleSheet.create({
     headerTitle: { fontSize: 22, fontFamily: theme.fonts.bold, color: theme.colors.gray900 },
     headerSubtitle: { fontSize: 14, color: theme.colors.gray500, marginTop: 4 },
     listContainer: { paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.md },
+    gridRow: {
+        justifyContent: 'space-between',
+        marginBottom: theme.spacing.md,
+    },
     card: {
         backgroundColor: '#fff',
         borderRadius: 20,
