@@ -292,6 +292,12 @@ export default function BoatDetailScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
     const { width: viewportWidth } = useWindowDimensions();
     const isTablet = viewportWidth >= 768;
+    const gallerySideInset = isTablet ? 16 : 0;
+    const galleryGap = isTablet ? 12 : 0;
+    const heroCardWidth = isTablet
+        ? Math.min(920, Math.max(700, viewportWidth - 180))
+        : width;
+    const gallerySnap = heroCardWidth + galleryGap;
     const { user } = useContext(AuthContext);
     const favCtx = useContext(FavoritesContext);
     const toggleFavorite = favCtx?.toggleFavorite || (() => {});
@@ -629,13 +635,16 @@ export default function BoatDetailScreen({ route, navigation }) {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
             >
                 {/* ============ HERO PHOTO ============ */}
-                <View style={styles.gallery}>
+                <View style={[styles.gallery, isTablet && { marginTop: Math.max(insets.top + 12, 24) }]}>
                     <ScrollView
                         horizontal
-                        pagingEnabled
+                        pagingEnabled={!isTablet}
+                        snapToInterval={isTablet ? gallerySnap : undefined}
+                        decelerationRate={isTablet ? 'fast' : 'normal'}
                         showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={isTablet ? styles.galleryScrollContentTablet : undefined}
                         onMomentumScrollEnd={(e) =>
-                            setPhotoIndex(Math.round(e.nativeEvent.contentOffset.x / width))
+                            setPhotoIndex(Math.round(e.nativeEvent.contentOffset.x / (isTablet ? gallerySnap : width)))
                         }
                     >
                         {photos.map((uri, i) => (
@@ -646,9 +655,21 @@ export default function BoatDetailScreen({ route, navigation }) {
                                     setPhotoIndex(i);
                                     setPhotoGalleryVisible(true);
                                 }}
-                                style={styles.heroImageWrap}
+                                style={[
+                                    styles.heroImageWrap,
+                                    isTablet && {
+                                        width: heroCardWidth,
+                                        marginRight: galleryGap,
+                                        borderRadius: 14,
+                                        overflow: 'hidden',
+                                    },
+                                ]}
                             >
-                                <Image source={{ uri }} style={styles.heroImage} resizeMode="cover" />
+                                <Image
+                                    source={{ uri }}
+                                    style={[styles.heroImage, isTablet && { width: heroCardWidth, height: 440 }]}
+                                    resizeMode="cover"
+                                />
                             </TouchableOpacity>
                         ))}
                     </ScrollView>
@@ -657,7 +678,16 @@ export default function BoatDetailScreen({ route, navigation }) {
                         style={StyleSheet.absoluteFill}
                         pointerEvents="none"
                     />
-                    <View style={[styles.topNav, { paddingTop: insets.top + 8 }]}>
+                    <View
+                        style={[
+                            styles.topNav,
+                            {
+                                paddingTop: isTablet ? 8 : insets.top + 8,
+                                left: gallerySideInset,
+                                right: gallerySideInset,
+                            },
+                        ]}
+                    >
                         <TouchableOpacity style={styles.navBtn} onPress={() => navigation.goBack()}>
                             <ChevronLeft size={22} color={NAVY} />
                         </TouchableOpacity>
@@ -1734,6 +1764,9 @@ const styles = StyleSheet.create({
 
     /* Gallery */
     gallery: { position: 'relative' },
+    galleryScrollContentTablet: {
+        paddingHorizontal: 16,
+    },
     heroImageWrap: { width, height: IMAGE_HEIGHT },
     heroImage: { width, height: IMAGE_HEIGHT },
     topNav: {
