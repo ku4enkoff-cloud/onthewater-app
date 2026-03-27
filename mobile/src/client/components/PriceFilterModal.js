@@ -28,6 +28,9 @@ function RangeSlider({ low, high, min, max, onChange }) {
     const trackRef = useRef(null);
     const layoutX = useRef(0);
     const layoutW = useRef(DEFAULT_TRACK_W);
+    const [trackW, setTrackW] = useState(DEFAULT_TRACK_W);
+    const lowDragOffset = useRef(0);
+    const highDragOffset = useRef(0);
     const lowRef = useRef(low);
     const highRef = useRef(high);
     lowRef.current = low;
@@ -36,12 +39,15 @@ function RangeSlider({ low, high, min, max, onChange }) {
     const measureTrack = () => {
         trackRef.current?.measureInWindow?.((x, _y, w) => {
             layoutX.current = x;
-            if (w > 0) layoutW.current = w;
+            if (w > 0) {
+                layoutW.current = w;
+                setTrackW(w);
+            }
         });
     };
 
     /** Эффективная ширина трека: минус места под бегунки по краям */
-    const effectiveW = () => Math.max(0, layoutW.current - THUMB_R * 2);
+    const effectiveW = () => Math.max(0, trackW - THUMB_R * 2);
     const toX = (val) => {
         const w = effectiveW();
         if (w <= 0) return THUMB_R;
@@ -58,12 +64,18 @@ function RangeSlider({ low, high, min, max, onChange }) {
         PanResponder.create({
             onStartShouldSetPanResponder: () => true,
             onMoveShouldSetPanResponder: () => true,
-            onPanResponderGrant: () => {
+            onPanResponderGrant: (_, g) => {
                 measureTrack();
+                const currentValue = isHigh ? highRef.current : lowRef.current;
+                const thumbCenterX = toX(currentValue);
+                const offset = g.x0 - (layoutX.current + thumbCenterX);
+                if (isHigh) highDragOffset.current = offset;
+                else lowDragOffset.current = offset;
             },
             onPanResponderMove: (_, g) => {
-                const rawX = g.moveX - layoutX.current;
-                const x = clamp(rawX, THUMB_R, layoutW.current - THUMB_R);
+                const dragOffset = isHigh ? highDragOffset.current : lowDragOffset.current;
+                const rawX = g.moveX - layoutX.current - dragOffset;
+                const x = clamp(rawX, THUMB_R, trackW - THUMB_R);
                 const val = toVal(x);
                 const step = Math.max(100, Math.round((max - min) / 50));
                 const currentLow = lowRef.current;
@@ -81,16 +93,19 @@ function RangeSlider({ low, high, min, max, onChange }) {
 
     const onLayout = (e) => {
         const w = e.nativeEvent.layout.width;
-        if (w > 0) layoutW.current = w;
+        if (w > 0) {
+            layoutW.current = w;
+            setTrackW(w);
+        }
         measureTrack();
     };
 
     const lowX = toX(low);
     const highX = toX(high);
 
-    const maxThumbRight = Math.max(0, layoutW.current - THUMB_R * 2);
-    const lowThumbLeft = Math.max(0, lowX - THUMB_R);
-    const highThumbLeft = Math.min(Math.max(highX - THUMB_R, lowThumbLeft + THUMB_R * 2), maxThumbRight);
+    const maxThumbRight = Math.max(0, trackW - THUMB_R * 2);
+    const lowThumbLeft = clamp(lowX - THUMB_R, 0, maxThumbRight);
+    const highThumbLeft = clamp(highX - THUMB_R, 0, maxThumbRight);
 
     return (
         <View ref={trackRef} style={[sliderStyles.track, { width: '100%' }]} onLayout={onLayout}>
