@@ -16,7 +16,7 @@ import { api } from '../../shared/infrastructure/api';
 import { getPhotoUrl } from '../../shared/infrastructure/config';
 import { AuthContext } from '../../shared/context/AuthContext';
 import UnauthorizedCard from '../../shared/components/UnauthorizedCard';
-import { MessageCircle, User, Archive, ChevronRight, X, ArchiveRestore } from 'lucide-react-native';
+import { MessageCircle, User, Archive, ChevronRight, X, ArchiveRestore, Trash2 } from 'lucide-react-native';
 const BLUE_PRIMARY = '#1E5DB8';
 
 export default function ChatScreen({ navigation }) {
@@ -48,7 +48,24 @@ export default function ChatScreen({ navigation }) {
     const fetchChats = async () => {
         try {
             const res = await api.get('/chats');
-            setChats(Array.isArray(res.data) ? res.data : []);
+            const base = Array.isArray(res.data) ? res.data : [];
+            const needsAvatar = base.filter((c) => !c?.owner_avatar);
+            if (needsAvatar.length > 0) {
+                const enriched = await Promise.all(
+                    base.map(async (chat) => {
+                        if (chat?.owner_avatar) return chat;
+                        try {
+                            const detail = await api.get(`/chats/${chat.id}`);
+                            return { ...chat, owner_avatar: detail?.data?.owner_avatar || null };
+                        } catch (_) {
+                            return chat;
+                        }
+                    })
+                );
+                setChats(enriched);
+            } else {
+                setChats(base);
+            }
         } catch (e) {
             console.log('Error fetching chats', e);
             setChats([]);
@@ -71,6 +88,15 @@ export default function ChatScreen({ navigation }) {
         }
     };
 
+    const handleDeleteChat = async (item) => {
+        try {
+            await api.delete(`/chats/${item.id}`);
+            setChats(prev => prev.filter(c => c.id !== item.id));
+        } catch (e) {
+            console.log('Error deleting chat', e);
+        }
+    };
+
     const handleUnarchiveChat = async (item) => {
         try {
             await api.patch(`/chats/${item.id}/unarchive`);
@@ -82,14 +108,24 @@ export default function ChatScreen({ navigation }) {
     };
 
     const renderRightActions = (item) => (
-        <TouchableOpacity
-            style={styles.archiveAction}
-            onPress={() => handleArchiveChat(item)}
-            activeOpacity={0.8}
-        >
-            <Archive size={22} color="#fff" strokeWidth={2} />
-            <Text style={styles.archiveActionText}>Переместить в архив</Text>
-        </TouchableOpacity>
+        <View style={styles.swipeActions}>
+            <TouchableOpacity
+                style={[styles.swipeAction, styles.deleteAction]}
+                onPress={() => handleDeleteChat(item)}
+                activeOpacity={0.8}
+            >
+                <Trash2 size={20} color="#fff" strokeWidth={2} />
+                <Text style={styles.swipeActionText}>Удалить</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={[styles.swipeAction, styles.archiveAction]}
+                onPress={() => handleArchiveChat(item)}
+                activeOpacity={0.8}
+            >
+                <Archive size={20} color="#fff" strokeWidth={2} />
+                <Text style={styles.swipeActionText}>В архив</Text>
+            </TouchableOpacity>
+        </View>
     );
 
     const renderChatItem = ({ item }) => {
@@ -105,7 +141,12 @@ export default function ChatScreen({ navigation }) {
 
         const statusLabel = item.status_label || item.status_text || item.status;
 
-        const ownerAvatarUri = getPhotoUrl(item.owner_avatar) || item.owner_avatar;
+        const ownerAvatarRaw = typeof item.owner_avatar === 'string'
+            ? item.owner_avatar.trim()
+            : item.owner_avatar;
+        const ownerAvatarUri = ownerAvatarRaw && ownerAvatarRaw !== 'null' && ownerAvatarRaw !== 'undefined'
+            ? (getPhotoUrl(ownerAvatarRaw) || ownerAvatarRaw)
+            : null;
         return (
             <Swipeable
                 renderRightActions={() => renderRightActions(item)}
@@ -259,13 +300,21 @@ export default function ChatScreen({ navigation }) {
                                         activeOpacity={0.7}
                                     >
                                         <View style={styles.avatarContainer}>
-                                            {(getPhotoUrl(item.owner_avatar) || item.owner_avatar) ? (
-                                                <Image source={{ uri: getPhotoUrl(item.owner_avatar) || item.owner_avatar }} style={styles.avatar} />
-                                            ) : (
-                                                <View style={styles.avatarPlaceholder}>
-                                                    <User size={24} color={theme.colors.gray400} />
-                                                </View>
-                                            )}
+                                            {(() => {
+                                                const raw = typeof item.owner_avatar === 'string'
+                                                    ? item.owner_avatar.trim()
+                                                    : item.owner_avatar;
+                                                const uri = raw && raw !== 'null' && raw !== 'undefined'
+                                                    ? (getPhotoUrl(raw) || raw)
+                                                    : null;
+                                                return uri ? (
+                                                    <Image source={{ uri }} style={styles.avatar} />
+                                                ) : (
+                                                    <View style={styles.avatarPlaceholder}>
+                                                        <User size={24} color={theme.colors.gray400} />
+                                                    </View>
+                                                );
+                                            })()}
                                         </View>
                                         <View style={styles.chatContent}>
                                             <Text style={styles.ownerName} numberOfLines={1}>{item.owner_name}</Text>
@@ -398,14 +447,16 @@ const styles = StyleSheet.create({
     },
     emptyTitle: { ...theme.typography.h2, color: theme.colors.gray900, marginBottom: theme.spacing.sm },
     emptySubtitle: { ...theme.typography.bodySm, color: theme.colors.gray500, textAlign: 'center' },
-    archiveAction: {
-        backgroundColor: theme.colors.gray700,
+    swipeActions: { flexDirection: 'row', alignItems: 'stretch' },
+    swipeAction: {
+        width: 92,
         justifyContent: 'center',
         alignItems: 'center',
-        width: 120,
         marginBottom: 1,
     },
-    archiveActionText: {
+    deleteAction: { backgroundColor: '#DC2626' },
+    archiveAction: { backgroundColor: theme.colors.gray700 },
+    swipeActionText: {
         color: '#fff',
         fontSize: 11,
         fontFamily: theme.fonts.semiBold,
