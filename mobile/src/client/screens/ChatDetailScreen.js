@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
+import { getPhotoUrl } from '../../shared/infrastructure/config';
 import { AuthContext } from '../../shared/context/AuthContext';
 import { ChevronLeft, Send, Lock, User } from 'lucide-react-native';
 const BLUE = '#1E5DB8';
@@ -40,6 +41,13 @@ export default function ChatDetailScreen({ route, navigation }) {
             hide.remove();
         };
     }, []);
+
+    useEffect(() => {
+        const id = setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: keyboardVisible });
+        }, 30);
+        return () => clearTimeout(id);
+    }, [keyboardVisible, messages.length]);
 
     const inputRowPaddingBottom =
         Platform.OS === 'android' && keyboardVisible
@@ -96,7 +104,8 @@ export default function ChatDetailScreen({ route, navigation }) {
     const myName = currentUser?.name || currentUser?.first_name || 'Вы';
     const ownerName = chat?.owner_name || 'Владелец';
     const clientName = chat?.user_name || chat?.client_name || 'Клиент';
-    const clientAvatar = chat?.user_avatar || chat?.client_avatar || null;
+    const clientAvatar = getPhotoUrl(chat?.user_avatar || chat?.client_avatar) || chat?.user_avatar || chat?.client_avatar || null;
+    const ownerAvatar = getPhotoUrl(chat?.owner_avatar) || chat?.owner_avatar || null;
 
     const tripLabel =
         chat?.trip_date_formatted ||
@@ -107,10 +116,8 @@ export default function ChatDetailScreen({ route, navigation }) {
         ? (chat?.user_name || chat?.client_name || 'Клиент')
         : (chat?.owner_name || 'Владелец');
 
-    const messagesReversed = React.useMemo(() => [...messages].reverse(), [messages]);
-
     const renderMessage = ({ item, index }) => {
-        const nextItem = messagesReversed[index + 1];
+        const nextItem = messages[index + 1];
         const isLastInGroup = !nextItem || nextItem.sender !== item.sender;
         const isMe = item.sender === (currentUser?.role === 'owner' ? 'owner' : 'me');
         const timeStr = formatTime(item.created_at || item.createdAt);
@@ -140,8 +147,8 @@ export default function ChatDetailScreen({ route, navigation }) {
                     <View style={[styles.messageMeta, styles.messageMetaThem]}>
                         <View style={styles.avatarSmallWrap}>
                             {isOwnerSender ? (
-                                chat?.owner_avatar ? (
-                                    <Image source={{ uri: chat.owner_avatar }} style={styles.avatarSmall} />
+                                ownerAvatar ? (
+                                    <Image source={{ uri: ownerAvatar }} style={styles.avatarSmall} />
                                 ) : (
                                     <View style={styles.avatarSmallPlaceholder}>
                                         <User size={12} color={theme.colors.gray500} />
@@ -167,6 +174,14 @@ export default function ChatDetailScreen({ route, navigation }) {
             </View>
         );
     };
+
+    useEffect(() => {
+        if (loading) return;
+        const id = setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: false });
+        }, 0);
+        return () => clearTimeout(id);
+    }, [loading, messages.length]);
 
     return (
         <View style={styles.container}>
@@ -231,14 +246,15 @@ export default function ChatDetailScreen({ route, navigation }) {
                 >
                     <FlatList
                         ref={flatListRef}
-                        data={messagesReversed}
+                        data={messages}
                         renderItem={renderMessage}
                         keyExtractor={item => (item.id || item._id || Math.random()).toString()}
                         contentContainerStyle={styles.messagesList}
                         showsVerticalScrollIndicator={false}
-                        inverted
                         keyboardShouldPersistTaps="handled"
-                        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+                        onContentSizeChange={() => {
+                            flatListRef.current?.scrollToEnd({ animated: keyboardVisible });
+                        }}
                     />
                     <View style={[styles.inputRow, { paddingBottom: inputRowPaddingBottom }]}>
                         <TextInput

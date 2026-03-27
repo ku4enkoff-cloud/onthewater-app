@@ -13,6 +13,7 @@ import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
+import { getPhotoUrl } from '../../shared/infrastructure/config';
 import { AuthContext } from '../../shared/context/AuthContext';
 import UnauthorizedCard from '../../shared/components/UnauthorizedCard';
 import { MessageCircle, User, Archive, ChevronRight, X, ArchiveRestore } from 'lucide-react-native';
@@ -104,6 +105,7 @@ export default function ChatScreen({ navigation }) {
 
         const statusLabel = item.status_label || item.status_text || item.status;
 
+        const ownerAvatarUri = getPhotoUrl(item.owner_avatar) || item.owner_avatar;
         return (
             <Swipeable
                 renderRightActions={() => renderRightActions(item)}
@@ -116,8 +118,8 @@ export default function ChatScreen({ navigation }) {
                 activeOpacity={0.7}
             >
                 <View style={styles.avatarContainer}>
-                    {item.owner_avatar ? (
-                        <Image source={{ uri: item.owner_avatar }} style={styles.avatar} />
+                    {ownerAvatarUri ? (
+                        <Image source={{ uri: ownerAvatarUri }} style={styles.avatar} />
                     ) : (
                         <View style={styles.avatarPlaceholder}>
                             <User size={24} color={theme.colors.gray400} />
@@ -257,8 +259,8 @@ export default function ChatScreen({ navigation }) {
                                         activeOpacity={0.7}
                                     >
                                         <View style={styles.avatarContainer}>
-                                            {item.owner_avatar ? (
-                                                <Image source={{ uri: item.owner_avatar }} style={styles.avatar} />
+                                            {(getPhotoUrl(item.owner_avatar) || item.owner_avatar) ? (
+                                                <Image source={{ uri: getPhotoUrl(item.owner_avatar) || item.owner_avatar }} style={styles.avatar} />
                                             ) : (
                                                 <View style={styles.avatarPlaceholder}>
                                                     <User size={24} color={theme.colors.gray400} />
