@@ -7,6 +7,7 @@ import { SITE_MAIN_URL, getPhotoUrl } from '../config'
 import {
   allPhotoUrls,
   formatCardLocation,
+  formatPriceRu,
   getMinDurationPrice,
   minDurationLabel,
 } from '../boatUtils'
@@ -483,9 +484,10 @@ export default function BoatDetailPage() {
         <aside className="bd-aside">
           <div className="bd-bookCard">
             <div className="bd-bookCard__price">
-              от
-              <strong>{selectedTierPrice.toLocaleString('ru-RU')} ₽</strong>
-              <span className="bd-bookCard__unit"> / {minDurationLabel({ schedule_min_duration: Number(bookDuration) || boat.schedule_min_duration })}</span>
+              <strong>{formatPriceRu(selectedTierPrice)} ₽</strong>
+              <span className="bd-bookCard__unit">
+                за {minDurationLabel({ schedule_min_duration: Number(bookDuration) || boat.schedule_min_duration })}
+              </span>
             </div>
 
             <div className="bd-bookCard__field">
@@ -509,7 +511,7 @@ export default function BoatDetailPage() {
               >
                 {durationOptions.map((t) => (
                   <option key={t.duration} value={String(t.duration)}>
-                    {minDurationLabel({ schedule_min_duration: t.duration })} — {t.price.toLocaleString('ru-RU')} ₽
+                    {minDurationLabel({ schedule_min_duration: t.duration })} — {formatPriceRu(t.price)} ₽
                   </option>
                 ))}
               </select>
