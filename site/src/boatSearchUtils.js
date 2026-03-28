@@ -20,6 +20,47 @@ export const LOCATION_OPTIONS = [
   { value: '__all', label: 'Все регионы' },
 ]
 
+/** localStorage: последний город по геолокации (значение из LOCATION_OPTIONS). */
+export const NEAREST_CITY_STORAGE_KEY = 'boatrent_nearest_city'
+
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371
+  const toRad = (d) => (d * Math.PI) / 180
+  const dLat = toRad(lat2 - lat1)
+  const dLon = toRad(lon2 - lon1)
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)))
+}
+
+/** Ближайший к точке город из списка направлений (есть координаты в CITY_COORDS). */
+export function getNearestCityKey(lat, lng) {
+  const keys = LOCATION_OPTIONS.map((o) => o.value).filter((v) => v !== '__all' && CITY_COORDS[v])
+  if (keys.length === 0) return 'Москва'
+  let best = keys[0]
+  let bestD = Infinity
+  for (const k of keys) {
+    const c = CITY_COORDS[k]
+    const d = haversineKm(lat, lng, c.lat, c.lon)
+    if (d < bestD) {
+      bestD = d
+      best = k
+    }
+  }
+  return best
+}
+
+export function readNearestCityFromStorage() {
+  try {
+    const s = localStorage.getItem(NEAREST_CITY_STORAGE_KEY)?.trim()
+    if (s && LOCATION_OPTIONS.some((o) => o.value === s)) return s
+  } catch {
+    /* ignore */
+  }
+  return null
+}
+
 export function isRegion(name) {
   return (
     name &&

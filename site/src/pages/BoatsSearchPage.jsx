@@ -16,10 +16,22 @@ import {
   filterBoatsList,
   formatPriceShort,
   isRegion,
+  readNearestCityFromStorage,
 } from '../boatSearchUtils'
 import BoatResultCard from '../components/search/BoatResultCard.jsx'
 import FiltersModal from '../components/search/FiltersModal.jsx'
 import YandexBoatsMap from '../components/search/YandexBoatsMap.jsx'
+
+function readInitialLocationKey() {
+  try {
+    const params = new URLSearchParams(window.location.search)
+    const c = params.get('city')?.trim()
+    if (c) return c
+  } catch {
+    /* ignore */
+  }
+  return readNearestCityFromStorage() || 'Москва'
+}
 
 function todayISO() {
   const d = new Date()
@@ -33,7 +45,7 @@ export default function BoatsSearchPage() {
   const [searchParams] = useSearchParams()
   const cityFromUrl = searchParams.get('city')?.trim() || ''
 
-  const [locationKey, setLocationKey] = useState(() => cityFromUrl || 'Москва')
+  const [locationKey, setLocationKey] = useState(readInitialLocationKey)
   const [dateStr] = useState(todayISO)
   const [allBoats, setAllBoats] = useState([])
   const [loading, setLoading] = useState(true)
@@ -88,6 +100,18 @@ export default function BoatsSearchPage() {
   useEffect(() => {
     if (!cityFromUrl) return
     setLocationKey(cityFromUrl)
+  }, [cityFromUrl])
+
+  useEffect(() => {
+    if (cityFromUrl) return
+    const onNearest = (e) => {
+      const city = e.detail?.city
+      if (city && LOCATION_OPTIONS.some((o) => o.value === city)) {
+        setLocationKey(city)
+      }
+    }
+    window.addEventListener('boatrent:nearest-city', onNearest)
+    return () => window.removeEventListener('boatrent:nearest-city', onNearest)
   }, [cityFromUrl])
 
   const locationSelectOptions = useMemo(() => {
