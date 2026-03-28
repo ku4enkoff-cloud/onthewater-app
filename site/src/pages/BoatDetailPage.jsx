@@ -58,9 +58,11 @@ function formatReviewDate(iso) {
 }
 
 export default function BoatDetailPage() {
-  const { boatSlug } = useParams()
+  /** В App.jsx параметр называется :boatId (значение вида "12" или "12-nazvanie-katera"). */
+  const { boatId: routeSegment, boatSlug: routeSlugAlt } = useParams()
+  const routeSegmentResolved = (routeSlugAlt ?? routeSegment ?? '').trim()
   const navigate = useNavigate()
-  const resolvedId = useMemo(() => parseBoatUrlParam(boatSlug), [boatSlug])
+  const resolvedId = useMemo(() => parseBoatUrlParam(routeSegmentResolved), [routeSegmentResolved])
   const [boat, setBoat] = useState(null)
   const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
@@ -108,12 +110,12 @@ export default function BoatDetailPage() {
 
   /** Канонический URL с актуальным slug из названия (старые ссылки /boats/5 тоже работают). */
   useEffect(() => {
-    if (!boat || !boatSlug) return
+    if (!boat || !routeSegmentResolved) return
     const seg = boatUrlSegment(boat)
-    if (seg && boatSlug !== seg) {
+    if (seg && routeSegmentResolved !== seg) {
       navigate(boatDetailPath(boat), { replace: true })
     }
-  }, [boat, boatSlug, navigate])
+  }, [boat, routeSegmentResolved, navigate])
 
   const photos = useMemo(() => {
     if (!boat) return [PLACEHOLDER]
