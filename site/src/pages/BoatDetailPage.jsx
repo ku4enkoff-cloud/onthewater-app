@@ -14,6 +14,7 @@ import {
   getBookingPeriodLabel,
   pluralizeReviews,
 } from '../boatSearchUtils'
+import BookingCalendarModal, { formatBookingDateRu } from '../components/booking/BookingCalendarModal.jsx'
 
 const PLACEHOLDER = 'https://placehold.co/1200x750/e8eef4/64748b?text=%D0%9A%D0%B0%D1%82%D0%B5%D1%80'
 const DESC_PREVIEW = 480
@@ -66,6 +67,7 @@ export default function BoatDetailPage() {
   const [descOpen, setDescOpen] = useState(false)
   const [bookDate, setBookDate] = useState(todayISO)
   const [bookDuration, setBookDuration] = useState('')
+  const [calendarOpen, setCalendarOpen] = useState(false)
 
   const load = useCallback(async () => {
     if (!boatId) return
@@ -192,10 +194,31 @@ export default function BoatDetailPage() {
         <button type="button" className="bd-back" onClick={() => navigate(-1)} aria-label="Назад">
           ← Назад
         </button>
-        <Link to="/" className="bd-back" style={{ marginLeft: 'auto' }}>
+        <div className="bd-topBar__center">
+          <button
+            type="button"
+            className="bd-topBar__date"
+            onClick={() => setCalendarOpen(true)}
+            aria-label="Выбрать дату бронирования"
+          >
+            <span className="bd-topBar__dateIcon" aria-hidden>
+              📅
+            </span>
+            <span className="bd-topBar__dateText">{formatBookingDateRu(bookDate)}</span>
+          </button>
+        </div>
+        <Link to="/" className="bd-back bd-topBar__brand">
           onthewater
         </Link>
       </header>
+
+      <BookingCalendarModal
+        open={calendarOpen}
+        onClose={() => setCalendarOpen(false)}
+        value={bookDate}
+        minDate={todayISO()}
+        onApply={(iso) => setBookDate(iso)}
+      />
 
       <div className="bd-layout">
         <main className="bd-main">
@@ -447,14 +470,15 @@ export default function BoatDetailPage() {
             </div>
 
             <div className="bd-bookCard__field">
-              <label htmlFor="bd-date">Дата</label>
-              <input
-                id="bd-date"
-                type="date"
-                value={bookDate}
-                min={todayISO()}
-                onChange={(e) => setBookDate(e.target.value)}
-              />
+              <label id="bd-date-label">Дата</label>
+              <button
+                type="button"
+                className="bd-bookCard__dateBtn"
+                aria-labelledby="bd-date-label"
+                onClick={() => setCalendarOpen(true)}
+              >
+                {formatBookingDateRu(bookDate)}
+              </button>
             </div>
 
             <div className="bd-bookCard__field">
