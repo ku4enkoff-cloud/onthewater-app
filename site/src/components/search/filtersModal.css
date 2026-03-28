@@ -121,15 +121,18 @@
 
 .fm-rangeTrack {
   position: relative;
-  height: 40px;
-  display: flex;
-  align-items: center;
+  width: 100%;
+  min-width: 200px;
+  height: 44px;
   touch-action: none;
 }
 
 .fm-rangeTrackInner {
-  position: relative;
-  width: 100%;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   height: 4px;
   background: #e5e7eb;
   border-radius: 2px;
@@ -137,24 +140,31 @@
 
 .fm-rangeFill {
   position: absolute;
+  left: 0;
+  top: 0;
   height: 4px;
   background: #1b365d;
   border-radius: 2px;
-  top: 0;
 }
 
 .fm-rangeThumb {
   position: absolute;
+  top: 50%;
   width: 24px;
   height: 24px;
-  margin-left: -12px;
-  margin-top: -10px;
+  margin: 0;
+  padding: 0;
   border-radius: 50%;
   background: #fff;
   border: 2px solid #1b365d;
-  top: 2px;
+  transform: translate(-50%, -50%);
   cursor: grab;
   z-index: 2;
+  box-sizing: border-box;
+}
+
+.fm-rangeThumb--high {
+  z-index: 3;
 }
 
 .fm-rangeThumb:active {

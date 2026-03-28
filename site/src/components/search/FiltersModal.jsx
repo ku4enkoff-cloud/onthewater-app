@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import './filtersModal.css'
 import { filterBoatsList, formatPriceShort } from '../../boatSearchUtils'
@@ -36,11 +36,23 @@ function DualRangeSlider({ low, high, min, max, onChange }) {
   const dragging = useRef(null)
   const lowRef = useRef(low)
   const highRef = useRef(high)
+  const [, setLayoutTick] = useState(0)
 
   useEffect(() => {
     lowRef.current = low
     highRef.current = high
   }, [low, high])
+
+  /** После открытия модалки ширина трека может быть 0 → оба thumb слева; перерисовываем при layout. */
+  useLayoutEffect(() => {
+    const el = trackRef.current
+    if (!el) return undefined
+    const bump = () => setLayoutTick((t) => t + 1)
+    const ro = new ResizeObserver(() => bump())
+    ro.observe(el)
+    bump()
+    return () => ro.disconnect()
+  }, [])
 
   const valFromClientX = useCallback(
     (clientX) => {
@@ -85,9 +97,11 @@ function DualRangeSlider({ low, high, min, max, onChange }) {
     }
   }, [onChange, valFromClientX, min, max])
 
+  const lo = Math.min(low, high)
+  const hi = Math.max(low, high)
   const span = max > min ? max - min : 1
-  const lowPct = ((low - min) / span) * 100
-  const highPct = ((high - min) / span) * 100
+  const lowPct = clamp(((lo - min) / span) * 100, 0, 100)
+  const highPct = clamp(((hi - min) / span) * 100, 0, 100)
 
   return (
     <div className="fm-rangeTrack" ref={trackRef}>
@@ -116,7 +130,7 @@ function DualRangeSlider({ low, high, min, max, onChange }) {
       />
       <button
         type="button"
-        className="fm-rangeThumb"
+        className="fm-rangeThumb fm-rangeThumb--high"
         style={{ left: `${highPct}%` }}
         aria-label="Максимальная цена"
         onMouseDown={(e) => {
