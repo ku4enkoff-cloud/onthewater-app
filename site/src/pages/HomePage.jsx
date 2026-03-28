@@ -160,26 +160,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer className="lp-footer">
-        <div className="lp-container lp-footerInner">
-          <div>
-            <strong>© {new Date().getFullYear()} ONTHEWATER</strong>
-            <p>Маркетплейс аренды катеров и яхт</p>
-          </div>
-          <div className="lp-footerLinks">
-            <Link to="/boats">Катера</Link>
-            <a href={SITE_MAIN_URL} target="_blank" rel="noopener noreferrer">
-              Политика конфиденциальности
-            </a>
-            <a href={SITE_MAIN_URL} target="_blank" rel="noopener noreferrer">
-              Условия
-            </a>
-            <a href={SITE_MAIN_URL} target="_blank" rel="noopener noreferrer">
-              Поддержка
-            </a>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }

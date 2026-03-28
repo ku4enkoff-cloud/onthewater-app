@@ -21,6 +21,7 @@ import BookingCalendarModal, { formatBookingDateRu } from '../components/booking
 
 const PLACEHOLDER = 'https://placehold.co/1200x750/e8eef4/64748b?text=%D0%9A%D0%B0%D1%82%D0%B5%D1%80'
 const DESC_PREVIEW = 480
+const FAVORITES_STORAGE_KEY = 'boatrent_site_favorites'
 
 function siteBaseUrl() {
   return SITE_MAIN_URL.replace(/\/$/, '')
@@ -111,6 +112,57 @@ export default function BoatDetailPage() {
   const [bookDate, setBookDate] = useState(todayISO)
   const [bookDuration, setBookDuration] = useState('')
   const [calendarOpen, setCalendarOpen] = useState(false)
+  const [favorite, setFavorite] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
+
+  useEffect(() => {
+    if (!resolvedId) return
+    try {
+      const list = JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY) || '[]')
+      const ids = Array.isArray(list) ? list.map(Number) : []
+      setFavorite(ids.includes(Number(resolvedId)))
+    } catch {
+      setFavorite(false)
+    }
+  }, [resolvedId])
+
+  const toggleFavorite = useCallback(() => {
+    if (!resolvedId) return
+    const id = Number(resolvedId)
+    try {
+      const raw = localStorage.getItem(FAVORITES_STORAGE_KEY)
+      const parsed = JSON.parse(raw || '[]')
+      const list = Array.isArray(parsed) ? parsed.map(Number) : []
+      const idx = list.indexOf(id)
+      const next = idx >= 0 ? list.filter((x) => x !== id) : [...list, id]
+      localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(next))
+      setFavorite(idx < 0)
+    } catch {
+      /* ignore */
+    }
+  }, [resolvedId])
+
+  const handleShare = useCallback(async () => {
+    if (!boat) return
+    const path = boatDetailPath(boat)
+    const url =
+      typeof window !== 'undefined' ? `${window.location.origin}${path.startsWith('/') ? path : `/${path}`}` : path
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: boat.title || 'Катер', url })
+        return
+      }
+    } catch {
+      /* ignore */
+    }
+    try {
+      await navigator.clipboard.writeText(url)
+      setShareCopied(true)
+      window.setTimeout(() => setShareCopied(false), 2000)
+    } catch {
+      /* ignore */
+    }
+  }, [boat])
 
   const load = useCallback(async () => {
     if (!resolvedId) {
@@ -267,63 +319,172 @@ export default function BoatDetailPage() {
       />
 
       <div className="bd-shell">
-        <div className={photos.length > 1 ? 'bd-galleryBs bd-galleryBs--split' : 'bd-galleryBs'}>
-          <div className="bd-galleryBs__grid">
-            <div className="bd-galleryBs__main">
-              <img src={photos[photoIndex]} alt="" className="bd-galleryBs__img" />
-              {boat.instant_booking !== false ? (
-                <div className="bd-galleryBs__badge">
-                  <span aria-hidden>⚡</span> Мгновенное бронирование
-                </div>
-              ) : null}
+        <div className="bd-topZone">
+          <div className={photos.length > 1 ? 'bd-galleryBs bd-galleryBs--split' : 'bd-galleryBs'}>
+            <div className="bd-galleryBs__grid">
+              <div className="bd-galleryBs__main">
+                <img src={photos[photoIndex]} alt="" className="bd-galleryBs__img" />
+                {boat.instant_booking !== false ? (
+                  <div className="bd-galleryBs__badge">
+                    <span aria-hidden>⚡</span> Мгновенное бронирование
+                  </div>
+                ) : null}
+                {photos.length > 1 ? (
+                  <>
+                    <button
+                      type="button"
+                      className="bd-galleryBs__nav bd-galleryBs__nav--prev"
+                      onClick={prevPhoto}
+                      aria-label="Предыдущее фото"
+                    >
+                      ‹
+                    </button>
+                    <div className="bd-galleryBs__counter" aria-live="polite">
+                      {photoIndex + 1} / {photos.length}
+                    </div>
+                    <button
+                      type="button"
+                      className="bd-galleryBs__nav bd-galleryBs__nav--next bd-galleryBs__nav--nextMob"
+                      onClick={nextPhoto}
+                      aria-label="Следующее фото"
+                    >
+                      ›
+                    </button>
+                  </>
+                ) : null}
+              </div>
               {photos.length > 1 ? (
-                <div className="bd-galleryBs__counter" aria-live="polite">
-                  {photoIndex + 1} / {photos.length}
+                <div className="bd-galleryBs__sideCol">
+                  <button
+                    type="button"
+                    className="bd-galleryBs__side"
+                    onClick={nextPhoto}
+                    aria-label="Следующее фото"
+                  >
+                    <img src={photos[(photoIndex + 1) % photos.length]} alt="" className="bd-galleryBs__img" />
+                  </button>
+                  <div className="bd-galleryBs__actions">
+                    <button
+                      type="button"
+                      className="bd-galleryBs__fab"
+                      onClick={toggleFavorite}
+                      aria-label={favorite ? 'Убрать из избранного' : 'В избранное'}
+                      aria-pressed={favorite}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>
+                        {favorite ? (
+                          <path
+                            fill="currentColor"
+                            d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                          />
+                        ) : (
+                          <path
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.75"
+                            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+                          />
+                        )}
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      className="bd-galleryBs__fab"
+                      onClick={handleShare}
+                      aria-label={shareCopied ? 'Ссылка скопирована' : 'Поделиться'}
+                      title={shareCopied ? 'Ссылка скопирована' : 'Поделиться'}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                        <path
+                          d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    className="bd-galleryBs__nav bd-galleryBs__nav--next"
+                    onClick={nextPhoto}
+                    aria-label="Следующее фото"
+                  >
+                    ›
+                  </button>
                 </div>
               ) : null}
             </div>
-            {photos.length > 1 ? (
-              <button
-                type="button"
-                className="bd-galleryBs__side"
-                onClick={nextPhoto}
-                aria-label="Следующее фото"
-              >
-                <img src={photos[(photoIndex + 1) % photos.length]} alt="" className="bd-galleryBs__img" />
-              </button>
-            ) : null}
           </div>
+
           {photos.length > 1 ? (
-            <>
-              <button type="button" className="bd-galleryBs__nav bd-galleryBs__nav--prev" onClick={prevPhoto} aria-label="Предыдущее фото">
-                ‹
-              </button>
-              <button type="button" className="bd-galleryBs__nav bd-galleryBs__nav--next" onClick={nextPhoto} aria-label="Следующее фото">
-                ›
-              </button>
-            </>
+            <div className="bd-thumbsBs" role="tablist" aria-label="Миниатюры">
+              {photos.map((src, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className={`bd-thumbBs${i === photoIndex ? ' bd-thumbBs--on' : ''}`}
+                  onClick={() => setPhotoIndex(i)}
+                  aria-label={`Фото ${i + 1}`}
+                  aria-selected={i === photoIndex}
+                >
+                  <img src={src} alt="" />
+                </button>
+              ))}
+            </div>
           ) : null}
-        </div>
 
-        {photos.length > 1 ? (
-          <div className="bd-thumbsBs" role="tablist" aria-label="Миниатюры">
-            {photos.map((src, i) => (
-              <button
-                key={i}
-                type="button"
-                className={`bd-thumbBs${i === photoIndex ? ' bd-thumbBs--on' : ''}`}
-                onClick={() => setPhotoIndex(i)}
-                aria-label={`Фото ${i + 1}`}
-                aria-selected={i === photoIndex}
-              >
-                <img src={src} alt="" />
-              </button>
-            ))}
-          </div>
-        ) : null}
+          <aside className="bd-asideFloat">
+            <div className="bd-bookCard bd-bookCard--bs">
+              <div className="bd-bookCard__priceRow">
+                <div className="bd-bookCard__price">
+                  <strong>{formatPriceRu(selectedTierPrice)} ₽</strong>
+                  <span className="bd-bookCard__unit">
+                    / {minDurationLabel({ schedule_min_duration: Number(bookDuration) || boat.schedule_min_duration })}
+                  </span>
+                </div>
+                <p className="bd-bookCard__priceNote">без доп. сборов (если не указано иное)</p>
+              </div>
 
-        <div className="bd-split">
-          <main className="bd-main">
+              <div className="bd-bookCard__field">
+                <label id="bd-date-label">Дата</label>
+                <button
+                  type="button"
+                  className="bd-bookCard__dateBtn"
+                  aria-labelledby="bd-date-label"
+                  onClick={() => setCalendarOpen(true)}
+                >
+                  {formatBookingDateRu(bookDate)}
+                </button>
+              </div>
+
+              <div className="bd-bookCard__field">
+                <label htmlFor="bd-dur">Длительность</label>
+                <select
+                  id="bd-dur"
+                  value={bookDuration}
+                  onChange={(e) => setBookDuration(e.target.value)}
+                >
+                  {durationOptions.map((t) => (
+                    <option key={t.duration} value={String(t.duration)}>
+                      {minDurationLabel({ schedule_min_duration: t.duration })} — {formatPriceRu(t.price)} ₽
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <a href={appBookingUrl} className="bd-bookCard__cta bd-bookCard__cta--bs" target="_blank" rel="noopener noreferrer">
+                Запросить бронь
+              </a>
+              <p className="bd-bookCard__hint">Оформление и оплата — в приложении ONTHEWATER.</p>
+              <hr className="bd-bookCard__rule" />
+              <ul className="bd-bookCard__termsList">
+                <li>Итоговая стоимость может включать сервисный сбор — смотрите в приложении при оформлении.</li>
+                <li>Бронируя, вы принимаете правила аренды и политику отмены владельца.</li>
+              </ul>
+            </div>
+          </aside>
+
+          <div className="bd-heroUnder">
             <header className="bd-heroBs">
               <div className="bd-heroBs__top">
                 {boat.rating != null ? (
@@ -369,7 +530,10 @@ export default function BoatDetailPage() {
                 </p>
               ) : null}
             </header>
+          </div>
+        </div>
 
+        <main className="bd-main bd-main--below">
           <section className="bd-blockBs">
             <h2 className="bd-blockBs__h">Катер</h2>
             {desc ? (
@@ -534,58 +698,6 @@ export default function BoatDetailPage() {
             )}
           </section>
         </main>
-
-        <aside className="bd-aside">
-          <div className="bd-bookCard bd-bookCard--bs">
-            <div className="bd-bookCard__priceRow">
-              <div className="bd-bookCard__price">
-                <strong>{formatPriceRu(selectedTierPrice)} ₽</strong>
-                <span className="bd-bookCard__unit">
-                  / {minDurationLabel({ schedule_min_duration: Number(bookDuration) || boat.schedule_min_duration })}
-                </span>
-              </div>
-              <p className="bd-bookCard__priceNote">без доп. сборов (если не указано иное)</p>
-            </div>
-
-            <div className="bd-bookCard__field">
-              <label id="bd-date-label">Дата</label>
-              <button
-                type="button"
-                className="bd-bookCard__dateBtn"
-                aria-labelledby="bd-date-label"
-                onClick={() => setCalendarOpen(true)}
-              >
-                {formatBookingDateRu(bookDate)}
-              </button>
-            </div>
-
-            <div className="bd-bookCard__field">
-              <label htmlFor="bd-dur">Длительность</label>
-              <select
-                id="bd-dur"
-                value={bookDuration}
-                onChange={(e) => setBookDuration(e.target.value)}
-              >
-                {durationOptions.map((t) => (
-                  <option key={t.duration} value={String(t.duration)}>
-                    {minDurationLabel({ schedule_min_duration: t.duration })} — {formatPriceRu(t.price)} ₽
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <a href={appBookingUrl} className="bd-bookCard__cta bd-bookCard__cta--bs" target="_blank" rel="noopener noreferrer">
-              Запросить бронь
-            </a>
-            <p className="bd-bookCard__hint">Оформление и оплата — в приложении ONTHEWATER.</p>
-            <hr className="bd-bookCard__rule" />
-            <ul className="bd-bookCard__termsList">
-              <li>Итоговая стоимость может включать сервисный сбор — смотрите в приложении при оформлении.</li>
-              <li>Бронируя, вы принимаете правила аренды и политику отмены владельца.</li>
-            </ul>
-          </div>
-        </aside>
-        </div>
       </div>
     </div>
   )

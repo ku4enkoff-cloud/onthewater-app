@@ -3,6 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom'
 import HomePage from './pages/HomePage.jsx'
 import BoatsSearchPage from './pages/BoatsSearchPage.jsx'
 import BoatDetailPage from './pages/BoatDetailPage.jsx'
+import SiteFooter from './components/SiteFooter.jsx'
 import { startSiteGeolocation } from './lib/siteGeolocation.js'
 
 /**
@@ -22,11 +23,14 @@ export default function App() {
   return (
     <>
       <GeolocationOnAllowedRoutes />
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/boats" element={<BoatsSearchPage />} />
-        <Route path="/boats/:boatSlug" element={<BoatDetailPage />} />
-      </Routes>
+      <div className="app-outlet">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/boats" element={<BoatsSearchPage />} />
+          <Route path="/boats/:boatSlug" element={<BoatDetailPage />} />
+        </Routes>
+      </div>
+      <SiteFooter />
     </>
   )
 }
