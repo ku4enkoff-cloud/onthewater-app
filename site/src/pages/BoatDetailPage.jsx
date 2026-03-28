@@ -472,7 +472,7 @@ export default function BoatDetailPage() {
               </select>
             </div>
 
-            <a href={bookingUrl} className="bd-bookCard__cta" target="_blank" rel="noopener noreferrer">
+            <a href={appBookingUrl} className="bd-bookCard__cta" target="_blank" rel="noopener noreferrer">
               Запросить бронь
             </a>
             <p className="bd-bookCard__hint">
