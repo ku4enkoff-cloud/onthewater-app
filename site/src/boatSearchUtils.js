@@ -1,5 +1,7 @@
 /** Логика как в mobile/src/client/screens/SearchResultsScreen.js */
 
+import { getMinDurationPrice } from './boatUtils.js'
+
 export const CITY_COORDS = {
   Москва: { lat: 55.751244, lon: 37.618423 },
   'Московская область': { lat: 55.5, lon: 38.0 },
@@ -106,8 +108,8 @@ export function getExactPriceForDuration(boat, durationMin) {
   if (d <= 0) return null
   const minDuration = Number(boat?.schedule_min_duration) || 60
   if (d === minDuration) {
-    const base = Number(boat?.price_per_hour) || 0
-    return base > 0 ? base : null
+    const p = getMinDurationPrice(boat)
+    return p > 0 ? p : null
   }
   const tier = normalizeBoatTiers(boat).find((t) => t.duration === d)
   return tier?.price || null

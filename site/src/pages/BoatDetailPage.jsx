@@ -20,6 +20,44 @@ import BookingCalendarModal, { formatBookingDateRu } from '../components/booking
 
 const PLACEHOLDER = 'https://placehold.co/1200x750/e8eef4/64748b?text=%D0%9A%D0%B0%D1%82%D0%B5%D1%80'
 const DESC_PREVIEW = 480
+const FAVORITES_STORAGE_KEY = 'boatrent_site_favorites'
+
+function siteBaseUrl() {
+  return SITE_MAIN_URL.replace(/\/$/, '')
+}
+
+function DetailPageHeader({ bookDate, onOpenCalendar, showCalendar }) {
+  const base = siteBaseUrl()
+  return (
+    <header className="bd-topBar">
+      <div className="bd-topBar__left">
+        <Link to="/" className="bd-topBar__logo" aria-label="ONTHEWATER — на главную">
+          <span className="bd-topBar__logoMark" aria-hidden />
+          <span className="bd-topBar__logoText">onthewater</span>
+        </Link>
+      </div>
+      <nav className="bd-topBar__nav" aria-label="Разделы сайта">
+        {showCalendar ? (
+          <button type="button" className="bd-topBar__pill" onClick={onOpenCalendar} aria-label="Выбрать дату бронирования">
+            <span className="bd-topBar__pillIcon" aria-hidden>
+              📅
+            </span>
+            <span>{formatBookingDateRu(bookDate)}</span>
+          </button>
+        ) : null}
+        <Link to="/boats" className="bd-topBar__link">
+          Поиск катеров
+        </Link>
+        <a className="bd-topBar__link" href={`${base}/register`} target="_blank" rel="noopener noreferrer">
+          Регистрация
+        </a>
+        <a className="bd-topBar__link" href={`${base}/login`} target="_blank" rel="noopener noreferrer">
+          Войти
+        </a>
+      </nav>
+    </header>
+  )
+}
 
 function todayISO() {
   const d = new Date()
@@ -73,6 +111,56 @@ export default function BoatDetailPage() {
   const [bookDate, setBookDate] = useState(todayISO)
   const [bookDuration, setBookDuration] = useState('')
   const [calendarOpen, setCalendarOpen] = useState(false)
+  const [favorite, setFavorite] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
+
+  useEffect(() => {
+    if (!resolvedId) return
+    try {
+      const list = JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY) || '[]')
+      const ids = Array.isArray(list) ? list.map(Number) : []
+      setFavorite(ids.includes(Number(resolvedId)))
+    } catch {
+      setFavorite(false)
+    }
+  }, [resolvedId])
+
+  const toggleFavorite = useCallback(() => {
+    if (!resolvedId) return
+    const id = Number(resolvedId)
+    try {
+      const raw = localStorage.getItem(FAVORITES_STORAGE_KEY)
+      const list = Array.isArray(JSON.parse(raw || '[]')) ? JSON.parse(raw || '[]').map(Number) : []
+      const idx = list.indexOf(id)
+      const next = idx >= 0 ? list.filter((x) => x !== id) : [...list, id]
+      localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(next))
+      setFavorite(idx < 0)
+    } catch {
+      /* ignore */
+    }
+  }, [resolvedId])
+
+  const handleShare = useCallback(async () => {
+    if (!boat) return
+    const path = boatDetailPath(boat)
+    const url =
+      typeof window !== 'undefined' ? `${window.location.origin}${path.startsWith('/') ? path : `/${path}`}` : path
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: boat.title || 'Катер', url })
+        return
+      }
+    } catch {
+      /* user cancelled or error */
+    }
+    try {
+      await navigator.clipboard.writeText(url)
+      setShareCopied(true)
+      window.setTimeout(() => setShareCopied(false), 2000)
+    } catch {
+      /* ignore */
+    }
+  }, [boat])
 
   const load = useCallback(async () => {
     if (!resolvedId) {
@@ -152,6 +240,7 @@ export default function BoatDetailPage() {
   if (loading) {
     return (
       <div className="bd-page">
+        <DetailPageHeader showCalendar={false} />
         <div className="bd-loading">Загружаем катер…</div>
       </div>
     )
@@ -160,6 +249,7 @@ export default function BoatDetailPage() {
   if (error === 'notfound' || !boat) {
     return (
       <div className="bd-page">
+        <DetailPageHeader showCalendar={false} />
         <div className="bd-error">
           <p>Катер не найден или снят с публикации.</p>
           <p>
@@ -173,6 +263,7 @@ export default function BoatDetailPage() {
   if (error) {
     return (
       <div className="bd-page">
+        <DetailPageHeader showCalendar={false} />
         <div className="bd-error">
           <p>Не удалось загрузить данные. Попробуйте позже.</p>
           <p>
@@ -210,27 +301,11 @@ export default function BoatDetailPage() {
 
   return (
     <div className="bd-page">
-      <header className="bd-topBar">
-        <button type="button" className="bd-back" onClick={() => navigate(-1)} aria-label="Назад">
-          ← Назад
-        </button>
-        <div className="bd-topBar__center">
-          <button
-            type="button"
-            className="bd-topBar__date"
-            onClick={() => setCalendarOpen(true)}
-            aria-label="Выбрать дату бронирования"
-          >
-            <span className="bd-topBar__dateIcon" aria-hidden>
-              📅
-            </span>
-            <span className="bd-topBar__dateText">{formatBookingDateRu(bookDate)}</span>
-          </button>
-        </div>
-        <Link to="/" className="bd-back bd-topBar__brand">
-          onthewater
-        </Link>
-      </header>
+      <DetailPageHeader
+        bookDate={bookDate}
+        onOpenCalendar={() => setCalendarOpen(true)}
+        showCalendar
+      />
 
       <BookingCalendarModal
         open={calendarOpen}
@@ -240,51 +315,113 @@ export default function BoatDetailPage() {
         onApply={(iso) => setBookDate(iso)}
       />
 
-      <div className="bd-layout">
-        <main className="bd-main">
-          <div className="bd-gallery">
-            <img
-              src={photos[photoIndex]}
-              alt=""
-              className="bd-gallery__img"
-            />
-            {boat.instant_booking !== false ? (
-              <div className="bd-gallery__instant">
-                <span aria-hidden>⚡</span> Мгновенное бронирование
-              </div>
-            ) : null}
-            {photos.length > 1 ? (
-              <>
-                <button type="button" className="bd-gallery__nav bd-gallery__nav--prev" onClick={prevPhoto} aria-label="Предыдущее фото">
-                  ‹
-                </button>
-                <button type="button" className="bd-gallery__nav bd-gallery__nav--next" onClick={nextPhoto} aria-label="Следующее фото">
-                  ›
-                </button>
+      <div className="bd-galleryShell">
+        <div className={photos.length > 1 ? 'bd-gallery bd-gallery--split' : 'bd-gallery bd-gallery--single'}>
+          <div className="bd-gallery__grid">
+            <div className="bd-gallery__pane bd-gallery__pane--main">
+              <img src={photos[photoIndex]} alt="" className="bd-gallery__img" />
+              {boat.instant_booking !== false ? (
+                <div className="bd-gallery__instant">
+                  <span aria-hidden>⚡</span> Мгновенное бронирование
+                </div>
+              ) : null}
+              {photos.length > 1 ? (
                 <div className="bd-gallery__counter" aria-live="polite">
                   {photoIndex + 1} / {photos.length}
                 </div>
-              </>
+              ) : null}
+            </div>
+            {photos.length > 1 ? (
+              <button
+                type="button"
+                className="bd-gallery__sideBtn"
+                onClick={nextPhoto}
+                aria-label="Следующее фото"
+              >
+                <img
+                  src={photos[(photoIndex + 1) % photos.length]}
+                  alt=""
+                  className="bd-gallery__img"
+                />
+              </button>
             ) : null}
           </div>
-
           {photos.length > 1 ? (
-            <div className="bd-thumbs" role="tablist" aria-label="Миниатюры">
-              {photos.map((src, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  className={`bd-thumb${i === photoIndex ? ' bd-thumb--on' : ''}`}
-                  onClick={() => setPhotoIndex(i)}
-                  aria-label={`Фото ${i + 1}`}
-                  aria-selected={i === photoIndex}
-                >
-                  <img src={src} alt="" />
-                </button>
-              ))}
-            </div>
+            <>
+              <button type="button" className="bd-gallery__nav bd-gallery__nav--prev" onClick={prevPhoto} aria-label="Предыдущее фото">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <button type="button" className="bd-gallery__nav bd-gallery__nav--next" onClick={nextPhoto} aria-label="Следующее фото">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </>
           ) : null}
+          <div className="bd-gallery__actions">
+            <button
+              type="button"
+              className="bd-gallery__fab"
+              onClick={toggleFavorite}
+              aria-label={favorite ? 'Убрать из избранного' : 'В избранное'}
+              aria-pressed={favorite}
+            >
+              <svg className="bd-gallery__heart" width="22" height="22" viewBox="0 0 24 24" aria-hidden>
+                {favorite ? (
+                  <path
+                    fill="currentColor"
+                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                  />
+                ) : (
+                  <path
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+                  />
+                )}
+              </svg>
+            </button>
+            <button
+              type="button"
+              className="bd-gallery__fab"
+              onClick={handleShare}
+              aria-label={shareCopied ? 'Ссылка скопирована' : 'Поделиться'}
+              title={shareCopied ? 'Ссылка скопирована' : 'Поделиться'}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                <path
+                  d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
 
+        {photos.length > 1 ? (
+          <div className="bd-thumbs" role="tablist" aria-label="Миниатюры">
+            {photos.map((src, i) => (
+              <button
+                key={i}
+                type="button"
+                className={`bd-thumb${i === photoIndex ? ' bd-thumb--on' : ''}`}
+                onClick={() => setPhotoIndex(i)}
+                aria-label={`Фото ${i + 1}`}
+                aria-selected={i === photoIndex}
+              >
+                <img src={src} alt="" />
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="bd-layout">
+        <main className="bd-main">
           <div className="bd-head">
             <h1 className="bd-title">{title}</h1>
             <p className="bd-sub">{loc}</p>
