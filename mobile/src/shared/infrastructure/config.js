@@ -30,6 +30,29 @@ function getApiBase() {
 export const API_BASE = getApiBase();
 export const SOCKET_URL = API_BASE;
 
+/** Android package приложения для владельцев (как в app.config.js). */
+export const OWNER_APP_ANDROID_PACKAGE = 'com.anonymous.onthewater.owner';
+
+/**
+ * Внешняя ссылка на приложение для владельцев (магазин или сайт).
+ * Задайте EXPO_PUBLIC_OWNER_APP_URL — единая ссылка для всех платформ,
+ * или EXPO_PUBLIC_OWNER_IOS_APP_URL для iOS при отдельных ссылках.
+ */
+export function getOwnerAppExternalUrl() {
+    const universal = typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_OWNER_APP_URL;
+    if (universal && String(universal).trim()) {
+        return String(universal).trim();
+    }
+    if (Platform.OS === 'android') {
+        return `https://play.google.com/store/apps/details?id=${OWNER_APP_ANDROID_PACKAGE}`;
+    }
+    const ios = typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_OWNER_IOS_APP_URL;
+    if (ios && String(ios).trim()) {
+        return String(ios).trim();
+    }
+    return 'https://onthewater.ru';
+}
+
 /** URL для фото катера. После переноса бэкенда в БД могут быть старые полные URL — подменяем на текущий API. */
 export function getPhotoUrl(src) {
     if (!src || typeof src !== 'string') return null;

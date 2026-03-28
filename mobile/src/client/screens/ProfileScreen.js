@@ -12,6 +12,7 @@ import { registerPushTokenNow } from '../hooks/useRegisterPushToken';
 import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
 import { theme } from '../../shared/theme';
 import { User, Heart, HelpCircle, LogOut, ChevronRight, Calendar, Star, Bell, X, Pencil, Trash2, Lock, Clock3, CheckCircle2, XCircle } from 'lucide-react-native';
+import OwnerAppPromoBanner from '../components/OwnerAppPromoBanner';
 
 function getReviewStatusMeta(status) {
     const s = String(status || '').toLowerCase();
@@ -282,6 +283,7 @@ export default function ProfileScreen({ navigation }) {
                 <TouchableOpacity style={[styles.registerButton, isTabletLandscape && styles.tabletButton]} onPress={() => navigation.navigate('Register', { fromProfile: true })}>
                     <Text style={styles.registerButtonText}>Регистрация</Text>
                 </TouchableOpacity>
+                <OwnerAppPromoBanner tabletCardStyle={isTabletLandscape && styles.tabletCard} />
                 <View style={styles.versionContainer}><Text style={styles.versionText}>ONTHEWATER v2.0.1</Text></View>
             </ScrollView>
         );
@@ -353,6 +355,7 @@ export default function ProfileScreen({ navigation }) {
                     );
                 })}
             </View>
+            <OwnerAppPromoBanner tabletCardStyle={isTabletLandscape && styles.tabletCard} />
             <TouchableOpacity style={[styles.logoutButton, isTabletLandscape && styles.tabletCard, loading && styles.logoutButtonDisabled]} onPress={handleLogout} disabled={loading}>
                 <LogOut size={20} color={theme.colors.error} />
                 <Text style={styles.logoutText}>Выйти</Text>
