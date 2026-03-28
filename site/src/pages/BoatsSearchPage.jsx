@@ -118,16 +118,6 @@ export default function BoatsSearchPage() {
   const maxPassengers = useMemo(() => computeMaxPassengers(allBoats), [allBoats])
   const boatTypesFromList = useMemo(() => computeBoatTypesFromList(allBoats), [allBoats])
 
-  useEffect(() => {
-    if (priceRange.min === 0 && priceRange.max === 50000) return
-    setFilters((prev) => {
-      if (prev.priceLow === 0 && prev.priceHigh === 50000) {
-        return { ...prev, priceLow: priceRange.min, priceHigh: priceRange.max }
-      }
-      return prev
-    })
-  }, [priceRange.min, priceRange.max])
-
   const mapViewport = useMemo(() => {
     if (locationKey === '__all') {
       return { center: DEFAULT_MAP_CENTER, zoom: 5 }
