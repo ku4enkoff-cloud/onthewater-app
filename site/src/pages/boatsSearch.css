@@ -183,8 +183,103 @@
   align-items: center;
   gap: 10px;
   padding: 8px 20px 14px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
   border-bottom: 1px solid #e2e8f0;
+}
+
+.bs-filtersRow__chips {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+
+.bs-filtersRow__chips .bs-chip {
+  flex-shrink: 0;
+}
+
+.bs-quickChip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #f1f5f9;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  font: inherit;
+  white-space: nowrap;
+}
+
+.bs-quickChip:hover {
+  border-color: #94a3b8;
+  background: #e2e8f0;
+}
+
+.bs-quickChip__chev {
+  flex-shrink: 0;
+  color: #64748b;
+}
+
+.bs-quickChip--on {
+  border-color: #0061c1;
+  background: #e8eef5;
+  color: #002b5b;
+}
+
+.bs-quickChip--on .bs-quickChip__chev {
+  color: #002b5b;
+}
+
+.bs-quickChip--value {
+  display: inline-flex;
+  align-items: stretch;
+  padding: 0;
+  overflow: hidden;
+  border: 1.5px solid #0061c1;
+  background: #e8eef5;
+}
+
+.bs-quickChip__main {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 4px 8px 14px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #002b5b;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.bs-quickChip__clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px 0 6px;
+  margin: 0;
+  border: 0;
+  border-left: 1px solid rgba(0, 97, 193, 0.2);
+  background: transparent;
+  color: #002b5b;
+  cursor: pointer;
+}
+
+.bs-quickChip__clear:hover {
+  background: rgba(0, 97, 193, 0.08);
 }
 
 .bs-details {

@@ -123,6 +123,25 @@ export function formatDurationChipLabel(mins) {
   return `${h} ч ${mm} мин`
 }
 
+/** Подпись длительности в чипах и модалке (как в mobile SearchResultsScreen). */
+export function formatDurationListLabel(mins) {
+  const m = Number(mins) || 0
+  if (m < 60) return `${m} мин`
+  const h = Math.floor(m / 60)
+  const mm = m % 60
+  if (mm > 0) return `${h} ч ${mm} мин`
+  if (h === 1) return '1 час'
+  if (h >= 2 && h <= 4) return `${h} часа`
+  return `${h} часов`
+}
+
+export function formatGuestsQuickLabel(n) {
+  const x = Math.abs(Number(n)) || 1
+  if (x === 1) return '1 гость'
+  if (x >= 2 && x <= 4) return `${x} гостя`
+  return `${x} гостей`
+}
+
 export function getBoatAmenities(boat) {
   const raw = boat?.amenities
   if (Array.isArray(raw)) return raw.map((v) => String(v || '').trim()).filter(Boolean)

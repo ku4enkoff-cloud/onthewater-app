@@ -1,21 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import './filtersModal.css'
-import { filterBoatsList, formatPriceShort } from '../../boatSearchUtils'
+import { filterBoatsList, formatDurationListLabel, formatPriceShort } from '../../boatSearchUtils'
 
 const NAVY = '#1b365d'
 const WATER_SPORTS_OPTIONS = ['Вейкборд', 'Вейксерф', 'Водные лыжи']
-
-function formatDurationLabel(mins) {
-  const m = Number(mins) || 0
-  if (m < 60) return `${m} мин`
-  const h = Math.floor(m / 60)
-  const mm = m % 60
-  if (mm > 0) return `${h} ч ${mm} мин`
-  if (h === 1) return '1 час'
-  if (h >= 2 && h <= 4) return `${h} часа`
-  return `${h} часов`
-}
 
 function pluralizeResults(n) {
   const x = Math.abs(Number(n)) || 0
@@ -157,9 +146,29 @@ export default function FiltersModal({
   priceRange,
   durationOptions = [30, 60, 120, 180, 240, 360, 480],
   maxPassengers = 20,
+  focusSection = null,
 }) {
   const pMin = priceRange.min
   const pMax = priceRange.max > pMin ? priceRange.max : pMin + 1000
+
+  const sectionPriceRef = useRef(null)
+  const sectionGuestsRef = useRef(null)
+  const sectionDurationRef = useRef(null)
+  const sectionCaptainRef = useRef(null)
+
+  useLayoutEffect(() => {
+    if (!focusSection) return
+    const map = {
+      price: sectionPriceRef,
+      passengers: sectionGuestsRef,
+      duration: sectionDurationRef,
+      captain: sectionCaptainRef,
+    }
+    const el = map[focusSection]?.current
+    if (el) {
+      el.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    }
+  }, [focusSection])
 
   const [priceLow, setPriceLow] = useState(() => {
     const lo = clamp(filters.priceLow ?? pMin, pMin, pMax)
@@ -283,7 +292,7 @@ export default function FiltersModal({
         </div>
 
         <div className="fm-scroll">
-          <div className="fm-section">
+          <div className="fm-section" ref={sectionPriceRef}>
             <div className="fm-sectionHead">
               <span className="fm-sectionTitle">Цена</span>
               <span className="fm-priceLabel">
@@ -301,7 +310,7 @@ export default function FiltersModal({
 
           <div className="fm-divider" />
 
-          <div className="fm-section">
+          <div className="fm-section" ref={sectionGuestsRef}>
             <div className="fm-sectionHead">
               <span className="fm-sectionTitle">Гости</span>
               <div className="fm-stepper">
@@ -330,7 +339,7 @@ export default function FiltersModal({
 
           <div className="fm-divider" />
 
-          <div className="fm-section">
+          <div className="fm-section" ref={sectionDurationRef}>
             <p className="fm-sectionTitle" style={{ marginBottom: 12 }}>
               Длительность
             </p>
@@ -342,7 +351,7 @@ export default function FiltersModal({
                   className={`fm-chip${duration === mins ? ' fm-chip--on' : ''}`}
                   onClick={() => setDuration(duration === mins ? null : mins)}
                 >
-                  {formatDurationLabel(mins)}
+                  {formatDurationListLabel(mins)}
                 </button>
               ))}
             </div>
@@ -350,7 +359,7 @@ export default function FiltersModal({
 
           <div className="fm-divider" />
 
-          <div className="fm-section">
+          <div className="fm-section" ref={sectionCaptainRef}>
             <p className="fm-sectionTitle" style={{ marginBottom: 12 }}>
               Капитан
             </p>

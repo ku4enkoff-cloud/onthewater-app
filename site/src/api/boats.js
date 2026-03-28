@@ -48,3 +48,21 @@ export async function fetchBoatTypes() {
   const data = await res.json()
   return Array.isArray(data) ? data : []
 }
+
+export async function fetchBoatById(id) {
+  const base = API_BASE || ''
+  const res = await fetch(`${base}/boats/${encodeURIComponent(id)}`, { credentials: 'omit' })
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error(`boat ${res.status}`)
+  return res.json()
+}
+
+export async function fetchBoatReviews(boatId) {
+  const base = API_BASE || ''
+  const res = await fetch(`${base}/boats/${encodeURIComponent(boatId)}/reviews`, {
+    credentials: 'omit',
+  })
+  if (!res.ok) return []
+  const data = await res.json()
+  return Array.isArray(data) ? data : []
+}

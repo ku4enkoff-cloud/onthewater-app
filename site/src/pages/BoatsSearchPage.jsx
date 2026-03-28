@@ -14,6 +14,8 @@ import {
   computePriceRange,
   countActiveFilters,
   filterBoatsList,
+  formatDurationListLabel,
+  formatGuestsQuickLabel,
   formatPriceShort,
   isRegion,
   readNearestCityFromStorage,
@@ -31,6 +33,33 @@ function readInitialLocationKey() {
     /* ignore */
   }
   return readNearestCityFromStorage() || 'Москва'
+}
+
+function ChevronDownIcon() {
+  return (
+    <svg className="bs-quickChip__chev" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M6 9l6 6 6-6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function ClearIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M18 6L6 18M6 6l12 12"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
 }
 
 function todayISO() {
@@ -56,6 +85,7 @@ export default function BoatsSearchPage() {
   const [apiTypes, setApiTypes] = useState([])
   const [filtersModalOpen, setFiltersModalOpen] = useState(false)
   const [filtersModalKey, setFiltersModalKey] = useState(0)
+  const [filtersModalFocus, setFiltersModalFocus] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -160,6 +190,15 @@ export default function BoatsSearchPage() {
 
   const activeFilters = countActiveFilters(filters, priceRange)
   const isPriceActive = filters.priceLow > priceRange.min || filters.priceHigh < priceRange.max
+  const isGuestsActive = filters.passengers > 1
+  const isDurationActive = Boolean(filters.duration)
+  const isCaptainActive = Boolean(filters.captain)
+
+  const openFiltersModal = (focusSection) => {
+    setFiltersModalFocus(focusSection ?? null)
+    setFiltersModalKey((k) => k + 1)
+    setFiltersModalOpen(true)
+  }
 
   const categoryItems = useMemo(() => {
     if (apiTypes.length > 0) {
@@ -258,26 +297,131 @@ export default function BoatsSearchPage() {
       ) : null}
 
       <div className="bs-filtersRow">
-        <button
-          type="button"
-          className={`bs-chip${activeFilters > 0 ? ' bs-chip--active' : ''}`}
-          onClick={() => {
-            setFiltersModalKey((k) => k + 1)
-            setFiltersModalOpen(true)
-          }}
-        >
-          <span className="bs-filtersIcon" aria-hidden>
-            ⚙
-          </span>
-          Фильтры
-          {activeFilters > 0 ? ` (${activeFilters})` : ''}
-        </button>
+        <div className="bs-filtersRow__chips">
+          <button
+            type="button"
+            className={`bs-chip${activeFilters > 0 ? ' bs-chip--active' : ''}`}
+            onClick={() => openFiltersModal(null)}
+          >
+            <span className="bs-filtersIcon" aria-hidden>
+              ⚙
+            </span>
+            Фильтры
+            {activeFilters > 0 ? ` (${activeFilters})` : ''}
+          </button>
 
-        {isPriceActive ? (
-          <span className="bs-chip bs-chip--active">
-            {formatPriceShort(filters.priceLow)} – {formatPriceShort(filters.priceHigh)} ₽
-          </span>
-        ) : null}
+          {isPriceActive ? (
+            <div className="bs-quickChip bs-quickChip--value">
+              <button
+                type="button"
+                className="bs-quickChip__main"
+                onClick={() => openFiltersModal('price')}
+                aria-label="Фильтр по цене"
+              >
+                {formatPriceShort(filters.priceLow)} – {formatPriceShort(filters.priceHigh)} ₽
+              </button>
+              <button
+                type="button"
+                className="bs-quickChip__clear"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setFilters((prev) => ({
+                    ...prev,
+                    priceLow: priceRange.min,
+                    priceHigh: priceRange.max,
+                  }))
+                }}
+                aria-label="Сбросить цену"
+              >
+                <ClearIcon />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="bs-quickChip"
+              onClick={() => openFiltersModal('price')}
+            >
+              Цена
+              <ChevronDownIcon />
+            </button>
+          )}
+
+          {isGuestsActive ? (
+            <div className="bs-quickChip bs-quickChip--value">
+              <button
+                type="button"
+                className="bs-quickChip__main"
+                onClick={() => openFiltersModal('passengers')}
+                aria-label="Количество гостей"
+              >
+                {formatGuestsQuickLabel(filters.passengers)}
+              </button>
+              <button
+                type="button"
+                className="bs-quickChip__clear"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setFilters((prev) => ({ ...prev, passengers: 1 }))
+                }}
+                aria-label="Сбросить гостей"
+              >
+                <ClearIcon />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="bs-quickChip"
+              onClick={() => openFiltersModal('passengers')}
+            >
+              Гости
+              <ChevronDownIcon />
+            </button>
+          )}
+
+          {isDurationActive ? (
+            <div className="bs-quickChip bs-quickChip--value">
+              <button
+                type="button"
+                className="bs-quickChip__main"
+                onClick={() => openFiltersModal('duration')}
+                aria-label="Длительность аренды"
+              >
+                {formatDurationListLabel(filters.duration)}
+              </button>
+              <button
+                type="button"
+                className="bs-quickChip__clear"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setFilters((prev) => ({ ...prev, duration: null }))
+                }}
+                aria-label="Сбросить длительность"
+              >
+                <ClearIcon />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="bs-quickChip"
+              onClick={() => openFiltersModal('duration')}
+            >
+              Длительность
+              <ChevronDownIcon />
+            </button>
+          )}
+
+          <button
+            type="button"
+            className={`bs-quickChip${isCaptainActive ? ' bs-quickChip--on' : ''}`}
+            onClick={() => openFiltersModal('captain')}
+          >
+            Капитан
+            <ChevronDownIcon />
+          </button>
+        </div>
 
         <label className="bs-mapToggle bs-mapToggle--mobileOnly">
           <span>Карта</span>
@@ -344,7 +488,11 @@ export default function BoatsSearchPage() {
       {filtersModalOpen ? (
         <FiltersModal
           key={filtersModalKey}
-          onClose={() => setFiltersModalOpen(false)}
+          focusSection={filtersModalFocus}
+          onClose={() => {
+            setFiltersModalOpen(false)
+            setFiltersModalFocus(null)
+          }}
           filters={filters}
           onApply={(partial) => setFilters((prev) => ({ ...prev, ...partial }))}
           allBoats={allBoats}

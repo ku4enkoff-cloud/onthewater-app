@@ -65,3 +65,18 @@ export function firstPhotoUrl(boat, getPhotoUrlFn) {
   if (typeof first === 'object' && first.url) return getPhotoUrlFn(first.url)
   return null
 }
+
+/** Все URL фото катера для галереи. */
+export function allPhotoUrls(boat, getPhotoUrlFn) {
+  const urls = []
+  for (const p of parsePhotos(boat)) {
+    if (typeof p === 'string') {
+      const u = getPhotoUrlFn(p)
+      if (u) urls.push(u)
+    } else if (p && typeof p === 'object' && p.url) {
+      const u = getPhotoUrlFn(p.url)
+      if (u) urls.push(u)
+    }
+  }
+  return urls
+}

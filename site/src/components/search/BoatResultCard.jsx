@@ -1,4 +1,5 @@
-import { SITE_MAIN_URL, getPhotoUrl } from '../../config'
+import { Link } from 'react-router-dom'
+import { getPhotoUrl } from '../../config'
 import { firstPhotoUrl } from '../../boatUtils'
 import {
   formatCardLocationCaps,
@@ -39,12 +40,7 @@ export default function BoatResultCard({ boat, filters, selected, onHover, onLea
       onMouseEnter={() => onHover?.(boat.id)}
       onMouseLeave={() => onLeave?.()}
     >
-      <a
-        href={SITE_MAIN_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="bs-card__link"
-      >
+      <Link to={`/boats/${boat.id}`} className="bs-card__link">
         <div className="bs-card__imageWrap">
           <img src={img} alt="" className="bs-card__image" loading="lazy" />
           {instantBook ? (
@@ -96,7 +92,7 @@ export default function BoatResultCard({ boat, filters, selected, onHover, onLea
             {boat.captain_included ? ' • С капитаном' : ''}
           </p>
         </div>
-      </a>
+      </Link>
     </article>
   )
 }
