@@ -36,15 +36,36 @@ function haversineKm(lat1, lon1, lat2, lon2) {
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)))
 }
 
-/** Ближайший к точке город из списка направлений (есть координаты в CITY_COORDS). */
+/** Отсечь явный мусор (Null Island, нечисла) и точки вне разумной области РФ для автогорода. */
+export function isPlausibleRuGeo(lat, lng) {
+  const la = Number(lat)
+  const lo = Number(lng)
+  if (!Number.isFinite(la) || !Number.isFinite(lo)) return false
+  if (Math.abs(la) < 0.05 && Math.abs(lo) < 0.05) return false
+  if (la < 41 || la > 72 || lo < 19 || lo > 180) return false
+  return true
+}
+
+/**
+ * Ближайший к точке город из списка направлений (есть координаты в CITY_COORDS).
+ * Сначала проверяем крупные агломерации по bbox — иначе грубые/IP-координаты могли
+ * давать неверный «ближайший» центр (например Сочи вместо Москвы).
+ */
 export function getNearestCityKey(lat, lng) {
+  const la = Number(lat)
+  const lo = Number(lng)
+  if (!Number.isFinite(la) || !Number.isFinite(lo)) return 'Москва'
+
+  if (la >= 55.4 && la <= 56.45 && lo >= 36.7 && lo <= 39.2) return 'Москва'
+  if (la >= 59.5 && la <= 60.55 && lo >= 28.8 && lo <= 31.45) return 'Санкт-Петербург'
+
   const keys = LOCATION_OPTIONS.map((o) => o.value).filter((v) => v !== '__all' && CITY_COORDS[v])
   if (keys.length === 0) return 'Москва'
   let best = keys[0]
   let bestD = Infinity
   for (const k of keys) {
     const c = CITY_COORDS[k]
-    const d = haversineKm(lat, lng, c.lat, c.lon)
+    const d = haversineKm(la, lo, c.lat, c.lon)
     if (d < bestD) {
       bestD = d
       best = k

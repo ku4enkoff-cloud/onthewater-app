@@ -1,6 +1,7 @@
 import {
   NEAREST_CITY_STORAGE_KEY,
   getNearestCityKey,
+  isPlausibleRuGeo,
 } from '../boatSearchUtils.js'
 
 let started = false
@@ -13,7 +14,10 @@ export function startSiteGeolocation() {
 
   navigator.geolocation.getCurrentPosition(
     (pos) => {
-      const key = getNearestCityKey(pos.coords.latitude, pos.coords.longitude)
+      const lat = pos.coords.latitude
+      const lng = pos.coords.longitude
+      if (!isPlausibleRuGeo(lat, lng)) return
+      const key = getNearestCityKey(lat, lng)
       try {
         localStorage.setItem(NEAREST_CITY_STORAGE_KEY, key)
       } catch {

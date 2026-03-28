@@ -124,25 +124,39 @@
   }
 }
 
+/* Flex: основная колонка не шире 720px — карточка брони сразу рядом, без пустой полосы */
 .bd-layout {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px 48px;
-  display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 32px;
-  align-items: start;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 24px 32px;
+}
+
+.bd-main {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 720px;
 }
 
 @media (max-width: 960px) {
   .bd-layout {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    flex-wrap: nowrap;
     padding: 0 16px 40px;
+    gap: 20px;
   }
-}
 
-.bd-main {
-  min-width: 0;
+  .bd-main {
+    max-width: none;
+    flex: none;
+    width: 100%;
+    order: 2;
+  }
 }
 
 .bd-galleryShell {
@@ -658,7 +672,16 @@
 .bd-aside {
   position: sticky;
   top: 72px;
+  box-sizing: border-box;
+  flex: 0 1 360px;
   min-width: 0;
+  max-width: 360px;
+}
+
+@media (min-width: 961px) {
+  .bd-aside {
+    min-width: 280px;
+  }
 }
 
 @media (max-width: 960px) {
@@ -666,6 +689,9 @@
     position: relative;
     top: 0;
     order: -1;
+    width: 100%;
+    max-width: none;
+    flex: none;
   }
 }
 
@@ -689,9 +715,9 @@
 .bd-bookCard__price {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: 6px;
-  row-gap: 2px;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 4px;
   font-size: 14px;
   color: #64748b;
   margin-bottom: 4px;
@@ -701,11 +727,13 @@
   font-size: 26px;
   font-weight: 800;
   color: #002b5b;
+  line-height: 1.2;
 }
 
 .bd-bookCard__unit {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.25;
   color: #64748b;
 }
 
@@ -728,7 +756,7 @@
 .bd-bookCard__dateBtn {
   width: 100%;
   padding: 12px 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #cbd5e1;
   border-radius: 10px;
   font: inherit;
   font-size: 15px;
