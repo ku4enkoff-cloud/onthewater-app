@@ -13,6 +13,7 @@ import {
   computeMaxPassengers,
   computePriceRange,
   countActiveFilters,
+  filterBoatsByScheduleOnDate,
   filterBoatsList,
   formatDurationListLabel,
   formatGuestsQuickLabel,
@@ -198,14 +199,19 @@ export default function BoatsSearchPage() {
     }
   }, [])
 
-  const priceRange = useMemo(() => computePriceRange(allBoats), [allBoats])
-  const boats = useMemo(
-    () => filterBoatsList(allBoats, filters, priceRange),
-    [allBoats, filters, priceRange],
+  const boatsOnDate = useMemo(
+    () => filterBoatsByScheduleOnDate(allBoats, dateStr),
+    [allBoats, dateStr],
   )
-  const durationOptions = useMemo(() => computeDurationOptions(allBoats), [allBoats])
-  const maxPassengers = useMemo(() => computeMaxPassengers(allBoats), [allBoats])
-  const boatTypesFromList = useMemo(() => computeBoatTypesFromList(allBoats), [allBoats])
+
+  const priceRange = useMemo(() => computePriceRange(boatsOnDate), [boatsOnDate])
+  const boats = useMemo(
+    () => filterBoatsList(boatsOnDate, filters, priceRange),
+    [boatsOnDate, filters, priceRange],
+  )
+  const durationOptions = useMemo(() => computeDurationOptions(boatsOnDate), [boatsOnDate])
+  const maxPassengers = useMemo(() => computeMaxPassengers(boatsOnDate), [boatsOnDate])
+  const boatTypesFromList = useMemo(() => computeBoatTypesFromList(boatsOnDate), [boatsOnDate])
 
   const mapViewport = useMemo(() => {
     if (locationKey === '__all') {
@@ -507,7 +513,11 @@ export default function BoatsSearchPage() {
             </div>
           )}
           {!loading && boats.length === 0 ? (
-            <p className="bs-loading">Ничего не найдено — измените фильтры или город.</p>
+            <p className="bs-loading">
+              {allBoats.length > 0 && boatsOnDate.length === 0
+                ? `На ${formatBookingDateDots(dateStr)} в списке нет катеров с выходом в этот день — выберите другую дату.`
+                : 'Ничего не найдено — измените фильтры или город.'}
+            </p>
           ) : null}
         </div>
 
@@ -546,7 +556,7 @@ export default function BoatsSearchPage() {
           }}
           filters={filters}
           onApply={(partial) => setFilters((prev) => ({ ...prev, ...partial }))}
-          allBoats={allBoats}
+          allBoats={boatsOnDate}
           priceRange={priceRange}
           durationOptions={durationOptions}
           maxPassengers={maxPassengers}

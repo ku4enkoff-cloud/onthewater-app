@@ -229,6 +229,67 @@ export function computeDurationOptions(allBoats) {
   return offered.length > 0 ? offered : fallback
 }
 
+/** Ключ дня недели как в mobile BoatDetailScreen (getDay: 0 = вс). */
+const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+
+function toLocalDateKeyFromDate(d) {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+/** YYYY-MM-DD → локальная дата (без UTC-сдвига). */
+function dateFromISOKey(iso) {
+  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null
+  const [y, m, d] = iso.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  return Number.isNaN(dt.getTime()) ? null : dt
+}
+
+/**
+ * Доступен ли катер в выбранный календарный день по schedule_work_days
+ * (как в mobile: объект по дням недели или { dates: ['YYYY-MM-DD', ...] }).
+ * Если расписание не задано — считаем день рабочим (дефолт «все дни»).
+ */
+export function isBoatWorkingOnDate(boat, dateISO) {
+  const d = dateFromISOKey(dateISO)
+  if (!d) return true
+
+  let wd = boat?.schedule_work_days
+  if (typeof wd === 'string') {
+    try {
+      wd = JSON.parse(wd)
+    } catch {
+      wd = null
+    }
+  }
+  if (wd == null || typeof wd !== 'object') return true
+
+  if (Array.isArray(wd.dates)) {
+    return wd.dates.includes(toLocalDateKeyFromDate(d))
+  }
+
+  const defaults = {
+    mon: true,
+    tue: true,
+    wed: true,
+    thu: true,
+    fri: true,
+    sat: true,
+    sun: true,
+  }
+  const workDays = { ...defaults, ...wd }
+  const key = WEEKDAY_KEYS[d.getDay()]
+  return workDays[key] === true
+}
+
+export function filterBoatsByScheduleOnDate(boats, dateISO) {
+  if (!Array.isArray(boats)) return []
+  if (!dateISO) return boats
+  return boats.filter((b) => isBoatWorkingOnDate(b, dateISO))
+}
+
 export function computeBoatTypesFromList(allBoats) {
   const seenByName = new Map()
   for (const b of allBoats) {
