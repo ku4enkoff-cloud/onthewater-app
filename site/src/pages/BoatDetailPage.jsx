@@ -486,7 +486,7 @@ export default function BoatDetailPage() {
             <div className="bd-bookCard__price">
               <strong>{formatPriceRu(selectedTierPrice)} ₽</strong>
               <span className="bd-bookCard__unit">
-                за {minDurationLabel({ schedule_min_duration: Number(bookDuration) || boat.schedule_min_duration })}
+                / {minDurationLabel({ schedule_min_duration: Number(bookDuration) || boat.schedule_min_duration })}
               </span>
             </div>
 
