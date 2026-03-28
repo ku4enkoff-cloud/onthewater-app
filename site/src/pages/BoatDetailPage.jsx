@@ -14,6 +14,7 @@ import {
 import {
   getBoatAmenities,
   getBookingPeriodLabel,
+  pluralizeBookings,
   pluralizeReviews,
 } from '../boatSearchUtils'
 import BookingCalendarModal, { formatBookingDateRu } from '../components/booking/BookingCalendarModal.jsx'
@@ -239,6 +240,7 @@ export default function BoatDetailPage() {
     boat.response_rate != null && Number.isFinite(Number(boat.response_rate))
       ? Math.round(Number(boat.response_rate))
       : null
+  const bookingsN = Math.max(0, Number(boat.bookings_count) || 0)
 
   const prevPhoto = () => setPhotoIndex((i) => (i <= 0 ? photos.length - 1 : i - 1))
   const nextPhoto = () => setPhotoIndex((i) => (i >= photos.length - 1 ? 0 : i + 1))
@@ -249,7 +251,7 @@ export default function BoatDetailPage() {
       : [{ duration: Number(boat.schedule_min_duration) || 60, price: getMinDurationPrice(boat) }]
 
   return (
-    <div className="bd-page">
+    <div className="bd-page bd-page--bs">
       <DetailPageHeader
         bookDate={bookDate}
         onOpenCalendar={() => setCalendarOpen(true)}
@@ -264,82 +266,112 @@ export default function BoatDetailPage() {
         onApply={(iso) => setBookDate(iso)}
       />
 
-      <div className="bd-layout">
-        <main className="bd-main">
-          <div className="bd-gallery">
-            <img src={photos[photoIndex]} alt="" className="bd-gallery__img" />
-            {boat.instant_booking !== false ? (
-              <div className="bd-gallery__instant">
-                <span aria-hidden>⚡</span> Мгновенное бронирование
-              </div>
-            ) : null}
-            {photos.length > 1 ? (
-              <>
-                <button type="button" className="bd-gallery__nav bd-gallery__nav--prev" onClick={prevPhoto} aria-label="Предыдущее фото">
-                  ‹
-                </button>
-                <button type="button" className="bd-gallery__nav bd-gallery__nav--next" onClick={nextPhoto} aria-label="Следующее фото">
-                  ›
-                </button>
-                <div className="bd-gallery__counter" aria-live="polite">
+      <div className="bd-shell">
+        <div className={photos.length > 1 ? 'bd-galleryBs bd-galleryBs--split' : 'bd-galleryBs'}>
+          <div className="bd-galleryBs__grid">
+            <div className="bd-galleryBs__main">
+              <img src={photos[photoIndex]} alt="" className="bd-galleryBs__img" />
+              {boat.instant_booking !== false ? (
+                <div className="bd-galleryBs__badge">
+                  <span aria-hidden>⚡</span> Мгновенное бронирование
+                </div>
+              ) : null}
+              {photos.length > 1 ? (
+                <div className="bd-galleryBs__counter" aria-live="polite">
                   {photoIndex + 1} / {photos.length}
                 </div>
-              </>
+              ) : null}
+            </div>
+            {photos.length > 1 ? (
+              <button
+                type="button"
+                className="bd-galleryBs__side"
+                onClick={nextPhoto}
+                aria-label="Следующее фото"
+              >
+                <img src={photos[(photoIndex + 1) % photos.length]} alt="" className="bd-galleryBs__img" />
+              </button>
             ) : null}
           </div>
-
           {photos.length > 1 ? (
-            <div className="bd-thumbs" role="tablist" aria-label="Миниатюры">
-              {photos.map((src, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  className={`bd-thumb${i === photoIndex ? ' bd-thumb--on' : ''}`}
-                  onClick={() => setPhotoIndex(i)}
-                  aria-label={`Фото ${i + 1}`}
-                  aria-selected={i === photoIndex}
-                >
-                  <img src={src} alt="" />
-                </button>
-              ))}
-            </div>
+            <>
+              <button type="button" className="bd-galleryBs__nav bd-galleryBs__nav--prev" onClick={prevPhoto} aria-label="Предыдущее фото">
+                ‹
+              </button>
+              <button type="button" className="bd-galleryBs__nav bd-galleryBs__nav--next" onClick={nextPhoto} aria-label="Следующее фото">
+                ›
+              </button>
+            </>
           ) : null}
+        </div>
 
-          <div className="bd-head">
-            <h1 className="bd-title">{title}</h1>
-            <p className="bd-sub">{loc}</p>
-
-            <div className="bd-stats">
-              <div className="bd-stat">
-                <span className="bd-stat__label">Длина</span>
-                <span className="bd-stat__val">{lengthStr}</span>
-              </div>
-              <div className="bd-stat">
-                <span className="bd-stat__label">Гости</span>
-                <span className="bd-stat__val">до {capacity}</span>
-              </div>
-              {boat.captain_included ? (
-                <div className="bd-badgeCap">С капитаном</div>
-              ) : boat.has_captain_option ? (
-                <div className="bd-badgeCap" style={{ background: '#f1f5f9', borderColor: '#e2e8f0', color: '#475569' }}>
-                  Капитан по запросу
-                </div>
-              ) : (
-                <div className="bd-badgeCap" style={{ background: '#f8fafc', borderColor: '#e2e8f0', color: '#64748b' }}>
-                  Без капитана
-                </div>
-              )}
-            </div>
-
-            {responseRate != null ? (
-              <p className="bd-response">
-                <strong>{responseRate}%</strong> — показатель ответов владельца
-              </p>
-            ) : null}
+        {photos.length > 1 ? (
+          <div className="bd-thumbsBs" role="tablist" aria-label="Миниатюры">
+            {photos.map((src, i) => (
+              <button
+                key={i}
+                type="button"
+                className={`bd-thumbBs${i === photoIndex ? ' bd-thumbBs--on' : ''}`}
+                onClick={() => setPhotoIndex(i)}
+                aria-label={`Фото ${i + 1}`}
+                aria-selected={i === photoIndex}
+              >
+                <img src={src} alt="" />
+              </button>
+            ))}
           </div>
+        ) : null}
 
-          <section className="bd-section">
-            <h2 className="bd-sectionTitle">О катере</h2>
+        <div className="bd-split">
+          <main className="bd-main">
+            <header className="bd-heroBs">
+              <div className="bd-heroBs__top">
+                {boat.rating != null ? (
+                  <span className="bd-heroBs__rating">
+                    <span className="bd-heroBs__star" aria-hidden>
+                      ★
+                    </span>
+                    {Number(boat.rating).toFixed(1)}
+                  </span>
+                ) : null}
+                {bookingsN > 0 ? (
+                  <span className="bd-heroBs__bookings">
+                    ({bookingsN} {pluralizeBookings(bookingsN)})
+                  </span>
+                ) : null}
+              </div>
+              <h1 className="bd-heroBs__title">{title}</h1>
+              <p className="bd-heroBs__loc">{loc}</p>
+
+              <div className="bd-statStrip">
+                <div className="bd-statStrip__cell">
+                  <span className="bd-statStrip__val">{lengthStr}</span>
+                  <span className="bd-statStrip__lbl">Длина</span>
+                </div>
+                <div className="bd-statStrip__cell">
+                  <span className="bd-statStrip__val">до {capacity}</span>
+                  <span className="bd-statStrip__lbl">Гости</span>
+                </div>
+                <div className="bd-statStrip__cell bd-statStrip__cell--badge">
+                  {boat.captain_included ? (
+                    <span className="bd-pillCap">С капитаном</span>
+                  ) : boat.has_captain_option ? (
+                    <span className="bd-pillCap bd-pillCap--muted">Капитан по запросу</span>
+                  ) : (
+                    <span className="bd-pillCap bd-pillCap--muted">Без капитана</span>
+                  )}
+                </div>
+              </div>
+              {boat.captain_included ? <p className="bd-heroBs__capNote">Аренда только с капитаном владельца или назначенным капитаном.</p> : null}
+              {responseRate != null ? (
+                <p className="bd-heroBs__response">
+                  <strong>{responseRate}%</strong> — отвечает на запросы
+                </p>
+              ) : null}
+            </header>
+
+          <section className="bd-blockBs">
+            <h2 className="bd-blockBs__h">Катер</h2>
             {desc ? (
               <>
                 <p className={`bd-desc${!descOpen && descLong ? ' bd-desc--clamp' : ''}`}>{desc}</p>
@@ -354,130 +386,132 @@ export default function BoatDetailPage() {
             )}
           </section>
 
-          <section className="bd-section">
-            <h2 className="bd-sectionTitle">Характеристики</h2>
-            <div className="bd-specGrid">
-              <div className="bd-specItem">
-                <span>Год</span>
-                <span>{boat.year ? String(boat.year) : '—'}</span>
-              </div>
-              <div className="bd-specItem">
-                <span>Длина</span>
-                <span>{lengthStr}</span>
-              </div>
-              <div className="bd-specItem">
-                <span>Производитель</span>
-                <span>{boat.manufacturer?.trim() || '—'}</span>
-              </div>
-              <div className="bd-specItem">
-                <span>Модель</span>
-                <span>{boat.model?.trim() || '—'}</span>
-              </div>
-              <div className="bd-specItem">
-                <span>Вместимость</span>
-                <span>{capacity}</span>
-              </div>
-              <div className="bd-specItem">
-                <span>Тип</span>
-                <span>{boat.type_name || '—'}</span>
-              </div>
-              <div className="bd-specItem">
-                <span>Длительность</span>
-                <span>{getBookingPeriodLabel(boat)}</span>
+          <section className="bd-ownerStrip" aria-label="Владелец">
+            <p className="bd-ownerStrip__label">Владелец</p>
+            <div className="bd-ownerStrip__row">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="bd-ownerStrip__avatar" />
+              ) : (
+                <div className="bd-ownerStrip__avatar bd-ownerStrip__avatar--ph" aria-hidden>
+                  {ownerInitial}
+                </div>
+              )}
+              <div className="bd-ownerStrip__body">
+                <p className="bd-ownerStrip__name">{boat.owner_name || 'Владелец'}</p>
+                {boat.rating != null ? (
+                  <p className="bd-ownerStrip__meta">
+                    ★ {Number(boat.rating).toFixed(1)}
+                    {boat.reviews_count != null ? ` · ${boat.reviews_count} ${pluralizeReviews(boat.reviews_count)}` : null}
+                  </p>
+                ) : null}
               </div>
             </div>
           </section>
 
           {amenities.length > 0 ? (
-            <section className="bd-section">
-              <h2 className="bd-sectionTitle">На борту</h2>
-              <div className="bd-amenities">
+            <section className="bd-blockBs">
+              <h2 className="bd-blockBs__h">Удобства</h2>
+              <ul className="bd-amenityListBs">
                 {amenities.map((a) => (
-                  <span key={a} className="bd-amenity">
-                    {a}
-                  </span>
+                  <li key={a}>{a}</li>
                 ))}
-              </div>
+              </ul>
             </section>
           ) : null}
 
-          <section className="bd-section">
-            <h2 className="bd-sectionTitle">Место</h2>
-            <p className="bd-locationNote">
-              {loc}. Точный адрес и точка посадки станут доступны после подтверждения бронирования.
-            </p>
+          <section className="bd-blockBs">
+            <h2 className="bd-blockBs__h">Характеристики</h2>
+            <dl className="bd-specTableBs">
+              <div className="bd-specTableBs__row">
+                <dt>Год</dt>
+                <dd>{boat.year ? String(boat.year) : '—'}</dd>
+              </div>
+              <div className="bd-specTableBs__row">
+                <dt>Длина</dt>
+                <dd>{lengthStr}</dd>
+              </div>
+              <div className="bd-specTableBs__row">
+                <dt>Производитель</dt>
+                <dd>{boat.manufacturer?.trim() || '—'}</dd>
+              </div>
+              <div className="bd-specTableBs__row">
+                <dt>Модель</dt>
+                <dd>{boat.model?.trim() || '—'}</dd>
+              </div>
+              <div className="bd-specTableBs__row">
+                <dt>Вместимость</dt>
+                <dd>{capacity}</dd>
+              </div>
+              <div className="bd-specTableBs__row">
+                <dt>Тип</dt>
+                <dd>{boat.type_name || '—'}</dd>
+              </div>
+              <div className="bd-specTableBs__row">
+                <dt>Длительность аренды</dt>
+                <dd>{getBookingPeriodLabel(boat)}</dd>
+              </div>
+            </dl>
           </section>
 
-          <section className="bd-section">
-            <h2 className="bd-sectionTitle">Владелец</h2>
-            <div className="bd-owner">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="bd-owner__avatar" />
-              ) : (
-                <div className="bd-owner__avatar bd-owner__avatar--ph" aria-hidden>
-                  {ownerInitial}
-                </div>
-              )}
-              <div>
-                <p className="bd-owner__name">{boat.owner_name || 'Владелец'}</p>
-                {responseRate != null ? (
-                  <p className="bd-owner__meta">Ответы на запросы: около {responseRate}%</p>
-                ) : (
-                  <p className="bd-owner__meta">Напишите владельцу в приложении, чтобы уточнить детали.</p>
-                )}
-                <a href={appBookingUrl} className="bd-owner__btn" target="_blank" rel="noopener noreferrer">
-                  Написать владельцу
-                </a>
-              </div>
-            </div>
+          <section className="bd-blockBs">
+            <h2 className="bd-blockBs__h">Место</h2>
+            <p className="bd-locationBs">
+              Точные координаты и причал станут доступны после подтверждения бронирования.
+            </p>
+            <p className="bd-locationBs bd-locationBs--muted">{loc}</p>
+          </section>
+
+          <section className="bd-blockBs bd-crewBs">
+            <h2 className="bd-blockBs__h">Связь с владельцем</h2>
+            <p className="bd-crewBs__text">
+              Уточните детали выхода и маршрут в чате приложения — владелец ответит после запроса брони.
+            </p>
+            <a href={appBookingUrl} className="bd-crewBs__cta" target="_blank" rel="noopener noreferrer">
+              Написать владельцу
+            </a>
           </section>
 
           {(boat.cancellation_policy || boat.rules || boat.payment_policy) ? (
-            <section className="bd-section">
-              <h2 className="bd-sectionTitle">Важно знать</h2>
+            <section className="bd-blockBs">
+              <h2 className="bd-blockBs__h">Важно знать</h2>
               {boat.cancellation_policy ? (
-                <div style={{ marginBottom: 16 }}>
-                  <h3 className="bd-sectionTitle" style={{ fontSize: 16, marginBottom: 8 }}>
-                    Отмена бронирования
-                  </h3>
+                <div className="bd-knowBs">
+                  <h3 className="bd-knowBs__h">Отмена бронирования</h3>
                   <p className="bd-policy">{boat.cancellation_policy}</p>
                 </div>
               ) : null}
               {boat.rules ? (
-                <div style={{ marginBottom: 16 }}>
-                  <h3 className="bd-sectionTitle" style={{ fontSize: 16, marginBottom: 8 }}>
-                    Правила
-                  </h3>
+                <div className="bd-knowBs">
+                  <h3 className="bd-knowBs__h">Правила</h3>
                   <p className="bd-policy">{boat.rules}</p>
                 </div>
               ) : null}
               {boat.payment_policy ? (
-                <div>
-                  <h3 className="bd-sectionTitle" style={{ fontSize: 16, marginBottom: 8 }}>
-                    Оплата
-                  </h3>
+                <div className="bd-knowBs">
+                  <h3 className="bd-knowBs__h">Оплата</h3>
                   <p className="bd-policy">{boat.payment_policy}</p>
                 </div>
               ) : null}
             </section>
           ) : null}
 
-          <section className="bd-section">
-            <h2 className="bd-sectionTitle">
+          <section className="bd-blockBs">
+            <h2 className="bd-blockBs__h">
               Отзывы
               {boat.reviews_count != null ? (
-                <span style={{ fontWeight: 600, color: '#64748b', fontSize: 16 }}>
+                <span className="bd-blockBs__hSub">
                   {' '}
                   ({boat.reviews_count} {pluralizeReviews(boat.reviews_count)})
                 </span>
               ) : null}
             </h2>
             {boat.rating != null ? (
-              <p style={{ margin: '0 0 16px', fontSize: 15, color: '#475569' }}>
-                <span style={{ color: '#f59e0b', fontSize: 18 }} aria-hidden>
+              <p className="bd-reviewsBs__summary">
+                <span className="bd-reviewsBs__star" aria-hidden>
                   ★
-                </span>{' '}
-                <strong>{Number(boat.rating).toFixed(1)}</strong> средняя оценка
+                </span>
+                <strong>{Number(boat.rating).toFixed(1)}</strong>
+                <span className="bd-reviewsBs__lbl">средняя оценка</span>
               </p>
             ) : null}
             {reviews.length === 0 ? (
@@ -485,7 +519,7 @@ export default function BoatDetailPage() {
             ) : (
               <div className="bd-reviews">
                 {reviews.map((r, idx) => (
-                  <article key={r.id ?? `rev-${idx}`} className="bd-review">
+                  <article key={r.id ?? `rev-${idx}`} className="bd-review bd-review--bs">
                     <div className="bd-review__head">
                       <span className="bd-review__author">{r.user_name || 'Гость'}</span>
                       <span className="bd-review__stars" aria-label={`Оценка ${r.rating} из 5`}>
@@ -502,12 +536,15 @@ export default function BoatDetailPage() {
         </main>
 
         <aside className="bd-aside">
-          <div className="bd-bookCard">
-            <div className="bd-bookCard__price">
-              <strong>{formatPriceRu(selectedTierPrice)} ₽</strong>
-              <span className="bd-bookCard__unit">
-                / {minDurationLabel({ schedule_min_duration: Number(bookDuration) || boat.schedule_min_duration })}
-              </span>
+          <div className="bd-bookCard bd-bookCard--bs">
+            <div className="bd-bookCard__priceRow">
+              <div className="bd-bookCard__price">
+                <strong>{formatPriceRu(selectedTierPrice)} ₽</strong>
+                <span className="bd-bookCard__unit">
+                  / {minDurationLabel({ schedule_min_duration: Number(bookDuration) || boat.schedule_min_duration })}
+                </span>
+              </div>
+              <p className="bd-bookCard__priceNote">без доп. сборов (если не указано иное)</p>
             </div>
 
             <div className="bd-bookCard__field">
@@ -537,17 +574,18 @@ export default function BoatDetailPage() {
               </select>
             </div>
 
-            <a href={appBookingUrl} className="bd-bookCard__cta" target="_blank" rel="noopener noreferrer">
+            <a href={appBookingUrl} className="bd-bookCard__cta bd-bookCard__cta--bs" target="_blank" rel="noopener noreferrer">
               Запросить бронь
             </a>
-            <p className="bd-bookCard__hint">
-              Оформление и оплата — в приложении ONTHEWATER. Вы перейдёте на защищённый сайт.
-            </p>
-            <div className="bd-terms">
-              Бронируя катер, вы соглашаетесь с правилами аренды и политикой отмены, указанными владельцем.
-            </div>
+            <p className="bd-bookCard__hint">Оформление и оплата — в приложении ONTHEWATER.</p>
+            <hr className="bd-bookCard__rule" />
+            <ul className="bd-bookCard__termsList">
+              <li>Итоговая стоимость может включать сервисный сбор — смотрите в приложении при оформлении.</li>
+              <li>Бронируя, вы принимаете правила аренды и политику отмены владельца.</li>
+            </ul>
           </div>
         </aside>
+        </div>
       </div>
     </div>
   )
