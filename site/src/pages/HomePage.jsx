@@ -88,39 +88,35 @@ export default function HomePage() {
             Найдите и забронируйте судно для любого случая — с капитаном или без.
           </p>
 
-          <div className="lp-searchBar" role="search">
-            <div className="lp-searchField">
+          <div className="lp-searchBar lp-searchBar--pill" role="search">
+            <div className="lp-searchField lp-searchField--pill">
+              <span className="lp-searchPin" aria-hidden>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M12 21s-6-5.33-6-10a6 6 0 1 1 12 0c0 4.67-6 10-6 10z"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx="12" cy="11" r="2.25" stroke="currentColor" strokeWidth="1.75" />
+                </svg>
+              </span>
               <label className="lp-srOnly" htmlFor="where">
                 Куда
               </label>
-              <input id="where" type="text" placeholder="Куда?" className="lp-searchInput" />
+              <input
+                id="where"
+                type="text"
+                placeholder="Куда хотите выйти на воду?"
+                className="lp-searchInput"
+                autoComplete="off"
+              />
             </div>
-            <span className="lp-searchDivider" />
-            <div className="lp-searchField">
-              <label className="lp-srOnly" htmlFor="date">
-                Дата
-              </label>
-              <select id="date" className="lp-searchSelect" defaultValue="">
-                <option value="" disabled>
-                  Выберите дату
-                </option>
-                <option>Сегодня</option>
-                <option>Завтра</option>
-              </select>
-            </div>
-            <span className="lp-searchDivider" />
-            <div className="lp-searchField">
-              <label className="lp-srOnly" htmlFor="guests">
-                Гости
-              </label>
-              <select id="guests" className="lp-searchSelect" defaultValue="2">
-                <option value="1">1 гость</option>
-                <option value="2">2 гостя</option>
-                <option value="4">4 гостя</option>
-                <option value="8">8+ гостей</option>
-              </select>
-            </div>
-            <Link to="/boats" className="lp-searchBtn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
+            <Link
+              to="/boats"
+              className="lp-searchBtn lp-searchBtn--pill"
+            >
               Найти
             </Link>
           </div>

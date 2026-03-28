@@ -144,8 +144,14 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
+  text-align: center;
   padding: 24px clamp(20px, 4vw, 48px) 56px;
   max-width: 920px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
 }
 
 .lp-heroTitle {
@@ -165,10 +171,13 @@
   font-weight: 500;
   line-height: 1.5;
   color: rgba(255, 255, 255, 0.92);
+  text-wrap: balance;
 }
 
 .lp-searchBar {
   margin-top: 32px;
+  align-self: center;
+  width: 100%;
   display: flex;
   align-items: stretch;
   flex-wrap: wrap;
@@ -178,6 +187,59 @@
   box-shadow: 0 16px 48px rgba(0, 43, 91, 0.22);
   overflow: hidden;
   max-width: 720px;
+  text-align: left;
+}
+
+/* Один инпут + кнопка в «таблетке» (как Boatsetter) */
+.lp-searchBar--pill {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0;
+  max-width: min(840px, 100%);
+  padding: 6px 6px 6px 20px;
+  border-radius: 999px;
+  box-shadow: 0 8px 32px rgba(0, 43, 91, 0.18), 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 43, 91, 0.06);
+}
+
+.lp-searchField--pill {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 12px 0 0;
+  gap: 12px;
+}
+
+.lp-searchPin {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+}
+
+.lp-searchBar--pill .lp-searchInput {
+  padding: 14px 4px 14px 0;
+  font-size: 15px;
+}
+
+.lp-searchBar--pill .lp-searchInput::placeholder {
+  color: #94a3b8;
+}
+
+.lp-searchBtn--pill {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  margin: 0;
+  padding: 14px 28px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .lp-searchField {
@@ -762,20 +824,37 @@
     display: none;
   }
 
-  .lp-searchBar {
+  .lp-searchBar--pill {
     flex-direction: column;
-    border-radius: 12px;
+    align-items: stretch;
+    padding: 10px 10px 10px 18px;
+    border-radius: 20px;
+  }
+
+  .lp-searchField--pill {
+    padding: 0 8px 0 0;
+  }
+
+  .lp-searchBar--pill .lp-searchBtn--pill {
+    width: 100%;
+    margin-top: 4px;
+    padding: 16px 20px;
   }
 
   .lp-searchDivider {
     display: none;
   }
 
-  .lp-searchField {
+  .lp-searchBar:not(.lp-searchBar--pill) .lp-searchField {
     border-bottom: 1px solid rgba(0, 43, 91, 0.08);
   }
 
-  .lp-searchBtn {
+  .lp-searchBar:not(.lp-searchBar--pill) {
+    flex-direction: column;
+    border-radius: 12px;
+  }
+
+  .lp-searchBar:not(.lp-searchBar--pill) .lp-searchBtn {
     width: 100%;
     border-radius: 0 0 12px 12px;
     padding: 16px;
