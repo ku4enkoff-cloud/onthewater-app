@@ -1,5 +1,6 @@
 import './App.css'
 import heroImg from '../images/app/hero.webp'
+import PopularBoats from './components/PopularBoats.jsx'
 
 const SERVICE_CATEGORIES = [
   {
@@ -16,37 +17,6 @@ const SERVICE_CATEGORIES = [
     title: 'Рыбалка',
     text: 'Рыболовные туры с гидом.',
     img: 'https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=400&h=400&fit=crop',
-  },
-]
-
-const FEATURED_BOATS = [
-  {
-    title: 'Моторная яхта',
-    price: '15 000',
-    unit: 'час',
-    location: 'Москва',
-    img: 'https://images.unsplash.com/photo-1567894340315-735d7c361db0?w=600&h=380&fit=crop',
-  },
-  {
-    title: 'Катер',
-    price: '8 500',
-    unit: 'час',
-    location: 'Санкт-Петербург',
-    img: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600&h=380&fit=crop',
-  },
-  {
-    title: 'Катамаран',
-    price: '22 000',
-    unit: 'час',
-    location: 'Сочи',
-    img: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=600&h=380&fit=crop',
-  },
-  {
-    title: 'Рыболовное судно',
-    price: '6 000',
-    unit: 'час',
-    location: 'Казань',
-    img: 'https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=600&h=380&fit=crop',
   },
 ]
 
@@ -186,40 +156,7 @@ function App() {
         </div>
       </section>
 
-      <section className="lp-section lp-featured" id="boats">
-        <div className="lp-container">
-          <div className="lp-featuredHead">
-            <div>
-              <h2 className="lp-sectionTitle">Популярные катера</h2>
-              <p className="lp-sectionItalic">Варианты рядом с вами</p>
-            </div>
-            <a href="#" className="lp-viewMore">
-              Смотреть все <span aria-hidden>→</span>
-            </a>
-          </div>
-          <div className="lp-featuredGrid">
-            {FEATURED_BOATS.map((boat) => (
-              <article key={boat.title} className="lp-boatCard">
-                <div className="lp-boatImgWrap">
-                  <img src={boat.img} alt="" className="lp-boatImg" loading="lazy" />
-                </div>
-                <div className="lp-boatBody">
-                  <h3 className="lp-boatTitle">{boat.title}</h3>
-                  <p className="lp-boatPrice">
-                    от {boat.price} ₽ / {boat.unit}
-                  </p>
-                  <p className="lp-boatLoc">{boat.location}</p>
-                  <div className="lp-boatFooter">
-                    <a href="#" className="lp-boatBtn">
-                      Подробнее
-                    </a>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+      <PopularBoats />
 
       <section className="lp-section lp-how" id="how">
         <div className="lp-container">
