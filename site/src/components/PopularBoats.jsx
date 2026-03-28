@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchPopularBoats } from '../api/boats'
-import { API_BASE, SITE_MAIN_URL, getPhotoUrl } from '../config'
+import { API_BASE, getPhotoUrl } from '../config'
 import {
   firstPhotoUrl,
   formatCardLocation,
@@ -91,14 +91,9 @@ export default function PopularBoats() {
                     </p>
                     <p className="lp-boatLoc">{loc}</p>
                     <div className="lp-boatFooter">
-                      <a
-                        href={SITE_MAIN_URL}
-                        className="lp-boatBtn"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
+                      <Link to={`/boats/${id}`} className="lp-boatBtn">
                         Подробнее
-                      </a>
+                      </Link>
                     </div>
                   </div>
                 </article>
