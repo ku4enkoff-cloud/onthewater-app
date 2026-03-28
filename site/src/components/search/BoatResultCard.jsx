@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { getPhotoUrl } from '../../config'
 import { firstPhotoUrl } from '../../boatUtils'
+import { boatDetailPath } from '../../boatUrl'
 import {
   formatCardLocationCaps,
   formatDurationChipLabel,
@@ -40,7 +41,7 @@ export default function BoatResultCard({ boat, filters, selected, onHover, onLea
       onMouseEnter={() => onHover?.(boat.id)}
       onMouseLeave={() => onLeave?.()}
     >
-      <Link to={`/boats/${boat.id}`} className="bs-card__link">
+      <Link to={boatDetailPath(boat)} className="bs-card__link">
         <div className="bs-card__imageWrap">
           <img src={img} alt="" className="bs-card__image" loading="lazy" />
           {instantBook ? (

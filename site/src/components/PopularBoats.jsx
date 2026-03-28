@@ -9,6 +9,7 @@ import {
   getMinDurationPrice,
   minDurationLabel,
 } from '../boatUtils'
+import { boatDetailPath } from '../boatUrl'
 
 const PLACEHOLDER = 'https://placehold.co/600x380/e8eef4/64748b?text=%D0%9A%D0%B0%D1%82%D0%B5%D1%80'
 const GRID_LIMIT = 4
@@ -91,7 +92,7 @@ export default function PopularBoats() {
                     </p>
                     <p className="lp-boatLoc">{loc}</p>
                     <div className="lp-boatFooter">
-                      <Link to={`/boats/${id}`} className="lp-boatBtn">
+                      <Link to={boatDetailPath(boat)} className="lp-boatBtn">
                         Подробнее
                       </Link>
                     </div>
