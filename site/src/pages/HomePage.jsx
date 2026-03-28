@@ -1,26 +1,9 @@
 import { Link } from 'react-router-dom'
 import '../App.css'
 import heroImg from '../../images/app/hero.webp'
+import DestinationsSection from '../components/DestinationsSection.jsx'
 import PopularBoats from '../components/PopularBoats.jsx'
 import { SITE_MAIN_URL } from '../config'
-
-const SERVICE_CATEGORIES = [
-  {
-    title: 'Аренда катеров',
-    text: 'Подберите идеальное судно для поездки.',
-    img: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400&h=400&fit=crop',
-  },
-  {
-    title: 'Чартер яхт',
-    text: 'Комфорт и статус на воде.',
-    img: 'https://images.unsplash.com/photo-1567894340315-735d7c361db0?w=400&h=400&fit=crop',
-  },
-  {
-    title: 'Рыбалка',
-    text: 'Рыболовные туры с гидом.',
-    img: 'https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=400&h=400&fit=crop',
-  },
-]
 
 const HOW_STEPS = [
   {
@@ -78,7 +61,7 @@ export default function HomePage() {
           <nav className="lp-nav" aria-label="Основное меню">
             <Link to="/boats">Катера</Link>
             <a href="#how">Как это работает</a>
-            <a href="#services">Услуги</a>
+            <a href="#destinations">Направления</a>
             <a href="#contact">Контакты</a>
           </nav>
 
@@ -144,19 +127,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="lp-section lp-services" id="services">
-        <div className="lp-container lp-servicesGrid">
-          {SERVICE_CATEGORIES.map((item) => (
-            <article key={item.title} className="lp-serviceCard">
-              <div className="lp-serviceImgWrap">
-                <img src={item.img} alt="" className="lp-serviceImg" loading="lazy" />
-              </div>
-              <h3 className="lp-serviceTitle">{item.title}</h3>
-              <p className="lp-serviceText">{item.text}</p>
-            </article>
-          ))}
-        </div>
-      </section>
+      <DestinationsSection />
 
       <PopularBoats />
 

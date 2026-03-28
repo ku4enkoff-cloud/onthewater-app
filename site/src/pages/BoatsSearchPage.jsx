@@ -18,6 +18,7 @@ import {
   isRegion,
 } from '../boatSearchUtils'
 import BoatResultCard from '../components/search/BoatResultCard.jsx'
+import FiltersModal from '../components/search/FiltersModal.jsx'
 import YandexBoatsMap from '../components/search/YandexBoatsMap.jsx'
 
 function todayISO() {
@@ -30,11 +31,9 @@ function todayISO() {
 
 export default function BoatsSearchPage() {
   const [searchParams] = useSearchParams()
-  const initialCity = searchParams.get('city') || 'Москва'
+  const cityFromUrl = searchParams.get('city')?.trim() || ''
 
-  const [locationKey, setLocationKey] = useState(() =>
-    LOCATION_OPTIONS.some((o) => o.value === initialCity) ? initialCity : 'Москва',
-  )
+  const [locationKey, setLocationKey] = useState(() => cityFromUrl || 'Москва')
   const [dateStr] = useState(todayISO)
   const [allBoats, setAllBoats] = useState([])
   const [loading, setLoading] = useState(true)
@@ -43,6 +42,8 @@ export default function BoatsSearchPage() {
   const [searchOnMove, setSearchOnMove] = useState(false)
   const [selectedBoatId, setSelectedBoatId] = useState(null)
   const [apiTypes, setApiTypes] = useState([])
+  const [filtersModalOpen, setFiltersModalOpen] = useState(false)
+  const [filtersModalKey, setFiltersModalKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -82,6 +83,18 @@ export default function BoatsSearchPage() {
     return () => {
       cancelled = true
     }
+  }, [locationKey])
+
+  useEffect(() => {
+    if (!cityFromUrl) return
+    setLocationKey(cityFromUrl)
+  }, [cityFromUrl])
+
+  const locationSelectOptions = useMemo(() => {
+    if (locationKey && !LOCATION_OPTIONS.some((o) => o.value === locationKey)) {
+      return [{ value: locationKey, label: locationKey }, ...LOCATION_OPTIONS]
+    }
+    return LOCATION_OPTIONS
   }, [locationKey])
 
   const handleGeoSearch = useCallback(async ({ lat, lng, radius }) => {
@@ -190,7 +203,7 @@ export default function BoatsSearchPage() {
               onChange={(e) => setLocationKey(e.target.value)}
               aria-label="Город или регион"
             >
-              {LOCATION_OPTIONS.map((o) => (
+              {locationSelectOptions.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>
@@ -231,97 +244,20 @@ export default function BoatsSearchPage() {
       ) : null}
 
       <div className="bs-filtersRow">
-        <details className="bs-details">
-          <summary className="bs-details__summary">
-            Фильтры{activeFilters > 0 ? ` (${activeFilters})` : ''}
-          </summary>
-          <div className="bs-filterPanel" style={{ marginTop: 12 }}>
-            <div className="bs-filterPanel__grid">
-              <label>
-                Цена от (₽)
-                <input
-                  type="number"
-                  min={priceRange.min}
-                  max={filters.priceHigh}
-                  value={filters.priceLow}
-                  onChange={(e) =>
-                    setFilters((p) => ({ ...p, priceLow: Number(e.target.value) || 0 }))
-                  }
-                />
-              </label>
-              <label>
-                Цена до (₽)
-                <input
-                  type="number"
-                  min={filters.priceLow}
-                  max={priceRange.max}
-                  value={filters.priceHigh}
-                  onChange={(e) =>
-                    setFilters((p) => ({ ...p, priceHigh: Number(e.target.value) || 0 }))
-                  }
-                />
-              </label>
-              <label>
-                Пассажиры (мин.)
-                <select
-                  value={filters.passengers}
-                  onChange={(e) =>
-                    setFilters((p) => ({ ...p, passengers: Number(e.target.value) || 1 }))
-                  }
-                >
-                  {Array.from({ length: maxPassengers }, (_, i) => i + 1).map((n) => (
-                    <option key={n} value={n}>
-                      {n}+
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Длительность
-                <select
-                  value={filters.duration ?? ''}
-                  onChange={(e) =>
-                    setFilters((p) => ({
-                      ...p,
-                      duration: e.target.value ? Number(e.target.value) : null,
-                    }))
-                  }
-                >
-                  <option value="">Любая</option>
-                  {durationOptions.map((m) => (
-                    <option key={m} value={m}>
-                      {m < 60 ? `${m} мин` : `${m / 60} ч`}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Капитан
-                <select
-                  value={filters.captain ?? ''}
-                  onChange={(e) =>
-                    setFilters((p) => ({
-                      ...p,
-                      captain: e.target.value || null,
-                    }))
-                  }
-                >
-                  <option value="">Любой</option>
-                  <option value="С капитаном">С капитаном</option>
-                  <option value="Без капитана">Без капитана</option>
-                </select>
-              </label>
-            </div>
-            <button
-              type="button"
-              className="bs-chip"
-              style={{ marginTop: 12 }}
-              onClick={() => setFilters(DEFAULT_FILTERS)}
-            >
-              Сбросить
-            </button>
-          </div>
-        </details>
+        <button
+          type="button"
+          className={`bs-chip${activeFilters > 0 ? ' bs-chip--active' : ''}`}
+          onClick={() => {
+            setFiltersModalKey((k) => k + 1)
+            setFiltersModalOpen(true)
+          }}
+        >
+          <span className="bs-filtersIcon" aria-hidden>
+            ⚙
+          </span>
+          Фильтры
+          {activeFilters > 0 ? ` (${activeFilters})` : ''}
+        </button>
 
         {isPriceActive ? (
           <span className="bs-chip bs-chip--active">
@@ -390,6 +326,19 @@ export default function BoatsSearchPage() {
           </div>
         </div>
       </div>
+
+      {filtersModalOpen ? (
+        <FiltersModal
+          key={filtersModalKey}
+          onClose={() => setFiltersModalOpen(false)}
+          filters={filters}
+          onApply={(partial) => setFilters((prev) => ({ ...prev, ...partial }))}
+          allBoats={allBoats}
+          priceRange={priceRange}
+          durationOptions={durationOptions}
+          maxPassengers={maxPassengers}
+        />
+      ) : null}
     </div>
   )
 }

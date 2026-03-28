@@ -233,6 +233,7 @@ export function countActiveFilters(filters, priceRange) {
   if (filters.duration) n++
   if (filters.boatTypeId || filters.boatTypeName) n++
   if (filters.captain) n++
+  if (Array.isArray(filters.waterSports) && filters.waterSports.length > 0) n++
   return n
 }
 

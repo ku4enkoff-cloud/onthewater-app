@@ -1,3 +1,5 @@
+/* global __YANDEX_MAPS_API_KEY_RESOLVED__ */
+
 const env = (import.meta.env.VITE_API_URL || '').trim().replace(/\/$/, '')
 
 /** Пустая строка в dev → запросы на тот же origin (Vite proxy → localhost:3000). */
@@ -8,10 +10,15 @@ export const API_BASE =
 export const SITE_MAIN_URL =
   (import.meta.env.VITE_MAIN_SITE_URL || '').trim() || 'https://onthewater.ru'
 
-/** Ключ JavaScript API карт (developer.tech.yandex.ru → JavaScript API и HTTP Геокодер). */
-export const YANDEX_MAPS_API_KEY =
-  (import.meta.env.VITE_YANDEX_MAPS_API_KEY || import.meta.env.VITE_YANDEX_MAPKIT_API_KEY || '')
-    .trim()
+/**
+ * Ключ JavaScript API карт.
+ * Основное значение встраивается в vite.config.js (define) из .env или дефолта.
+ */
+export const YANDEX_MAPS_API_KEY = (
+  typeof __YANDEX_MAPS_API_KEY_RESOLVED__ !== 'undefined'
+    ? __YANDEX_MAPS_API_KEY_RESOLVED__
+    : String(import.meta.env.VITE_YANDEX_MAPS_API_KEY || import.meta.env.VITE_YANDEX_MAPKIT_API_KEY || '')
+).trim()
 
 export function getPhotoUrl(src) {
   if (!src || typeof src !== 'string') return null

@@ -228,6 +228,13 @@
   color: #002b5b;
 }
 
+.bs-filtersIcon {
+  display: inline-flex;
+  margin-right: 6px;
+  font-size: 14px;
+  opacity: 0.85;
+}
+
 .bs-mapToggle {
   margin-left: auto;
   display: flex;
