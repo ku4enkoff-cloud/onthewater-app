@@ -23,6 +23,7 @@ import {
 import BoatResultCard from '../components/search/BoatResultCard.jsx'
 import FiltersModal from '../components/search/FiltersModal.jsx'
 import YandexBoatsMap from '../components/search/YandexBoatsMap.jsx'
+import BookingCalendarModal, { formatBookingDateDots } from '../components/booking/BookingCalendarModal.jsx'
 
 function readInitialLocationKey() {
   try {
@@ -62,6 +63,39 @@ function ClearIcon() {
   )
 }
 
+function SearchBarPinIcon() {
+  return (
+    <svg className="bs-searchBar__iconPin" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M12 21s7-4.35 7-10a7 7 0 1 0-14 0c0 5.65 7 10 7 10z"
+        fill="#ec4899"
+        stroke="#db2777"
+        strokeWidth="1"
+      />
+      <circle cx="12" cy="11" r="2.25" fill="#fff" />
+    </svg>
+  )
+}
+
+function SearchBarCalendarIcon() {
+  return (
+    <svg className="bs-searchBar__iconCal" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="3" y="5" width="18" height="16" rx="2.5" stroke="#6366f1" strokeWidth="1.75" fill="#eef2ff" />
+      <path d="M3 9.5h18" stroke="#6366f1" strokeWidth="1.75" />
+      <path d="M8 3v4M16 3v4" stroke="#3b82f6" strokeWidth="1.75" strokeLinecap="round" />
+      <circle cx="12" cy="14" r="1.5" fill="#3b82f6" />
+    </svg>
+  )
+}
+
+function SearchBarSelectChevron() {
+  return (
+    <svg className="bs-searchBar__selectChevron" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 function todayISO() {
   const d = new Date()
   const y = d.getFullYear()
@@ -75,7 +109,8 @@ export default function BoatsSearchPage() {
   const cityFromUrl = searchParams.get('city')?.trim() || ''
 
   const [locationKey, setLocationKey] = useState(readInitialLocationKey)
-  const [dateStr] = useState(todayISO)
+  const [dateStr, setDateStr] = useState(todayISO)
+  const [calendarOpen, setCalendarOpen] = useState(false)
   const [allBoats, setAllBoats] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
@@ -248,26 +283,34 @@ export default function BoatsSearchPage() {
         </Link>
 
         <div className="bs-searchBar" role="search">
-          <div className="bs-searchBar__field">
-            <span aria-hidden>📍</span>
-            <select
-              className="bs-searchBar__select"
-              value={locationKey}
-              onChange={(e) => setLocationKey(e.target.value)}
-              aria-label="Город или регион"
-            >
-              {locationSelectOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+          <div className="bs-searchBar__field bs-searchBar__field--location">
+            <SearchBarPinIcon />
+            <div className="bs-searchBar__selectWrap">
+              <select
+                className="bs-searchBar__select"
+                value={locationKey}
+                onChange={(e) => setLocationKey(e.target.value)}
+                aria-label="Город или регион"
+              >
+                {locationSelectOptions.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <SearchBarSelectChevron />
+            </div>
           </div>
-          <span className="bs-searchBar__divider" />
-          <div className="bs-searchBar__field">
-            <span aria-hidden>📅</span>
-            <input className="bs-searchBar__input" type="date" value={dateStr} readOnly aria-label="Дата" />
-          </div>
+          <span className="bs-searchBar__divider" aria-hidden />
+          <button
+            type="button"
+            className="bs-searchBar__field bs-searchBar__field--date"
+            onClick={() => setCalendarOpen(true)}
+            aria-label="Выбрать дату"
+          >
+            <SearchBarCalendarIcon />
+            <span className="bs-searchBar__dateText">{formatBookingDateDots(dateStr)}</span>
+          </button>
         </div>
 
         <div className="bs-top__auth">
@@ -279,6 +322,14 @@ export default function BoatsSearchPage() {
           </a>
         </div>
       </header>
+
+      <BookingCalendarModal
+        open={calendarOpen}
+        onClose={() => setCalendarOpen(false)}
+        value={dateStr}
+        minDate={todayISO()}
+        onApply={(iso) => setDateStr(iso)}
+      />
 
       {categoryItems.length > 0 ? (
         <div className="bs-categories">

@@ -169,3 +169,13 @@ export function formatBookingDateRu(iso) {
   if (!d) return 'Дата'
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })
 }
+
+/** Дата в строке поиска: 28.03.2026 */
+export function formatBookingDateDots(iso) {
+  const d = parseISOKey(iso)
+  if (!d) return '—'
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const yy = d.getFullYear()
+  return `${dd}.${mm}.${yy}`
+}
