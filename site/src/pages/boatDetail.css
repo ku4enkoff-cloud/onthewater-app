@@ -41,6 +41,51 @@
   background: #e2e8f0;
 }
 
+.bd-topBar__center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.bd-topBar__date {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 8px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  color: #002b5b;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.bd-topBar__date:hover {
+  border-color: #0061c1;
+  background: #f8fafc;
+}
+
+.bd-topBar__dateIcon {
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.bd-topBar__dateText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bd-topBar__brand {
+  flex-shrink: 0;
+}
+
 .bd-layout {
   max-width: 1200px;
   margin: 0 auto;
@@ -504,7 +549,8 @@
 }
 
 .bd-bookCard__field input,
-.bd-bookCard__field select {
+.bd-bookCard__field select,
+.bd-bookCard__dateBtn {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid #e2e8f0;
@@ -513,6 +559,18 @@
   font-size: 15px;
   color: #0f172a;
   background: #f8fafc;
+}
+
+.bd-bookCard__dateBtn {
+  display: block;
+  text-align: left;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.bd-bookCard__dateBtn:hover {
+  border-color: #0061c1;
+  background: #fff;
 }
 
 .bd-bookCard__cta {
