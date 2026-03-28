@@ -8,6 +8,11 @@ export const API_BASE =
 export const SITE_MAIN_URL =
   (import.meta.env.VITE_MAIN_SITE_URL || '').trim() || 'https://onthewater.ru'
 
+/** Ключ JavaScript API карт (developer.tech.yandex.ru → JavaScript API и HTTP Геокодер). */
+export const YANDEX_MAPS_API_KEY =
+  (import.meta.env.VITE_YANDEX_MAPS_API_KEY || import.meta.env.VITE_YANDEX_MAPKIT_API_KEY || '')
+    .trim()
+
 export function getPhotoUrl(src) {
   if (!src || typeof src !== 'string') return null
   const s = src.trim()

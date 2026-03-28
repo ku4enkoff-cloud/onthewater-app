@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { fetchPopularBoats } from '../api/boats'
 import { API_BASE, SITE_MAIN_URL, getPhotoUrl } from '../config'
 import {
@@ -48,9 +49,9 @@ export default function PopularBoats() {
             <h2 className="lp-sectionTitle">Популярные катера</h2>
             <p className="lp-sectionItalic">Варианты рядом с вами</p>
           </div>
-          <a href={SITE_MAIN_URL} className="lp-viewMore" target="_blank" rel="noopener noreferrer">
-            Смотреть все <span aria-hidden>→</span>
-          </a>
+            <Link to="/boats" className="lp-viewMore">
+              Смотреть все <span aria-hidden>→</span>
+            </Link>
         </div>
 
         {import.meta.env.DEV && !API_BASE ? (

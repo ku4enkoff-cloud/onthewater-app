@@ -17,19 +17,6 @@ export function formatPriceRu(n) {
   return n != null ? Number(n).toLocaleString('ru-RU') : '0'
 }
 
-function normalizeBoatTiers(boat) {
-  let tiers = boat?.price_tiers
-  if (typeof tiers === 'string') {
-    try {
-      tiers = JSON.parse(tiers)
-    } catch {
-      tiers = []
-    }
-  }
-  if (!Array.isArray(tiers)) tiers = []
-  return tiers.map((t) => Number(t?.duration) || 0).filter((d) => d > 0)
-}
-
 export function getMinDurationPrice(boat) {
   const minDuration = Number(boat?.schedule_min_duration) || 60
   const base = Number(boat?.price_per_hour) || 0
