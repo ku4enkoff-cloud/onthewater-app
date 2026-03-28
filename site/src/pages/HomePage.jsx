@@ -4,6 +4,7 @@ import heroImg from '../../images/app/hero.webp'
 import DestinationsSection from '../components/DestinationsSection.jsx'
 import PopularBoats from '../components/PopularBoats.jsx'
 import { SITE_MAIN_URL } from '../config'
+import { useHomePageSeo } from '../seo/useHomePageSeo.js'
 
 const HOW_STEPS = [
   {
@@ -27,8 +28,10 @@ const HOW_STEPS = [
 ]
 
 export default function HomePage() {
+  useHomePageSeo(heroImg)
+
   return (
-    <div className="lp">
+    <main className="lp">
       <section className="lp-heroWrap">
         <div className="lp-heroBg" style={{ backgroundImage: `url(${heroImg})` }} aria-hidden />
         <div className="lp-heroTint" aria-hidden />
@@ -67,7 +70,7 @@ export default function HomePage() {
 
           <div className="lp-headerActions">
             <a href={SITE_MAIN_URL} className="lp-linkMuted" target="_blank" rel="noopener noreferrer">
-              Разместить катер
+              Разместить обьявление
             </a>
             <a href={SITE_MAIN_URL} className="lp-btnGhost" target="_blank" rel="noopener noreferrer">
               Регистрация
@@ -151,11 +154,11 @@ export default function HomePage() {
           <h2 className="lp-ctaTitle">Владелец катера? Зарабатывайте</h2>
           <p className="lp-ctaSub">Сдавайте судно в аренду через ONTHEWATER.</p>
           <a href={SITE_MAIN_URL} className="lp-ctaBtn" target="_blank" rel="noopener noreferrer">
-            Разместить катер
+            Разместить обьявление
           </a>
         </div>
       </section>
 
-    </div>
+    </main>
   )
 }
