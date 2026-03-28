@@ -496,6 +496,7 @@
 .bd-aside {
   position: sticky;
   top: 72px;
+  min-width: 0;
 }
 
 @media (max-width: 960px) {
@@ -512,6 +513,15 @@
   border: 1px solid #e7e5e4;
   box-shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
   padding: 22px;
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.bd-bookCard *,
+.bd-bookCard *::before,
+.bd-bookCard *::after {
+  box-sizing: border-box;
 }
 
 .bd-bookCard__price {
@@ -577,6 +587,7 @@
   margin-top: 20px;
   display: block;
   width: 100%;
+  max-width: 100%;
   padding: 16px;
   border: 0;
   border-radius: 12px;
@@ -588,6 +599,7 @@
   cursor: pointer;
   text-align: center;
   text-decoration: none;
+  overflow-wrap: anywhere;
 }
 
 .bd-bookCard__cta:hover {

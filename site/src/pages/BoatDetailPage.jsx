@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { boatDetailPath, boatUrlSegment, parseBoatUrlParam } from '../boatUrl'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import './boatDetail.css'
 import { fetchBoatById, fetchBoatReviews } from '../api/boats'
@@ -57,8 +58,9 @@ function formatReviewDate(iso) {
 }
 
 export default function BoatDetailPage() {
-  const { boatId } = useParams()
+  const { boatSlug } = useParams()
   const navigate = useNavigate()
+  const resolvedId = useMemo(() => parseBoatUrlParam(boatSlug), [boatSlug])
   const [boat, setBoat] = useState(null)
   const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
@@ -70,11 +72,17 @@ export default function BoatDetailPage() {
   const [calendarOpen, setCalendarOpen] = useState(false)
 
   const load = useCallback(async () => {
-    if (!boatId) return
+    if (!resolvedId) {
+      setBoat(null)
+      setReviews([])
+      setError('notfound')
+      setLoading(false)
+      return
+    }
     setLoading(true)
     setError(null)
     try {
-      const [b, rev] = await Promise.all([fetchBoatById(boatId), fetchBoatReviews(boatId)])
+      const [b, rev] = await Promise.all([fetchBoatById(resolvedId), fetchBoatReviews(resolvedId)])
       if (!b) {
         setBoat(null)
         setReviews([])
@@ -92,11 +100,20 @@ export default function BoatDetailPage() {
     } finally {
       setLoading(false)
     }
-  }, [boatId])
+  }, [resolvedId])
 
   useEffect(() => {
     load()
   }, [load])
+
+  /** Канонический URL с актуальным slug из названия (старые ссылки /boats/5 тоже работают). */
+  useEffect(() => {
+    if (!boat || !boatSlug) return
+    const seg = boatUrlSegment(boat)
+    if (seg && boatSlug !== seg) {
+      navigate(boatDetailPath(boat), { replace: true })
+    }
+  }, [boat, boatSlug, navigate])
 
   const photos = useMemo(() => {
     if (!boat) return [PLACEHOLDER]
@@ -124,10 +141,10 @@ export default function BoatDetailPage() {
   const appBookingUrl = useMemo(() => {
     const base = SITE_MAIN_URL.replace(/\/$/, '')
     const q = new URLSearchParams()
-    if (boatId) q.set('boat', String(boatId))
+    if (resolvedId) q.set('boat', String(resolvedId))
     const s = q.toString()
     return s ? `${base}/?${s}` : `${base}/`
-  }, [boatId])
+  }, [resolvedId])
 
   if (loading) {
     return (
