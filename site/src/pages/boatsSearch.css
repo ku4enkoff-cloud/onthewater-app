@@ -6,7 +6,7 @@
   background: #fff;
   color: #0061c1;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 13px;
   padding: 5px 10px;
   border-radius: 8px;
   border: 2px solid #0061c1;
@@ -26,7 +26,7 @@
 }
 
 .yw-pin__zap {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
 }
 
@@ -135,7 +135,7 @@
   border: 0;
   background: transparent;
   font: inherit;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   color: #334155;
   padding: 14px 28px 14px 0;
@@ -146,7 +146,7 @@
 
 .bs-searchBar__dateText {
   flex: 1;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   color: #334155;
   padding: 14px 0;
@@ -192,9 +192,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  width: 88px;
-  padding: 6px 4px 8px;
+  gap: 6px;
+  width: 104px;
+  padding: 6px 4px 10px;
   border: 1px solid transparent;
   border-radius: 12px;
   background: transparent;
@@ -214,18 +214,18 @@
 }
 
 .bs-cat__img {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
+  width: 68px;
+  height: 68px;
+  border-radius: 18px;
   object-fit: cover;
 }
 
 .bs-cat__label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   text-align: center;
   line-height: 1.2;
-  max-width: 84px;
+  max-width: 96px;
 }
 
 .bs-filtersRow {
@@ -264,7 +264,7 @@
   border-radius: 999px;
   border: 1px solid #e2e8f0;
   background: #f1f5f9;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: #475569;
   cursor: pointer;
@@ -308,7 +308,7 @@
   border: 0;
   background: transparent;
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: #002b5b;
   cursor: pointer;
@@ -343,7 +343,7 @@
   cursor: pointer;
   list-style: none;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
   color: #334155;
 }
 
@@ -359,7 +359,7 @@
   border-radius: 999px;
   border: 1px solid #cbd5e1;
   background: #fff;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: #334155;
   cursor: pointer;
@@ -539,7 +539,7 @@
   gap: 4px;
   padding: 4px 8px;
   border-radius: 6px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -551,7 +551,7 @@
 }
 
 .bs-card__zap {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .bs-card__photoCount {
@@ -560,7 +560,7 @@
   right: 48px;
   background: rgba(15, 23, 42, 0.65);
   color: #fff;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   padding: 4px 8px;
   border-radius: 6px;
@@ -583,7 +583,7 @@
 }
 
 .bs-card__priceUnit {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: #64748b;
 }
@@ -604,7 +604,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: #c2410c;
   background: #ffedd5;
@@ -613,7 +613,7 @@
 }
 
 .bs-card__location {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.06em;
   color: #64748b;
@@ -646,7 +646,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 4px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .bs-card__star {
@@ -659,19 +659,19 @@
 }
 
 .bs-card__reviews {
-  font-size: 12px;
+  font-size: 13px;
   color: #64748b;
 }
 
 .bs-card__bookings {
-  font-size: 11px;
+  font-size: 12px;
   color: #94a3b8;
   margin-top: 2px;
 }
 
 .bs-card__meta {
   margin: 10px 0 0;
-  font-size: 13px;
+  font-size: 14px;
   color: #475569;
   line-height: 1.4;
 }
