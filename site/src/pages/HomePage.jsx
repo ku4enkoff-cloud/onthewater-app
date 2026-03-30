@@ -1,10 +1,13 @@
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import '../App.css'
 import heroImg from '../../images/app/hero.webp'
 import DestinationsSection from '../components/DestinationsSection.jsx'
 import PopularBoats from '../components/PopularBoats.jsx'
 import { SITE_MAIN_URL } from '../config'
 import { useHomePageSeo } from '../seo/useHomePageSeo.js'
+import { fetchDestinations } from '../api/destinations.js'
+import { LOCATION_OPTIONS } from '../boatSearchUtils.js'
 
 const HOW_STEPS = [
   {
@@ -29,6 +32,99 @@ const HOW_STEPS = [
 
 export default function HomePage() {
   useHomePageSeo(heroImg)
+  const navigate = useNavigate()
+  const searchRef = useRef(null)
+  const [cityQuery, setCityQuery] = useState('')
+  const [knownCities, setKnownCities] = useState([])
+  const [suggestOpen, setSuggestOpen] = useState(false)
+  const [activeIdx, setActiveIdx] = useState(-1)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const rows = await fetchDestinations()
+        const apiCities = rows.map((d) => String(d?.name || '').trim()).filter(Boolean)
+        const fallbackCities = LOCATION_OPTIONS.map((o) => String(o?.value || '').trim()).filter(
+          (v) => v && v !== '__all',
+        )
+        const uniq = [...new Set([...apiCities, ...fallbackCities])]
+        if (!cancelled) setKnownCities(uniq)
+      } catch {
+        const fallbackCities = LOCATION_OPTIONS.map((o) => String(o?.value || '').trim()).filter(
+          (v) => v && v !== '__all',
+        )
+        if (!cancelled) setKnownCities([...new Set(fallbackCities)])
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    const onDown = (e) => {
+      if (!searchRef.current) return
+      if (!searchRef.current.contains(e.target)) setSuggestOpen(false)
+    }
+    window.addEventListener('mousedown', onDown)
+    return () => window.removeEventListener('mousedown', onDown)
+  }, [])
+
+  const suggestions = useMemo(() => {
+    const q = cityQuery.trim().toLowerCase()
+    if (!q) return knownCities.slice(0, 8)
+    return knownCities.filter((c) => c.toLowerCase().includes(q)).slice(0, 8)
+  }, [cityQuery, knownCities])
+
+  const submitSearch = (raw) => {
+    const value = String(raw || '').trim()
+    if (!value) {
+      navigate('/boats')
+      return
+    }
+    navigate(`/boats?city=${encodeURIComponent(value)}`)
+  }
+
+  const pickSuggestion = (city) => {
+    setCityQuery(city)
+    setSuggestOpen(false)
+    setActiveIdx(-1)
+    submitSearch(city)
+  }
+
+  const handleInputKeyDown = (e) => {
+    if (!suggestOpen || suggestions.length === 0) {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        submitSearch(cityQuery)
+      }
+      return
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActiveIdx((i) => (i + 1 >= suggestions.length ? 0 : i + 1))
+      return
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActiveIdx((i) => (i <= 0 ? suggestions.length - 1 : i - 1))
+      return
+    }
+    if (e.key === 'Escape') {
+      setSuggestOpen(false)
+      setActiveIdx(-1)
+      return
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (activeIdx >= 0 && suggestions[activeIdx]) {
+        pickSuggestion(suggestions[activeIdx])
+      } else {
+        submitSearch(cityQuery)
+      }
+    }
+  }
 
   return (
     <main className="lp">
@@ -91,8 +187,8 @@ export default function HomePage() {
             Найдите и забронируйте судно для любого случая — с капитаном или без.
           </p>
 
-          <div className="lp-searchBar lp-searchBar--pill" role="search">
-            <div className="lp-searchField lp-searchField--pill">
+          <div className="lp-searchBar lp-searchBar--pill" role="search" ref={searchRef}>
+            <div className="lp-searchField lp-searchField--pill lp-searchField--suggest">
               <span className="lp-searchPin" aria-hidden>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
@@ -114,14 +210,40 @@ export default function HomePage() {
                 placeholder="Куда хотите выйти на воду?"
                 className="lp-searchInput"
                 autoComplete="off"
+                value={cityQuery}
+                onChange={(e) => {
+                  setCityQuery(e.target.value)
+                  setSuggestOpen(true)
+                  setActiveIdx(-1)
+                }}
+                onFocus={() => setSuggestOpen(true)}
+                onKeyDown={handleInputKeyDown}
+                aria-expanded={suggestOpen && suggestions.length > 0}
+                aria-controls="lp-city-suggest"
               />
+              {suggestOpen && suggestions.length > 0 ? (
+                <div className="lp-citySuggest" id="lp-city-suggest" role="listbox" aria-label="Подсказки городов">
+                  {suggestions.map((city, idx) => (
+                    <button
+                      key={city}
+                      type="button"
+                      className={`lp-citySuggest__item${idx === activeIdx ? ' lp-citySuggest__item--active' : ''}`}
+                      onMouseEnter={() => setActiveIdx(idx)}
+                      onClick={() => pickSuggestion(city)}
+                    >
+                      {city}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
-            <Link
-              to="/boats"
+            <button
+              type="button"
               className="lp-searchBtn lp-searchBtn--pill"
+              onClick={() => submitSearch(cityQuery)}
             >
               Найти
-            </Link>
+            </button>
           </div>
         </div>
       </section>

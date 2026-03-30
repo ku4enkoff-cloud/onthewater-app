@@ -209,6 +209,10 @@
   gap: 12px;
 }
 
+.lp-searchField--suggest {
+  position: relative;
+}
+
 .lp-searchPin {
   flex-shrink: 0;
   display: flex;
@@ -240,6 +244,44 @@
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.lp-citySuggest {
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  top: calc(100% + 8px);
+  z-index: 20;
+  background: #fff;
+  border: 1px solid rgba(0, 43, 91, 0.12);
+  border-radius: 16px;
+  box-shadow: 0 16px 36px rgba(0, 43, 91, 0.2);
+  overflow: hidden;
+  max-height: min(320px, 42vh);
+  overflow-y: auto;
+}
+
+.lp-citySuggest__item {
+  width: 100%;
+  border: 0;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 15px;
+  color: #0f172a;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.lp-citySuggest__item:last-child {
+  border-bottom: 0;
+}
+
+.lp-citySuggest__item:hover,
+.lp-citySuggest__item--active {
+  background: #eff6ff;
+  color: #0b4f94;
 }
 
 .lp-searchField {
@@ -839,6 +881,13 @@
     width: 100%;
     margin-top: 4px;
     padding: 16px 20px;
+  }
+
+  .lp-citySuggest {
+    left: 0;
+    right: 0;
+    top: calc(100% + 6px);
+    border-radius: 12px;
   }
 
   .lp-searchDivider {
