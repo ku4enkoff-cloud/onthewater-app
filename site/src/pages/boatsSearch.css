@@ -434,8 +434,8 @@
 }
 
 .bs-mapCol {
-  flex: 0 0 min(48%, 560px);
-  min-width: 320px;
+  flex: 0 0 min(60%, 720px);
+  min-width: 380px;
   min-height: 0;
   align-self: stretch;
   display: flex;
