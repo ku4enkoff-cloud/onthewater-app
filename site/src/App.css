@@ -1,7 +1,7 @@
 /* Landing — mockup palette: primary #0061C1, text #002B5B, muted #F4F7F9 */
 
 .lp {
-  font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
+  font-family: 'Jost', system-ui, -apple-system, sans-serif;
   color: #002b5b;
   background: #fff;
   flex: 1 0 auto;
