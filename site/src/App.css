@@ -2,6 +2,8 @@
 
 .lp {
   font-family: 'Jost', system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
   color: #002b5b;
   background: #fff;
   flex: 1 0 auto;
@@ -90,7 +92,7 @@
 
 .lp-nav a {
   color: #fff;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   text-decoration: none;
   opacity: 0.95;
@@ -111,7 +113,7 @@
 
 .lp-linkMuted {
   color: rgba(255, 255, 255, 0.92);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
@@ -125,9 +127,9 @@
 .lp-btnGhost {
   border: 1px solid rgba(255, 255, 255, 0.85);
   color: #fff;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
-  padding: 8px 16px;
+  padding: 10px 18px;
   border-radius: 10px;
   text-decoration: none;
   background: rgba(255, 255, 255, 0.08);
@@ -167,7 +169,7 @@
 .lp-heroSub {
   margin: 16px 0 0;
   max-width: 520px;
-  font-size: clamp(15px, 1.5vw, 18px);
+  font-size: clamp(18px, 1.8vw, 24px);
   font-weight: 500;
   line-height: 1.5;
   color: rgba(255, 255, 255, 0.92);
@@ -225,7 +227,7 @@
 
 .lp-searchBar--pill .lp-searchInput {
   padding: 14px 4px 14px 0;
-  font-size: 15px;
+  font-size: 17px;
 }
 
 .lp-searchBar--pill .lp-searchInput::placeholder {
@@ -242,7 +244,7 @@
   padding: 14px 28px;
   border-radius: 999px;
   text-decoration: none;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -300,7 +302,7 @@
   border: 0;
   outline: none;
   padding: 16px 4px;
-  font-size: 14px;
+  font-size: 16px;
   font-family: inherit;
   color: #002b5b;
   background: transparent;
@@ -328,7 +330,7 @@
   background: #0061c1;
   color: #fff;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   padding: 16px 28px;
   cursor: pointer;
@@ -525,13 +527,13 @@
 
 .lp-sectionItalic {
   margin: 6px 0 0;
-  font-size: 15px;
+  font-size: 17px;
   font-style: italic;
   color: #6b7f95;
 }
 
 .lp-viewMore {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   color: #0061c1;
   text-decoration: none;
@@ -582,21 +584,21 @@
 
 .lp-boatTitle {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: #002b5b;
 }
 
 .lp-boatPrice {
   margin: 8px 0 0;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   color: #0061c1;
 }
 
 .lp-boatLoc {
   margin: 4px 0 0;
-  font-size: 13px;
+  font-size: 15px;
   color: #6b7f95;
 }
 
@@ -611,9 +613,9 @@
   display: inline-block;
   background: #0061c1;
   color: #fff;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
-  padding: 8px 16px;
+  padding: 10px 18px;
   border-radius: 8px;
   text-decoration: none;
 }
@@ -728,7 +730,7 @@
 
 .lp-howStepTitle {
   margin: 0;
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 700;
   color: #002b5b;
 }
@@ -736,7 +738,7 @@
 .lp-howStepText {
   margin: 8px auto 0;
   max-width: 240px;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.5;
   color: #4a6a8a;
 }

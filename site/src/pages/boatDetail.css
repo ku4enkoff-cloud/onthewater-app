@@ -5,6 +5,8 @@
   background: #f5f5f4;
   color: #1e293b;
   font-family: 'Jost', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
 }
 
 .bd-page--bs {
@@ -40,7 +42,7 @@
   gap: 10px;
   text-decoration: none;
   color: #002b5b;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
@@ -71,7 +73,7 @@
 }
 
 .bd-topBar__link {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: #002b5b;
   text-decoration: none;
@@ -95,7 +97,7 @@
   background: #f8fafc;
   color: #002b5b;
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -533,7 +535,7 @@
 
 .bd-heroBs__loc {
   margin: 0 0 20px;
-  font-size: 15px;
+  font-size: 17px;
   color: #6b7280;
 }
 
