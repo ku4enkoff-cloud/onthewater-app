@@ -149,6 +149,8 @@ export default function ChatScreen({ navigation }) {
 
         const statusLabel = item.status_label || item.status_text || item.status;
 
+        const hasUnread = (item.unread_count || 0) > 0;
+
         const ownerAvatarRaw = typeof item.owner_avatar === 'string'
             ? item.owner_avatar.trim()
             : item.owner_avatar;
@@ -162,7 +164,7 @@ export default function ChatScreen({ navigation }) {
                 friction={2}
             >
             <TouchableOpacity
-                style={styles.chatItem}
+                style={[styles.chatItem, hasUnread && styles.chatItemUnread]}
                 onPress={() => navigation.navigate('ChatDetail', { chatId: item.id })}
                 activeOpacity={0.7}
             >
@@ -174,11 +176,17 @@ export default function ChatScreen({ navigation }) {
                             <User size={24} color={theme.colors.gray400} />
                         </View>
                     )}
-                    {item.unread_count > 0 && <View style={styles.unreadDot} />}
+                    {hasUnread && (
+                        <View style={styles.unreadBadge}>
+                            <Text style={styles.unreadBadgeText}>
+                                {item.unread_count > 99 ? '99+' : item.unread_count}
+                            </Text>
+                        </View>
+                    )}
                 </View>
                 <View style={styles.chatContent}>
                     <View style={styles.chatHeader}>
-                        <Text style={styles.ownerName} numberOfLines={1}>
+                        <Text style={[styles.ownerName, hasUnread && styles.ownerNameUnread]} numberOfLines={1}>
                             {item.owner_name}
                         </Text>
                         <View style={styles.timeRow}>
@@ -188,7 +196,7 @@ export default function ChatScreen({ navigation }) {
                             <ChevronRight size={18} color={theme.colors.gray400} strokeWidth={2} />
                         </View>
                     </View>
-                    <Text style={styles.lastMessage} numberOfLines={1}>
+                    <Text style={[styles.lastMessage, hasUnread && styles.lastMessageUnread]} numberOfLines={1}>
                         {previewText}
                     </Text>
                     <View style={styles.tripRow}>
@@ -370,6 +378,11 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: theme.colors.gray100,
     },
+    chatItemUnread: {
+        backgroundColor: 'rgba(30, 93, 184, 0.07)',
+        borderLeftWidth: 4,
+        borderLeftColor: BLUE_PRIMARY,
+    },
     avatarContainer: { position: 'relative', marginRight: theme.spacing.md },
     avatarPlaceholder: {
         width: 56,
@@ -385,14 +398,22 @@ const styles = StyleSheet.create({
         borderRadius: 28,
         ...theme.shadows.card,
     },
-    unreadDot: {
+    unreadBadge: {
         position: 'absolute',
-        top: 0,
-        right: 0,
-        width: 10,
-        height: 10,
-        borderRadius: 5,
+        top: -2,
+        right: -2,
+        minWidth: 20,
+        height: 20,
+        borderRadius: 10,
+        paddingHorizontal: 5,
         backgroundColor: BLUE_PRIMARY,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    unreadBadgeText: {
+        color: '#fff',
+        fontSize: 11,
+        fontFamily: theme.fonts.bold,
     },
     chatContent: { flex: 1, justifyContent: 'center', minWidth: 0 },
     chatHeader: {
@@ -407,6 +428,10 @@ const styles = StyleSheet.create({
         color: theme.colors.gray900,
         flex: 1,
     },
+    ownerNameUnread: {
+        fontFamily: theme.fonts.bold,
+        color: theme.colors.gray900,
+    },
     timeRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -418,6 +443,10 @@ const styles = StyleSheet.create({
         fontFamily: theme.fonts.regular,
         color: theme.colors.gray500,
         marginBottom: 4,
+    },
+    lastMessageUnread: {
+        color: theme.colors.gray900,
+        fontFamily: theme.fonts.semiBold,
     },
     tripRow: {
         flexDirection: 'row',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
 import {
     View,
     Text,
@@ -11,16 +11,25 @@ import {
     Platform,
     ActivityIndicator,
     Image,
+    InteractionManager,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 import { getPhotoUrl } from '../../shared/infrastructure/config';
 import { AuthContext } from '../../shared/context/AuthContext';
 import { ChevronLeft, Send, Lock, User } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+
+/** Клиент — синие пузыри; владелец — палитра как на OwnerChatScreen / остальных экранах владельца. */
 const BLUE = '#1E5DB8';
 const BLUE_BUBBLE = '#2B74D8';
 const LIGHT_GRAY_BUBBLE = '#E5E7EB';
+const OWNER_GRADIENT = ['#0A3D3D', '#0D5C5C', '#1A7A6E', '#3A9E7A'];
+const OWNER_TEAL = '#0D5C5C';
+const OWNER_BUBBLE_INCOMING = '#1A7A6E';
+const OWNER_LINK = '#1A7A6E';
 
 export default function ChatDetailScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
@@ -33,6 +42,14 @@ export default function ChatDetailScreen({ route, navigation }) {
     const flatListRef = useRef(null);
     const [keyboardVisible, setKeyboardVisible] = useState(false);
 
+    const scrollToBottom = useCallback((animated = false) => {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                flatListRef.current?.scrollToEnd({ animated });
+            });
+        });
+    }, []);
+
     useEffect(() => {
         const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
         const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
@@ -43,11 +60,25 @@ export default function ChatDetailScreen({ route, navigation }) {
     }, []);
 
     useEffect(() => {
-        const id = setTimeout(() => {
-            flatListRef.current?.scrollToEnd({ animated: keyboardVisible });
-        }, 30);
+        const id = setTimeout(() => scrollToBottom(keyboardVisible), 50);
         return () => clearTimeout(id);
-    }, [keyboardVisible, messages.length]);
+    }, [keyboardVisible, messages.length, scrollToBottom]);
+
+    useEffect(() => {
+        if (loading) return;
+        const task = InteractionManager.runAfterInteractions(() => {
+            setTimeout(() => scrollToBottom(false), Platform.OS === 'android' ? 80 : 40);
+        });
+        return () => task.cancel();
+    }, [loading, messages.length, scrollToBottom]);
+
+    useFocusEffect(
+        useCallback(() => {
+            if (loading) return undefined;
+            const id = setTimeout(() => scrollToBottom(false), 120);
+            return () => clearTimeout(id);
+        }, [loading, messages.length, scrollToBottom])
+    );
 
     const inputRowPaddingBottom =
         Platform.OS === 'android' && keyboardVisible
@@ -90,7 +121,7 @@ export default function ChatDetailScreen({ route, navigation }) {
         try {
             const res = await api.post(`/chats/${chatId}/messages`, { text });
             setMessages(prev => [...prev, res.data]);
-            flatListRef.current?.scrollToEnd({ animated: true });
+            scrollToBottom(true);
         } catch (e) {
             console.log('Send message error', e);
         }
@@ -116,6 +147,9 @@ export default function ChatDetailScreen({ route, navigation }) {
         ? (chat?.user_name || chat?.client_name || 'Клиент')
         : (chat?.owner_name || 'Владелец');
 
+    /** Один компонент для client + owner; визуальные отличия только для роли owner (макет бирюза). */
+    const isOwnerApp = currentUser?.role === 'owner';
+
     const renderMessage = ({ item, index }) => {
         const nextItem = messages[index + 1];
         const isLastInGroup = !nextItem || nextItem.sender !== item.sender;
@@ -124,6 +158,9 @@ export default function ChatDetailScreen({ route, navigation }) {
         const isOwnerSender = item.sender === 'owner';
         const otherName = isOwnerSender ? ownerName : clientName;
         const otherRoleLabel = isOwnerSender ? 'Владелец' : 'Клиент';
+        const themBubbleStyle = isOwnerApp
+            ? { backgroundColor: OWNER_BUBBLE_INCOMING }
+            : styles.messageBubbleThem;
         return (
             <View style={[
                 styles.messageRow,
@@ -132,9 +169,9 @@ export default function ChatDetailScreen({ route, navigation }) {
             ]}>
                 <View style={[
                     styles.messageBubble,
-                    isMe ? styles.messageBubbleMe : styles.messageBubbleThem,
+                    isMe ? styles.messageBubbleMe : themBubbleStyle,
                     isLastInGroup && isMe && styles.messageBubbleMeTail,
-                    isLastInGroup && !isMe && styles.messageBubbleThemTail,
+                    isLastInGroup && !isMe && (isOwnerApp ? styles.messageBubbleThemTailOwner : styles.messageBubbleThemTail),
                     !isLastInGroup && styles.messageBubbleGroupMid,
                 ]}>
                     <Text style={[styles.messageText, isMe && styles.messageTextMe]}>
@@ -144,27 +181,29 @@ export default function ChatDetailScreen({ route, navigation }) {
                     </Text>
                 </View>
                 {!isMe && (
-                    <View style={[styles.messageMeta, styles.messageMetaThem]}>
-                        <View style={styles.avatarSmallWrap}>
-                            {isOwnerSender ? (
-                                ownerAvatar ? (
-                                    <Image source={{ uri: ownerAvatar }} style={styles.avatarSmall} />
+                    <View style={[styles.messageMeta, styles.messageMetaThem, isOwnerApp && styles.messageMetaThemOwner]}>
+                        {!isOwnerApp && (
+                            <View style={styles.avatarSmallWrap}>
+                                {isOwnerSender ? (
+                                    ownerAvatar ? (
+                                        <Image source={{ uri: ownerAvatar }} style={styles.avatarSmall} />
+                                    ) : (
+                                        <View style={styles.avatarSmallPlaceholder}>
+                                            <User size={12} color={theme.colors.gray500} />
+                                        </View>
+                                    )
                                 ) : (
-                                    <View style={styles.avatarSmallPlaceholder}>
-                                        <User size={12} color={theme.colors.gray500} />
-                                    </View>
-                                )
-                            ) : (
-                                clientAvatar ? (
-                                    <Image source={{ uri: clientAvatar }} style={styles.avatarSmall} />
-                                ) : (
-                                    <View style={styles.avatarSmallPlaceholder}>
-                                        <User size={12} color={theme.colors.gray500} />
-                                    </View>
-                                )
-                            )}
-                        </View>
-                        <Text style={styles.messageMetaLine}>
+                                    clientAvatar ? (
+                                        <Image source={{ uri: clientAvatar }} style={styles.avatarSmall} />
+                                    ) : (
+                                        <View style={styles.avatarSmallPlaceholder}>
+                                            <User size={12} color={theme.colors.gray500} />
+                                        </View>
+                                    )
+                                )}
+                            </View>
+                        )}
+                        <Text style={[styles.messageMetaLine, isOwnerApp && styles.messageMetaLineOwner]}>
                             <Text style={styles.messageSender}>{otherName}</Text>
                             <Text style={styles.messageDot}> · </Text>
                             <Text style={styles.messageSenderRole}>{otherRoleLabel}</Text>
@@ -175,30 +214,47 @@ export default function ChatDetailScreen({ route, navigation }) {
         );
     };
 
-    useEffect(() => {
-        if (loading) return;
-        const id = setTimeout(() => {
-            flatListRef.current?.scrollToEnd({ animated: false });
-        }, 0);
-        return () => clearTimeout(id);
-    }, [loading, messages.length]);
+    const headerTitleColor = isOwnerApp ? '#FFFFFF' : theme.colors.gray900;
+    const backIconColor = isOwnerApp ? '#FFFFFF' : theme.colors.gray900;
 
     return (
         <View style={styles.container}>
-            <View style={[styles.headerWrap, { paddingTop: insets.top + 12 }]}>
-                <View style={styles.headerContent}>
-                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-                        <ChevronLeft size={24} color={theme.colors.gray900} />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle} numberOfLines={1}>
-                        {headerTitle}
-                    </Text>
-                    <View style={styles.headerSpacer} />
+            {isOwnerApp ? (
+                <View style={styles.headerWrapOwner}>
+                    <LinearGradient
+                        colors={OWNER_GRADIENT}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={StyleSheet.absoluteFillObject}
+                    />
+                    <View style={[styles.headerInnerOwner, { paddingTop: insets.top + 12 }]}>
+                        <View style={styles.headerContent}>
+                            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+                                <ChevronLeft size={24} color={backIconColor} />
+                            </TouchableOpacity>
+                            <Text style={[styles.headerTitle, { color: headerTitleColor }]} numberOfLines={1}>
+                                {headerTitle}
+                            </Text>
+                            <View style={styles.headerSpacer} />
+                        </View>
+                    </View>
                 </View>
-            </View>
+            ) : (
+                <View style={[styles.headerWrap, { paddingTop: insets.top + 12 }]}>
+                    <View style={styles.headerContent}>
+                        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+                            <ChevronLeft size={24} color={backIconColor} />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle} numberOfLines={1}>
+                            {headerTitle}
+                        </Text>
+                        <View style={styles.headerSpacer} />
+                    </View>
+                </View>
+            )}
 
             {!loading && (
-                <View style={styles.tripHeader}>
+                <View style={[styles.tripHeader, isOwnerApp && styles.tripHeaderOwner]}>
                     <View style={styles.tripInfo}>
                         <Text style={styles.tripBoatTitle} numberOfLines={1}>
                             {chat?.boat_title || 'Чат'}
@@ -218,17 +274,17 @@ export default function ChatDetailScreen({ route, navigation }) {
                             }
                         }}
                     >
-                        <Text style={styles.tripDetailsText}>См. детали</Text>
+                        <Text style={[styles.tripDetailsText, isOwnerApp && styles.tripDetailsTextOwner]}>См. детали</Text>
                     </TouchableOpacity>
                 </View>
             )}
 
             {!loading && !keyboardVisible && (
-                <View style={styles.infoBanner}>
-                    <View style={styles.infoIconWrap}>
+                <View style={[styles.infoBanner, isOwnerApp && styles.infoBannerOwner]}>
+                    <View style={[styles.infoIconWrap, isOwnerApp && styles.infoIconWrapOwner]}>
                         <Lock size={18} color="#FFFFFF" strokeWidth={2} />
                     </View>
-                    <Text style={styles.infoText}>
+                    <Text style={[styles.infoText, isOwnerApp && styles.infoTextOwner]}>
                         Для вашей безопасности общайтесь только в приложении.
                     </Text>
                 </View>
@@ -236,7 +292,7 @@ export default function ChatDetailScreen({ route, navigation }) {
 
             {loading ? (
                 <View style={styles.centered}>
-                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                    <ActivityIndicator size="large" color={isOwnerApp ? OWNER_TEAL : theme.colors.primary} />
                 </View>
             ) : (
                 <KeyboardAvoidingView
@@ -249,16 +305,16 @@ export default function ChatDetailScreen({ route, navigation }) {
                         data={messages}
                         renderItem={renderMessage}
                         keyExtractor={item => (item.id || item._id || Math.random()).toString()}
-                        contentContainerStyle={styles.messagesList}
+                        contentContainerStyle={[styles.messagesList, isOwnerApp && styles.messagesListOwner]}
                         showsVerticalScrollIndicator={false}
                         keyboardShouldPersistTaps="handled"
                         onContentSizeChange={() => {
-                            flatListRef.current?.scrollToEnd({ animated: keyboardVisible });
+                            if (!loading) scrollToBottom(keyboardVisible);
                         }}
                     />
-                    <View style={[styles.inputRow, { paddingBottom: inputRowPaddingBottom }]}>
+                    <View style={[styles.inputRow, { paddingBottom: inputRowPaddingBottom }, isOwnerApp && styles.inputRowOwner]}>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, isOwnerApp && styles.inputOwner]}
                             placeholder="Напишите сообщение..."
                             placeholderTextColor={theme.colors.gray400}
                             value={inputText}
@@ -267,7 +323,11 @@ export default function ChatDetailScreen({ route, navigation }) {
                             maxLength={1000}
                         />
                         <TouchableOpacity
-                            style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
+                            style={[
+                                styles.sendButton,
+                                isOwnerApp && styles.sendButtonOwner,
+                                !inputText.trim() && styles.sendButtonDisabled,
+                            ]}
                             onPress={sendMessage}
                             disabled={!inputText.trim()}
                             activeOpacity={0.8}
@@ -317,6 +377,14 @@ const styles = StyleSheet.create({
         color: theme.colors.gray900,
     },
     headerSpacer: { width: 40 },
+    headerWrapOwner: {
+        overflow: 'hidden',
+        paddingBottom: theme.spacing.md,
+    },
+    headerInnerOwner: {
+        paddingHorizontal: theme.spacing.lg,
+        paddingBottom: theme.spacing.md,
+    },
     tripHeader: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -347,6 +415,14 @@ const styles = StyleSheet.create({
         color: theme.colors.primary,
         fontFamily: theme.fonts.semiBold,
     },
+    tripHeaderOwner: {
+        backgroundColor: '#FFFFFF',
+        borderBottomColor: theme.colors.gray200,
+        borderBottomWidth: 1,
+    },
+    tripDetailsTextOwner: {
+        color: OWNER_LINK,
+    },
     infoBanner: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -367,6 +443,22 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginRight: theme.spacing.md,
     },
+    infoBannerOwner: {
+        backgroundColor: theme.colors.gray100,
+        marginHorizontal: theme.spacing.lg,
+        paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.md,
+        borderRadius: 12,
+        borderBottomWidth: 0,
+        marginTop: theme.spacing.sm,
+        marginBottom: theme.spacing.xs,
+    },
+    infoIconWrapOwner: {
+        backgroundColor: OWNER_TEAL,
+    },
+    infoTextOwner: {
+        color: theme.colors.gray700,
+    },
     infoText: {
         flex: 1,
         ...theme.typography.bodySm,
@@ -377,9 +469,13 @@ const styles = StyleSheet.create({
     },
     messagesList: {
         flexGrow: 1,
+        justifyContent: 'flex-end',
         paddingHorizontal: theme.spacing.lg,
         paddingTop: theme.spacing.md,
         paddingBottom: theme.spacing.md,
+    },
+    messagesListOwner: {
+        backgroundColor: '#FAFAFA',
     },
     messageRow: {
         marginBottom: 4,
@@ -412,6 +508,9 @@ const styles = StyleSheet.create({
         borderBottomRightRadius: 5,
     },
     messageBubbleThemTail: {
+        borderBottomLeftRadius: 5,
+    },
+    messageBubbleThemTailOwner: {
         borderBottomLeftRadius: 5,
     },
     messageBubbleGroupMid: {
@@ -447,6 +546,12 @@ const styles = StyleSheet.create({
     },
     messageMetaThem: {
         justifyContent: 'flex-start',
+    },
+    messageMetaThemOwner: {
+        paddingLeft: 4,
+    },
+    messageMetaLineOwner: {
+        marginLeft: 0,
     },
     messageMetaText: {
         marginHorizontal: 6,
@@ -495,6 +600,9 @@ const styles = StyleSheet.create({
         borderTopColor: theme.colors.border,
         backgroundColor: theme.colors.background,
     },
+    inputRowOwner: {
+        backgroundColor: '#FFFFFF',
+    },
     input: {
         flex: 1,
         minHeight: 44,
@@ -510,6 +618,10 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         marginRight: theme.spacing.sm,
     },
+    inputOwner: {
+        backgroundColor: '#FFFFFF',
+        borderColor: theme.colors.gray200,
+    },
     sendButton: {
         width: 44,
         height: 44,
@@ -517,6 +629,9 @@ const styles = StyleSheet.create({
         backgroundColor: BLUE,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    sendButtonOwner: {
+        backgroundColor: OWNER_TEAL,
     },
     sendButtonDisabled: { opacity: 0.5 },
 });

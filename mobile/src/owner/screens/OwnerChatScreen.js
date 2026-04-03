@@ -142,11 +142,12 @@ export default function OwnerChatScreen({ navigation }) {
 
     const renderChatItem = ({ item }) => {
         const avatarSrc = normalizeAvatarSrc(item.client_avatar);
+        const hasUnread = (item.unread_count || 0) > 0;
         return (
             <View style={styles.chatRowWrapper}>
             <Swipeable renderRightActions={() => renderRightActions(item)} overshootRight={false}>
             <TouchableOpacity
-                style={styles.chatItem}
+                style={[styles.chatItem, hasUnread && styles.chatItemUnread]}
                 onPress={() => navigation.navigate('ChatDetail', { chatId: item.id })}
             >
                 <View style={styles.avatarContainer}>
@@ -165,7 +166,9 @@ export default function OwnerChatScreen({ navigation }) {
                 </View>
                 <View style={styles.chatContent}>
                     <View style={styles.chatHeader}>
-                        <Text style={styles.clientName}>{item.user_name || item.client_name || '—'}</Text>
+                        <Text style={[styles.clientName, hasUnread && styles.clientNameUnread]}>
+                            {item.user_name || item.client_name || '—'}
+                        </Text>
                         <Text style={styles.timeText}>{item.last_message_date || ''} • {item.last_message_time || ''}</Text>
                     </View>
                     <Text style={styles.boatTitle} numberOfLines={1}>{item.boat_title || 'Катер'}</Text>
@@ -280,6 +283,7 @@ export default function OwnerChatScreen({ navigation }) {
                                 data={archivedChats}
                                 renderItem={({ item }) => {
                                     const avatarSrc = normalizeAvatarSrc(item.client_avatar);
+                                    const hasUnreadArch = (item.unread_count || 0) > 0;
                                     return (
                                         <Swipeable
                                             renderRightActions={() => (
@@ -296,7 +300,7 @@ export default function OwnerChatScreen({ navigation }) {
                                             friction={2}
                                         >
                                             <TouchableOpacity
-                                                style={styles.chatItem}
+                                                style={[styles.chatItem, hasUnreadArch && styles.chatItemUnread]}
                                                 onPress={() => {
                                                     setArchiveModalVisible(false);
                                                     navigation.navigate('ChatDetail', { chatId: item.id });
@@ -311,10 +315,17 @@ export default function OwnerChatScreen({ navigation }) {
                                                             <User size={24} color={theme.colors.textMuted} />
                                                         </View>
                                                     )}
+                                                    {hasUnreadArch && (
+                                                        <View style={styles.unreadBadge}>
+                                                            <Text style={styles.unreadBadgeText}>{item.unread_count}</Text>
+                                                        </View>
+                                                    )}
                                                 </View>
                                                 <View style={styles.chatContent}>
                                                     <View style={styles.chatHeader}>
-                                                        <Text style={styles.clientName}>{item.user_name || item.client_name || '—'}</Text>
+                                                        <Text style={[styles.clientName, hasUnreadArch && styles.clientNameUnread]}>
+                                                            {item.user_name || item.client_name || '—'}
+                                                        </Text>
                                                     </View>
                                                     <Text style={styles.boatTitle} numberOfLines={1}>{item.boat_title || 'Катер'}</Text>
                                                     <View style={styles.messageContainer}>
@@ -377,6 +388,15 @@ const styles = StyleSheet.create({
         padding: theme.spacing.md,
         ...theme.shadows.card,
     },
+    chatItemUnread: {
+        backgroundColor: 'rgba(26, 122, 110, 0.12)',
+        borderLeftWidth: 4,
+        borderLeftColor: '#1A7A6E',
+    },
+    clientNameUnread: {
+        color: '#0A3D3D',
+        fontFamily: theme.fonts.bold,
+    },
     avatarContainer: { position: 'relative', marginRight: theme.spacing.md },
     avatarPlaceholder: {
         width: 56,
@@ -391,7 +411,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: -4,
         right: -4,
-        backgroundColor: theme.colors.primary,
+        backgroundColor: '#0D5C5C',
         borderRadius: theme.borderRadius.pill,
         minWidth: 20,
         height: 20,

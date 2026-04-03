@@ -1046,7 +1046,11 @@ router.get('/chats', authenticate, async (req, res, next) => {
                     u.first_name AS user_first_name,
                     u.last_name AS user_last_name,
                     u.avatar AS client_avatar,
-                    u.email AS user_email
+                    u.email AS user_email,
+                    (SELECT COUNT(*)::int FROM messages m
+                     WHERE m.chat_id = c.id
+                       AND m.sender = 'me'
+                       AND (m.read = false OR m.read IS NULL)) AS unread_count
              FROM chats c
              LEFT JOIN users u ON u.id = c.user_id
              WHERE c.owner_id = $1

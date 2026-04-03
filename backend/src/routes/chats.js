@@ -45,12 +45,20 @@ router.get('/', authenticate, async (req, res, next) => {
         const showArchived = req.query.archived === '1';
         const { rows } = await pool.query(
             showArchived
-                ? `SELECT c.*, u.avatar AS owner_avatar
+                ? `SELECT c.*, u.avatar AS owner_avatar,
+                          (SELECT COUNT(*)::int FROM messages m
+                           WHERE m.chat_id = c.id
+                             AND m.sender = 'owner'
+                             AND (m.read = false OR m.read IS NULL)) AS unread_count
                    FROM chats c
                    LEFT JOIN users u ON u.id = c.owner_id
                    WHERE c.user_id = $1 AND c.user_archived = true
                    ORDER BY c.created_at DESC`
-                : `SELECT c.*, u.avatar AS owner_avatar
+                : `SELECT c.*, u.avatar AS owner_avatar,
+                          (SELECT COUNT(*)::int FROM messages m
+                           WHERE m.chat_id = c.id
+                             AND m.sender = 'owner'
+                             AND (m.read = false OR m.read IS NULL)) AS unread_count
                    FROM chats c
                    LEFT JOIN users u ON u.id = c.owner_id
                    WHERE c.user_id = $1 AND (c.user_archived = false OR c.user_archived IS NULL)
@@ -202,12 +210,24 @@ router.get('/:id/messages', authenticate, async (req, res, next) => {
     try {
         const id = parseInt(req.params.id, 10);
         if (Number.isNaN(id)) return res.status(400).json({ error: 'Неверный id чата' });
-        const { rows: chatRows } = await pool.query('SELECT owner_id FROM chats WHERE id = $1', [id]);
-        if (chatRows.length > 0 && parseInt(chatRows[0].owner_id, 10) === parseInt(req.user.id, 10)) {
-            await pool.query(
-                `UPDATE messages SET read = true WHERE chat_id = $1 AND sender = 'me' AND (read = false OR read IS NULL)`,
-                [id]
-            );
+        const { rows: chatRows } = await pool.query(
+            'SELECT owner_id, user_id FROM chats WHERE id = $1',
+            [id]
+        );
+        const uid = parseInt(req.user.id, 10);
+        if (chatRows.length > 0) {
+            const chat = chatRows[0];
+            if (parseInt(chat.owner_id, 10) === uid) {
+                await pool.query(
+                    `UPDATE messages SET read = true WHERE chat_id = $1 AND sender = 'me' AND (read = false OR read IS NULL)`,
+                    [id]
+                );
+            } else if (parseInt(chat.user_id, 10) === uid) {
+                await pool.query(
+                    `UPDATE messages SET read = true WHERE chat_id = $1 AND sender = 'owner' AND (read = false OR read IS NULL)`,
+                    [id]
+                );
+            }
         }
         const { rows } = await pool.query(
             'SELECT * FROM messages WHERE chat_id = $1 ORDER BY created_at',
