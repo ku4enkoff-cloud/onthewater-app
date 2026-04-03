@@ -2,6 +2,7 @@ const express = require('express');
 const { pool } = require('../db');
 const { authenticate } = require('../middleware/auth');
 const { sendPush } = require('../utils/push');
+const { attachLastMessageMeta } = require('../utils/chatFormat');
 const { sendNewMessageEmail } = require('../services/email');
 
 const router = express.Router();
@@ -49,7 +50,8 @@ router.get('/', authenticate, async (req, res, next) => {
                           (SELECT COUNT(*)::int FROM messages m
                            WHERE m.chat_id = c.id
                              AND m.sender = 'owner'
-                             AND (m.read = false OR m.read IS NULL)) AS unread_count
+                             AND (m.read = false OR m.read IS NULL)) AS unread_count,
+                          (SELECT MAX(m.created_at) FROM messages m WHERE m.chat_id = c.id) AS last_message_at
                    FROM chats c
                    LEFT JOIN users u ON u.id = c.owner_id
                    WHERE c.user_id = $1 AND c.user_archived = true
@@ -58,14 +60,15 @@ router.get('/', authenticate, async (req, res, next) => {
                           (SELECT COUNT(*)::int FROM messages m
                            WHERE m.chat_id = c.id
                              AND m.sender = 'owner'
-                             AND (m.read = false OR m.read IS NULL)) AS unread_count
+                             AND (m.read = false OR m.read IS NULL)) AS unread_count,
+                          (SELECT MAX(m.created_at) FROM messages m WHERE m.chat_id = c.id) AS last_message_at
                    FROM chats c
                    LEFT JOIN users u ON u.id = c.owner_id
                    WHERE c.user_id = $1 AND (c.user_archived = false OR c.user_archived IS NULL)
                    ORDER BY c.created_at DESC`,
             [req.user.id]
         );
-        res.json(rows);
+        res.json(rows.map(attachLastMessageMeta));
     } catch (err) {
         next(err);
     }

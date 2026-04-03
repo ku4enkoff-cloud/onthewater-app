@@ -2,6 +2,7 @@ const express = require('express');
 const { pool } = require('../db');
 const { authenticate } = require('../middleware/auth');
 const { sendPush } = require('../utils/push');
+const { attachLastMessageMeta } = require('../utils/chatFormat');
 const { sendBookingStatusEmail } = require('../services/email');
 
 const router = express.Router();
@@ -1050,7 +1051,8 @@ router.get('/chats', authenticate, async (req, res, next) => {
                     (SELECT COUNT(*)::int FROM messages m
                      WHERE m.chat_id = c.id
                        AND m.sender = 'me'
-                       AND (m.read = false OR m.read IS NULL)) AS unread_count
+                       AND (m.read = false OR m.read IS NULL)) AS unread_count,
+                    (SELECT MAX(m.created_at) FROM messages m WHERE m.chat_id = c.id) AS last_message_at
              FROM chats c
              LEFT JOIN users u ON u.id = c.user_id
              WHERE c.owner_id = $1
@@ -1074,7 +1076,7 @@ router.get('/chats', authenticate, async (req, res, next) => {
                 null;
 
             const { user_name_fallback, user_first_name, user_last_name, user_email, ...rest } = c;
-            return { ...rest, user_name: display };
+            return attachLastMessageMeta({ ...rest, user_name: display });
         });
 
         res.json(mapped);

@@ -158,23 +158,44 @@ export default function OwnerChatScreen({ navigation }) {
                             <User size={24} color={theme.colors.textMuted} />
                         </View>
                     )}
-                {item.unread_count > 0 && (
-                    <View style={styles.unreadBadge}>
-                        <Text style={styles.unreadBadgeText}>{item.unread_count}</Text>
-                    </View>
-                )}
                 </View>
                 <View style={styles.chatContent}>
-                    <View style={styles.chatHeader}>
-                        <Text style={[styles.clientName, hasUnread && styles.clientNameUnread]}>
-                            {item.user_name || item.client_name || '—'}
-                        </Text>
-                        <Text style={styles.timeText}>{item.last_message_date || ''} • {item.last_message_time || ''}</Text>
+                    <View style={styles.chatTopRow}>
+                        <View style={styles.nameColumn}>
+                            <Text
+                                style={[styles.clientName, hasUnread && styles.clientNameUnread]}
+                                numberOfLines={1}
+                            >
+                                {item.user_name || item.client_name || '—'}
+                            </Text>
+                        </View>
+                        <View style={styles.metaRight}>
+                            {hasUnread && (
+                                <View style={styles.unreadBadgeRight}>
+                                    <Text style={styles.unreadBadgeRightText}>
+                                        {item.unread_count > 99 ? '99+' : item.unread_count}
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
                     </View>
                     <Text style={styles.boatTitle} numberOfLines={1}>{item.boat_title || 'Катер'}</Text>
                     <View style={styles.messageContainer}>
-                        <MessageCircle size={14} color={theme.colors.textMuted} />
-                        <Text style={styles.lastMessage} numberOfLines={1}>{item.last_message || ''}</Text>
+                        <MessageCircle
+                            size={14}
+                            color={hasUnread ? '#1A7A6E' : theme.colors.textMuted}
+                        />
+                        <Text
+                            style={[styles.lastMessage, hasUnread && styles.lastMessageUnread]}
+                            numberOfLines={1}
+                        >
+                            {item.last_message || ''}
+                        </Text>
+                        {(item.last_message_time || item.last_message_date) ? (
+                            <Text style={styles.lastMessageMeta} numberOfLines={1}>
+                                {[item.last_message_date, item.last_message_time].filter(Boolean).join(' · ')}
+                            </Text>
+                        ) : null}
                     </View>
                 </View>
             </TouchableOpacity>
@@ -315,22 +336,44 @@ export default function OwnerChatScreen({ navigation }) {
                                                             <User size={24} color={theme.colors.textMuted} />
                                                         </View>
                                                     )}
-                                                    {hasUnreadArch && (
-                                                        <View style={styles.unreadBadge}>
-                                                            <Text style={styles.unreadBadgeText}>{item.unread_count}</Text>
-                                                        </View>
-                                                    )}
                                                 </View>
                                                 <View style={styles.chatContent}>
-                                                    <View style={styles.chatHeader}>
-                                                        <Text style={[styles.clientName, hasUnreadArch && styles.clientNameUnread]}>
-                                                            {item.user_name || item.client_name || '—'}
-                                                        </Text>
+                                                    <View style={styles.chatTopRow}>
+                                                        <View style={styles.nameColumn}>
+                                                            <Text
+                                                                style={[styles.clientName, hasUnreadArch && styles.clientNameUnread]}
+                                                                numberOfLines={1}
+                                                            >
+                                                                {item.user_name || item.client_name || '—'}
+                                                            </Text>
+                                                        </View>
+                                                        <View style={styles.metaRight}>
+                                                            {hasUnreadArch && (
+                                                                <View style={styles.unreadBadgeRight}>
+                                                                    <Text style={styles.unreadBadgeRightText}>
+                                                                        {item.unread_count > 99 ? '99+' : item.unread_count}
+                                                                    </Text>
+                                                                </View>
+                                                            )}
+                                                        </View>
                                                     </View>
                                                     <Text style={styles.boatTitle} numberOfLines={1}>{item.boat_title || 'Катер'}</Text>
                                                     <View style={styles.messageContainer}>
-                                                        <MessageCircle size={14} color={theme.colors.textMuted} />
-                                                        <Text style={styles.lastMessage} numberOfLines={1}>{item.last_message || ''}</Text>
+                                                        <MessageCircle
+                                                            size={14}
+                                                            color={hasUnreadArch ? '#1A7A6E' : theme.colors.textMuted}
+                                                        />
+                                                        <Text
+                                                            style={[styles.lastMessage, hasUnreadArch && styles.lastMessageUnread]}
+                                                            numberOfLines={1}
+                                                        >
+                                                            {item.last_message || ''}
+                                                        </Text>
+                                                        {(item.last_message_time || item.last_message_date) ? (
+                                                            <Text style={styles.lastMessageMeta} numberOfLines={1}>
+                                                                {[item.last_message_date, item.last_message_time].filter(Boolean).join(' · ')}
+                                                            </Text>
+                                                        ) : null}
                                                     </View>
                                                 </View>
                                             </TouchableOpacity>
@@ -380,24 +423,57 @@ const styles = StyleSheet.create({
     searchIcon: { marginRight: theme.spacing.xs },
     searchInput: { flex: 1, fontSize: 14, color: theme.colors.textMain, lineHeight: 18 },
     listContainer: { paddingHorizontal: theme.spacing.lg, paddingBottom: 100 },
-    chatRowWrapper: { marginBottom: theme.spacing.md },
+    chatRowWrapper: { marginBottom: theme.spacing.md, width: '100%' },
     chatItem: {
         flexDirection: 'row',
+        width: '100%',
         backgroundColor: theme.colors.surface,
-        borderRadius: theme.borderRadius.lg,
+        borderRadius: theme.borderRadius.xxl,
         padding: theme.spacing.md,
-        ...theme.shadows.card,
     },
     chatItemUnread: {
-        backgroundColor: 'rgba(26, 122, 110, 0.12)',
-        borderLeftWidth: 4,
-        borderLeftColor: '#1A7A6E',
+        backgroundColor: 'rgba(26, 122, 110, 0.07)',
     },
     clientNameUnread: {
         color: '#0A3D3D',
         fontFamily: theme.fonts.bold,
     },
-    avatarContainer: { position: 'relative', marginRight: theme.spacing.md },
+    chatTopRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 4,
+    },
+    nameColumn: { flex: 1, minWidth: 0, marginRight: theme.spacing.sm },
+    metaRight: {
+        flexShrink: 0,
+    },
+    metaRightRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        flexWrap: 'nowrap',
+    },
+    unreadBadgeRight: {
+        marginLeft: 8,
+        minWidth: 24,
+        height: 24,
+        paddingHorizontal: 7,
+        borderRadius: 12,
+        backgroundColor: '#1A7A6E',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    unreadBadgeRightText: {
+        color: '#fff',
+        fontSize: 12,
+        fontFamily: theme.fonts.bold,
+    },
+    lastMessageUnread: {
+        fontFamily: theme.fonts.bold,
+        color: theme.colors.textMain,
+    },
+    avatarContainer: { marginRight: theme.spacing.md },
     avatarPlaceholder: {
         width: 56,
         height: 56,
@@ -407,23 +483,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     avatar: { width: 56, height: 56, borderRadius: 28 },
-    unreadBadge: {
-        position: 'absolute',
-        top: -4,
-        right: -4,
-        backgroundColor: '#0D5C5C',
-        borderRadius: theme.borderRadius.pill,
-        minWidth: 20,
-        height: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 6,
-    },
-    unreadBadgeText: { color: 'white', fontSize: 12, fontWeight: 'bold' },
-    chatContent: { flex: 1, justifyContent: 'center' },
-    chatHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+    chatContent: { flex: 1, justifyContent: 'center', minWidth: 0 },
     clientName: { ...theme.typography.body, fontWeight: '600' },
-    timeText: { ...theme.typography.caption, color: theme.colors.textMuted },
+    timeText: { ...theme.typography.caption, color: theme.colors.textMuted, textAlign: 'right' },
     boatTitle: { ...theme.typography.bodySm, color: theme.colors.textMuted, marginBottom: 4 },
     messageContainer: { flexDirection: 'row', alignItems: 'center' },
     lastMessage: { ...theme.typography.bodySm, color: theme.colors.textMain, marginLeft: 6, flex: 1 },

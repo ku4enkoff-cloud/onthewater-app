@@ -176,25 +176,34 @@ export default function ChatScreen({ navigation }) {
                             <User size={24} color={theme.colors.gray400} />
                         </View>
                     )}
-                    {hasUnread && (
-                        <View style={styles.unreadBadge}>
-                            <Text style={styles.unreadBadgeText}>
-                                {item.unread_count > 99 ? '99+' : item.unread_count}
-                            </Text>
-                        </View>
-                    )}
                 </View>
                 <View style={styles.chatContent}>
                     <View style={styles.chatHeader}>
-                        <Text style={[styles.ownerName, hasUnread && styles.ownerNameUnread]} numberOfLines={1}>
-                            {item.owner_name}
-                        </Text>
-                        <View style={styles.timeRow}>
-                            {!!item.last_message_time && (
-                                <Text style={styles.timeText}>{item.last_message_time}</Text>
-                            )}
-                            <ChevronRight size={18} color={theme.colors.gray400} strokeWidth={2} />
+                        <View style={styles.nameColumn}>
+                            <Text style={[styles.ownerName, hasUnread && styles.ownerNameUnread]} numberOfLines={1}>
+                                {item.owner_name}
+                            </Text>
                         </View>
+                        <View style={styles.metaRight}>
+                            <View style={styles.metaRightRow}>
+                                {!!item.last_message_time && (
+                                    <Text style={styles.timeText}>{item.last_message_time}</Text>
+                                )}
+                                {hasUnread && (
+                                    <View
+                                        style={[
+                                            styles.unreadBadgeRight,
+                                            !item.last_message_time && styles.unreadBadgeRightOnly,
+                                        ]}
+                                    >
+                                        <Text style={styles.unreadBadgeRightText}>
+                                            {item.unread_count > 99 ? '99+' : item.unread_count}
+                                        </Text>
+                                    </View>
+                                )}
+                            </View>
+                        </View>
+                        <ChevronRight size={18} color={theme.colors.gray400} strokeWidth={2} />
                     </View>
                     <Text style={[styles.lastMessage, hasUnread && styles.lastMessageUnread]} numberOfLines={1}>
                         {previewText}
@@ -372,18 +381,46 @@ const styles = StyleSheet.create({
     listContainer: { paddingHorizontal: theme.spacing.lg },
     chatItem: {
         flexDirection: 'row',
-        backgroundColor: theme.colors.background,
+        width: '100%',
+        backgroundColor: theme.colors.gray50,
+        borderRadius: theme.borderRadius.xxl,
         paddingVertical: theme.spacing.md,
-        paddingRight: 0,
-        borderBottomWidth: 1,
-        borderBottomColor: theme.colors.gray100,
+        paddingHorizontal: theme.spacing.md,
+        marginBottom: theme.spacing.sm,
     },
     chatItemUnread: {
-        backgroundColor: 'rgba(30, 93, 184, 0.07)',
-        borderLeftWidth: 4,
-        borderLeftColor: BLUE_PRIMARY,
+        backgroundColor: 'rgba(30, 93, 184, 0.06)',
     },
-    avatarContainer: { position: 'relative', marginRight: theme.spacing.md },
+    nameColumn: { flex: 1, minWidth: 0, marginRight: theme.spacing.sm },
+    metaRight: {
+        flexShrink: 0,
+        marginRight: theme.spacing.xs,
+    },
+    metaRightRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        flexWrap: 'nowrap',
+    },
+    unreadBadgeRight: {
+        marginLeft: 8,
+        minWidth: 24,
+        height: 24,
+        paddingHorizontal: 7,
+        borderRadius: 12,
+        backgroundColor: BLUE_PRIMARY,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    unreadBadgeRightOnly: {
+        marginLeft: 0,
+    },
+    unreadBadgeRightText: {
+        color: '#fff',
+        fontSize: 12,
+        fontFamily: theme.fonts.bold,
+    },
+    avatarContainer: { marginRight: theme.spacing.md },
     avatarPlaceholder: {
         width: 56,
         height: 56,
@@ -396,24 +433,6 @@ const styles = StyleSheet.create({
         width: 56,
         height: 56,
         borderRadius: 28,
-        ...theme.shadows.card,
-    },
-    unreadBadge: {
-        position: 'absolute',
-        top: -2,
-        right: -2,
-        minWidth: 20,
-        height: 20,
-        borderRadius: 10,
-        paddingHorizontal: 5,
-        backgroundColor: BLUE_PRIMARY,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    unreadBadgeText: {
-        color: '#fff',
-        fontSize: 11,
-        fontFamily: theme.fonts.bold,
     },
     chatContent: { flex: 1, justifyContent: 'center', minWidth: 0 },
     chatHeader: {
@@ -426,18 +445,12 @@ const styles = StyleSheet.create({
         fontSize: 17,
         fontFamily: theme.fonts.semiBold,
         color: theme.colors.gray900,
-        flex: 1,
     },
     ownerNameUnread: {
         fontFamily: theme.fonts.bold,
         color: theme.colors.gray900,
     },
-    timeRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginLeft: theme.spacing.sm,
-    },
-    timeText: { fontSize: 13, color: theme.colors.gray500 },
+    timeText: { fontSize: 13, color: theme.colors.gray500, textAlign: 'right' },
     lastMessage: {
         fontSize: 14,
         fontFamily: theme.fonts.regular,
@@ -446,7 +459,7 @@ const styles = StyleSheet.create({
     },
     lastMessageUnread: {
         color: theme.colors.gray900,
-        fontFamily: theme.fonts.semiBold,
+        fontFamily: theme.fonts.bold,
     },
     tripRow: {
         flexDirection: 'row',
