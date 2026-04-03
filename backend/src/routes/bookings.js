@@ -151,7 +151,7 @@ router.get('/:id', authenticate, async (req, res, next) => {
             `SELECT b.*, boat.location_city, boat.location_address, boat.location_yacht_club, boat.location_country, boat.location_region, boat.lat, boat.lng, boat.photos AS boat_photos
              FROM bookings b
              LEFT JOIN boats boat ON boat.id = b.boat_id
-             WHERE b.id = $1 AND b.user_id = $2`,
+             WHERE b.id = $1 AND (b.user_id = $2 OR b.owner_id = $2)`,
             [parseInt(req.params.id, 10), req.user.id]
         );
         if (rows.length === 0) return res.status(404).json({ error: 'Not found' });

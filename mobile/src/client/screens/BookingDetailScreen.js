@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ActivityIndicator, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../../shared/theme';
+import { AuthContext } from '../../shared/context/AuthContext';
 import { api } from '../../shared/infrastructure/api';
 import { getPhotoUrl } from '../../shared/infrastructure/config';
 import { Calendar, Clock, MapPin, ArrowLeft, CalendarPlus } from 'lucide-react-native';
@@ -9,6 +10,8 @@ import { Calendar, Clock, MapPin, ArrowLeft, CalendarPlus } from 'lucide-react-n
 const resolvePhotoUri = (src) => getPhotoUrl(src);
 
 export default function BookingDetailScreen({ route, navigation }) {
+    const { user: currentUser } = useContext(AuthContext) || {};
+    const isOwner = currentUser?.role === 'owner';
     const { bookingId } = route.params || {};
     const [booking, setBooking] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -226,7 +229,7 @@ export default function BookingDetailScreen({ route, navigation }) {
                             <Text style={styles.addToCalendarButtonText}>Добавить в календарь</Text>
                         </TouchableOpacity>
                     ) : null}
-                    {booking.status === 'pending' || booking.status === 'pending_payment' ? (
+                    {!isOwner && (booking.status === 'pending' || booking.status === 'pending_payment') ? (
                         <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
                             <Text style={styles.cancelButtonText}>Отменить бронирование</Text>
                         </TouchableOpacity>

@@ -13,7 +13,7 @@ import {
     Jost_700Bold,
 } from '@expo-google-fonts/jost';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { AuthProvider, AuthContext } from './src/shared/context/AuthContext';
 import { FavoritesProvider } from './src/shared/context/FavoritesContext';
 import { NotificationsProvider, NotificationsContext } from './src/shared/context/NotificationsContext';
@@ -22,6 +22,7 @@ import AppSplashScreen from './src/shared/components/AppSplashScreen';
 import ClientNavigator from './src/client/navigation/ClientNavigator';
 import OnboardingScreen from './src/client/screens/OnboardingScreen';
 import { useRegisterPushToken } from './src/client/hooks/useRegisterPushToken';
+import { usePushNotificationNavigation } from './src/shared/hooks/usePushNotificationNavigation';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -46,9 +47,12 @@ class ErrorBoundary extends React.Component {
 }
 
 function ClientRoot() {
+  const navigationRef = useNavigationContainerRef();
+  const [navReady, setNavReady] = useState(false);
   const { loading, user } = useContext(AuthContext);
   const { pushEnabled } = useContext(NotificationsContext);
   useRegisterPushToken(user, pushEnabled);
+  usePushNotificationNavigation(navigationRef, { user, navReady });
   const [onboardingDone, setOnboardingDone] = useState(null);
   const [loadingTimedOut, setLoadingTimedOut] = useState(false);
 
@@ -103,7 +107,7 @@ function ClientRoot() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef} onReady={() => setNavReady(true)}>
       <ClientNavigator />
     </NavigationContainer>
   );

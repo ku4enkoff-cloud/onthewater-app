@@ -40,7 +40,7 @@ export default function RootNavigator() {
                 if (bookingId) {
                     navigationRef.navigate('ClientApp', {
                         screen: 'BookingDetail',
-                        params: { id: bookingId },
+                        params: { bookingId },
                     });
                 } else {
                     navigationRef.navigate('ClientApp', {

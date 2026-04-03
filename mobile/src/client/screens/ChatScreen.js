@@ -9,6 +9,7 @@ import {
     Image,
     ActivityIndicator,
     Modal,
+    RefreshControl,
 } from 'react-native';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,12 +21,25 @@ import UnauthorizedCard from '../../shared/components/UnauthorizedCard';
 import { MessageCircle, User, Archive, ChevronRight, X, ArchiveRestore, Trash2 } from 'lucide-react-native';
 const BLUE_PRIMARY = '#1E5DB8';
 
+function ownerAvatarUriFromItem(item) {
+    const raw = typeof item.owner_avatar === 'string' ? item.owner_avatar.trim() : item.owner_avatar;
+    if (!raw || raw === 'null' || raw === 'undefined') return null;
+    return getPhotoUrl(raw) || raw;
+}
+
+function previewTextFromItem(item) {
+    const isLastFromMe = item.last_message_is_own || item.last_message_sender === 'me';
+    const lastMessageText = item.last_message || '—';
+    return `${isLastFromMe ? 'Вы: ' : ''}${lastMessageText}`;
+}
+
 export default function ChatScreen({ navigation }) {
     const insets = useSafeAreaInsets();
     const { user } = useContext(AuthContext);
     const [chats, setChats] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [archiveModalVisible, setArchiveModalVisible] = useState(false);
     const [archivedChats, setArchivedChats] = useState([]);
     const [archivedLoading, setArchivedLoading] = useState(false);
@@ -53,7 +67,7 @@ export default function ChatScreen({ navigation }) {
         }
     };
 
-    const fetchChats = async () => {
+    const fetchChats = async (isRefresh = false) => {
         try {
             const res = await api.get('/chats');
             const base = Array.isArray(res.data) ? res.data : [];
@@ -78,8 +92,18 @@ export default function ChatScreen({ navigation }) {
             console.log('Error fetching chats', e);
             setChats([]);
         } finally {
-            setLoading(false);
+            if (isRefresh) {
+                setRefreshing(false);
+            } else {
+                setLoading(false);
+            }
         }
+    };
+
+    const onRefresh = () => {
+        if (refreshing) return;
+        setRefreshing(true);
+        fetchChats(true);
     };
 
     const filteredChats = chats.filter(chat =>
@@ -115,57 +139,21 @@ export default function ChatScreen({ navigation }) {
         }
     };
 
-    const renderRightActions = (item) => (
-        <View style={styles.swipeActions}>
-            <TouchableOpacity
-                style={[styles.swipeAction, styles.deleteAction]}
-                onPress={() => handleDeleteChat(item)}
-                activeOpacity={0.8}
-            >
-                <Trash2 size={20} color="#fff" strokeWidth={2} />
-                <Text style={styles.swipeActionText}>Удалить</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-                style={[styles.swipeAction, styles.archiveAction]}
-                onPress={() => handleArchiveChat(item)}
-                activeOpacity={0.8}
-            >
-                <Archive size={20} color="#fff" strokeWidth={2} />
-                <Text style={styles.swipeActionText}>В архив</Text>
-            </TouchableOpacity>
-        </View>
-    );
-
-    const renderChatItem = ({ item }) => {
-        const isLastFromMe = item.last_message_is_own || item.last_message_sender === 'me';
-        const lastMessageText = item.last_message || '—';
-        const previewText = `${isLastFromMe ? 'Вы: ' : ''}${lastMessageText}`;
-
+    const renderChatCard = (item, onPress) => {
+        const hasUnread = (item.unread_count || 0) > 0;
+        const previewText = previewTextFromItem(item);
         const tripLabel =
             item.trip_date_formatted ||
             item.trip_date ||
             item.trip_date_short ||
             item.boat_title;
-
         const statusLabel = item.status_label || item.status_text || item.status;
+        const ownerAvatarUri = ownerAvatarUriFromItem(item);
 
-        const hasUnread = (item.unread_count || 0) > 0;
-
-        const ownerAvatarRaw = typeof item.owner_avatar === 'string'
-            ? item.owner_avatar.trim()
-            : item.owner_avatar;
-        const ownerAvatarUri = ownerAvatarRaw && ownerAvatarRaw !== 'null' && ownerAvatarRaw !== 'undefined'
-            ? (getPhotoUrl(ownerAvatarRaw) || ownerAvatarRaw)
-            : null;
         return (
-            <Swipeable
-                renderRightActions={() => renderRightActions(item)}
-                overshootRight={false}
-                friction={2}
-            >
             <TouchableOpacity
                 style={[styles.chatItem, hasUnread && styles.chatItemUnread]}
-                onPress={() => navigation.navigate('ChatDetail', { chatId: item.id })}
+                onPress={onPress}
                 activeOpacity={0.7}
             >
                 <View style={styles.avatarContainer}>
@@ -196,6 +184,11 @@ export default function ChatScreen({ navigation }) {
                         <ChevronRight size={18} color={theme.colors.gray400} strokeWidth={2} />
                     </View>
                     <View style={styles.previewRow}>
+                        <MessageCircle
+                            size={14}
+                            color={hasUnread ? BLUE_PRIMARY : theme.colors.gray400}
+                            style={styles.previewIcon}
+                        />
                         <Text
                             style={[styles.lastMessage, hasUnread && styles.lastMessageUnread]}
                             numberOfLines={1}
@@ -203,7 +196,10 @@ export default function ChatScreen({ navigation }) {
                             {previewText}
                         </Text>
                         {(item.last_message_time || item.last_message_date) ? (
-                            <Text style={styles.lastMessageMeta} numberOfLines={1}>
+                            <Text
+                                style={[styles.lastMessageMeta, hasUnread && styles.lastMessageMetaUnread]}
+                                numberOfLines={1}
+                            >
                                 {[item.last_message_date, item.last_message_time].filter(Boolean).join(' · ')}
                             </Text>
                         ) : null}
@@ -222,9 +218,39 @@ export default function ChatScreen({ navigation }) {
                     </View>
                 </View>
             </TouchableOpacity>
-            </Swipeable>
         );
     };
+
+    const renderRightActions = (item) => (
+        <View style={styles.swipeActions}>
+            <TouchableOpacity
+                style={[styles.swipeAction, styles.deleteAction]}
+                onPress={() => handleDeleteChat(item)}
+                activeOpacity={0.8}
+            >
+                <Trash2 size={20} color="#fff" strokeWidth={2} />
+                <Text style={styles.swipeActionText}>Удалить</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={[styles.swipeAction, styles.archiveAction]}
+                onPress={() => handleArchiveChat(item)}
+                activeOpacity={0.8}
+            >
+                <Archive size={20} color="#fff" strokeWidth={2} />
+                <Text style={styles.swipeActionText}>В архив</Text>
+            </TouchableOpacity>
+        </View>
+    );
+
+    const renderChatItem = ({ item }) => (
+        <Swipeable
+            renderRightActions={() => renderRightActions(item)}
+            overshootRight={false}
+            friction={2}
+        >
+            {renderChatCard(item, () => navigation.navigate('ChatDetail', { chatId: item.id }))}
+        </Swipeable>
+    );
 
     if (!user) {
         return (
@@ -263,8 +289,19 @@ export default function ChatScreen({ navigation }) {
                     data={filteredChats}
                     renderItem={renderChatItem}
                     keyExtractor={item => item.id.toString()}
-                    contentContainerStyle={[styles.listContainer, { paddingBottom: insets.bottom + 88 }]}
+                    contentContainerStyle={[
+                        styles.listContainer,
+                        { paddingBottom: insets.bottom + 88, flexGrow: 1 },
+                    ]}
                     showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            tintColor={BLUE_PRIMARY}
+                            colors={[BLUE_PRIMARY]}
+                        />
+                    }
                     ListEmptyComponent={
                         <View style={styles.emptyState}>
                             <View style={styles.emptyIconWrap}>
@@ -316,42 +353,10 @@ export default function ChatScreen({ navigation }) {
                                         overshootRight={false}
                                         friction={2}
                                     >
-                                    <TouchableOpacity
-                                        style={styles.chatItem}
-                                        onPress={() => {
-                                            setArchiveModalVisible(false);
-                                            navigation.navigate('ChatDetail', { chatId: item.id });
-                                        }}
-                                        activeOpacity={0.7}
-                                    >
-                                        <View style={styles.avatarContainer}>
-                                            {(() => {
-                                                const raw = typeof item.owner_avatar === 'string'
-                                                    ? item.owner_avatar.trim()
-                                                    : item.owner_avatar;
-                                                const uri = raw && raw !== 'null' && raw !== 'undefined'
-                                                    ? (getPhotoUrl(raw) || raw)
-                                                    : null;
-                                                return uri ? (
-                                                    <Image source={{ uri }} style={styles.avatar} />
-                                                ) : (
-                                                    <View style={styles.avatarPlaceholder}>
-                                                        <User size={24} color={theme.colors.gray400} />
-                                                    </View>
-                                                );
-                                            })()}
-                                        </View>
-                                        <View style={styles.chatContent}>
-                                            <Text style={styles.ownerName} numberOfLines={1}>{item.owner_name}</Text>
-                                            <Text style={styles.lastMessage} numberOfLines={1}>
-                                                {item.last_message || '—'}
-                                            </Text>
-                                            <Text style={styles.tripText} numberOfLines={1}>
-                                                {item.boat_title ? `Поездка: ${item.boat_title}` : ''}
-                                            </Text>
-                                        </View>
-                                        <ChevronRight size={18} color={theme.colors.gray400} strokeWidth={2} />
-                                    </TouchableOpacity>
+                                    {renderChatCard(item, () => {
+                                        setArchiveModalVisible(false);
+                                        navigation.navigate('ChatDetail', { chatId: item.id });
+                                    })}
                                     </Swipeable>
                                 )}
                                 keyExtractor={item => item.id.toString()}
@@ -446,6 +451,9 @@ const styles = StyleSheet.create({
         marginBottom: 4,
         minWidth: 0,
     },
+    previewIcon: {
+        marginRight: 6,
+    },
     lastMessage: {
         fontSize: 14,
         fontFamily: theme.fonts.regular,
@@ -458,6 +466,10 @@ const styles = StyleSheet.create({
         color: theme.colors.gray500,
         marginLeft: 8,
         flexShrink: 0,
+    },
+    lastMessageMetaUnread: {
+        color: BLUE_PRIMARY,
+        fontFamily: theme.fonts.semiBold,
     },
     lastMessageUnread: {
         color: theme.colors.gray900,

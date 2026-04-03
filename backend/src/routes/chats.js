@@ -74,6 +74,22 @@ router.get('/', authenticate, async (req, res, next) => {
     }
 });
 
+// Счётчик непрочитанных входящих от владельцев (для бейджа вкладки «Сообщения» у клиента)
+router.get('/unread-messages-count', authenticate, async (req, res, next) => {
+    try {
+        const { rows } = await pool.query(
+            `SELECT COUNT(*)::int AS count
+             FROM messages m
+             JOIN chats c ON c.id = m.chat_id AND c.user_id = $1
+             WHERE m.sender = 'owner' AND (m.read = false OR m.read IS NULL)`,
+            [req.user.id]
+        );
+        res.json({ count: rows[0]?.count ?? 0 });
+    } catch (err) {
+        next(err);
+    }
+});
+
 // Получить или создать чат с владельцем катера (для кнопки «Написать владельцу»)
 router.post('/', authenticate, async (req, res, next) => {
     try {

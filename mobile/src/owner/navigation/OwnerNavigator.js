@@ -5,6 +5,7 @@ import AddBoatScreen from '../screens/AddBoatScreen';
 import EditBoatScreen from '../screens/EditBoatScreen';
 import BoatDetailScreen from '../../client/screens/BoatDetailScreen';
 import ChatDetailScreen from '../../client/screens/ChatDetailScreen';
+import BookingDetailScreen from '../../client/screens/BookingDetailScreen';
 import BoatTypeScreen from '../screens/BoatTypeScreen';
 import BoatInfoScreen from '../screens/BoatInfoScreen';
 import BoatLocationScreen from '../screens/BoatLocationScreen';
@@ -40,6 +41,7 @@ export default function OwnerNavigator() {
             <Stack.Screen name="EditBoat" component={EditBoatScreen} />
             <Stack.Screen name="BoatDetail" component={BoatDetailScreen} />
             <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
+            <Stack.Screen name="BookingDetail" component={BookingDetailScreen} />
             <Stack.Screen name="AccountInfo" component={OwnerAccountInfoScreen} />
             <Stack.Screen name="OwnerClients" component={OwnerClientsScreen} />
             <Stack.Screen name="AddBooking" component={AddBookingScreen} />

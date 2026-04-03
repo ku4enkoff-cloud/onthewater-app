@@ -11,7 +11,7 @@ import {
     Jost_600SemiBold,
     Jost_700Bold,
 } from '@expo-google-fonts/jost';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, AuthContext } from './src/shared/context/AuthContext';
 import { NotificationsProvider, NotificationsContext } from './src/shared/context/NotificationsContext';
@@ -19,6 +19,7 @@ import { theme } from './src/shared/theme';
 import OwnerAuthStack from './src/owner/OwnerAuthStack';
 import OwnerNavigator from './src/owner/navigation/OwnerNavigator';
 import { useRegisterPushToken } from './src/client/hooks/useRegisterPushToken';
+import { usePushNotificationNavigation } from './src/shared/hooks/usePushNotificationNavigation';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -47,9 +48,12 @@ class ErrorBoundary extends React.Component {
 }
 
 function OwnerRoot() {
+  const navigationRef = useNavigationContainerRef();
+  const [navReady, setNavReady] = useState(false);
   const { user, loading } = useContext(AuthContext);
   const { pushEnabled } = useContext(NotificationsContext);
   useRegisterPushToken(user, pushEnabled);
+  usePushNotificationNavigation(navigationRef, { user, navReady });
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -58,7 +62,7 @@ function OwnerRoot() {
     );
   }
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef} onReady={() => setNavReady(true)}>
       {user == null ? <OwnerAuthStack /> : <OwnerNavigator />}
     </NavigationContainer>
   );
