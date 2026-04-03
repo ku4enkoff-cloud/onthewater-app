@@ -19,7 +19,7 @@ function attachLastMessageMeta(row) {
     if (!row || typeof row !== 'object') return row;
     const { last_message_at, ...rest } = row;
     const meta = formatLastMessageAt(last_message_at);
-    return { ...rest, ...meta, last_message_at };
+    return { ...rest, ...meta };
 }
 
 module.exports = { formatLastMessageAt, attachLastMessageMeta };

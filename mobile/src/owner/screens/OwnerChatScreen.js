@@ -448,14 +448,7 @@ const styles = StyleSheet.create({
     metaRight: {
         flexShrink: 0,
     },
-    metaRightRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        flexWrap: 'nowrap',
-    },
     unreadBadgeRight: {
-        marginLeft: 8,
         minWidth: 24,
         height: 24,
         paddingHorizontal: 7,
@@ -485,10 +478,21 @@ const styles = StyleSheet.create({
     avatar: { width: 56, height: 56, borderRadius: 28 },
     chatContent: { flex: 1, justifyContent: 'center', minWidth: 0 },
     clientName: { ...theme.typography.body, fontWeight: '600' },
-    timeText: { ...theme.typography.caption, color: theme.colors.textMuted, textAlign: 'right' },
     boatTitle: { ...theme.typography.bodySm, color: theme.colors.textMuted, marginBottom: 4 },
-    messageContainer: { flexDirection: 'row', alignItems: 'center' },
-    lastMessage: { ...theme.typography.bodySm, color: theme.colors.textMain, marginLeft: 6, flex: 1 },
+    messageContainer: { flexDirection: 'row', alignItems: 'center', minWidth: 0 },
+    lastMessage: {
+        ...theme.typography.bodySm,
+        color: theme.colors.textMain,
+        marginLeft: 6,
+        flex: 1,
+        minWidth: 0,
+    },
+    lastMessageMeta: {
+        ...theme.typography.caption,
+        color: theme.colors.textMuted,
+        marginLeft: 8,
+        flexShrink: 0,
+    },
     emptyState: { alignItems: 'center', paddingVertical: theme.spacing.xl, paddingHorizontal: theme.spacing.xl },
     swipeActions: { flexDirection: 'row', alignItems: 'stretch' },
     swipeAction: {

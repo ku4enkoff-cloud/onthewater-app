@@ -86,18 +86,13 @@ export default function OwnerChatScreen({ navigation }) {
                             </Text>
                         </View>
                         <View style={styles.metaRight}>
-                            <View style={styles.metaRightRow}>
-                                <Text style={styles.timeText}>
-                                    {[item.last_message_date, item.last_message_time].filter(Boolean).join(' • ')}
-                                </Text>
-                                {hasUnread && (
-                                    <View style={styles.unreadBadgeRight}>
-                                        <Text style={styles.unreadBadgeRightText}>
-                                            {item.unread_count > 99 ? '99+' : item.unread_count}
-                                        </Text>
-                                    </View>
-                                )}
-                            </View>
+                            {hasUnread && (
+                                <View style={styles.unreadBadgeRight}>
+                                    <Text style={styles.unreadBadgeRightText}>
+                                        {item.unread_count > 99 ? '99+' : item.unread_count}
+                                    </Text>
+                                </View>
+                            )}
                         </View>
                     </View>
                     <Text style={styles.boatTitle} numberOfLines={1}>{item.boat_title || 'Катер'}</Text>
@@ -109,6 +104,11 @@ export default function OwnerChatScreen({ navigation }) {
                         >
                             {item.last_message || ''}
                         </Text>
+                        {(item.last_message_time || item.last_message_date) ? (
+                            <Text style={styles.lastMessageMeta} numberOfLines={1}>
+                                {[item.last_message_date, item.last_message_time].filter(Boolean).join(' · ')}
+                            </Text>
+                        ) : null}
                     </View>
                 </View>
             </TouchableOpacity>
@@ -225,14 +225,7 @@ const styles = StyleSheet.create({
     },
     nameColumn: { flex: 1, minWidth: 0, marginRight: theme.spacing.sm },
     metaRight: { flexShrink: 0 },
-    metaRightRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        flexWrap: 'nowrap',
-    },
     unreadBadgeRight: {
-        marginLeft: 8,
         minWidth: 24,
         height: 24,
         paddingHorizontal: 7,
@@ -255,9 +248,20 @@ const styles = StyleSheet.create({
     avatar: { width: 56, height: 56, borderRadius: 28 },
     chatContent: { flex: 1, justifyContent: 'center', minWidth: 0 },
     clientName: { ...theme.typography.body, fontWeight: '600' },
-    timeText: { ...theme.typography.caption, color: theme.colors.textMuted, textAlign: 'right' },
     boatTitle: { ...theme.typography.bodySm, color: theme.colors.textMuted, marginBottom: 4 },
-    messageContainer: { flexDirection: 'row', alignItems: 'center' },
-    lastMessage: { ...theme.typography.bodySm, color: theme.colors.textMain, marginLeft: 6, flex: 1 },
+    messageContainer: { flexDirection: 'row', alignItems: 'center', minWidth: 0 },
+    lastMessage: {
+        ...theme.typography.bodySm,
+        color: theme.colors.textMain,
+        marginLeft: 6,
+        flex: 1,
+        minWidth: 0,
+    },
+    lastMessageMeta: {
+        ...theme.typography.caption,
+        color: theme.colors.textMuted,
+        marginLeft: 8,
+        flexShrink: 0,
+    },
     emptyState: { alignItems: 'center', paddingVertical: theme.spacing.xl, paddingHorizontal: theme.spacing.xl },
 });

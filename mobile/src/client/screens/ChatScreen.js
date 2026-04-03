@@ -185,29 +185,29 @@ export default function ChatScreen({ navigation }) {
                             </Text>
                         </View>
                         <View style={styles.metaRight}>
-                            <View style={styles.metaRightRow}>
-                                {!!item.last_message_time && (
-                                    <Text style={styles.timeText}>{item.last_message_time}</Text>
-                                )}
-                                {hasUnread && (
-                                    <View
-                                        style={[
-                                            styles.unreadBadgeRight,
-                                            !item.last_message_time && styles.unreadBadgeRightOnly,
-                                        ]}
-                                    >
-                                        <Text style={styles.unreadBadgeRightText}>
-                                            {item.unread_count > 99 ? '99+' : item.unread_count}
-                                        </Text>
-                                    </View>
-                                )}
-                            </View>
+                            {hasUnread && (
+                                <View style={styles.unreadBadgeRight}>
+                                    <Text style={styles.unreadBadgeRightText}>
+                                        {item.unread_count > 99 ? '99+' : item.unread_count}
+                                    </Text>
+                                </View>
+                            )}
                         </View>
                         <ChevronRight size={18} color={theme.colors.gray400} strokeWidth={2} />
                     </View>
-                    <Text style={[styles.lastMessage, hasUnread && styles.lastMessageUnread]} numberOfLines={1}>
-                        {previewText}
-                    </Text>
+                    <View style={styles.previewRow}>
+                        <Text
+                            style={[styles.lastMessage, hasUnread && styles.lastMessageUnread]}
+                            numberOfLines={1}
+                        >
+                            {previewText}
+                        </Text>
+                        {(item.last_message_time || item.last_message_date) ? (
+                            <Text style={styles.lastMessageMeta} numberOfLines={1}>
+                                {[item.last_message_date, item.last_message_time].filter(Boolean).join(' · ')}
+                            </Text>
+                        ) : null}
+                    </View>
                     <View style={styles.tripRow}>
                         <Text style={styles.tripText} numberOfLines={1}>
                             {tripLabel ? `Поездка: ${tripLabel}` : ''}
@@ -396,14 +396,7 @@ const styles = StyleSheet.create({
         flexShrink: 0,
         marginRight: theme.spacing.xs,
     },
-    metaRightRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        flexWrap: 'nowrap',
-    },
     unreadBadgeRight: {
-        marginLeft: 8,
         minWidth: 24,
         height: 24,
         paddingHorizontal: 7,
@@ -411,9 +404,6 @@ const styles = StyleSheet.create({
         backgroundColor: BLUE_PRIMARY,
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    unreadBadgeRightOnly: {
-        marginLeft: 0,
     },
     unreadBadgeRightText: {
         color: '#fff',
@@ -450,12 +440,24 @@ const styles = StyleSheet.create({
         fontFamily: theme.fonts.bold,
         color: theme.colors.gray900,
     },
-    timeText: { fontSize: 13, color: theme.colors.gray500, textAlign: 'right' },
+    previewRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 4,
+        minWidth: 0,
+    },
     lastMessage: {
         fontSize: 14,
         fontFamily: theme.fonts.regular,
         color: theme.colors.gray500,
-        marginBottom: 4,
+        flex: 1,
+        minWidth: 0,
+    },
+    lastMessageMeta: {
+        fontSize: 12,
+        color: theme.colors.gray500,
+        marginLeft: 8,
+        flexShrink: 0,
     },
     lastMessageUnread: {
         color: theme.colors.gray900,
