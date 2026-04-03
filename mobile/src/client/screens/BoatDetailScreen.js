@@ -17,7 +17,6 @@ import {
     Platform,
     KeyboardAvoidingView,
     Linking,
-    NativeModules,
     useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -58,18 +57,22 @@ import {
     Video,
     ShieldCheck,
 } from 'lucide-react-native';
+import { isYamapNativeAvailable } from '../../shared/yamapNative';
 
 const { width, height } = Dimensions.get('window');
 const NAVY = '#1B365D';
 const IMAGE_HEIGHT = 300;
 
-const isYamapAvailable = NativeModules.yamap != null;
+/** Иконка маркера: в react-native-yamap-plus без source/children нативный слой не рисует точку. */
+const MAP_MARKER_ICON = require('../../../assets/icon.png');
+
+const isYamapAvailable = isYamapNativeAvailable;
 let YaMap = null;
 let YamapMarker = null;
 if (isYamapAvailable) {
     try {
-        const yamap = require('react-native-yamap');
-        YaMap = yamap.default;
+        const yamap = require('react-native-yamap-plus');
+        YaMap = yamap.Yamap;
         YamapMarker = yamap.Marker;
     } catch (_) {}
 }
@@ -1135,7 +1138,12 @@ export default function BoatDetailScreen({ route, navigation }) {
                                                     zoom: 14,
                                                 }}
                                             >
-                                                <YamapMarker point={{ lat: boat.lat, lon: boat.lng }} />
+                                                <YamapMarker
+                                                    point={{ lat: boat.lat, lon: boat.lng }}
+                                                    source={MAP_MARKER_ICON}
+                                                    scale={0.1}
+                                                    anchor={{ x: 0.5, y: 1 }}
+                                                />
                                             </YaMap>
                                         </View>
                                     ) : (

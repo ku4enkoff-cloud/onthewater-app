@@ -8,7 +8,6 @@ import {
     TouchableOpacity,
     ScrollView,
     Modal,
-    NativeModules,
     ActivityIndicator,
     InteractionManager,
     useWindowDimensions,
@@ -28,6 +27,7 @@ import PassengersFilterModal from '../components/PassengersFilterModal';
 import DurationFilterModal from '../components/DurationFilterModal';
 import BoatTypeFilterModal from '../components/BoatTypeFilterModal';
 import LocationDateModal from '../components/LocationDateModal';
+import { isYamapNativeAvailable } from '../../shared/yamapNative';
 
 const NAVY = '#1B365D';
 
@@ -41,14 +41,14 @@ const CITY_COORDS = {
 };
 const DEFAULT_MAP_CENTER = { lat: 55.751244, lon: 37.618423 };
 
-const isMapAvailable = NativeModules.yamap != null;
+const isMapAvailable = isYamapNativeAvailable;
 let YaMap = null;
 let Marker = null;
 let ClusteredYamap = null;
 if (isMapAvailable) {
     try {
-        const yamap = require('react-native-yamap');
-        YaMap = yamap.default;
+        const yamap = require('react-native-yamap-plus');
+        YaMap = yamap.Yamap;
         Marker = yamap.Marker;
         ClusteredYamap = yamap.ClusteredYamap;
     } catch (_) {}
@@ -373,8 +373,8 @@ export default function SearchResultsScreen({ route, navigation }) {
             try {
                 mapRef.current?.getCameraPosition?.((pos) => {
                     if (!mapModalOpenRef.current) return;
-                    const lat = pos?.lat ?? pos?.latitude;
-                    const lon = pos?.lon ?? pos?.longitude;
+                    const lat = pos?.point?.lat ?? pos?.lat ?? pos?.latitude;
+                    const lon = pos?.point?.lon ?? pos?.lon ?? pos?.longitude;
                     if (lat == null || lon == null) return;
                     const last = lastMapCenterRef.current;
                     const same = last && Math.abs(last.lat - lat) < 0.01 && Math.abs(last.lon - lon) < 0.01;

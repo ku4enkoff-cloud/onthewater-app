@@ -35,8 +35,8 @@ if (Platform.OS !== 'web' && Constants.appOwnership !== 'expo') {
 
 if (Platform.OS === 'android' || Platform.OS === 'ios') {
   try {
-    const YaMap = require('react-native-yamap').default;
-    YaMap.init('84448445-01d9-454b-8398-9adaaf19ad61');
+    const { YamapInstance } = require('react-native-yamap-plus');
+    YamapInstance.init('84448445-01d9-454b-8398-9adaaf19ad61');
   } catch (_) {}
 }
 

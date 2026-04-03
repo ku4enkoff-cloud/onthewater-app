@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, NativeModules, ActivityIndicator, InteractionManager } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, InteractionManager } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
+import { isYamapNativeAvailable } from '../../shared/yamapNative';
 
 const CITY_COORDS = {
     'Москва': { lat: 55.751244, lon: 37.618423 },
@@ -15,13 +16,16 @@ const CITY_COORDS = {
 
 const DEFAULT_COORDS = { lat: 55.751244, lon: 37.618423 };
 
-const isMapAvailable = NativeModules.yamap != null;
+/** react-native-yamap-plus: без source маркер на карте не виден. */
+const MAP_MARKER_ICON = require('../../../assets/icon.png');
+
+const isMapAvailable = isYamapNativeAvailable;
 let YaMap = null;
 let Marker = null;
 if (isMapAvailable) {
     try {
-        const yamap = require('react-native-yamap');
-        YaMap = yamap.default;
+        const yamap = require('react-native-yamap-plus');
+        YaMap = yamap.Yamap;
         Marker = yamap.Marker;
     } catch (_) {}
 }
@@ -85,6 +89,9 @@ export default function CityMapScreen({ route, navigation }) {
                     <Marker
                         key={boat.id}
                         point={{ lat: boat.lat, lon: boat.lng }}
+                        source={MAP_MARKER_ICON}
+                        scale={0.1}
+                        anchor={{ x: 0.5, y: 1 }}
                         onPress={() => {
                             InteractionManager.runAfterInteractions(() => {
                                 setTimeout(() => navigation.navigate('BoatDetail', { boatId: boat.id }), 150);

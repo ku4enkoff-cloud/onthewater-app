@@ -123,9 +123,9 @@ export default function App() {
     let cancelled = false;
     try {
       const { YANDEX_MAPKIT_API_KEY } = require('./src/shared/infrastructure/config');
-      const YaMap = require('react-native-yamap').default;
+      const { YamapInstance } = require('react-native-yamap-plus');
       const key = YANDEX_MAPKIT_API_KEY && String(YANDEX_MAPKIT_API_KEY).trim();
-      if (key && !cancelled) YaMap.init(key).catch((err) => { if (__DEV__) console.warn('[YaMap] init failed:', err?.message || err); });
+      if (key && !cancelled) YamapInstance.init(key).catch((err) => { if (__DEV__) console.warn('[YaMap] init failed:', err?.message || err); });
     } catch (_) {}
     return () => { cancelled = true; };
   }, []);

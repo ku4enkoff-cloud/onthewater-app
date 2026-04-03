@@ -86,6 +86,7 @@ export default {
             minSdkVersion: 26,
             usesCleartextTraffic: true,
             // Target Android 15 (API 35) — требуется Google Play с 31.08.2025 и для поддержки страниц памяти 16 КБ.
+            // NDK r28+ задаётся в android/gradle.properties (android.ndkVersion) и android/build.gradle — не только compileSdk.
             compileSdkVersion: 35,
             targetSdkVersion: 35,
             buildToolsVersion: '35.0.0',
