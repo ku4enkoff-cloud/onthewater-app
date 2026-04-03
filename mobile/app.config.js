@@ -55,9 +55,9 @@ export default {
       },
       package: isOwner ? 'com.anonymous.onthewater.owner' : 'com.anonymous.onthewater',
       versionCode: getAndroidVersionCode(),
-      // Временный отказ от edge-to-edge: убирает предупреждение Google Play об устаревших API (setStatusBarColor и т.д.) на Android 15.
-      // На Android 16 отказ станет недоступен — потребуется поддержка edge-to-edge.
-      enableEdgeToEdge: false,
+      // Отключение edge-to-edge (официальное поле Expo SDK 54 — `edgeToEdgeEnabled`; `enableEdgeToEdge` не подхватывается prebuild).
+      // Снижает предупреждения Play об устаревших Window API на Android 15. На Android 16+ edge-to-edge станет обязательным.
+      edgeToEdgeEnabled: false,
       ...(hasGoogleServices && { googleServicesFile }),
     },
     config: {
@@ -78,7 +78,6 @@ export default {
     plugins: [
       './plugins/withAndroidSigning.js',
       './plugins/withYandexMapKitKey.js',
-      './plugins/withPictureInPicture.js',
       ...(hasGoogleServices ? ['./plugins/withGoogleServices.js'] : []),
       [
         'expo-build-properties',
