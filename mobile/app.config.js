@@ -77,6 +77,7 @@ export default {
     web: { favicon: './assets/favicon.png' },
     plugins: [
       './plugins/withAndroidSigning.js',
+      './plugins/withAndroidOpenGlPlayCompat.js',
       './plugins/withYandexMapKitKey.js',
       ...(hasGoogleServices ? ['./plugins/withGoogleServices.js'] : []),
       [
