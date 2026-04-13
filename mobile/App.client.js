@@ -13,6 +13,7 @@ import {
     Jost_700Bold,
 } from '@expo-google-fonts/jost';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import Constants from 'expo-constants';
 import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { AuthProvider, AuthContext } from './src/shared/context/AuthContext';
 import { FavoritesProvider } from './src/shared/context/FavoritesContext';
@@ -120,6 +121,7 @@ export default function App() {
 
   useEffect(() => {
     if (Platform.OS !== 'android' && Platform.OS !== 'ios') return;
+    if (Constants.appOwnership === 'expo') return;
     let cancelled = false;
     try {
       const { YANDEX_MAPKIT_API_KEY } = require('./src/shared/infrastructure/config');

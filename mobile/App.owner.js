@@ -2,6 +2,7 @@ import React, { useContext, useState, useEffect, useCallback } from 'react';
 import { Platform, View, ActivityIndicator, Text } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import Constants from 'expo-constants';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
 import {
@@ -23,7 +24,7 @@ import { usePushNotificationNavigation } from './src/shared/hooks/usePushNotific
 
 SplashScreen.preventAutoHideAsync();
 
-if (Platform.OS === 'android' || Platform.OS === 'ios') {
+if ((Platform.OS === 'android' || Platform.OS === 'ios') && Constants.appOwnership !== 'expo') {
   try {
     const { YamapInstance } = require('react-native-yamap-plus');
     YamapInstance.init('84448445-01d9-454b-8398-9adaaf19ad61');

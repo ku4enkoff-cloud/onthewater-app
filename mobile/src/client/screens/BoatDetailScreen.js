@@ -58,6 +58,7 @@ import {
     ShieldCheck,
 } from 'lucide-react-native';
 import { isYamapNativeAvailable } from '../../shared/yamapNative';
+import { WebView } from 'react-native-webview';
 
 const { width, height } = Dimensions.get('window');
 const NAVY = '#1B365D';
@@ -78,6 +79,7 @@ if (isYamapAvailable) {
 }
 
 const resolvePhotoUri = (src) => getPhotoUrl(src) || 'https://placehold.co/800x600/png';
+const resolveVideoUri = (src) => getPhotoUrl(src) || src || null;
 const WATER_SPORTS_OPTIONS = ['Вейксерф', 'Вейкборд', 'Водные лыжи'];
 const isTugboat = (name) => (name || '').toLowerCase().includes('буксировщик');
 
@@ -318,6 +320,8 @@ export default function BoatDetailScreen({ route, navigation }) {
     const [reviewSubmitting, setReviewSubmitting] = useState(false);
     const [photoIndex, setPhotoIndex] = useState(0);
     const [photoGalleryVisible, setPhotoGalleryVisible] = useState(false);
+    const [videoModalVisible, setVideoModalVisible] = useState(false);
+    const [videoIndex, setVideoIndex] = useState(0);
     const galleryFlatListRef = useRef(null);
     const [descExpanded, setDescExpanded] = useState(false);
     const [rulesExpanded, setRulesExpanded] = useState(false);
@@ -504,6 +508,21 @@ export default function BoatDetailScreen({ route, navigation }) {
     }
 
     const photos = boat.photos?.length ? boat.photos.map(resolvePhotoUri) : ['https://placehold.co/800x600/png'];
+    const videoUrisRaw = Array.isArray(boat.video_uris)
+        ? boat.video_uris
+        : (typeof boat.video_uris === 'string' ? (() => {
+            try { return JSON.parse(boat.video_uris); } catch (_) { return []; }
+        })() : []);
+    const videoUris = (Array.isArray(videoUrisRaw) ? videoUrisRaw : [])
+        .map(resolveVideoUri)
+        .filter((u, i, arr) =>
+            typeof u === 'string' &&
+            u.trim().length > 0 &&
+            !u.startsWith('file://') &&
+            !u.startsWith('content://') &&
+            arr.indexOf(u) === i
+        );
+    const activeVideoUri = videoUris[videoIndex] || null;
     const description = boat.description || '';
     const descShort = description.length > 160 ? description.slice(0, 160) + '...' : description;
     const rulesText = boat.rules || '';
@@ -718,11 +737,18 @@ export default function BoatDetailScreen({ route, navigation }) {
                             ))}
                         </View>
                     )}
-                    {Array.isArray(boat.video_uris) && boat.video_uris.length > 0 && (
-                        <View style={styles.videoBadge}>
+                    {videoUris.length > 0 && (
+                        <TouchableOpacity
+                            style={styles.videoBadge}
+                            activeOpacity={0.85}
+                            onPress={() => {
+                                setVideoIndex(0);
+                                setVideoModalVisible(true);
+                            }}
+                        >
                             <Video size={14} color="#fff" />
-                            <Text style={styles.videoBadgeText}>Видео: {boat.video_uris.length}</Text>
-                        </View>
+                            <Text style={styles.videoBadgeText}>Видео: {videoUris.length}</Text>
+                        </TouchableOpacity>
                     )}
                 </View>
 
@@ -803,6 +829,67 @@ export default function BoatDetailScreen({ route, navigation }) {
                     </>
                         );
                     })()}
+                </Modal>
+
+                <Modal
+                    visible={videoModalVisible}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setVideoModalVisible(false)}
+                >
+                    <View style={[styles.videoModalOverlay, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16 }]}>
+                        <View style={styles.videoModalCard}>
+                            <View style={styles.videoModalHeader}>
+                                <Text style={styles.videoModalTitle}>Видео катера</Text>
+                                <TouchableOpacity
+                                    onPress={() => setVideoModalVisible(false)}
+                                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                >
+                                    <X size={22} color="#fff" />
+                                </TouchableOpacity>
+                            </View>
+                            {activeVideoUri ? (
+                                <View style={styles.videoWebWrap}>
+                                    <WebView
+                                        source={{ uri: activeVideoUri }}
+                                        originWhitelist={['*']}
+                                        allowsFullscreenVideo
+                                        mediaPlaybackRequiresUserAction={false}
+                                        allowsInlineMediaPlayback
+                                        mixedContentMode="always"
+                                        javaScriptEnabled
+                                        domStorageEnabled
+                                        style={styles.videoWeb}
+                                    />
+                                </View>
+                            ) : (
+                                <View style={styles.videoEmpty}>
+                                    <Text style={styles.videoEmptyText}>Видео недоступно</Text>
+                                </View>
+                            )}
+                            <View style={styles.videoModalFooter}>
+                                {videoUris.length > 1 ? (
+                                    <View style={styles.videoPager}>
+                                        <TouchableOpacity
+                                            style={styles.videoPagerBtn}
+                                            onPress={() => setVideoIndex((v) => Math.max(0, v - 1))}
+                                            disabled={videoIndex <= 0}
+                                        >
+                                            <ChevronLeft size={20} color={videoIndex <= 0 ? 'rgba(255,255,255,0.4)' : '#fff'} />
+                                        </TouchableOpacity>
+                                        <Text style={styles.videoPagerText}>{videoIndex + 1}/{videoUris.length}</Text>
+                                        <TouchableOpacity
+                                            style={styles.videoPagerBtn}
+                                            onPress={() => setVideoIndex((v) => Math.min(videoUris.length - 1, v + 1))}
+                                            disabled={videoIndex >= videoUris.length - 1}
+                                        >
+                                            <ChevronRight size={20} color={videoIndex >= videoUris.length - 1 ? 'rgba(255,255,255,0.4)' : '#fff'} />
+                                        </TouchableOpacity>
+                                    </View>
+                                ) : <View />}
+                            </View>
+                        </View>
+                    </View>
                 </Modal>
 
                 <View style={styles.content}>
@@ -1820,6 +1907,77 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.55)', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8,
     },
     videoBadgeText: { fontSize: 12, fontFamily: theme.fonts.semiBold, color: '#fff' },
+    videoModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        justifyContent: 'center',
+        paddingHorizontal: 14,
+    },
+    videoModalCard: {
+        backgroundColor: '#0b1220',
+        borderRadius: 16,
+        overflow: 'hidden',
+    },
+    videoModalHeader: {
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.12)',
+    },
+    videoModalTitle: {
+        color: '#fff',
+        fontSize: 16,
+        fontFamily: theme.fonts.semiBold,
+    },
+    videoWebWrap: {
+        width: '100%',
+        aspectRatio: 16 / 9,
+        backgroundColor: '#000',
+    },
+    videoWeb: {
+        flex: 1,
+        backgroundColor: '#000',
+    },
+    videoEmpty: {
+        paddingVertical: 36,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    videoEmptyText: {
+        color: '#cbd5e1',
+        fontSize: 14,
+        fontFamily: theme.fonts.regular,
+    },
+    videoModalFooter: {
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    videoPager: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    videoPagerBtn: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(255,255,255,0.1)',
+    },
+    videoPagerText: {
+        color: '#fff',
+        fontSize: 14,
+        fontFamily: theme.fonts.semiBold,
+        minWidth: 50,
+        textAlign: 'center',
+    },
 
     /* Content */
     content: { paddingHorizontal: 20, paddingTop: 20 },

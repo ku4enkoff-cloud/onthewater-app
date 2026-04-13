@@ -6,6 +6,7 @@
     "start": "npx cross-env EXPO_PUBLIC_APP_VARIANT=client expo start",
     "start:client": "npx cross-env EXPO_PUBLIC_APP_VARIANT=client expo start",
     "start:client:clear": "npx cross-env EXPO_PUBLIC_APP_VARIANT=client expo start --clear",
+    "start:client:emulator": "npx cross-env EXPO_PUBLIC_APP_VARIANT=client expo start --localhost --clear",
     "start:owner": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner expo start",
     "start:owner:clear": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner expo start --clear",
     "android": "expo run:android",

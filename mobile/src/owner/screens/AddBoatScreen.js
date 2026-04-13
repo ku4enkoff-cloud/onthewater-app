@@ -104,7 +104,13 @@ export default function AddBoatScreen({ navigation, route }) {
 
             const videos = boatMedia?.videos || [];
             if (videos.length > 0) {
-                payload.append('video_uris', JSON.stringify(videos));
+                videos.filter(isLocalUri).forEach((uri, i) => {
+                    const clean = String(uri || '');
+                    const extMatch = clean.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
+                    const ext = extMatch ? extMatch[1].toLowerCase() : 'mp4';
+                    const type = ext === 'mov' ? 'video/quicktime' : `video/${ext}`;
+                    payload.append('videos', { uri: clean, type, name: `video_${i}.${ext}` });
+                });
             }
 
             // Используем fetch вместо axios — лучше обрабатывает multipart на React Native

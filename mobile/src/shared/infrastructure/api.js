@@ -17,7 +17,7 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
     (r) => r,
     (err) => {
-        if (err.response?.status === 401) console.log('Token expired or invalid');
+        /* 401 при /auth/me обрабатывает AuthContext (очистка @token); отдельный log только путает в консоли. */
         return Promise.reject(err);
     }
 );

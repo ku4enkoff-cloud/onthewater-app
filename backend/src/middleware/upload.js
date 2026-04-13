@@ -52,10 +52,11 @@ if (process.env.YANDEX_S3_BUCKET && process.env.YANDEX_S3_ACCESS_KEY) {
 
 const upload = multerFn({
     storage,
-    limits: { fileSize: 10 * 1024 * 1024 },
+    limits: { fileSize: 120 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) cb(null, true);
-        else cb(new Error('Разрешены только изображения'), false);
+        if (file.mimetype.startsWith('image/')) return cb(null, true);
+        if (file.fieldname === 'videos' && file.mimetype.startsWith('video/')) return cb(null, true);
+        cb(new Error('Разрешены изображения и видео (в поле videos)'), false);
     },
 });
 

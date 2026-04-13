@@ -87,6 +87,21 @@ function parsePriceTiers(boat) {
     .sort((a, b) => a.duration - b.duration)
 }
 
+function parseVideoUrls(boat) {
+  let videos = boat?.video_uris
+  if (typeof videos === 'string') {
+    try {
+      videos = JSON.parse(videos)
+    } catch {
+      videos = []
+    }
+  }
+  if (!Array.isArray(videos)) return []
+  return videos
+    .map((src) => getPhotoUrl(src))
+    .filter((src, idx, arr) => typeof src === 'string' && src.trim() && arr.indexOf(src) === idx)
+}
+
 function formatReviewDate(iso) {
   if (!iso) return ''
   try {
@@ -213,6 +228,7 @@ export default function BoatDetailPage() {
     const urls = allPhotoUrls(boat, getPhotoUrl)
     return urls.length > 0 ? urls : [PLACEHOLDER]
   }, [boat])
+  const videos = useMemo(() => (boat ? parseVideoUrls(boat) : []), [boat])
 
   const tiers = useMemo(() => (boat ? parsePriceTiers(boat) : []), [boat])
 
@@ -534,6 +550,29 @@ export default function BoatDetailPage() {
         </div>
 
         <main className="bd-main bd-main--below">
+          {videos.length > 0 ? (
+            <section className="bd-blockBs">
+              <div className="bd-blockBs__head">
+                <h2 className="bd-blockBs__h">Видео</h2>
+                <span className="bd-blockBs__sub">{videos.length}</span>
+              </div>
+              <div className="bd-videoGrid">
+                {videos.map((src, i) => (
+                  <figure key={src} className="bd-videoCard">
+                    <video
+                      className="bd-videoCard__player"
+                      src={src}
+                      controls
+                      playsInline
+                      preload="metadata"
+                    />
+                    <figcaption className="bd-videoCard__caption">Видео {i + 1}</figcaption>
+                  </figure>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
           <section className="bd-blockBs">
             <h2 className="bd-blockBs__h">Катер</h2>
             {desc ? (

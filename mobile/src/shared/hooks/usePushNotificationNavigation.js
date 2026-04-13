@@ -1,6 +1,9 @@
 import { useEffect, useRef, useCallback } from 'react';
+import Constants from 'expo-constants';
 
 function getNotificationsModule() {
+    /* В Expo Go (SDK 53+) require('expo-notifications') всё равно инициализирует нативный слой и пишет ERROR в консоль. */
+    if (Constants.appOwnership === 'expo') return null;
     try {
         // eslint-disable-next-line global-require
         return require('expo-notifications');

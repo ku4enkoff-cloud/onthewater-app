@@ -23,12 +23,16 @@ function getAbsoluteInputPath(file) {
  * Удаляет оригиналы и обновляет file.path / file.filename.
  */
 function processUploadedImages(req, res, next) {
-    const files = req.files || [];
+    const filesRaw = req.files || [];
+    const files = Array.isArray(filesRaw)
+        ? filesRaw
+        : Object.values(filesRaw).flat().filter(Boolean);
     if (files.length === 0) return next();
 
     (async () => {
         for (const file of files) {
             if (file.location) continue;
+            if (!String(file.mimetype || '').startsWith('image/')) continue;
 
             const inputPath = getAbsoluteInputPath(file);
             if (!inputPath) continue;

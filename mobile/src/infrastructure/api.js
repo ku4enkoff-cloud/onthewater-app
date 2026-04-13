@@ -19,11 +19,5 @@ api.interceptors.request.use(async (config) => {
 
 api.interceptors.response.use(
     (response) => response,
-    (error) => {
-        if (error.response && error.response.status === 401) {
-            // Тут можно вызывать logout
-            console.log('Token expired or invalid');
-        }
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
 );

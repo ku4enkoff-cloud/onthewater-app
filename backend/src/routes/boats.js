@@ -16,6 +16,14 @@ function getPhotoUrl(file) {
     return null;
 }
 
+function keepPublicVideoUris(list) {
+    if (!Array.isArray(list)) return [];
+    return list
+        .map((x) => String(x || '').trim())
+        .filter(Boolean)
+        .filter((x) => !x.startsWith('file://') && !x.startsWith('content://'));
+}
+
 async function ensureTypeNames(boats) {
     if (!boats || boats.length === 0) return boats;
     const needType = boats.filter((b) => !b.type_name || String(b.type_name).trim() === '');
@@ -319,11 +327,21 @@ router.post('/:id/reviews', authenticate, async (req, res, next) => {
     }
 });
 
-router.post('/', authenticate, requireRole(['owner']), upload.array('photos', 10), processUploadedImages, async (req, res, next) => {
+router.post(
+    '/',
+    authenticate,
+    requireRole(['owner']),
+    upload.fields([
+        { name: 'photos', maxCount: 10 },
+        { name: 'videos', maxCount: 3 },
+    ]),
+    processUploadedImages,
+    async (req, res, next) => {
     try {
         const body = req.body || {};
-        const photoFiles = (req.files || []).map(getPhotoUrl);
+        const photoFiles = (req.files?.photos || []).map(getPhotoUrl);
         const photos = photoFiles.length ? photoFiles : ['https://placehold.co/400x300/png'];
+        const uploadedVideoFiles = (req.files?.videos || []).map(getPhotoUrl).filter(Boolean);
 
         let amenities = [];
         if (body.amenities) {
@@ -342,7 +360,8 @@ router.post('/', authenticate, requireRole(['owner']), upload.array('photos', 10
         const scheduleWeekdayHours = safeJson(body.schedule_weekday_hours, null);
         const scheduleWeekendHours = safeJson(body.schedule_weekend_hours, null);
         const priceTiers = safeJson(body.price_tiers, '[]');
-        const videoUris = safeJson(body.video_uris, '[]');
+        const videoUrisFromBody = keepPublicVideoUris(safeJson(body.video_uris, '[]'));
+        const videoUris = [...videoUrisFromBody, ...uploadedVideoFiles];
 
         const { rows } = await pool.query(`
             INSERT INTO boats (owner_id, owner_name, title, description, type_id, type_name, manufacturer, model, year, length_m, capacity, location_country, location_region, location_city, location_address, location_yacht_club, lat, lng, price_per_hour, price_per_day, captain_included, has_captain_option, rules, payment_policy, cancellation_policy, photos, amenities, schedule_work_days, schedule_weekday_hours, schedule_weekend_hours, schedule_min_duration, price_tiers, price_weekend, video_uris, status, rating, reviews_count, bookings_count)
@@ -362,7 +381,7 @@ router.post('/', authenticate, requireRole(['owner']), upload.array('photos', 10
             body.schedule_min_duration ? parseInt(body.schedule_min_duration, 10) : 60,
             typeof priceTiers === 'string' ? priceTiers : JSON.stringify(priceTiers),
             body.price_weekend !== undefined ? String(body.price_weekend).trim() : '',
-            typeof videoUris === 'string' ? videoUris : JSON.stringify(videoUris),
+            JSON.stringify(videoUris),
             'moderation', 0, 0, 0,
         ]);
 
@@ -373,7 +392,10 @@ router.post('/', authenticate, requireRole(['owner']), upload.array('photos', 10
 });
 
 router.patch('/:id', authenticate, requireRole(['owner']), (req, res, next) => {
-    upload.array('photos', 10)(req, res, (err) => {
+    upload.fields([
+        { name: 'photos', maxCount: 10 },
+        { name: 'videos', maxCount: 3 },
+    ])(req, res, (err) => {
         if (err) {
             return res.status(400).json({ error: err.message || 'Ошибка загрузки файлов' });
         }
@@ -393,8 +415,9 @@ router.patch('/:id', authenticate, requireRole(['owner']), (req, res, next) => {
             try { existingPhotos = JSON.parse(body.photo_urls); } catch (_) {}
         }
         if (!Array.isArray(existingPhotos)) existingPhotos = [];
-        const newFiles = (req.files || []).map(getPhotoUrl).filter(Boolean);
+        const newFiles = (req.files?.photos || []).map(getPhotoUrl).filter(Boolean);
         const combinedPhotos = [...existingPhotos, ...newFiles];
+        const newVideoFiles = (req.files?.videos || []).map(getPhotoUrl).filter(Boolean);
 
         const sets = [];
         const vals = [];
@@ -427,8 +450,22 @@ router.patch('/:id', authenticate, requireRole(['owner']), (req, res, next) => {
                 sets.push(`${f} = $${idx++}`);
                 let parsed = body[f];
                 if (typeof parsed === 'string') { try { parsed = JSON.parse(parsed); } catch (_) {} }
-                vals.push(JSON.stringify(parsed));
+                if (f === 'video_uris') {
+                    const safeVideos = keepPublicVideoUris(parsed);
+                    vals.push(JSON.stringify([...safeVideos, ...newVideoFiles]));
+                } else {
+                    vals.push(JSON.stringify(parsed));
+                }
             }
+        }
+        if (newVideoFiles.length > 0 && body.video_uris === undefined) {
+            let existingVideos = boat.video_uris;
+            if (typeof existingVideos === 'string') {
+                try { existingVideos = JSON.parse(existingVideos); } catch (_) { existingVideos = []; }
+            }
+            const mergedVideos = [...keepPublicVideoUris(existingVideos), ...newVideoFiles];
+            sets.push(`video_uris = $${idx++}`);
+            vals.push(JSON.stringify(mergedVideos));
         }
         if (body.schedule_min_duration !== undefined) {
             sets.push(`schedule_min_duration = $${idx++}`);
