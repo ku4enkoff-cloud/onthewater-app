@@ -24,13 +24,14 @@ const defaultForm = () => ({
   captain_included: false, has_captain_option: false, instant_booking: false,
   rules: '', payment_policy: '', cancellation_policy: '', status: 'active', amenities: [],
   schedule_min_duration: 60, schedule_work_days: '[]', schedule_weekday_hours: '[]', schedule_weekend_hours: '[]',
-  price_tiers: '[]', video_uris: '[]',
+  price_tiers: '[]',
 });
 
 // Состояние фото: оставляемые URL + новые файлы для загрузки
 const defaultPhotos = () => ({ keep: [], newFiles: [] });
+const defaultVideos = () => ({ keep: [], newFiles: [] });
 
-function PhotoFilePreview({ file, className, children }) {
+function PhotoFilePreview({ file, className, children, onOpen }) {
   const [url, setUrl] = useState('');
   useEffect(() => {
     const u = URL.createObjectURL(file);
@@ -39,7 +40,28 @@ function PhotoFilePreview({ file, className, children }) {
   }, [file]);
   return (
     <div className={modalStyles.photoWrap}>
-      <img src={url || ''} alt="" className={className} />
+      <img
+        src={url || ''}
+        alt=""
+        className={className}
+        onClick={() => onOpen?.(url)}
+        style={{ cursor: 'zoom-in' }}
+      />
+      {children}
+    </div>
+  );
+}
+
+function VideoFilePreview({ file, className, children }) {
+  const [url, setUrl] = useState('');
+  useEffect(() => {
+    const u = URL.createObjectURL(file);
+    setUrl(u);
+    return () => URL.revokeObjectURL(u);
+  }, [file]);
+  return (
+    <div className={modalStyles.photoWrap}>
+      <video src={url || ''} className={className} controls muted playsInline />
       {children}
     </div>
   );
@@ -52,8 +74,10 @@ export default function Boats() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(defaultForm());
   const [photos, setPhotos] = useState(defaultPhotos());
+  const [videos, setVideos] = useState(defaultVideos());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState('');
 
   const load = () => {
     api.get('/admin/boats').then((r) => setList(r.data || [])).catch(() => setList([])).finally(() => setLoading(false));
@@ -102,9 +126,9 @@ export default function Boats() {
       schedule_weekday_hours: Array.isArray(b.schedule_weekday_hours) ? JSON.stringify(b.schedule_weekday_hours, null, 0) : '[]',
       schedule_weekend_hours: Array.isArray(b.schedule_weekend_hours) ? JSON.stringify(b.schedule_weekend_hours, null, 0) : '[]',
       price_tiers: Array.isArray(b.price_tiers) ? JSON.stringify(b.price_tiers, null, 0) : '[]',
-      video_uris: Array.isArray(b.video_uris) ? JSON.stringify(b.video_uris, null, 0) : '[]',
     });
     setPhotos({ keep: Array.isArray(b.photos) ? [...b.photos] : [], newFiles: [] });
+    setVideos({ keep: Array.isArray(b.video_uris) ? [...b.video_uris] : [], newFiles: [] });
     setError('');
   };
 
@@ -120,6 +144,21 @@ export default function Boats() {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     setPhotos((p) => ({ ...p, newFiles: [...p.newFiles, ...files] }));
+    e.target.value = '';
+  };
+
+  const removeVideo = (url) => {
+    setVideos((p) => ({ ...p, keep: p.keep.filter((u) => u !== url) }));
+  };
+
+  const removeNewVideo = (idx) => {
+    setVideos((p) => ({ ...p, newFiles: p.newFiles.filter((_, i) => i !== idx) }));
+  };
+
+  const onVideoFilesChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setVideos((p) => ({ ...p, newFiles: [...p.newFiles, ...files] }));
     e.target.value = '';
   };
 
@@ -152,6 +191,8 @@ export default function Boats() {
       const formData = new FormData();
       formData.append('photo_urls', JSON.stringify(photos.keep));
       photos.newFiles.forEach((file) => formData.append('photos', file));
+      formData.append('video_urls', JSON.stringify(videos.keep));
+      videos.newFiles.forEach((file) => formData.append('videos', file));
       formData.append('title', form.title);
       formData.append('description', form.description);
       formData.append('type_id', form.type_id);
@@ -184,7 +225,6 @@ export default function Boats() {
       formData.append('schedule_weekday_hours', typeof form.schedule_weekday_hours === 'string' ? form.schedule_weekday_hours : JSON.stringify(form.schedule_weekday_hours || []));
       formData.append('schedule_weekend_hours', typeof form.schedule_weekend_hours === 'string' ? form.schedule_weekend_hours : JSON.stringify(form.schedule_weekend_hours || []));
       formData.append('price_tiers', typeof form.price_tiers === 'string' ? form.price_tiers : JSON.stringify(form.price_tiers || []));
-      formData.append('video_uris', typeof form.video_uris === 'string' ? form.video_uris : JSON.stringify(form.video_uris || []));
 
       await api.put(`/admin/boats/${editing.id}`, formData);
       setEditing(null);
@@ -400,26 +440,48 @@ export default function Boats() {
               <input className={modalStyles.input} value={form.schedule_weekend_hours} onChange={(e) => setForm({ ...form, schedule_weekend_hours: e.target.value })} placeholder="[]" />
             </div>
             <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Ссылки на видео (JSON)</label>
-              <textarea className={modalStyles.input} rows={1} value={form.video_uris} onChange={(e) => setForm({ ...form, video_uris: e.target.value })} placeholder='[]' />
-            </div>
-            <div className={modalStyles.formRow}>
               <label className={modalStyles.label}>Фотографии</label>
               <div className={modalStyles.photosRow}>
                 {photos.keep.map((url) => (
                   <div key={url} className={modalStyles.photoWrap}>
-                    <img src={photoUrl(url)} alt="" className={modalStyles.photoThumb} />
-                    <button type="button" className={modalStyles.photoRemove} onClick={() => removePhoto(url)} title="Удалить">×</button>
+                    <img
+                      src={photoUrl(url)}
+                      alt=""
+                      className={modalStyles.photoThumb}
+                      onClick={() => setPhotoPreviewUrl(photoUrl(url) || '')}
+                      style={{ cursor: 'zoom-in' }}
+                    />
+                    <button type="button" className={modalStyles.photoRemove} onClick={(e) => { e.stopPropagation(); removePhoto(url); }} title="Удалить">×</button>
                   </div>
                 ))}
                 {photos.newFiles.map((file, idx) => (
-                  <PhotoFilePreview key={`new-${idx}`} file={file} className={modalStyles.photoThumb}>
-                    <button type="button" className={modalStyles.photoRemove} onClick={() => removeNewPhoto(idx)} title="Удалить">×</button>
+                  <PhotoFilePreview key={`new-${idx}`} file={file} className={modalStyles.photoThumb} onOpen={setPhotoPreviewUrl}>
+                    <button type="button" className={modalStyles.photoRemove} onClick={(e) => { e.stopPropagation(); removeNewPhoto(idx); }} title="Удалить">×</button>
                   </PhotoFilePreview>
                 ))}
                 <label className={modalStyles.photoAdd}>
                   <input type="file" accept="image/*" multiple onChange={onPhotoFilesChange} style={{ display: 'none' }} />
                   + Добавить фото
+                </label>
+              </div>
+            </div>
+            <div className={modalStyles.formRow}>
+              <label className={modalStyles.label}>Видео</label>
+              <div className={modalStyles.photosRow}>
+                {videos.keep.map((url) => (
+                  <div key={url} className={modalStyles.photoWrap}>
+                    <video src={photoUrl(url)} className={modalStyles.photoThumb} controls muted playsInline />
+                    <button type="button" className={modalStyles.photoRemove} onClick={() => removeVideo(url)} title="Удалить">×</button>
+                  </div>
+                ))}
+                {videos.newFiles.map((file, idx) => (
+                  <VideoFilePreview key={`new-video-${idx}`} file={file} className={modalStyles.photoThumb}>
+                    <button type="button" className={modalStyles.photoRemove} onClick={() => removeNewVideo(idx)} title="Удалить">×</button>
+                  </VideoFilePreview>
+                ))}
+                <label className={modalStyles.photoAdd}>
+                  <input type="file" accept="video/*" multiple onChange={onVideoFilesChange} style={{ display: 'none' }} />
+                  + Добавить видео
                 </label>
               </div>
             </div>
@@ -446,6 +508,15 @@ export default function Boats() {
               <button type="submit" className={modalStyles.btn} disabled={saving}>{saving ? 'Сохранение…' : 'Сохранить'}</button>
             </div>
           </form>
+        </Modal>
+      )}
+      {photoPreviewUrl && (
+        <Modal title="Просмотр фото" onClose={() => setPhotoPreviewUrl('')}>
+          <img
+            src={photoPreviewUrl}
+            alt="Фото катера"
+            style={{ width: '100%', maxHeight: '70vh', objectFit: 'contain', borderRadius: 8 }}
+          />
         </Modal>
       )}
     </>

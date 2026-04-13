@@ -162,7 +162,7 @@ router.patch('/boats/:id', async (req, res, next) => {
     }
 });
 
-router.put('/boats/:id', upload.array('photos', 10), processUploadedImages, async (req, res, next) => {
+router.put('/boats/:id', upload.fields([{ name: 'photos', maxCount: 10 }, { name: 'videos', maxCount: 3 }]), processUploadedImages, async (req, res, next) => {
     try {
         const id = parseInt(req.params.id, 10);
         const { rows: existing } = await pool.query('SELECT * FROM boats WHERE id = $1', [id]);
@@ -174,15 +174,31 @@ router.put('/boats/:id', upload.array('photos', 10), processUploadedImages, asyn
         const vals = [];
         let idx = 1;
 
-        if (body.photo_urls !== undefined || (req.files && req.files.length > 0)) {
+        const incomingPhotos = Array.isArray(req.files?.photos) ? req.files.photos : [];
+        const incomingVideos = Array.isArray(req.files?.videos) ? req.files.videos : [];
+
+        if (body.photo_urls !== undefined || incomingPhotos.length > 0) {
             let ep = [];
             try { ep = JSON.parse(body.photo_urls || '[]'); } catch (_) {}
             if (!Array.isArray(ep)) ep = [];
-            const newPaths = (req.files || []).map((f) => (f.location ? f.location : '/uploads/' + path.basename(f.filename)));
+            const newPaths = incomingPhotos.map((f) => (f.location ? f.location : '/uploads/' + path.basename(f.filename)));
             const combined = [...ep, ...newPaths];
             const finalPhotos = combined.length ? combined : (boat.photos && boat.photos.length ? boat.photos : ['https://placehold.co/400x300?text=No+photo']);
             sets.push(`photos = $${idx++}`);
             vals.push(JSON.stringify(finalPhotos));
+        }
+
+        if (body.video_urls !== undefined || incomingVideos.length > 0) {
+            let ev = [];
+            try { ev = JSON.parse(body.video_urls || '[]'); } catch (_) {}
+            if (!Array.isArray(ev)) ev = [];
+            const safeExisting = ev
+                .map((x) => String(x || '').trim())
+                .filter(Boolean)
+                .filter((x) => !x.startsWith('file://') && !x.startsWith('content://'));
+            const newVideoPaths = incomingVideos.map((f) => (f.location ? f.location : '/uploads/' + path.basename(f.filename)));
+            sets.push(`video_uris = $${idx++}`);
+            vals.push(JSON.stringify([...safeExisting, ...newVideoPaths]));
         }
 
         const textFields = ['title', 'description', 'type_id', 'type_name', 'manufacturer', 'model', 'year', 'length_m', 'capacity', 'location_country', 'location_region', 'location_city', 'location_address', 'location_yacht_club', 'price_per_hour', 'price_per_day', 'price_weekend', 'rules', 'payment_policy', 'cancellation_policy', 'status'];
@@ -200,7 +216,7 @@ router.put('/boats/:id', upload.array('photos', 10), processUploadedImages, asyn
             sets.push(`amenities = $${idx++}`);
             vals.push(JSON.stringify(am));
         }
-        const jsonFields = ['schedule_work_days', 'schedule_weekday_hours', 'schedule_weekend_hours', 'price_tiers', 'video_uris'];
+        const jsonFields = ['schedule_work_days', 'schedule_weekday_hours', 'schedule_weekend_hours', 'price_tiers'];
         for (const f of jsonFields) {
             if (body[f] !== undefined) {
                 sets.push(`${f} = $${idx++}`);
