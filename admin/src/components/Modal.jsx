@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import styles from './Modal.module.css';
 
-export default function Modal({ title, onClose, children }) {
+export default function Modal({ title, onClose, children, wide }) {
   useEffect(() => {
     const h = (e) => e.key === 'Escape' && onClose?.();
     window.addEventListener('keydown', h);
@@ -10,7 +10,7 @@ export default function Modal({ title, onClose, children }) {
 
   return (
     <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={e => e.stopPropagation()}>
+      <div className={`${styles.modal}${wide ? ` ${styles.modalWide}` : ''}`} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
           <h2 className={styles.title}>{title}</h2>
           <button type="button" className={styles.close} onClick={onClose} aria-label="Закрыть">&times;</button>

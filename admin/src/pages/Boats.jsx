@@ -41,6 +41,31 @@ const defaultVideos = () => ({ keep: [], newFiles: [] });
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const WEEKDAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
+/** Как в приложении владельца (EditBoatScreen / BoatScheduleScreen) */
+const DURATION_OPTIONS = [
+  { value: 30, label: '30 мин' },
+  { value: 60, label: '1 час' },
+  { value: 120, label: '2 часа' },
+  { value: 180, label: '3 часа' },
+  { value: 240, label: '4 часа' },
+  { value: 300, label: '5 часов' },
+];
+
+function normalizeMinDuration(mins) {
+  const v = Number(mins) || 60;
+  if (DURATION_OPTIONS.some((o) => o.value === v)) return v;
+  let best = 60;
+  let bestDist = Infinity;
+  for (const o of DURATION_OPTIONS) {
+    const d = Math.abs(o.value - v);
+    if (d < bestDist) {
+      bestDist = d;
+      best = o.value;
+    }
+  }
+  return best;
+}
+
 function toDateKey(d) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -70,23 +95,69 @@ function getCalendarGrid(monthDate) {
   return grid;
 }
 
+/** Нормализация элемента массива дат из API (строка, ISO, timestamp) */
+function normalizeDateKeyEntry(entry) {
+  if (entry == null) return null;
+  if (typeof entry === 'string') {
+    const s = entry.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    try {
+      const d = new Date(s);
+      if (!Number.isNaN(d.getTime())) return toDateKey(d);
+    } catch {
+      return null;
+    }
+    return null;
+  }
+  if (entry instanceof Date && !Number.isNaN(entry.getTime())) return toDateKey(entry);
+  if (typeof entry === 'number' && Number.isFinite(entry)) {
+    const d = new Date(entry);
+    if (!Number.isNaN(d.getTime())) return toDateKey(d);
+  }
+  return null;
+}
+
 function parseScheduleWorkDaysToKeys(raw) {
   let wd = raw;
   if (wd == null || wd === '') return [];
-  if (typeof wd === 'string') {
+
+  if (typeof Buffer !== 'undefined' && Buffer.isBuffer(wd)) {
+    try {
+      wd = JSON.parse(wd.toString('utf8'));
+    } catch {
+      return [];
+    }
+  }
+
+  let unwrap = 0;
+  while (typeof wd === 'string' && unwrap < 4) {
+    unwrap += 1;
     try {
       wd = JSON.parse(wd);
     } catch {
       return [];
     }
   }
+
   if (Array.isArray(wd)) {
-    return [...wd].filter((x) => typeof x === 'string').sort();
+    const keys = wd.map(normalizeDateKeyEntry).filter(Boolean);
+    return [...new Set(keys)].sort();
   }
   if (typeof wd !== 'object' || wd === null) return [];
-  if (Array.isArray(wd.dates)) {
-    return [...wd.dates].filter((x) => typeof x === 'string').sort();
+
+  let datesRaw = wd.dates;
+  if (typeof datesRaw === 'string') {
+    try {
+      datesRaw = JSON.parse(datesRaw);
+    } catch {
+      datesRaw = null;
+    }
   }
+  if (Array.isArray(datesRaw)) {
+    const keys = datesRaw.map(normalizeDateKeyEntry).filter(Boolean);
+    return [...new Set(keys)].sort();
+  }
+
   const workDaysMap = { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: false, ...wd };
   const generated = [];
   const today = new Date();
@@ -215,7 +286,7 @@ export default function Boats() {
       cancellation_policy: b.cancellation_policy ?? '',
       status: b.status || 'active',
       amenities: Array.isArray(b.amenities) ? b.amenities : [],
-      schedule_min_duration: b.schedule_min_duration ?? 60,
+      schedule_min_duration: normalizeMinDuration(b.schedule_min_duration ?? 60),
       schedule_weekday_hours: Array.isArray(b.schedule_weekday_hours) ? JSON.stringify(b.schedule_weekday_hours, null, 0) : '[]',
       schedule_weekend_hours: Array.isArray(b.schedule_weekend_hours) ? JSON.stringify(b.schedule_weekend_hours, null, 0) : '[]',
       price_tiers: Array.isArray(b.price_tiers) ? JSON.stringify(b.price_tiers, null, 0) : '[]',
@@ -427,7 +498,7 @@ export default function Boats() {
       </div>
 
       {editing && (
-        <Modal title="Редактировать катер" onClose={() => setEditing(null)}>
+        <Modal title="Редактировать катер" wide onClose={() => setEditing(null)}>
           <form onSubmit={handleSave}>
             {error && <p className={modalStyles.error}>{error}</p>}
             <div className={modalStyles.formRow}>
@@ -588,12 +659,16 @@ export default function Boats() {
               <textarea className={modalStyles.input} rows={2} value={form.cancellation_policy} onChange={(e) => setForm({ ...form, cancellation_policy: e.target.value })} />
             </div>
             <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Мин. длительность аренды (мин)</label>
-              <input type="number" min={15} step={15} className={modalStyles.input} value={form.schedule_min_duration} onChange={(e) => setForm({ ...form, schedule_min_duration: parseInt(e.target.value, 10) || 60 })} />
-            </div>
-            <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Тарифы по длительности (JSON)</label>
-              <textarea className={modalStyles.input} rows={2} value={form.price_tiers} onChange={(e) => setForm({ ...form, price_tiers: e.target.value })} placeholder='[{"hours":2,"price":5000}]' />
+              <label className={modalStyles.label}>Мин. длительность аренды</label>
+              <select
+                className={modalStyles.select}
+                value={form.schedule_min_duration}
+                onChange={(e) => setForm({ ...form, schedule_min_duration: Number(e.target.value) })}
+              >
+                {DURATION_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
             </div>
             <div className={modalStyles.formRow}>
               <label className={modalStyles.label}>Расписание: рабочие дни</label>
@@ -644,6 +719,10 @@ export default function Boats() {
               {workDateKeys.length > 0 && (
                 <p className={modalStyles.workCalHint}>Выбрано дней: {workDateKeys.length}</p>
               )}
+            </div>
+            <div className={modalStyles.formRow}>
+              <label className={modalStyles.label}>Тарифы по длительности (JSON)</label>
+              <textarea className={modalStyles.input} rows={2} value={form.price_tiers} onChange={(e) => setForm({ ...form, price_tiers: e.target.value })} placeholder='[{"hours":2,"price":5000}]' />
             </div>
             <div className={modalStyles.formRow}>
               <label className={modalStyles.label}>Часы работы в будни (JSON)</label>
