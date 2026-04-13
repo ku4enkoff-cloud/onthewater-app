@@ -30,7 +30,11 @@ const defaultForm = () => ({
   lat: '', lng: '', price_per_hour: '', price_per_day: '', price_weekend: '',
   captain_included: false, has_captain_option: false, instant_booking: false,
   rules: '', payment_policy: '', cancellation_policy: '', status: 'active', amenities: [],
-  schedule_min_duration: 60, schedule_weekday_hours: '[]', schedule_weekend_hours: '[]',
+  schedule_min_duration: 60,
+  weekdayStart: '08:00',
+  weekdayEnd: '20:00',
+  weekendStart: '09:00',
+  weekendEnd: '18:00',
   price_tiers: '[]',
 });
 
@@ -40,6 +44,49 @@ const defaultVideos = () => ({ keep: [], newFiles: [] });
 
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const WEEKDAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+const TIME_OPTIONS = (() => {
+  const opts = [];
+  for (let h = 0; h < 24; h++) opts.push(`${String(h).padStart(2, '0')}:00`);
+  return opts;
+})();
+
+const DEFAULT_WEEKDAY_START = '08:00';
+const DEFAULT_WEEKDAY_END = '20:00';
+const DEFAULT_WEEKEND_START = '09:00';
+const DEFAULT_WEEKEND_END = '18:00';
+
+function normalizeTimeToHourSlot(t, fallback) {
+  if (typeof t !== 'string' || !t.trim()) return fallback;
+  const m = t.trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return fallback;
+  let hh = parseInt(m[1], 10);
+  const mm = parseInt(m[2], 10);
+  if (!Number.isFinite(hh) || hh < 0 || hh > 23) return fallback;
+  if (mm >= 30 && hh < 23) hh += 1;
+  hh = Math.min(23, Math.max(0, hh));
+  const key = `${String(hh).padStart(2, '0')}:00`;
+  return TIME_OPTIONS.includes(key) ? key : fallback;
+}
+
+/** Разбор schedule_*_hours из API: объект { start, end } как у владельца */
+function parseScheduleHours(raw, defaultStart, defaultEnd) {
+  let h = raw;
+  if (typeof h === 'string') {
+    try {
+      h = JSON.parse(h);
+    } catch {
+      h = null;
+    }
+  }
+  if (!h || typeof h !== 'object' || Array.isArray(h)) {
+    return { start: defaultStart, end: defaultEnd };
+  }
+  return {
+    start: normalizeTimeToHourSlot(h.start, defaultStart),
+    end: normalizeTimeToHourSlot(h.end, defaultEnd),
+  };
+}
 
 /** Как в приложении владельца (EditBoatScreen / BoatScheduleScreen) */
 const DURATION_OPTIONS = [
@@ -287,8 +334,16 @@ export default function Boats() {
       status: b.status || 'active',
       amenities: Array.isArray(b.amenities) ? b.amenities : [],
       schedule_min_duration: normalizeMinDuration(b.schedule_min_duration ?? 60),
-      schedule_weekday_hours: Array.isArray(b.schedule_weekday_hours) ? JSON.stringify(b.schedule_weekday_hours, null, 0) : '[]',
-      schedule_weekend_hours: Array.isArray(b.schedule_weekend_hours) ? JSON.stringify(b.schedule_weekend_hours, null, 0) : '[]',
+      ...(() => {
+        const wh = parseScheduleHours(b.schedule_weekday_hours, DEFAULT_WEEKDAY_START, DEFAULT_WEEKDAY_END);
+        const weh = parseScheduleHours(b.schedule_weekend_hours, DEFAULT_WEEKEND_START, DEFAULT_WEEKEND_END);
+        return {
+          weekdayStart: wh.start,
+          weekdayEnd: wh.end,
+          weekendStart: weh.start,
+          weekendEnd: weh.end,
+        };
+      })(),
       price_tiers: Array.isArray(b.price_tiers) ? JSON.stringify(b.price_tiers, null, 0) : '[]',
     });
     setPhotos({ keep: Array.isArray(b.photos) ? [...b.photos] : [], newFiles: [] });
@@ -426,8 +481,8 @@ export default function Boats() {
         ? { dates: sortedWorkKeys }
         : { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: false };
       formData.append('schedule_work_days', JSON.stringify(scheduleWorkDays));
-      formData.append('schedule_weekday_hours', typeof form.schedule_weekday_hours === 'string' ? form.schedule_weekday_hours : JSON.stringify(form.schedule_weekday_hours || []));
-      formData.append('schedule_weekend_hours', typeof form.schedule_weekend_hours === 'string' ? form.schedule_weekend_hours : JSON.stringify(form.schedule_weekend_hours || []));
+      formData.append('schedule_weekday_hours', JSON.stringify({ start: form.weekdayStart, end: form.weekdayEnd }));
+      formData.append('schedule_weekend_hours', JSON.stringify({ start: form.weekendStart, end: form.weekendEnd }));
       formData.append('price_tiers', typeof form.price_tiers === 'string' ? form.price_tiers : JSON.stringify(form.price_tiers || []));
 
       await api.put(`/admin/boats/${editing.id}`, formData);
@@ -725,12 +780,48 @@ export default function Boats() {
               <textarea className={modalStyles.input} rows={2} value={form.price_tiers} onChange={(e) => setForm({ ...form, price_tiers: e.target.value })} placeholder='[{"hours":2,"price":5000}]' />
             </div>
             <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Часы работы в будни (JSON)</label>
-              <input className={modalStyles.input} value={form.schedule_weekday_hours} onChange={(e) => setForm({ ...form, schedule_weekday_hours: e.target.value })} placeholder="[]" />
+              <label className={modalStyles.label}>Часы работы (будни)</label>
+              <div className={modalStyles.hoursRow}>
+                <div className={modalStyles.hoursField}>
+                  <span className={modalStyles.hoursSmallLabel}>С</span>
+                  <select className={modalStyles.select} value={form.weekdayStart} onChange={(e) => setForm({ ...form, weekdayStart: e.target.value })}>
+                    {TIME_OPTIONS.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+                <span className={modalStyles.hoursDash}>—</span>
+                <div className={modalStyles.hoursField}>
+                  <span className={modalStyles.hoursSmallLabel}>До</span>
+                  <select className={modalStyles.select} value={form.weekdayEnd} onChange={(e) => setForm({ ...form, weekdayEnd: e.target.value })}>
+                    {TIME_OPTIONS.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
             <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Часы работы в выходные (JSON)</label>
-              <input className={modalStyles.input} value={form.schedule_weekend_hours} onChange={(e) => setForm({ ...form, schedule_weekend_hours: e.target.value })} placeholder="[]" />
+              <label className={modalStyles.label}>Часы работы (выходные)</label>
+              <div className={modalStyles.hoursRow}>
+                <div className={modalStyles.hoursField}>
+                  <span className={modalStyles.hoursSmallLabel}>С</span>
+                  <select className={modalStyles.select} value={form.weekendStart} onChange={(e) => setForm({ ...form, weekendStart: e.target.value })}>
+                    {TIME_OPTIONS.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+                <span className={modalStyles.hoursDash}>—</span>
+                <div className={modalStyles.hoursField}>
+                  <span className={modalStyles.hoursSmallLabel}>До</span>
+                  <select className={modalStyles.select} value={form.weekendEnd} onChange={(e) => setForm({ ...form, weekendEnd: e.target.value })}>
+                    {TIME_OPTIONS.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
             <div className={modalStyles.formRow}>
               <label className={modalStyles.label}>Фотографии</label>
