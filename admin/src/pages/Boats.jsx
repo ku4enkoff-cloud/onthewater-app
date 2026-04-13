@@ -16,6 +16,13 @@ function photoUrl(photo) {
   return photo.startsWith('http') ? photo : `${API_BASE}${photo.startsWith('/') ? '' : '/'}${photo}`;
 }
 
+function parseCoord(value) {
+  const normalized = String(value ?? '').trim().replace(',', '.');
+  if (!normalized) return null;
+  const n = Number(normalized);
+  return Number.isFinite(n) ? n : null;
+}
+
 const defaultForm = () => ({
   title: '', description: '', type_id: '1', type_name: 'Катер', manufacturer: '', model: '',
   year: '', length_m: '', capacity: '',
@@ -70,6 +77,7 @@ function VideoFilePreview({ file, className, children }) {
 export default function Boats() {
   const [list, setList] = useState([]);
   const [amenitiesList, setAmenitiesList] = useState([]);
+  const [boatTypes, setBoatTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(defaultForm());
@@ -78,6 +86,20 @@ export default function Boats() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState('');
+  const typeOptions = (() => {
+    const base = Array.isArray(boatTypes) ? boatTypes : [];
+    const currentId = String(form.type_id || '');
+    if (!currentId) return base;
+    if (base.some((t) => String(t.id) === currentId)) return base;
+    return [{ id: currentId, name: form.type_name || `Тип #${currentId}` }, ...base];
+  })();
+  const latNum = parseCoord(form.lat);
+  const lngNum = parseCoord(form.lng);
+  const hasCoords = latNum != null && lngNum != null;
+  const yandexMapsUrl = hasCoords ? `https://yandex.ru/maps/?ll=${lngNum},${latNum}&z=14&pt=${lngNum},${latNum},pm2rdm` : '';
+  const yandexStaticMapUrl = hasCoords
+    ? `https://static-maps.yandex.ru/1.x/?ll=${lngNum},${latNum}&size=650,220&z=14&l=map&pt=${lngNum},${latNum},pm2rdm`
+    : '';
 
   const load = () => {
     api.get('/admin/boats').then((r) => setList(r.data || [])).catch(() => setList([])).finally(() => setLoading(false));
@@ -85,10 +107,14 @@ export default function Boats() {
   const loadAmenities = () => {
     api.get('/admin/amenities').then((r) => setAmenitiesList(r.data || [])).catch(() => setAmenitiesList([]));
   };
+  const loadBoatTypes = () => {
+    api.get('/admin/boat-types').then((r) => setBoatTypes(r.data || [])).catch(() => setBoatTypes([]));
+  };
 
   useEffect(() => {
     load();
     loadAmenities();
+    loadBoatTypes();
   }, []);
 
   const openEdit = (b) => {
@@ -307,11 +333,54 @@ export default function Boats() {
             </div>
             <div className={modalStyles.formRow}>
               <label className={modalStyles.label}>Тип судна</label>
-              <input className={modalStyles.input} value={form.type_name} onChange={(e) => setForm({ ...form, type_name: e.target.value })} placeholder="Катер, Яхта, …" />
+              <select
+                className={modalStyles.select}
+                value={String(form.type_id || '')}
+                onChange={(e) => {
+                  const selectedId = String(e.target.value || '');
+                  const selectedType = boatTypes.find((t) => String(t.id) === selectedId);
+                  setForm({
+                    ...form,
+                    type_id: selectedId,
+                    type_name: selectedType?.name || form.type_name || 'Катер',
+                  });
+                }}
+              >
+                {typeOptions.length === 0 ? (
+                  <option value={String(form.type_id || '')}>{form.type_name || 'Катер'}</option>
+                ) : (
+                  typeOptions.map((t) => (
+                    <option key={t.id} value={String(t.id)}>
+                      {t.name || `Тип #${t.id}`}
+                    </option>
+                  ))
+                )}
+              </select>
             </div>
             <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>ID типа судна</label>
-              <input className={modalStyles.input} value={form.type_id} onChange={(e) => setForm({ ...form, type_id: e.target.value })} placeholder="1" />
+              <label className={modalStyles.label}>Характеристики судна</label>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <div className={modalStyles.formRow} style={{ flex: '1 1 140px', marginBottom: 0 }}>
+                  <label className={modalStyles.label}>Производитель</label>
+                  <input className={modalStyles.input} value={form.manufacturer} onChange={(e) => setForm({ ...form, manufacturer: e.target.value })} />
+                </div>
+                <div className={modalStyles.formRow} style={{ flex: '1 1 140px', marginBottom: 0 }}>
+                  <label className={modalStyles.label}>Модель</label>
+                  <input className={modalStyles.input} value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} />
+                </div>
+                <div className={modalStyles.formRow} style={{ flex: '1 1 90px', marginBottom: 0 }}>
+                  <label className={modalStyles.label}>Год</label>
+                  <input className={modalStyles.input} value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} />
+                </div>
+                <div className={modalStyles.formRow} style={{ flex: '1 1 90px', marginBottom: 0 }}>
+                  <label className={modalStyles.label}>Длина (м)</label>
+                  <input className={modalStyles.input} value={form.length_m} onChange={(e) => setForm({ ...form, length_m: e.target.value })} />
+                </div>
+                <div className={modalStyles.formRow} style={{ flex: '1 1 90px', marginBottom: 0 }}>
+                  <label className={modalStyles.label}>Вместимость</label>
+                  <input className={modalStyles.input} value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
+                </div>
+              </div>
             </div>
             <div className={modalStyles.formRow}>
               <label className={modalStyles.label}>Страна</label>
@@ -343,6 +412,20 @@ export default function Boats() {
                 <input type="number" step="any" className={modalStyles.input} value={form.lng} onChange={(e) => setForm({ ...form, lng: e.target.value })} />
               </div>
             </div>
+            <div className={modalStyles.formRow}>
+              <label className={modalStyles.label}>Местоположение на Яндекс Картах</label>
+              {hasCoords ? (
+                <a href={yandexMapsUrl} target="_blank" rel="noreferrer" style={{ display: 'block' }}>
+                  <img
+                    src={yandexStaticMapUrl}
+                    alt="Местоположение судна на карте"
+                    style={{ width: '100%', borderRadius: 10, border: '1px solid #e2e8f0', display: 'block' }}
+                  />
+                </a>
+              ) : (
+                <p style={{ margin: 0, opacity: 0.75 }}>Укажите корректные широту и долготу, чтобы увидеть карту.</p>
+              )}
+            </div>
             <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
               <div className={modalStyles.formRow} style={{ flex: '1 1 100px' }}>
                 <label className={modalStyles.label}>Цена/час (₽)</label>
@@ -355,28 +438,6 @@ export default function Boats() {
               <div className={modalStyles.formRow} style={{ flex: '1 1 100px' }}>
                 <label className={modalStyles.label}>Цена выходные (₽)</label>
                 <input className={modalStyles.input} value={form.price_weekend} onChange={(e) => setForm({ ...form, price_weekend: e.target.value })} />
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <div className={modalStyles.formRow} style={{ flex: '1 1 120px' }}>
-                <label className={modalStyles.label}>Производитель</label>
-                <input className={modalStyles.input} value={form.manufacturer} onChange={(e) => setForm({ ...form, manufacturer: e.target.value })} />
-              </div>
-              <div className={modalStyles.formRow} style={{ flex: '1 1 120px' }}>
-                <label className={modalStyles.label}>Модель</label>
-                <input className={modalStyles.input} value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} />
-              </div>
-              <div className={modalStyles.formRow} style={{ flex: '1 1 80px' }}>
-                <label className={modalStyles.label}>Год</label>
-                <input className={modalStyles.input} value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} />
-              </div>
-              <div className={modalStyles.formRow} style={{ flex: '1 1 80px' }}>
-                <label className={modalStyles.label}>Длина (м)</label>
-                <input className={modalStyles.input} value={form.length_m} onChange={(e) => setForm({ ...form, length_m: e.target.value })} />
-              </div>
-              <div className={modalStyles.formRow} style={{ flex: '1 1 80px' }}>
-                <label className={modalStyles.label}>Вместимость</label>
-                <input className={modalStyles.input} value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
               </div>
             </div>
             <div className={modalStyles.formRow}>
