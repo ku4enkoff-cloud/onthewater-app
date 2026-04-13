@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import api from '../api';
 import styles from './Table.module.css';
 import Modal from '../components/Modal';
@@ -35,7 +35,6 @@ const defaultForm = () => ({
   weekdayEnd: '20:00',
   weekendStart: '09:00',
   weekendEnd: '18:00',
-  price_tiers: '[]',
 });
 
 // Состояние фото: оставляемые URL + новые файлы для загрузки
@@ -111,6 +110,54 @@ function normalizeMinDuration(mins) {
     }
   }
   return best;
+}
+
+/** Как в EditBoatScreen: шаг 30 мин до 24 ч */
+const TIER_DURATION_OPTIONS = (() => {
+  const opts = [];
+  for (let m = 30; m <= 24 * 60; m += 30) {
+    const hrs = Math.floor(m / 60);
+    const mins = m % 60;
+    const label = hrs > 0 ? (mins > 0 ? `${hrs} ч ${mins} мин` : `${hrs} ч`) : `${mins} мин`;
+    opts.push({ value: m, label });
+  }
+  return opts;
+})();
+
+const TIER_DURATION_VALUES = new Set(TIER_DURATION_OPTIONS.map((o) => o.value));
+
+function snapTierDurationMinutes(mins) {
+  const v = Number(mins);
+  if (!Number.isFinite(v) || v <= 0) return 120;
+  const snapped = Math.round(v / 30) * 30;
+  const clamped = Math.min(24 * 60, Math.max(30, snapped));
+  return TIER_DURATION_VALUES.has(clamped) ? clamped : TIER_DURATION_OPTIONS.find((o) => o.value >= clamped)?.value || 120;
+}
+
+function parsePriceTiersFromApi(raw) {
+  let arr = raw;
+  if (typeof arr === 'string') {
+    try {
+      arr = JSON.parse(arr);
+    } catch {
+      arr = [];
+    }
+  }
+  if (!Array.isArray(arr)) return [];
+  return arr.map((t) => {
+    let duration = Number(t?.duration);
+    if (!Number.isFinite(duration) || duration <= 0) {
+      const h = Number(t?.hours);
+      if (Number.isFinite(h) && h > 0) duration = h * 60;
+      else duration = 120;
+    }
+    duration = snapTierDurationMinutes(duration);
+    return {
+      duration,
+      price: String(t?.price ?? ''),
+      price_weekend: String(t?.price_weekend ?? ''),
+    };
+  });
 }
 
 function toDateKey(d) {
@@ -272,6 +319,23 @@ export default function Boats() {
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
   const workDateSet = useMemo(() => new Set(workDateKeys), [workDateKeys]);
+  const hasWeekendSelected = useMemo(() => {
+    if (!workDateKeys.length) return false;
+    return workDateKeys.some((k) => {
+      const p = k.split('-').map(Number);
+      if (p.length !== 3 || p.some((n) => !Number.isFinite(n))) return false;
+      const [y, mo, d] = p;
+      const dt = new Date(y, mo - 1, d);
+      const day = dt.getDay();
+      return day === 0 || day === 6;
+    });
+  }, [workDateKeys]);
+  const minDurationLabel = useMemo(
+    () => DURATION_OPTIONS.find((d) => d.value === form.schedule_min_duration)?.label || '1 час',
+    [form.schedule_min_duration],
+  );
+  const tierIdRef = useRef(1);
+  const [priceTiers, setPriceTiers] = useState([]);
   const typeOptions = (() => {
     const base = Array.isArray(boatTypes) ? boatTypes : [];
     const currentId = String(form.type_id || '');
@@ -344,8 +408,14 @@ export default function Boats() {
           weekendEnd: weh.end,
         };
       })(),
-      price_tiers: Array.isArray(b.price_tiers) ? JSON.stringify(b.price_tiers, null, 0) : '[]',
     });
+    tierIdRef.current = 1;
+    setPriceTiers(
+      parsePriceTiersFromApi(b.price_tiers).map((t) => ({
+        ...t,
+        id: tierIdRef.current++,
+      })),
+    );
     setPhotos({ keep: Array.isArray(b.photos) ? [...b.photos] : [], newFiles: [] });
     setVideos({ keep: Array.isArray(b.video_uris) ? [...b.video_uris] : [], newFiles: [] });
     const keys = parseScheduleWorkDaysToKeys(b.schedule_work_days);
@@ -386,6 +456,21 @@ export default function Boats() {
   };
 
   const clearAllWorkDays = () => setWorkDateKeys([]);
+
+  const addPriceTier = () => {
+    setPriceTiers((prev) => [
+      ...prev,
+      { id: tierIdRef.current++, duration: 120, price: '', price_weekend: '' },
+    ]);
+  };
+
+  const removePriceTier = (id) => {
+    setPriceTiers((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const updatePriceTier = (id, patch) => {
+    setPriceTiers((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+  };
 
   const removePhoto = (url) => {
     setPhotos((p) => ({ ...p, keep: p.keep.filter((u) => u !== url) }));
@@ -483,7 +568,14 @@ export default function Boats() {
       formData.append('schedule_work_days', JSON.stringify(scheduleWorkDays));
       formData.append('schedule_weekday_hours', JSON.stringify({ start: form.weekdayStart, end: form.weekdayEnd }));
       formData.append('schedule_weekend_hours', JSON.stringify({ start: form.weekendStart, end: form.weekendEnd }));
-      formData.append('price_tiers', typeof form.price_tiers === 'string' ? form.price_tiers : JSON.stringify(form.price_tiers || []));
+      const tiersPayload = priceTiers
+        .filter((t) => String(t.price).trim())
+        .map((t) => ({
+          duration: t.duration,
+          price: String(t.price).trim(),
+          ...(String(t.price_weekend ?? '').trim() && { price_weekend: String(t.price_weekend).trim() }),
+        }));
+      formData.append('price_tiers', JSON.stringify(tiersPayload));
 
       await api.put(`/admin/boats/${editing.id}`, formData);
       setEditing(null);
@@ -659,20 +751,6 @@ export default function Boats() {
                 <p style={{ margin: 0, opacity: 0.75 }}>Укажите корректные широту и долготу, чтобы увидеть карту.</p>
               )}
             </div>
-            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <div className={modalStyles.formRow} style={{ flex: '1 1 100px' }}>
-                <label className={modalStyles.label}>Цена/час (₽)</label>
-                <input className={modalStyles.input} value={form.price_per_hour} onChange={(e) => setForm({ ...form, price_per_hour: e.target.value })} />
-              </div>
-              <div className={modalStyles.formRow} style={{ flex: '1 1 100px' }}>
-                <label className={modalStyles.label}>Цена/день (₽)</label>
-                <input className={modalStyles.input} value={form.price_per_day} onChange={(e) => setForm({ ...form, price_per_day: e.target.value })} />
-              </div>
-              <div className={modalStyles.formRow} style={{ flex: '1 1 100px' }}>
-                <label className={modalStyles.label}>Цена выходные (₽)</label>
-                <input className={modalStyles.input} value={form.price_weekend} onChange={(e) => setForm({ ...form, price_weekend: e.target.value })} />
-              </div>
-            </div>
             <div className={modalStyles.formRow}>
               <label className={modalStyles.label}>Статус</label>
               <select className={modalStyles.select} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
@@ -726,6 +804,114 @@ export default function Boats() {
               </select>
             </div>
             <div className={modalStyles.formRow}>
+              <div className={modalStyles.pricingSectionTitle}>Стоимость аренды</div>
+              <p className={modalStyles.workCalHint} style={{ marginTop: 0 }}>
+                Цена за {minDurationLabel} (будни).
+              </p>
+              <div className={modalStyles.priceInputRow}>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  className={modalStyles.input}
+                  style={{ flex: '1 1 140px', minWidth: 0 }}
+                  value={form.price_per_hour}
+                  onChange={(e) => setForm({ ...form, price_per_hour: e.target.value })}
+                  placeholder="5 000"
+                />
+                <span className={modalStyles.priceSuffix}>₽ / {minDurationLabel}</span>
+              </div>
+            </div>
+            {hasWeekendSelected && (
+              <div className={modalStyles.formRow}>
+                <div className={modalStyles.pricingSectionTitle}>Цена в выходные (Сб–Вс)</div>
+                <p className={modalStyles.workCalHint} style={{ marginTop: 0 }}>
+                  Другая цена за {minDurationLabel}.
+                </p>
+                <div className={modalStyles.priceInputRow}>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    className={modalStyles.input}
+                    style={{ flex: '1 1 140px', minWidth: 0 }}
+                    value={form.price_weekend}
+                    onChange={(e) => setForm({ ...form, price_weekend: e.target.value })}
+                    placeholder="6 000"
+                  />
+                  <span className={modalStyles.priceSuffix}>₽ / {minDurationLabel}</span>
+                </div>
+              </div>
+            )}
+            <div className={modalStyles.formRow}>
+              <div className={modalStyles.pricingSectionTitle}>Стоимость за другое время</div>
+              <p className={modalStyles.workCalHint} style={{ marginTop: 0 }}>
+                Дополнительные тарифы по длительности (как в приложении владельца).
+              </p>
+              {priceTiers.map((tier) => {
+                const tierLabel = TIER_DURATION_OPTIONS.find((o) => o.value === tier.duration)?.label || '';
+                return (
+                  <div key={tier.id} className={modalStyles.tierCard}>
+                    <div className={modalStyles.tierTopRow}>
+                      <select
+                        className={modalStyles.select}
+                        value={tier.duration}
+                        title={tierLabel}
+                        onChange={(e) => updatePriceTier(tier.id, { duration: Number(e.target.value) })}
+                      >
+                        {TIER_DURATION_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                      <div className={modalStyles.tierPriceWrap}>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          className={modalStyles.input}
+                          placeholder="Будни, ₽"
+                          value={tier.price}
+                          onChange={(e) => updatePriceTier(tier.id, { price: e.target.value })}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        className={modalStyles.tierRemoveBtn}
+                        onClick={() => removePriceTier(tier.id)}
+                        aria-label="Удалить тариф"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    {hasWeekendSelected && (
+                      <div className={modalStyles.tierWeekendRow}>
+                        <span className={modalStyles.tierWeekendLabel}>Выходные (Сб–Вс)</span>
+                        <div className={modalStyles.tierPriceWrap}>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            className={modalStyles.input}
+                            placeholder="₽ (необязательно)"
+                            value={tier.price_weekend}
+                            onChange={(e) => updatePriceTier(tier.id, { price_weekend: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <button type="button" className={modalStyles.addTierBtn} onClick={addPriceTier}>
+                + Добавить стоимость
+              </button>
+            </div>
+            <div className={modalStyles.formRow}>
+              <label className={modalStyles.label}>Цена за сутки (₽, необязательно)</label>
+              <input
+                className={modalStyles.input}
+                value={form.price_per_day}
+                onChange={(e) => setForm({ ...form, price_per_day: e.target.value })}
+                placeholder=""
+              />
+            </div>
+            <div className={modalStyles.formRow}>
               <label className={modalStyles.label}>Расписание: рабочие дни</label>
               <p className={modalStyles.workCalHint} style={{ marginTop: 0 }}>Выберите даты, когда катер доступен для аренды (как в приложении владельца).</p>
               <div className={modalStyles.workCalWrap}>
@@ -774,10 +960,6 @@ export default function Boats() {
               {workDateKeys.length > 0 && (
                 <p className={modalStyles.workCalHint}>Выбрано дней: {workDateKeys.length}</p>
               )}
-            </div>
-            <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Тарифы по длительности (JSON)</label>
-              <textarea className={modalStyles.input} rows={2} value={form.price_tiers} onChange={(e) => setForm({ ...form, price_tiers: e.target.value })} placeholder='[{"hours":2,"price":5000}]' />
             </div>
             <div className={modalStyles.formRow}>
               <label className={modalStyles.label}>Часы работы (будни)</label>
