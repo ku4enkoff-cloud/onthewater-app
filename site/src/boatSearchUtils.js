@@ -270,6 +270,9 @@ function dateFromISOKey(iso) {
   return Number.isNaN(dt.getTime()) ? null : dt
 }
 
+/** Сколько дат в schedule_work_days.dates нужно, чтобы считать список «развёрнутым» графиком по дням недели (как в owner EditBoatScreen), а не ручным набором единичных дней. */
+const MIN_DATES_FOR_WEEKLY_SCHEDULE_INFERENCE = 14
+
 /**
  * Доступен ли катер в выбранный календарный день по schedule_work_days
  * (как в mobile: объект по дням недели или { dates: ['YYYY-MM-DD', ...] }).
@@ -290,7 +293,26 @@ export function isBoatWorkingOnDate(boat, dateISO) {
   if (wd == null || typeof wd !== 'object') return true
 
   if (Array.isArray(wd.dates)) {
-    return wd.dates.includes(toLocalDateKeyFromDate(d))
+    const dates = wd.dates.filter((x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x.trim()))
+    if (dates.length === 0) {
+      /* пустой dates — как отсутствие явного календаря */
+    } else {
+      const key = toLocalDateKeyFromDate(d)
+      if (dates.includes(key)) return true
+      /*
+       * Владелец в приложении часто сохраняет не { mon, tue, … }, а список конкретных дней на ~180 дней вперёд.
+       * Тогда даты дальше окна исчезают из списка, хотя по смыслу график недельный — продлеваем по дням недели.
+       */
+      if (dates.length >= MIN_DATES_FOR_WEEKLY_SCHEDULE_INFERENCE) {
+        const allowed = new Set()
+        for (const ds of dates) {
+          const dt = dateFromISOKey(ds.trim())
+          if (dt) allowed.add(WEEKDAY_KEYS[dt.getDay()])
+        }
+        if (allowed.size > 0) return allowed.has(WEEKDAY_KEYS[d.getDay()])
+      }
+      return false
+    }
   }
 
   const defaults = {

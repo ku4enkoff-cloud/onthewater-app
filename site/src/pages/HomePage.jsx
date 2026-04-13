@@ -7,7 +7,7 @@ import PopularBoats from '../components/PopularBoats.jsx'
 import { SITE_MAIN_URL } from '../config'
 import { useHomePageSeo } from '../seo/useHomePageSeo.js'
 import { fetchDestinations } from '../api/destinations.js'
-import { LOCATION_OPTIONS } from '../boatSearchUtils.js'
+import { LOCATION_OPTIONS, readNearestCityFromStorage } from '../boatSearchUtils.js'
 
 const HOW_STEPS = [
   {
@@ -34,7 +34,8 @@ export default function HomePage() {
   useHomePageSeo(heroImg)
   const navigate = useNavigate()
   const searchRef = useRef(null)
-  const [cityQuery, setCityQuery] = useState('')
+  const userEditedCityRef = useRef(false)
+  const [cityQuery, setCityQuery] = useState(() => readNearestCityFromStorage() || '')
   const [knownCities, setKnownCities] = useState([])
   const [suggestOpen, setSuggestOpen] = useState(false)
   const [activeIdx, setActiveIdx] = useState(-1)
@@ -71,6 +72,17 @@ export default function HomePage() {
     return () => window.removeEventListener('mousedown', onDown)
   }, [])
 
+  useEffect(() => {
+    const onNearest = (e) => {
+      const city = e.detail?.city
+      if (!city || !LOCATION_OPTIONS.some((o) => o.value === city)) return
+      if (userEditedCityRef.current) return
+      setCityQuery(city)
+    }
+    window.addEventListener('boatrent:nearest-city', onNearest)
+    return () => window.removeEventListener('boatrent:nearest-city', onNearest)
+  }, [])
+
   const suggestions = useMemo(() => {
     const q = cityQuery.trim().toLowerCase()
     if (!q) return knownCities.slice(0, 8)
@@ -87,6 +99,7 @@ export default function HomePage() {
   }
 
   const pickSuggestion = (city) => {
+    userEditedCityRef.current = true
     setCityQuery(city)
     setSuggestOpen(false)
     setActiveIdx(-1)
@@ -212,6 +225,7 @@ export default function HomePage() {
                 autoComplete="off"
                 value={cityQuery}
                 onChange={(e) => {
+                  userEditedCityRef.current = true
                   setCityQuery(e.target.value)
                   setSuggestOpen(true)
                   setActiveIdx(-1)
