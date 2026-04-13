@@ -206,37 +206,38 @@
   color: #0d2d5c;
 }
 
-/* Календарь рабочих дней (как в приложении владельца) */
+/* Календарь рабочих дней (компактный вид) */
 .workCalWrap {
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 0.75rem;
+  border-radius: 8px;
+  padding: 0.45rem 0.5rem;
   background: #f8fafc;
+  max-width: 260px;
 }
 
 .workCalMonthRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.3rem;
 }
 
 .workCalMonthTitle {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: #1e293b;
   text-transform: capitalize;
 }
 
 .workCalArrow {
-  width: 36px;
-  height: 36px;
+  width: 26px;
+  height: 26px;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #fff;
   cursor: pointer;
-  font-size: 1.1rem;
+  font-size: 0.9rem;
   line-height: 1;
   color: #0d5c5c;
 }
@@ -249,16 +250,16 @@
 .workCalWeekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-  margin-bottom: 4px;
+  gap: 2px;
+  margin-bottom: 2px;
 }
 
 .workCalWeekday {
   text-align: center;
-  font-size: 0.7rem;
+  font-size: 0.6rem;
   font-weight: 600;
   color: #64748b;
-  padding: 4px 0;
+  padding: 2px 0;
 }
 
 .workCalWeekdayWeekend {
@@ -268,17 +269,17 @@
 .workCalGrid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  gap: 2px;
 }
 
 .workCalDay {
   aspect-ratio: 1;
-  min-height: 32px;
+  min-height: 0;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 5px;
   background: #fff;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.68rem;
   font-weight: 500;
   color: #94a3b8;
   padding: 0;
@@ -319,15 +320,15 @@
 .workCalActions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
 }
 
 .workCalActionBtn {
-  padding: 0.35rem 0.65rem;
-  font-size: 0.8rem;
+  padding: 0.22rem 0.45rem;
+  font-size: 0.68rem;
   border: 1px solid #cbd5e1;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #fff;
   cursor: pointer;
   color: #475569;
@@ -339,7 +340,7 @@
 }
 
 .workCalHint {
-  margin: 0.5rem 0 0;
-  font-size: 0.8rem;
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
   color: #64748b;
 }
