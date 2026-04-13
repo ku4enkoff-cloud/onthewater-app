@@ -201,3 +201,141 @@
   border-color: #0d2d5c;
   color: #0d2d5c;
 }
+
+/* Календарь рабочих дней (как в приложении владельца) */
+.workCalWrap {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: #f8fafc;
+}
+
+.workCalMonthRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.workCalMonthTitle {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+  text-transform: capitalize;
+}
+
+.workCalArrow {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: #0d5c5c;
+}
+
+.workCalArrow:hover {
+  border-color: #0d5c5c;
+  background: #ecfdf5;
+}
+
+.workCalWeekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.workCalWeekday {
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+  padding: 4px 0;
+}
+
+.workCalWeekdayWeekend {
+  color: #b45309;
+}
+
+.workCalGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.workCalDay {
+  aspect-ratio: 1;
+  min-height: 32px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #94a3b8;
+  padding: 0;
+}
+
+.workCalDayOther {
+  opacity: 0.35;
+}
+
+.workCalDayPast {
+  cursor: not-allowed;
+  background: #f1f5f9;
+  color: #cbd5e1;
+}
+
+.workCalDaySelectable {
+  color: #334155;
+  border-color: #e2e8f0;
+}
+
+.workCalDaySelectable:hover {
+  border-color: #0d5c5c;
+  background: #ecfdf5;
+}
+
+.workCalDaySelected {
+  background: #0d5c5c;
+  color: #fff;
+  border-color: #0d5c5c;
+}
+
+.workCalDaySelectedWeekend {
+  background: #b45309;
+  color: #fff;
+  border-color: #b45309;
+}
+
+.workCalActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.workCalActionBtn {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.8rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  color: #475569;
+}
+
+.workCalActionBtn:hover {
+  border-color: #0d5c5c;
+  color: #0d5c5c;
+}
+
+.workCalHint {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: #64748b;
+}

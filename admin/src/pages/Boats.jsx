@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import api from '../api';
 import styles from './Table.module.css';
 import Modal from '../components/Modal';
@@ -30,13 +30,75 @@ const defaultForm = () => ({
   lat: '', lng: '', price_per_hour: '', price_per_day: '', price_weekend: '',
   captain_included: false, has_captain_option: false, instant_booking: false,
   rules: '', payment_policy: '', cancellation_policy: '', status: 'active', amenities: [],
-  schedule_min_duration: 60, schedule_work_days: '[]', schedule_weekday_hours: '[]', schedule_weekend_hours: '[]',
+  schedule_min_duration: 60, schedule_weekday_hours: '[]', schedule_weekend_hours: '[]',
   price_tiers: '[]',
 });
 
 // Состояние фото: оставляемые URL + новые файлы для загрузки
 const defaultPhotos = () => ({ keep: [], newFiles: [] });
 const defaultVideos = () => ({ keep: [], newFiles: [] });
+
+const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+const WEEKDAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+function toDateKey(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function getCalendarGrid(monthDate) {
+  const y = monthDate.getFullYear();
+  const m = monthDate.getMonth();
+  const first = new Date(y, m, 1);
+  let start = new Date(first);
+  const dow = first.getDay();
+  const toMonday = dow === 0 ? 6 : dow - 1;
+  start.setDate(start.getDate() - toMonday);
+  const grid = [];
+  for (let row = 0; row < 6; row++) {
+    for (let col = 0; col < 7; col++) {
+      const cell = new Date(start);
+      cell.setDate(start.getDate() + row * 7 + col);
+      grid.push({
+        date: cell,
+        isCurrentMonth: cell.getMonth() === m,
+      });
+    }
+  }
+  return grid;
+}
+
+function parseScheduleWorkDaysToKeys(raw) {
+  let wd = raw;
+  if (wd == null || wd === '') return [];
+  if (typeof wd === 'string') {
+    try {
+      wd = JSON.parse(wd);
+    } catch {
+      return [];
+    }
+  }
+  if (Array.isArray(wd)) {
+    return [...wd].filter((x) => typeof x === 'string').sort();
+  }
+  if (typeof wd !== 'object' || wd === null) return [];
+  if (Array.isArray(wd.dates)) {
+    return [...wd.dates].filter((x) => typeof x === 'string').sort();
+  }
+  const workDaysMap = { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: false, ...wd };
+  const generated = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (let i = 0; i < 180; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    const key = WEEKDAY_KEYS[d.getDay()];
+    if (workDaysMap[key] === true) generated.push(toDateKey(d));
+  }
+  return [...new Set(generated)].sort();
+}
 
 function PhotoFilePreview({ file, className, children, onOpen }) {
   const [url, setUrl] = useState('');
@@ -86,6 +148,12 @@ export default function Boats() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState('');
+  const [workDateKeys, setWorkDateKeys] = useState([]);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const workDateSet = useMemo(() => new Set(workDateKeys), [workDateKeys]);
   const typeOptions = (() => {
     const base = Array.isArray(boatTypes) ? boatTypes : [];
     const currentId = String(form.type_id || '');
@@ -148,15 +216,50 @@ export default function Boats() {
       status: b.status || 'active',
       amenities: Array.isArray(b.amenities) ? b.amenities : [],
       schedule_min_duration: b.schedule_min_duration ?? 60,
-      schedule_work_days: Array.isArray(b.schedule_work_days) ? JSON.stringify(b.schedule_work_days, null, 0) : '[]',
       schedule_weekday_hours: Array.isArray(b.schedule_weekday_hours) ? JSON.stringify(b.schedule_weekday_hours, null, 0) : '[]',
       schedule_weekend_hours: Array.isArray(b.schedule_weekend_hours) ? JSON.stringify(b.schedule_weekend_hours, null, 0) : '[]',
       price_tiers: Array.isArray(b.price_tiers) ? JSON.stringify(b.price_tiers, null, 0) : '[]',
     });
     setPhotos({ keep: Array.isArray(b.photos) ? [...b.photos] : [], newFiles: [] });
     setVideos({ keep: Array.isArray(b.video_uris) ? [...b.video_uris] : [], newFiles: [] });
+    const keys = parseScheduleWorkDaysToKeys(b.schedule_work_days);
+    setWorkDateKeys(keys);
+    if (keys.length > 0) {
+      const parts = keys[0].split('-').map(Number);
+      const [y, mo] = parts;
+      setCalendarMonth(new Date(y, mo - 1, 1));
+    } else {
+      const d = new Date();
+      setCalendarMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+    }
     setError('');
   };
+
+  const toggleWorkDate = (date) => {
+    const key = toDateKey(date);
+    setWorkDateKeys((prev) => {
+      const s = new Set(prev);
+      if (s.has(key)) s.delete(key);
+      else s.add(key);
+      return [...s].sort();
+    });
+  };
+
+  const selectAllWorkDaysInMonth = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const grid = getCalendarGrid(calendarMonth);
+    const keys = grid
+      .filter(({ date, isCurrentMonth }) => isCurrentMonth && date >= today)
+      .map(({ date }) => toDateKey(date));
+    setWorkDateKeys((prev) => {
+      const next = new Set(prev);
+      keys.forEach((k) => next.add(k));
+      return [...next].sort();
+    });
+  };
+
+  const clearAllWorkDays = () => setWorkDateKeys([]);
 
   const removePhoto = (url) => {
     setPhotos((p) => ({ ...p, keep: p.keep.filter((u) => u !== url) }));
@@ -247,7 +350,11 @@ export default function Boats() {
       formData.append('cancellation_policy', form.cancellation_policy);
       formData.append('instant_booking', form.instant_booking ? '1' : '0');
       formData.append('schedule_min_duration', String(form.schedule_min_duration));
-      formData.append('schedule_work_days', typeof form.schedule_work_days === 'string' ? form.schedule_work_days : JSON.stringify(form.schedule_work_days || []));
+      const sortedWorkKeys = [...workDateKeys].sort();
+      const scheduleWorkDays = sortedWorkKeys.length > 0
+        ? { dates: sortedWorkKeys }
+        : { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: false };
+      formData.append('schedule_work_days', JSON.stringify(scheduleWorkDays));
       formData.append('schedule_weekday_hours', typeof form.schedule_weekday_hours === 'string' ? form.schedule_weekday_hours : JSON.stringify(form.schedule_weekday_hours || []));
       formData.append('schedule_weekend_hours', typeof form.schedule_weekend_hours === 'string' ? form.schedule_weekend_hours : JSON.stringify(form.schedule_weekend_hours || []));
       formData.append('price_tiers', typeof form.price_tiers === 'string' ? form.price_tiers : JSON.stringify(form.price_tiers || []));
@@ -489,8 +596,54 @@ export default function Boats() {
               <textarea className={modalStyles.input} rows={2} value={form.price_tiers} onChange={(e) => setForm({ ...form, price_tiers: e.target.value })} placeholder='[{"hours":2,"price":5000}]' />
             </div>
             <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Расписание: рабочие дни (JSON)</label>
-              <textarea className={modalStyles.input} rows={1} value={form.schedule_work_days} onChange={(e) => setForm({ ...form, schedule_work_days: e.target.value })} placeholder="[]" />
+              <label className={modalStyles.label}>Расписание: рабочие дни</label>
+              <p className={modalStyles.workCalHint} style={{ marginTop: 0 }}>Выберите даты, когда катер доступен для аренды (как в приложении владельца).</p>
+              <div className={modalStyles.workCalWrap}>
+                <div className={modalStyles.workCalMonthRow}>
+                  <button type="button" className={modalStyles.workCalArrow} onClick={() => setCalendarMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))} aria-label="Предыдущий месяц">‹</button>
+                  <p className={modalStyles.workCalMonthTitle}>{calendarMonth.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}</p>
+                  <button type="button" className={modalStyles.workCalArrow} onClick={() => setCalendarMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))} aria-label="Следующий месяц">›</button>
+                </div>
+                <div className={modalStyles.workCalWeekdays}>
+                  {WEEKDAY_LABELS.map((label, i) => (
+                    <div key={label} className={`${modalStyles.workCalWeekday} ${i === 5 || i === 6 ? modalStyles.workCalWeekdayWeekend : ''}`}>{label}</div>
+                  ))}
+                </div>
+                <div className={modalStyles.workCalGrid}>
+                  {getCalendarGrid(calendarMonth).map(({ date, isCurrentMonth }, idx) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const isPast = date < today;
+                    const key = toDateKey(date);
+                    const selected = workDateSet.has(key);
+                    const selectable = isCurrentMonth && !isPast;
+                    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                    let dayClass = modalStyles.workCalDay;
+                    if (!isCurrentMonth) dayClass += ` ${modalStyles.workCalDayOther}`;
+                    else if (!selectable) dayClass += ` ${modalStyles.workCalDayPast}`;
+                    else dayClass += ` ${modalStyles.workCalDaySelectable}`;
+                    if (selected) dayClass += isWeekend ? ` ${modalStyles.workCalDaySelectedWeekend}` : ` ${modalStyles.workCalDaySelected}`;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        className={dayClass}
+                        disabled={!selectable}
+                        onClick={() => selectable && toggleWorkDate(date)}
+                      >
+                        {date.getDate()}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className={modalStyles.workCalActions}>
+                  <button type="button" className={modalStyles.workCalActionBtn} onClick={selectAllWorkDaysInMonth}>Выбрать все</button>
+                  <button type="button" className={modalStyles.workCalActionBtn} onClick={clearAllWorkDays}>Очистить все</button>
+                </div>
+              </div>
+              {workDateKeys.length > 0 && (
+                <p className={modalStyles.workCalHint}>Выбрано дней: {workDateKeys.length}</p>
+              )}
             </div>
             <div className={modalStyles.formRow}>
               <label className={modalStyles.label}>Часы работы в будни (JSON)</label>
