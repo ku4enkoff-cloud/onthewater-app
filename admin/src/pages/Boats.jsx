@@ -645,165 +645,190 @@ export default function Boats() {
       </div>
 
       {editing && (
-        <Modal title="Редактировать катер" wide onClose={() => setEditing(null)}>
-          <form onSubmit={handleSave}>
-            {error && <p className={modalStyles.error}>{error}</p>}
-            <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Название</label>
-              <input className={modalStyles.input} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-            </div>
-            <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Описание</label>
-              <textarea className={modalStyles.input} rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-            </div>
-            <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Тип судна</label>
-              <select
-                className={modalStyles.select}
-                value={String(form.type_id || '')}
-                onChange={(e) => {
-                  const selectedId = String(e.target.value || '');
-                  const selectedType = boatTypes.find((t) => String(t.id) === selectedId);
-                  setForm({
-                    ...form,
-                    type_id: selectedId,
-                    type_name: selectedType?.name || form.type_name || 'Катер',
-                  });
-                }}
-              >
-                {typeOptions.length === 0 ? (
-                  <option value={String(form.type_id || '')}>{form.type_name || 'Катер'}</option>
-                ) : (
-                  typeOptions.map((t) => (
-                    <option key={t.id} value={String(t.id)}>
-                      {t.name || `Тип #${t.id}`}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-            <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Характеристики судна</label>
-              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                <div className={modalStyles.formRow} style={{ flex: '1 1 140px', marginBottom: 0 }}>
-                  <label className={modalStyles.label}>Производитель</label>
-                  <input className={modalStyles.input} value={form.manufacturer} onChange={(e) => setForm({ ...form, manufacturer: e.target.value })} />
+        <Modal
+          title="Редактирование катера"
+          subtitle={editing.title ? `${editing.title} · #${editing.id}` : `Запись #${editing.id}`}
+          wide
+          onClose={() => setEditing(null)}
+        >
+          <form onSubmit={handleSave} className={modalStyles.boatForm}>
+            <div className={modalStyles.boatFormScroll}>
+              {error && <p className={modalStyles.error}>{error}</p>}
+              <section className={modalStyles.formSection}>
+                <h3 className={modalStyles.sectionHeading}>Основное</h3>
+                <p className={modalStyles.sectionLead}>Название, описание и тип судна в каталоге.</p>
+                <div className={modalStyles.formRow}>
+                  <label className={modalStyles.label}>Название</label>
+                  <input className={modalStyles.input} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
                 </div>
-                <div className={modalStyles.formRow} style={{ flex: '1 1 140px', marginBottom: 0 }}>
-                  <label className={modalStyles.label}>Модель</label>
-                  <input className={modalStyles.input} value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} />
+                <div className={modalStyles.formRow}>
+                  <label className={modalStyles.label}>Описание</label>
+                  <textarea className={modalStyles.input} rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
                 </div>
-                <div className={modalStyles.formRow} style={{ flex: '1 1 90px', marginBottom: 0 }}>
-                  <label className={modalStyles.label}>Год</label>
-                  <input className={modalStyles.input} value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} />
+                <div className={modalStyles.formRow}>
+                  <label className={modalStyles.label}>Тип судна</label>
+                  <select
+                    className={modalStyles.select}
+                    value={String(form.type_id || '')}
+                    onChange={(e) => {
+                      const selectedId = String(e.target.value || '');
+                      const selectedType = boatTypes.find((t) => String(t.id) === selectedId);
+                      setForm({
+                        ...form,
+                        type_id: selectedId,
+                        type_name: selectedType?.name || form.type_name || 'Катер',
+                      });
+                    }}
+                  >
+                    {typeOptions.length === 0 ? (
+                      <option value={String(form.type_id || '')}>{form.type_name || 'Катер'}</option>
+                    ) : (
+                      typeOptions.map((t) => (
+                        <option key={t.id} value={String(t.id)}>
+                          {t.name || `Тип #${t.id}`}
+                        </option>
+                      ))
+                    )}
+                  </select>
                 </div>
-                <div className={modalStyles.formRow} style={{ flex: '1 1 90px', marginBottom: 0 }}>
-                  <label className={modalStyles.label}>Длина (м)</label>
-                  <input className={modalStyles.input} value={form.length_m} onChange={(e) => setForm({ ...form, length_m: e.target.value })} />
+                <div className={modalStyles.formRow}>
+                  <label className={modalStyles.label}>Статус в каталоге</label>
+                  <select className={modalStyles.select} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+                    {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
                 </div>
-                <div className={modalStyles.formRow} style={{ flex: '1 1 90px', marginBottom: 0 }}>
-                  <label className={modalStyles.label}>Вместимость</label>
-                  <input className={modalStyles.input} value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
+              </section>
+              <section className={modalStyles.formSection}>
+                <h3 className={modalStyles.sectionHeading}>Судно и место</h3>
+                <p className={modalStyles.sectionLead}>Характеристики, адрес причала и координаты на карте.</p>
+                <div className={modalStyles.formRow}>
+                  <label className={modalStyles.label}>Характеристики</label>
+                  <div className={modalStyles.specsGrid}>
+                    <div className={modalStyles.fieldGroup}>
+                      <label className={modalStyles.label}>Производитель</label>
+                      <input className={modalStyles.input} value={form.manufacturer} onChange={(e) => setForm({ ...form, manufacturer: e.target.value })} />
+                    </div>
+                    <div className={modalStyles.fieldGroup}>
+                      <label className={modalStyles.label}>Модель</label>
+                      <input className={modalStyles.input} value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} />
+                    </div>
+                    <div className={modalStyles.fieldGroup}>
+                      <label className={modalStyles.label}>Год</label>
+                      <input className={modalStyles.input} value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} />
+                    </div>
+                    <div className={modalStyles.fieldGroup}>
+                      <label className={modalStyles.label}>Длина (м)</label>
+                      <input className={modalStyles.input} value={form.length_m} onChange={(e) => setForm({ ...form, length_m: e.target.value })} />
+                    </div>
+                    <div className={modalStyles.fieldGroup}>
+                      <label className={modalStyles.label}>Вместимость</label>
+                      <input className={modalStyles.input} value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Страна</label>
-              <input className={modalStyles.input} value={form.location_country} onChange={(e) => setForm({ ...form, location_country: e.target.value })} placeholder="Россия" />
-            </div>
-            <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Область</label>
-              <input className={modalStyles.input} value={form.location_region} onChange={(e) => setForm({ ...form, location_region: e.target.value })} placeholder="Московская" />
-            </div>
-            <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Город</label>
-              <input className={modalStyles.input} value={form.location_city} onChange={(e) => setForm({ ...form, location_city: e.target.value })} />
-            </div>
-            <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Улица, дом</label>
-              <input className={modalStyles.input} value={form.location_address} onChange={(e) => setForm({ ...form, location_address: e.target.value })} />
-            </div>
-            <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Яхт-клуб</label>
-              <input className={modalStyles.input} value={form.location_yacht_club} onChange={(e) => setForm({ ...form, location_yacht_club: e.target.value })} />
-            </div>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <div className={modalStyles.formRow} style={{ flex: 1 }}>
-                <label className={modalStyles.label}>Широта</label>
-                <input type="number" step="any" className={modalStyles.input} value={form.lat} onChange={(e) => setForm({ ...form, lat: e.target.value })} />
-              </div>
-              <div className={modalStyles.formRow} style={{ flex: 1 }}>
-                <label className={modalStyles.label}>Долгота</label>
-                <input type="number" step="any" className={modalStyles.input} value={form.lng} onChange={(e) => setForm({ ...form, lng: e.target.value })} />
-              </div>
-            </div>
-            <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Местоположение на Яндекс Картах</label>
-              {hasCoords ? (
-                <a href={yandexMapsUrl} target="_blank" rel="noreferrer" style={{ display: 'block' }}>
-                  <img
-                    src={yandexStaticMapUrl}
-                    alt="Местоположение судна на карте"
-                    style={{ width: '100%', borderRadius: 10, border: '1px solid #e2e8f0', display: 'block' }}
-                  />
-                </a>
-              ) : (
-                <p style={{ margin: 0, opacity: 0.75 }}>Укажите корректные широту и долготу, чтобы увидеть карту.</p>
-              )}
-            </div>
-            <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Статус</label>
-              <select className={modalStyles.select} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </div>
-            <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Удобства</label>
-              {amenitiesList.length > 0 ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem 0.75rem' }}>
-                  {amenitiesList.map((item) => {
-                    const checked = Array.isArray(form.amenities) && form.amenities.includes(item.name);
-                    return (
-                      <label key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleAmenity(item.name)}
-                        />
-                        <span>{item.name}</span>
-                      </label>
-                    );
-                  })}
+                <div className={modalStyles.locationGrid}>
+                  <div className={modalStyles.formRow} style={{ marginBottom: 0 }}>
+                    <label className={modalStyles.label}>Страна</label>
+                    <input className={modalStyles.input} value={form.location_country} onChange={(e) => setForm({ ...form, location_country: e.target.value })} placeholder="Россия" />
+                  </div>
+                  <div className={modalStyles.formRow} style={{ marginBottom: 0 }}>
+                    <label className={modalStyles.label}>Область</label>
+                    <input className={modalStyles.input} value={form.location_region} onChange={(e) => setForm({ ...form, location_region: e.target.value })} placeholder="Московская" />
+                  </div>
                 </div>
-              ) : (
-                <p style={{ margin: 0, opacity: 0.75 }}>Нет доступных удобств. Добавьте их в разделе «Удобства».</p>
-              )}
-            </div>
-            <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Правила</label>
-              <textarea className={modalStyles.input} rows={2} value={form.rules} onChange={(e) => setForm({ ...form, rules: e.target.value })} />
-            </div>
-            <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Порядок оплаты</label>
-              <textarea className={modalStyles.input} rows={2} value={form.payment_policy} onChange={(e) => setForm({ ...form, payment_policy: e.target.value })} />
-            </div>
-            <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Политика отмены</label>
-              <textarea className={modalStyles.input} rows={2} value={form.cancellation_policy} onChange={(e) => setForm({ ...form, cancellation_policy: e.target.value })} />
-            </div>
-            <div className={modalStyles.formRow}>
-              <label className={modalStyles.label}>Мин. длительность аренды</label>
-              <select
-                className={modalStyles.select}
-                value={form.schedule_min_duration}
-                onChange={(e) => setForm({ ...form, schedule_min_duration: Number(e.target.value) })}
-              >
-                {DURATION_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
-            <div className={modalStyles.formRow}>
+                <div className={modalStyles.formRow}>
+                  <label className={modalStyles.label}>Город</label>
+                  <input className={modalStyles.input} value={form.location_city} onChange={(e) => setForm({ ...form, location_city: e.target.value })} />
+                </div>
+                <div className={modalStyles.formRow}>
+                  <label className={modalStyles.label}>Улица, дом</label>
+                  <input className={modalStyles.input} value={form.location_address} onChange={(e) => setForm({ ...form, location_address: e.target.value })} />
+                </div>
+                <div className={modalStyles.formRow}>
+                  <label className={modalStyles.label}>Яхт-клуб</label>
+                  <input className={modalStyles.input} value={form.location_yacht_club} onChange={(e) => setForm({ ...form, location_yacht_club: e.target.value })} />
+                </div>
+                <div className={modalStyles.locationGrid}>
+                  <div className={modalStyles.formRow} style={{ marginBottom: 0 }}>
+                    <label className={modalStyles.label}>Широта</label>
+                    <input type="number" step="any" className={modalStyles.input} value={form.lat} onChange={(e) => setForm({ ...form, lat: e.target.value })} />
+                  </div>
+                  <div className={modalStyles.formRow} style={{ marginBottom: 0 }}>
+                    <label className={modalStyles.label}>Долгота</label>
+                    <input type="number" step="any" className={modalStyles.input} value={form.lng} onChange={(e) => setForm({ ...form, lng: e.target.value })} />
+                  </div>
+                </div>
+                <div className={modalStyles.formRow}>
+                  <label className={modalStyles.label}>Карта</label>
+                  {hasCoords ? (
+                    <a href={yandexMapsUrl} target="_blank" rel="noreferrer" className={modalStyles.mapCard}>
+                      <img
+                        src={yandexStaticMapUrl}
+                        alt="Местоположение судна на карте"
+                      />
+                    </a>
+                  ) : (
+                    <p className={modalStyles.sectionLead} style={{ marginBottom: 0 }}>Укажите широту и долготу, чтобы увидеть превью карты.</p>
+                  )}
+                </div>
+              </section>
+              <section className={modalStyles.formSection}>
+                <h3 className={modalStyles.sectionHeading}>Удобства</h3>
+                <p className={modalStyles.sectionLead}>Оборудование и сервис на борту.</p>
+                <div className={modalStyles.formRow}>
+                  {amenitiesList.length > 0 ? (
+                    <div className={modalStyles.amenityGrid}>
+                      {amenitiesList.map((item) => {
+                        const checked = Array.isArray(form.amenities) && form.amenities.includes(item.name);
+                        return (
+                          <label key={item.id} className={modalStyles.amenityItem}>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleAmenity(item.name)}
+                            />
+                            <span>{item.name}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className={modalStyles.sectionLead} style={{ marginBottom: 0 }}>Нет доступных удобств — добавьте их в разделе «Удобства».</p>
+                  )}
+                </div>
+              </section>
+              <section className={modalStyles.formSection}>
+                <h3 className={modalStyles.sectionHeading}>Условия аренды</h3>
+                <p className={modalStyles.sectionLead}>Правила, оплата и отмена для арендаторов.</p>
+                <div className={modalStyles.formRow}>
+                  <label className={modalStyles.label}>Правила</label>
+                  <textarea className={modalStyles.input} rows={2} value={form.rules} onChange={(e) => setForm({ ...form, rules: e.target.value })} />
+                </div>
+                <div className={modalStyles.formRow}>
+                  <label className={modalStyles.label}>Порядок оплаты</label>
+                  <textarea className={modalStyles.input} rows={2} value={form.payment_policy} onChange={(e) => setForm({ ...form, payment_policy: e.target.value })} />
+                </div>
+                <div className={modalStyles.formRow}>
+                  <label className={modalStyles.label}>Политика отмены</label>
+                  <textarea className={modalStyles.input} rows={2} value={form.cancellation_policy} onChange={(e) => setForm({ ...form, cancellation_policy: e.target.value })} />
+                </div>
+              </section>
+              <section className={modalStyles.formSection}>
+                <h3 className={modalStyles.sectionHeading}>Цены и расписание</h3>
+                <p className={modalStyles.sectionLead}>Минимальный слот аренды, тарифы, календарь доступности и часы приёма.</p>
+                <div className={modalStyles.formRow}>
+                  <label className={modalStyles.label}>Мин. длительность аренды</label>
+                  <select
+                    className={modalStyles.select}
+                    value={form.schedule_min_duration}
+                    onChange={(e) => setForm({ ...form, schedule_min_duration: Number(e.target.value) })}
+                  >
+                    {DURATION_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className={`${modalStyles.formRow} ${modalStyles.pricingBlock}`}>
               <div className={modalStyles.pricingSectionTitle}>Стоимость аренды</div>
               <p className={modalStyles.workCalHint} style={{ marginTop: 0 }}>
                 Цена за {minDurationLabel} (будни).
@@ -820,9 +845,9 @@ export default function Boats() {
                 />
                 <span className={modalStyles.priceSuffix}>₽ / {minDurationLabel}</span>
               </div>
-            </div>
+                </div>
             {hasWeekendSelected && (
-              <div className={modalStyles.formRow}>
+              <div className={`${modalStyles.formRow} ${modalStyles.pricingBlock}`}>
                 <div className={modalStyles.pricingSectionTitle}>Цена в выходные (Сб–Вс)</div>
                 <p className={modalStyles.workCalHint} style={{ marginTop: 0 }}>
                   Другая цена за {minDurationLabel}.
@@ -839,9 +864,9 @@ export default function Boats() {
                   />
                   <span className={modalStyles.priceSuffix}>₽ / {minDurationLabel}</span>
                 </div>
-              </div>
+                </div>
             )}
-            <div className={modalStyles.formRow}>
+                <div className={`${modalStyles.formRow} ${modalStyles.pricingBlock}`}>
               <div className={modalStyles.pricingSectionTitle}>Стоимость за другое время</div>
               <p className={modalStyles.workCalHint} style={{ marginTop: 0 }}>
                 Дополнительные тарифы по длительности (как в приложении владельца).
@@ -901,7 +926,7 @@ export default function Boats() {
               <button type="button" className={modalStyles.addTierBtn} onClick={addPriceTier}>
                 + Добавить стоимость
               </button>
-            </div>
+                </div>
             <div className={modalStyles.formRow}>
               <label className={modalStyles.label}>Цена за сутки (₽, необязательно)</label>
               <input
@@ -911,6 +936,8 @@ export default function Boats() {
                 placeholder=""
               />
             </div>
+                <div className={modalStyles.scheduleCluster}>
+                  <div>
             <div className={modalStyles.formRow}>
               <label className={modalStyles.label}>Расписание: рабочие дни</label>
               <p className={modalStyles.workCalHint} style={{ marginTop: 0 }}>Выберите даты, когда катер доступен для аренды (как в приложении владельца).</p>
@@ -961,6 +988,8 @@ export default function Boats() {
                 <p className={modalStyles.workCalHint}>Выбрано дней: {workDateKeys.length}</p>
               )}
             </div>
+                  </div>
+                  <div className={modalStyles.hoursCluster}>
             <div className={modalStyles.formRow}>
               <label className={modalStyles.label}>Часы работы (будни)</label>
               <div className={modalStyles.hoursRow}>
@@ -1005,6 +1034,12 @@ export default function Boats() {
                 </div>
               </div>
             </div>
+                  </div>
+                </div>
+              </section>
+              <section className={modalStyles.formSection}>
+                <h3 className={modalStyles.sectionHeading}>Медиа</h3>
+                <p className={modalStyles.sectionLead}>Фото и видео для карточки катера.</p>
             <div className={modalStyles.formRow}>
               <label className={modalStyles.label}>Фотографии</label>
               <div className={modalStyles.photosRow}>
@@ -1051,27 +1086,31 @@ export default function Boats() {
                 </label>
               </div>
             </div>
-            <div className={modalStyles.formRow}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                <input type="checkbox" checked={form.captain_included} onChange={(e) => setForm({ ...form, captain_included: e.target.checked })} />
-                Капитан включён
-              </label>
+              </section>
+              <section className={modalStyles.formSection}>
+                <h3 className={modalStyles.sectionHeading}>Параметры бронирования</h3>
+                <p className={modalStyles.sectionLead}>Капитан и мгновенное подтверждение заявок.</p>
+                <div className={modalStyles.checkboxCards}>
+                  <label className={modalStyles.checkboxCard}>
+                    <input type="checkbox" checked={form.captain_included} onChange={(e) => setForm({ ...form, captain_included: e.target.checked })} />
+                    <span>Капитан включён в стоимость</span>
+                  </label>
+                  <label className={modalStyles.checkboxCard}>
+                    <input type="checkbox" checked={form.has_captain_option} onChange={(e) => setForm({ ...form, has_captain_option: e.target.checked })} />
+                    <span>Опция «с капитаном» доступна</span>
+                  </label>
+                  <label className={modalStyles.checkboxCard}>
+                    <input type="checkbox" checked={form.instant_booking} onChange={(e) => setForm({ ...form, instant_booking: e.target.checked })} />
+                    <span>Мгновенное бронирование без подтверждения владельца</span>
+                  </label>
+                </div>
+              </section>
             </div>
-            <div className={modalStyles.formRow}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                <input type="checkbox" checked={form.has_captain_option} onChange={(e) => setForm({ ...form, has_captain_option: e.target.checked })} />
-                Опция с капитаном
-              </label>
-            </div>
-            <div className={modalStyles.formRow}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                <input type="checkbox" checked={form.instant_booking} onChange={(e) => setForm({ ...form, instant_booking: e.target.checked })} />
-                Мгновенное бронирование
-              </label>
-            </div>
-            <div className={modalStyles.actions}>
-              <button type="button" className={`${modalStyles.btn} ${modalStyles.btnSecondary}`} onClick={() => setEditing(null)}>Отмена</button>
-              <button type="submit" className={modalStyles.btn} disabled={saving}>{saving ? 'Сохранение…' : 'Сохранить'}</button>
+            <div className={modalStyles.boatFormFooter}>
+              <div className={modalStyles.actions}>
+                <button type="button" className={`${modalStyles.btn} ${modalStyles.btnSecondary}`} onClick={() => setEditing(null)}>Отмена</button>
+                <button type="submit" className={modalStyles.btn} disabled={saving}>{saving ? 'Сохранение…' : 'Сохранить'}</button>
+              </div>
             </div>
           </form>
         </Modal>
