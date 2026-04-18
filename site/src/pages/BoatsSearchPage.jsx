@@ -600,12 +600,19 @@ export default function BoatsSearchPage() {
                     {mapPickCandidates.map((c) => (
                       <li key={String(c.id)}>
                         <button type="button" className="bs-mapPickBtn" onClick={() => finishMapPick(c.id)}>
-                          <span className="bs-mapPickBtn__title">{c.title}</span>
-                          {c.priceLine ? (
-                            <span className="bs-mapPickBtn__price">{c.priceLine}</span>
-                          ) : null}
-                          {c.minTimeLine ? (
-                            <span className="bs-mapPickBtn__min">{c.minTimeLine}</span>
+                          <span className="bs-mapPickBtn__body">
+                            <span className="bs-mapPickBtn__title">{c.title}</span>
+                            {c.priceLine ? (
+                              <span className="bs-mapPickBtn__price">{c.priceLine}</span>
+                            ) : null}
+                            {c.minTimeLine ? (
+                              <span className="bs-mapPickBtn__min">{c.minTimeLine}</span>
+                            ) : null}
+                          </span>
+                          {c.photoUrl ? (
+                            <span className="bs-mapPickBtn__thumb">
+                              <img src={c.photoUrl} alt="" loading="lazy" />
+                            </span>
                           ) : null}
                         </button>
                       </li>

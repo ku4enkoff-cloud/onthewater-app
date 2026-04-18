@@ -1,11 +1,16 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { loadYandexMaps } from '../../lib/yandexMaps'
+import { getPhotoUrl } from '../../config'
+import { firstPhotoUrl } from '../../boatUtils'
 import {
   formatDurationChipLabel,
   formatDurationListLabel,
   getExactPriceForDuration,
   radiusKmFromBounds,
 } from '../../boatSearchUtils'
+
+const PICK_THUMB_PLACEHOLDER =
+  'https://placehold.co/144x96/e8eef4/64748b?text=%D0%9A%D0%B0%D1%82%D0%B5%D1%80'
 
 function debounce(fn, ms) {
   let t
@@ -36,6 +41,7 @@ function buildPickCandidate(boat, durationFilter) {
     title: boat.title || 'Катер',
     priceLine: `от ${n.toLocaleString('ru-RU')} ₽ / ${formatDurationChipLabel(activeDuration)}`,
     minTimeLine: `минимум ${formatDurationListLabel(minDur)}`,
+    photoUrl: firstPhotoUrl(boat, getPhotoUrl) || PICK_THUMB_PLACEHOLDER,
   }
 }
 
