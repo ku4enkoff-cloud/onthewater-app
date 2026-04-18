@@ -18,6 +18,7 @@ import {
   pluralizeReviews,
 } from '../boatSearchUtils'
 import BookingCalendarModal, { formatBookingDateRu } from '../components/booking/BookingCalendarModal.jsx'
+import BookingRequestModal from '../components/booking/BookingRequestModal.jsx'
 
 const PLACEHOLDER = 'https://placehold.co/1200x750/e8eef4/64748b?text=%D0%9A%D0%B0%D1%82%D0%B5%D1%80'
 const DESC_PREVIEW = 480
@@ -129,6 +130,7 @@ export default function BoatDetailPage() {
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [favorite, setFavorite] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
+  const [bookingRequestOpen, setBookingRequestOpen] = useState(false)
   const galleryTouchRef = useRef({ x: 0, y: 0 })
 
   useEffect(() => {
@@ -356,6 +358,20 @@ export default function BoatDetailPage() {
         onApply={(iso) => setBookDate(iso)}
       />
 
+      <BookingRequestModal
+        open={bookingRequestOpen}
+        onClose={() => setBookingRequestOpen(false)}
+        boat={boat}
+        boatId={resolvedId}
+        bookDate={bookDate}
+        onBookDateChange={setBookDate}
+        bookDuration={bookDuration}
+        onBookDurationChange={setBookDuration}
+        tiers={tiers}
+        minDate={todayISO()}
+        heroImage={photos[0] || undefined}
+      />
+
       <div className="bd-shell">
         <div className="bd-topZone">
           <div className="bd-topZone__media">
@@ -505,9 +521,13 @@ export default function BoatDetailPage() {
                 </select>
               </div>
 
-              <a href={appBookingUrl} className="bd-bookCard__cta bd-bookCard__cta--bs" target="_blank" rel="noopener noreferrer">
-                Запросить бронь
-              </a>
+              <button
+                type="button"
+                className="bd-bookCard__cta bd-bookCard__cta--bs"
+                onClick={() => setBookingRequestOpen(true)}
+              >
+                Забронировать
+              </button>
               <p className="bd-bookCard__hint">Оформление и оплата — в приложении ONTHEWATER.</p>
               <hr className="bd-bookCard__rule" />
               <ul className="bd-bookCard__termsList">
