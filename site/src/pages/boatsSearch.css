@@ -49,12 +49,152 @@
 
 .bs-top {
   flex-shrink: 0;
+  position: relative;
+  z-index: 40;
   border-bottom: 1px solid #e2e8f0;
   padding: 12px 20px;
   display: flex;
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
+}
+
+.bs-topLead {
+  display: contents;
+}
+
+.bs-navToggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #002b5b;
+  cursor: pointer;
+  padding: 0;
+}
+
+.bs-navToggle:hover {
+  background: #f1f5f9;
+}
+
+.bs-navBackdrop {
+  display: none;
+}
+
+.bs-mobileNav {
+  display: none;
+}
+
+.bs-mobileNavInner {
+  padding: 4px 2px 2px;
+}
+
+.bs-mobileNavEyebrow {
+  margin: 0 0 10px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.bs-mobileNavLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bs-mobileNavLinks a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 14px 14px 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.bs-mobileNavLinks a::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  margin-top: -2px;
+  border-right: 2px solid #94a3b8;
+  border-bottom: 2px solid #94a3b8;
+  transform: rotate(-45deg);
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.bs-mobileNavLinks a:hover,
+.bs-mobileNavLinks a:focus-visible {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  outline: none;
+}
+
+.bs-mobileNavActions {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.bs-mobileNavMuted {
+  display: block;
+  padding: 4px 4px 12px;
+  margin-bottom: 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #334155;
+  text-decoration: none;
+}
+
+.bs-mobileNavBtns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bs-mobileNavBtn {
+  display: block;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 18px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.bs-mobileNavBtn--primary {
+  border: 0;
+  background: linear-gradient(150deg, #1a8fff 0%, #0061c1 48%, #004a96 100%);
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(0, 97, 193, 0.35);
+}
+
+.bs-mobileNavBtn--secondary {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #002b5b;
+}
+
+.bs-mobileNavBtn--secondary:hover {
+  background: #f8fafc;
 }
 
 .bs-top__logo {
@@ -870,19 +1010,88 @@
   }
 }
 
+@media (min-width: 1024px) {
+  .bs-topLead {
+    display: contents;
+  }
+
+  .bs-navToggle,
+  .bs-navBackdrop,
+  .bs-mobileNav {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  .bs-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .bs-topLead {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: relative;
+    z-index: 12;
+  }
+
+  .bs-navToggle {
+    display: inline-flex !important;
+  }
+
+  .bs-top__authDesktop {
+    display: none !important;
+  }
+
+  .bs-navBackdrop {
+    display: block !important;
+    position: fixed;
+    inset: 0;
+    z-index: 8;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: rgba(15, 23, 42, 0.35);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    cursor: pointer;
+  }
+
+  .bs-mobileNav {
+    display: block !important;
+    position: relative;
+    z-index: 9;
+    width: 100%;
+    max-height: 0;
+    overflow: hidden;
+    transition:
+      max-height 0.35s cubic-bezier(0.33, 1, 0.68, 1),
+      padding 0.25s ease;
+    padding: 0;
+    margin-top: 0;
+    border-radius: 14px;
+    border: 1px solid transparent;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  .bs-mobileNav--open {
+    max-height: min(520px, 82vh);
+    padding: 10px 12px 14px;
+    margin-top: 0;
+    border-color: #e2e8f0;
+    box-shadow: 0 12px 36px rgba(15, 23, 42, 0.12);
+  }
+}
+
 @media (max-width: 640px) {
   .bs-searchBar {
     width: 100%;
     max-width: none;
-    order: 3;
-  }
-
-  .bs-top {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .bs-top__auth {
-    justify-content: flex-end;
   }
 }

@@ -98,6 +98,22 @@ function SearchBarSelectChevron() {
   )
 }
 
+function MenuIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function CloseIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 function todayISO() {
   const d = new Date()
   const y = d.getFullYear()
@@ -125,6 +141,7 @@ export default function BoatsSearchPage() {
   const [filtersModalKey, setFiltersModalKey] = useState(0)
   const [filtersModalFocus, setFiltersModalFocus] = useState(null)
   const [filterDropdown, setFilterDropdown] = useState(null)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   const priceFilterAnchorRef = useRef(null)
   const guestsFilterAnchorRef = useRef(null)
@@ -168,9 +185,26 @@ export default function BoatsSearchPage() {
         } else {
           list = await fetchBoatsSearch({ city: locationKey })
         }
-        if (!cancelled) setAllBoats(list)
+        if (!cancelled) {
+          setAllBoats(list)
+          const onDate = filterBoatsByScheduleOnDate(list, dateStr)
+          const pr = computePriceRange(onDate)
+          setFilters((prev) => ({
+            ...prev,
+            priceLow: pr.min,
+            priceHigh: pr.max,
+          }))
+        }
       } catch {
-        if (!cancelled) setAllBoats([])
+        if (!cancelled) {
+          setAllBoats([])
+          const pr = computePriceRange([])
+          setFilters((prev) => ({
+            ...prev,
+            priceLow: pr.min,
+            priceHigh: pr.max,
+          }))
+        }
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -252,8 +286,18 @@ export default function BoatsSearchPage() {
   const isDurationActive = Boolean(filters.duration)
   const isCaptainActive = Boolean(filters.captain)
 
+  useEffect(() => {
+    document.body.style.overflow = mobileNavOpen ? 'hidden' : ''
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [mobileNavOpen])
+
+  const closeMobileNav = () => setMobileNavOpen(false)
+
   const openFiltersModal = (focusSection) => {
     setFilterDropdown(null)
+    setMobileNavOpen(false)
     setFiltersModalFocus(focusSection ?? null)
     setFiltersModalKey((k) => k + 1)
     setFiltersModalOpen(true)
@@ -261,6 +305,7 @@ export default function BoatsSearchPage() {
 
   const toggleFilterDropdown = useCallback((key) => {
     setFiltersModalOpen(false)
+    setMobileNavOpen(false)
     setFilterDropdown((prev) => (prev === key ? null : key))
   }, [])
 
@@ -334,19 +379,103 @@ export default function BoatsSearchPage() {
   return (
     <div className="bs-page">
       <header className="bs-top">
-        <Link to="/" className="bs-top__logo" aria-label="ONTHEWATER на главную">
-          <svg viewBox="0 0 40 40" width="36" height="36" fill="none" aria-hidden>
-            <circle cx="20" cy="20" r="19" fill="#0061C1" />
-            <path
-              d="M8 22c3-4 7-6 12-6s9 2 12 6"
-              stroke="#fff"
-              strokeWidth="2"
-              strokeLinecap="round"
-              fill="none"
-            />
-          </svg>
-          onthewater
-        </Link>
+        <div className="bs-topLead">
+          <Link
+            to="/"
+            className="bs-top__logo"
+            aria-label="ONTHEWATER на главную"
+            onClick={closeMobileNav}
+          >
+            <svg viewBox="0 0 40 40" width="36" height="36" fill="none" aria-hidden>
+              <circle cx="20" cy="20" r="19" fill="#0061C1" />
+              <path
+                d="M8 22c3-4 7-6 12-6s9 2 12 6"
+                stroke="#fff"
+                strokeWidth="2"
+                strokeLinecap="round"
+                fill="none"
+              />
+            </svg>
+            onthewater
+          </Link>
+          <button
+            type="button"
+            className="bs-navToggle"
+            aria-expanded={mobileNavOpen}
+            aria-controls="bs-mobile-menu"
+            aria-label={mobileNavOpen ? 'Закрыть меню' : 'Открыть меню'}
+            onClick={() => setMobileNavOpen((o) => !o)}
+          >
+            {mobileNavOpen ? <CloseIcon /> : <MenuIcon />}
+          </button>
+        </div>
+
+        {mobileNavOpen ? (
+          <button
+            type="button"
+            className="bs-navBackdrop"
+            aria-label="Закрыть меню"
+            onClick={closeMobileNav}
+          />
+        ) : null}
+
+        <div
+          id="bs-mobile-menu"
+          className={`bs-mobileNav${mobileNavOpen ? ' bs-mobileNav--open' : ''}`}
+          aria-hidden={!mobileNavOpen}
+        >
+          <div className="bs-mobileNavInner">
+            <p className="bs-mobileNavEyebrow">Разделы</p>
+            <nav className="bs-mobileNavLinks" aria-label="Меню (мобильная версия)">
+              <Link to="/" onClick={closeMobileNav}>
+                Главная
+              </Link>
+              <Link to="/boats" onClick={closeMobileNav}>
+                Катера
+              </Link>
+              <a href="/#how" onClick={closeMobileNav}>
+                Как это работает
+              </a>
+              <a href="/#destinations" onClick={closeMobileNav}>
+                Направления
+              </a>
+              <a href="/#contact" onClick={closeMobileNav}>
+                Контакты
+              </a>
+            </nav>
+            <div className="bs-mobileNavActions">
+              <a
+                href={SITE_MAIN_URL}
+                className="bs-mobileNavMuted"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={closeMobileNav}
+              >
+                Разместить объявление
+              </a>
+              <div className="bs-mobileNavBtns">
+                <a
+                  href={SITE_MAIN_URL}
+                  className="bs-mobileNavBtn bs-mobileNavBtn--primary"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={closeMobileNav}
+                >
+                  Регистрация
+                </a>
+                <a
+                  href={SITE_MAIN_URL}
+                  className="bs-mobileNavBtn bs-mobileNavBtn--secondary"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={closeMobileNav}
+                >
+                  Вход
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div className="bs-searchBar" role="search">
           <div className="bs-searchBar__field bs-searchBar__field--location">
@@ -379,7 +508,7 @@ export default function BoatsSearchPage() {
           </button>
         </div>
 
-        <div className="bs-top__auth">
+        <div className="bs-top__auth bs-top__authDesktop">
           <a href={SITE_MAIN_URL} target="_blank" rel="noopener noreferrer">
             Регистрация
           </a>
