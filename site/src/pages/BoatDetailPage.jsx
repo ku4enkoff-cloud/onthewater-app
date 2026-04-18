@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { boatDetailPath, boatUrlSegment, parseBoatUrlParam } from '../boatUrl'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import './boatDetail.css'
