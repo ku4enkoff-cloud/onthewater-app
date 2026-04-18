@@ -37,6 +37,7 @@ export default function BoatResultCard({ boat, filters, selected, onHover, onLea
 
   return (
     <article
+      id={boat.id != null ? `bs-boat-${boat.id}` : undefined}
       className={`bs-card${selected ? ' bs-card--selected' : ''}`}
       onMouseEnter={() => onHover?.(boat.id)}
       onMouseLeave={() => onLeave?.()}

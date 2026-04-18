@@ -28,6 +28,7 @@ export default function YandexBoatsMap({
   searchOnMove,
   autoFitBounds,
   onGeoSearch,
+  onPlacemarkClick,
   filters,
 }) {
   const containerRef = useRef(null)
@@ -37,6 +38,7 @@ export default function YandexBoatsMap({
   const [mapReady, setMapReady] = useState(false)
   const onGeoSearchRef = useRef(onGeoSearch)
   const searchOnMoveRef = useRef(searchOnMove)
+  const onPlacemarkClickRef = useRef(onPlacemarkClick)
 
   useEffect(() => {
     onGeoSearchRef.current = onGeoSearch
@@ -44,6 +46,9 @@ export default function YandexBoatsMap({
   useEffect(() => {
     searchOnMoveRef.current = searchOnMove
   }, [searchOnMove])
+  useEffect(() => {
+    onPlacemarkClickRef.current = onPlacemarkClick
+  }, [onPlacemarkClick])
 
   const onActionEndRef = useRef(null)
   useEffect(() => {
@@ -156,6 +161,9 @@ export default function YandexBoatsMap({
           },
         },
       )
+      pm.events.add('click', () => {
+        onPlacemarkClickRef.current?.(boat.id)
+      })
       map.geoObjects.add(pm)
       placemarksRef.current.set(id, pm)
     }

@@ -241,6 +241,15 @@ export default function BoatsSearchPage() {
     setFiltersModalOpen(true)
   }
 
+  const handleMapBoatClick = useCallback((boatId) => {
+    if (boatId == null) return
+    setSelectedBoatId(boatId)
+    queueMicrotask(() => {
+      const el = document.getElementById(`bs-boat-${boatId}`)
+      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    })
+  }, [])
+
   const categoryItems = useMemo(() => {
     if (apiTypes.length > 0) {
       return apiTypes.map((t) => ({
@@ -540,6 +549,7 @@ export default function BoatsSearchPage() {
               searchOnMove={searchOnMove}
               autoFitBounds={!searchOnMove}
               onGeoSearch={handleGeoSearch}
+              onPlacemarkClick={handleMapBoatClick}
               filters={filters}
             />
           </div>
