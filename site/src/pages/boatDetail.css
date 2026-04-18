@@ -145,43 +145,47 @@
   }
 }
 
-/* Верхняя зона: галерея + плавающая карточка справа + заголовок слева (Boatsetter) */
+/* Верхняя зона: слева фото + миниатюры, справа карточка брони с отступом */
 .bd-topZone {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
-  column-gap: 28px;
-  row-gap: 0;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+  column-gap: clamp(20px, 3vw, 36px);
+  row-gap: 24px;
   align-items: start;
 }
 
-.bd-topZone > .bd-galleryBs {
-  grid-column: 1 / -1;
+.bd-topZone__media {
+  grid-column: 1;
   grid-row: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.bd-topZone > .bd-thumbsBs {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  margin-top: 12px;
+.bd-topZone__media .bd-thumbsBs {
+  margin-top: 0;
 }
 
 .bd-topZone > .bd-asideFloat {
   grid-column: 2;
   grid-row: 1;
-  align-self: end;
-  z-index: 5;
-  margin-bottom: -56px;
+  align-self: start;
+  justify-self: stretch;
   width: 100%;
-  max-width: 380px;
-  justify-self: end;
+  max-width: 400px;
+  z-index: 2;
+  position: sticky;
+  top: 72px;
+  box-sizing: border-box;
 }
 
 .bd-topZone > .bd-heroUnder {
-  grid-column: 1;
-  grid-row: 3;
+  grid-column: 1 / -1;
+  grid-row: 2;
   min-width: 0;
-  padding-top: 4px;
-  margin-top: 8px;
+  padding-top: 0;
+  margin-top: 0;
 }
 
 .bd-asideFloat {
@@ -209,17 +213,17 @@
     gap: 0;
   }
 
-  .bd-topZone > .bd-galleryBs {
+  .bd-topZone__media {
     order: 1;
-  }
-
-  .bd-topZone > .bd-thumbsBs {
-    order: 2;
-    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
   .bd-topZone > .bd-asideFloat {
-    order: 3;
+    order: 2;
+    position: relative;
+    top: auto;
     align-self: stretch;
     max-width: none;
     margin: 20px 0 0;
@@ -227,8 +231,8 @@
   }
 
   .bd-topZone > .bd-heroUnder {
-    order: 4;
-    margin-top: 8px;
+    order: 3;
+    margin-top: 4px;
     padding-top: 0;
   }
 
@@ -1098,6 +1102,14 @@
   border: 1px solid #e5e7eb;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   padding: 24px;
+}
+
+@media (min-width: 961px) {
+  .bd-topZone > .bd-asideFloat .bd-bookCard--bs {
+    border-radius: 16px;
+    border-color: #e2e8f0;
+    box-shadow: 0 12px 40px rgba(15, 23, 42, 0.08);
+  }
 }
 
 .bd-bookCard__priceRow {

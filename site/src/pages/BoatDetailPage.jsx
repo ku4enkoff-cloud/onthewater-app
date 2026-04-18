@@ -358,6 +358,7 @@ export default function BoatDetailPage() {
 
       <div className="bd-shell">
         <div className="bd-topZone">
+          <div className="bd-topZone__media">
           <div className="bd-galleryBs">
             <div className="bd-galleryBs__grid">
               <div
@@ -463,6 +464,7 @@ export default function BoatDetailPage() {
               ))}
             </div>
           ) : null}
+          </div>
 
           <aside className="bd-asideFloat">
             <div className="bd-bookCard bd-bookCard--bs">
