@@ -1209,6 +1209,19 @@
     padding: 12px 20px;
     font-size: 14px;
   }
+
+  /* Подсказки на всю ширину «таблетки» поиска (контекст позиции — вся полоса) */
+  .lp-searchBar--pill .lp-searchField--suggest {
+    position: static;
+  }
+
+  .lp-searchBar--pill .lp-citySuggest {
+    left: 0;
+    right: 0;
+    width: auto;
+    top: calc(100% + 8px);
+    box-sizing: border-box;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1255,9 +1268,6 @@
   }
 
   .lp-citySuggest {
-    left: 0;
-    right: 0;
-    top: calc(100% + 6px);
     border-radius: 12px;
   }
 
