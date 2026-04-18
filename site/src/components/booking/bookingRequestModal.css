@@ -21,8 +21,8 @@
 
 .brm-sheet {
   width: 100%;
-  max-width: 440px;
-  max-height: min(96vh, 800px);
+  max-width: min(100%, 600px);
+  max-height: min(96vh, 900px);
   background: #fff;
   border-radius: 20px 20px 0 0;
   box-shadow: 0 -4px 40px rgba(0, 0, 0, 0.12);
@@ -35,7 +35,7 @@
 @media (min-width: 520px) {
   .brm-sheet {
     border-radius: 16px;
-    max-height: min(90vh, 720px);
+    max-height: min(92vh, 880px);
   }
 }
 
@@ -119,12 +119,36 @@
 
 .brm-chips {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
-  margin-bottom: 20px;
+  margin: 0 -4px 20px;
+  padding: 2px 4px 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 4px;
+}
+
+.brm-chips::-webkit-scrollbar {
+  height: 8px;
+}
+
+.brm-chips::-webkit-scrollbar-track {
+  margin: 0 4px;
+  background: #f1f5f9;
+  border-radius: 999px;
+}
+
+.brm-chips::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+  border: 2px solid #f1f5f9;
 }
 
 .brm-chip {
+  flex: 0 0 auto;
   min-height: 44px;
   padding: 0 16px;
   border-radius: 10px;
@@ -136,6 +160,8 @@
   color: #0f172a;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
+  white-space: nowrap;
+  scroll-snap-align: start;
 }
 
 .brm-chip--on {
@@ -207,21 +233,66 @@
   cursor: pointer;
 }
 
-.brm-timeWrap {
-  min-height: 48px;
-}
-
-.brm-time {
+.brm-timeField {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   width: 100%;
   min-height: 48px;
-  padding: 10px 14px;
+  padding: 10px 16px;
+  text-align: left;
   border: 1px solid #d1d5db;
   border-radius: 10px;
+  background: #fff;
   font: inherit;
   font-size: 16px;
-  color: #0f172a;
-  background: #fff;
+  font-weight: 600;
+  cursor: pointer;
   box-sizing: border-box;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.brm-timeField:hover {
+  border-color: #94a3b8;
+}
+
+.brm-timeFieldStack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.brm-timeFieldSublab {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+}
+
+.brm-timeFieldVal {
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.brm-timeFieldPh {
+  color: #9ca3af;
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.brm-timeFieldIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
 }
 
 .brm-guests {

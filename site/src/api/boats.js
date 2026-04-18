@@ -66,3 +66,21 @@ export async function fetchBoatReviews(boatId) {
   const data = await res.json()
   return Array.isArray(data) ? data : []
 }
+
+/**
+ * Занятые интервалы на день (как в mobile BoatDetailScreen fetchBusyIntervals).
+ * @param {string|number} boatId
+ * @param {string} dateStr YYYY-MM-DD
+ * @returns {Promise<Array<{ start: string, end: string }>>}
+ */
+export async function fetchBoatAvailability(boatId, dateStr) {
+  const base = API_BASE || ''
+  const q = new URLSearchParams({ date: String(dateStr) })
+  const res = await fetch(
+    `${base}/boats/${encodeURIComponent(boatId)}/availability?${q.toString()}`,
+    { credentials: 'omit' },
+  )
+  if (!res.ok) return []
+  const data = await res.json()
+  return Array.isArray(data?.busy) ? data.busy : []
+}

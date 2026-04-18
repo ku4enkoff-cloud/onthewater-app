@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { SITE_MAIN_URL } from '../../config'
 import { formatPriceRu, getMinDurationPrice, minDurationLabel } from '../../boatUtils'
 import BookingCalendarModal from './BookingCalendarModal.jsx'
+import TimePickerModal from './TimePickerModal.jsx'
 import './bookingRequestModal.css'
 
 function todayISO() {
@@ -44,10 +45,15 @@ export default function BookingRequestModal({
   const [startTime, setStartTime] = useState('')
   const [guests, setGuests] = useState(1)
   const [calendarOpen, setCalendarOpen] = useState(false)
+  const [timeOpen, setTimeOpen] = useState(false)
   const calendarOpenRef = useRef(false)
+  const timeOpenRef = useRef(false)
   useEffect(() => {
     calendarOpenRef.current = calendarOpen
   }, [calendarOpen])
+  useEffect(() => {
+    timeOpenRef.current = timeOpen
+  }, [timeOpen])
 
   const tiers = useMemo(() => {
     if (tiersProp && tiersProp.length > 0) return tiersProp
@@ -85,13 +91,23 @@ export default function BookingRequestModal({
   }, [open, boatId])
 
   useEffect(() => {
+    if (!open) return
+    setStartTime('')
+  }, [bookDate, bookDuration])
+
+  useEffect(() => {
     if (open) return
     setCalendarOpen(false)
+    setTimeOpen(false)
   }, [open])
 
   const onKey = useCallback(
     (e) => {
       if (e.key !== 'Escape') return
+      if (timeOpenRef.current) {
+        setTimeOpen(false)
+        return
+      }
       if (calendarOpenRef.current) {
         setCalendarOpen(false)
         return
@@ -141,7 +157,7 @@ export default function BookingRequestModal({
           </div>
 
           <div className="brm-body">
-            <p className="brm-sectionLabel">Детали бронирования</p>
+            <p className="brm-sectionLabel">Длительность</p>
 
             <div className="brm-chips" role="group" aria-label="Длительность">
               {tiers.map((t) => {
@@ -177,16 +193,33 @@ export default function BookingRequestModal({
             </div>
 
             <div className="brm-field">
-              <span className="brm-lbl">Время начала</span>
-              <div className="brm-timeWrap">
-                <input
-                  className="brm-time"
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  aria-label="Время начала"
-                />
-              </div>
+              <button
+                type="button"
+                className="brm-timeField"
+                onClick={() => setTimeOpen(true)}
+                aria-label="Выбрать время начала"
+              >
+                {startTime ? (
+                  <span className="brm-timeFieldStack">
+                    <span className="brm-timeFieldSublab">Время начала</span>
+                    <span className="brm-timeFieldVal">{startTime}</span>
+                  </span>
+                ) : (
+                  <span className="brm-timeFieldPh">Время начала</span>
+                )}
+                <span className="brm-timeFieldIcon" aria-hidden>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="9" stroke="#9ca3af" strokeWidth="1.5" />
+                    <path
+                      d="M12 7v5l3 2"
+                      stroke="#9ca3af"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+              </button>
             </div>
 
             <div className="brm-field brm-guests">
@@ -243,6 +276,16 @@ export default function BookingRequestModal({
         value={bookDate}
         onApply={onBookDateChange}
         minDate={minDate}
+      />
+      <TimePickerModal
+        open={timeOpen}
+        onClose={() => setTimeOpen(false)}
+        boat={boat}
+        boatId={boatId}
+        bookDate={bookDate}
+        durationMin={Number(bookDuration) || 60}
+        value={startTime}
+        onApply={(slot) => setStartTime(slot)}
       />
     </>,
     document.body,
