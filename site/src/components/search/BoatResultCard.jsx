@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { getPhotoUrl } from '../../config'
 import { firstPhotoUrl } from '../../boatUtils'
 import { boatDetailPath } from '../../boatUrl'
+import { getEffectiveMinDurationMinutes } from '../../boatUtils'
 import {
   formatCardLocationCaps,
   formatDurationChipLabel,
@@ -30,7 +31,7 @@ export default function BoatResultCard({ boat, filters, selected, onHover, onLea
   const nPhotos = photoCount(boat)
   const instantBook = boat.instant_booking !== false
   const hasTopOwner = Number(boat.rating) >= 4.8 && !instantBook
-  const activeDuration = filters.duration || (Number(boat.schedule_min_duration) || 60)
+  const activeDuration = filters.duration || getEffectiveMinDurationMinutes(boat)
   const activePrice =
     getExactPriceForDuration(boat, activeDuration) ?? (Number(boat.price_per_hour) || 0)
   const durLabel = formatDurationChipLabel(activeDuration)

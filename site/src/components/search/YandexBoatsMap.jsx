@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { loadYandexMaps } from '../../lib/yandexMaps'
 import { getPhotoUrl } from '../../config'
-import { firstPhotoUrl } from '../../boatUtils'
+import { firstPhotoUrl, getEffectiveMinDurationMinutes } from '../../boatUtils'
 import {
   formatDurationChipLabel,
   formatDurationListLabel,
@@ -21,7 +21,7 @@ function debounce(fn, ms) {
 }
 
 function markerPriceText(boat, durationFilter) {
-  const activeDuration = durationFilter || (Number(boat.schedule_min_duration) || 60)
+  const activeDuration = durationFilter || getEffectiveMinDurationMinutes(boat)
   const p =
     getExactPriceForDuration(boat, activeDuration) ?? (Number(boat.price_per_hour) || 0)
   const n = Math.round(p)
@@ -31,7 +31,7 @@ function markerPriceText(boat, durationFilter) {
 
 /** Данные для строки в модалке выбора при наложении меток */
 function buildPickCandidate(boat, durationFilter) {
-  const minDur = Number(boat.schedule_min_duration) || 60
+  const minDur = getEffectiveMinDurationMinutes(boat)
   const activeDuration = durationFilter || minDur
   const price =
     getExactPriceForDuration(boat, activeDuration) ?? (Number(boat.price_per_hour) || 0)

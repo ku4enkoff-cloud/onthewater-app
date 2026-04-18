@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { SITE_MAIN_URL } from '../../config'
-import { formatPriceRu, getMinDurationPrice, minDurationLabel } from '../../boatUtils'
+import {
+  formatPriceRu,
+  getEffectiveMinDurationMinutes,
+  getMinDurationPrice,
+  minDurationLabel,
+} from '../../boatUtils'
 import BookingCalendarModal from './BookingCalendarModal.jsx'
 import TimePickerModal from './TimePickerModal.jsx'
 import './bookingRequestModal.css'
@@ -58,7 +63,7 @@ export default function BookingRequestModal({
   const tiers = useMemo(() => {
     if (tiersProp && tiersProp.length > 0) return tiersProp
     if (!boat) return []
-    const d0 = Number(boat.schedule_min_duration) || 60
+    const d0 = getEffectiveMinDurationMinutes(boat)
     return [{ duration: d0, price: getMinDurationPrice(boat) }]
   }, [tiersProp, boat])
 

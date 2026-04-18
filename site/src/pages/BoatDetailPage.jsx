@@ -6,8 +6,10 @@ import { fetchBoatById, fetchBoatReviews } from '../api/boats'
 import { SITE_MAIN_URL, getPhotoUrl } from '../config'
 import {
   allPhotoUrls,
+  buildBookingDurationTiers,
   formatCardLocation,
   formatPriceRu,
+  getEffectiveMinDurationMinutes,
   getMinDurationPrice,
   minDurationLabel,
 } from '../boatUtils'
@@ -19,6 +21,7 @@ import {
 } from '../boatSearchUtils'
 import BookingCalendarModal, { formatBookingDateRu } from '../components/booking/BookingCalendarModal.jsx'
 import BookingRequestModal from '../components/booking/BookingRequestModal.jsx'
+import BoatHeroSpecStrip from '../components/boat/BoatHeroSpecStrip.jsx'
 
 const PLACEHOLDER = 'https://placehold.co/1200x750/e8eef4/64748b?text=%D0%9A%D0%B0%D1%82%D0%B5%D1%80'
 const DESC_PREVIEW = 480
@@ -67,25 +70,6 @@ function todayISO() {
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
-}
-
-function parsePriceTiers(boat) {
-  let tiers = boat?.price_tiers
-  if (typeof tiers === 'string') {
-    try {
-      tiers = JSON.parse(tiers)
-    } catch {
-      tiers = []
-    }
-  }
-  if (!Array.isArray(tiers)) return []
-  return tiers
-    .map((t) => ({
-      duration: Number(t?.duration) || 0,
-      price: Number(t?.price) || 0,
-    }))
-    .filter((t) => t.duration > 0 && t.price > 0)
-    .sort((a, b) => a.duration - b.duration)
 }
 
 function parseVideoUrls(boat) {
@@ -203,7 +187,7 @@ export default function BoatDetailPage() {
       setBoat(b)
       setReviews(rev)
       setPhotoIndex(0)
-      const minD = Number(b.schedule_min_duration) || 60
+      const minD = getEffectiveMinDurationMinutes(b)
       setBookDuration(String(minD))
     } catch (e) {
       setError(e?.message || 'load')
@@ -233,18 +217,18 @@ export default function BoatDetailPage() {
   }, [boat])
   const videos = useMemo(() => (boat ? parseVideoUrls(boat) : []), [boat])
 
-  const tiers = useMemo(() => (boat ? parsePriceTiers(boat) : []), [boat])
+  const tiers = useMemo(() => (boat ? buildBookingDurationTiers(boat) : []), [boat])
 
   useEffect(() => {
     if (!boat || tiers.length === 0) return
-    const minD = Number(boat.schedule_min_duration) || 60
+    const minD = getEffectiveMinDurationMinutes(boat)
     const has = tiers.some((t) => t.duration === minD)
     setBookDuration(String(has ? minD : tiers[0].duration))
   }, [boat, tiers])
 
   const selectedTierPrice = useMemo(() => {
     if (!boat) return 0
-    const d = Number(bookDuration) || Number(boat.schedule_min_duration) || 60
+    const d = Number(bookDuration) || getEffectiveMinDurationMinutes(boat)
     const t = tiers.find((x) => x.duration === d)
     if (t) return t.price
     return getMinDurationPrice(boat)
@@ -340,7 +324,7 @@ export default function BoatDetailPage() {
   const durationOptions =
     tiers.length > 0
       ? tiers
-      : [{ duration: Number(boat.schedule_min_duration) || 60, price: getMinDurationPrice(boat) }]
+      : [{ duration: getEffectiveMinDurationMinutes(boat), price: getMinDurationPrice(boat) }]
 
   return (
     <div className="bd-page bd-page--bs">
@@ -488,7 +472,10 @@ export default function BoatDetailPage() {
                 <div className="bd-bookCard__price">
                   <strong>{formatPriceRu(selectedTierPrice)} ₽</strong>
                   <span className="bd-bookCard__unit">
-                    / {minDurationLabel({ schedule_min_duration: Number(bookDuration) || boat.schedule_min_duration })}
+                    /{' '}
+                    {minDurationLabel({
+                      schedule_min_duration: Number(bookDuration) || getEffectiveMinDurationMinutes(boat),
+                    })}
                   </span>
                 </div>
                 <p className="bd-bookCard__priceNote">без доп. сборов (если не указано иное)</p>
@@ -557,31 +544,12 @@ export default function BoatDetailPage() {
               <h1 className="bd-heroBs__title">{title}</h1>
               <p className="bd-heroBs__loc">{loc}</p>
 
-              <div className="bd-statStrip">
-                <div className="bd-statStrip__cell">
-                  <span className="bd-statStrip__val">{lengthStr}</span>
-                  <span className="bd-statStrip__lbl">Длина</span>
-                </div>
-                <div className="bd-statStrip__cell">
-                  <span className="bd-statStrip__val">до {capacity}</span>
-                  <span className="bd-statStrip__lbl">Гости</span>
-                </div>
-                <div className="bd-statStrip__cell bd-statStrip__cell--badge">
-                  {boat.captain_included ? (
-                    <span className="bd-pillCap">С капитаном</span>
-                  ) : boat.has_captain_option ? (
-                    <span className="bd-pillCap bd-pillCap--muted">Капитан по запросу</span>
-                  ) : (
-                    <span className="bd-pillCap bd-pillCap--muted">Без капитана</span>
-                  )}
-                </div>
-              </div>
-              {boat.captain_included ? <p className="bd-heroBs__capNote">Аренда только с капитаном владельца или назначенным капитаном.</p> : null}
-              {responseRate != null ? (
-                <p className="bd-heroBs__response">
-                  <strong>{responseRate}%</strong> — отвечает на запросы
-                </p>
-              ) : null}
+              <BoatHeroSpecStrip
+                lengthStr={lengthStr}
+                capacity={capacity}
+                boat={boat}
+                responseRate={responseRate}
+              />
             </header>
           </div>
         </div>

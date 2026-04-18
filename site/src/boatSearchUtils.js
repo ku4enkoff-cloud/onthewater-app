@@ -1,6 +1,10 @@
 /** Логика как в mobile/src/client/screens/SearchResultsScreen.js */
 
-import { getMinDurationPrice } from './boatUtils.js'
+import {
+  getEffectiveMinDurationMinutes,
+  getMinDurationPrice,
+  parsePriceTierEntries,
+} from './boatUtils.js'
 
 export const CITY_COORDS = {
   Москва: { lat: 55.751244, lon: 37.618423 },
@@ -107,27 +111,13 @@ export function formatCardLocationCaps(item) {
 }
 
 export function normalizeBoatTiers(boat) {
-  let tiers = boat?.price_tiers
-  if (typeof tiers === 'string') {
-    try {
-      tiers = JSON.parse(tiers)
-    } catch {
-      tiers = []
-    }
-  }
-  if (!Array.isArray(tiers)) tiers = []
-  return tiers
-    .map((t) => ({
-      duration: Number(t?.duration) || 0,
-      price: Number(t?.price) || 0,
-    }))
-    .filter((t) => t.duration > 0 && t.price > 0)
+  return parsePriceTierEntries(boat)
 }
 
 export function getExactPriceForDuration(boat, durationMin) {
   const d = Number(durationMin) || 0
   if (d <= 0) return null
-  const minDuration = Number(boat?.schedule_min_duration) || 60
+  const minDuration = getEffectiveMinDurationMinutes(boat)
   if (d === minDuration) {
     const p = getMinDurationPrice(boat)
     return p > 0 ? p : null
@@ -190,7 +180,7 @@ function formatDuration(mins) {
 }
 
 export function getBookingPeriodLabel(boat) {
-  const minDur = Number(boat?.schedule_min_duration) || 0
+  const minDur = getEffectiveMinDurationMinutes(boat)
   const durations = [
     ...new Set(
       [minDur, ...normalizeBoatTiers(boat).map((t) => t.duration)].filter((d) => d > 0),
@@ -231,7 +221,7 @@ export function computeDurationOptions(allBoats) {
   if (allBoats.length === 0) return fallback
   const offeredSet = new Set()
   for (const b of allBoats) {
-    const sm = Number(b.schedule_min_duration) || 60
+    const sm = getEffectiveMinDurationMinutes(b)
     offeredSet.add(sm)
     let tiers = b.price_tiers
     if (typeof tiers === 'string') {

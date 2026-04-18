@@ -17,10 +17,8 @@ export function formatPriceRu(n) {
   return n != null ? Number(n).toLocaleString('ru-RU') : '0'
 }
 
-export function getMinDurationPrice(boat) {
-  const minDuration = Number(boat?.schedule_min_duration) || 60
-  const base = Number(boat?.price_per_hour) || 0
-  if (minDuration === 60) return base
+/** Сырые строки price_tiers из API (как в mobile). */
+export function parsePriceTierEntries(boat) {
   let tiers = boat?.price_tiers
   if (typeof tiers === 'string') {
     try {
@@ -29,19 +27,70 @@ export function getMinDurationPrice(boat) {
       tiers = []
     }
   }
-  if (!Array.isArray(tiers)) tiers = []
-  const match = tiers.find((t) => (Number(t?.duration) || 0) === minDuration)
+  if (!Array.isArray(tiers)) return []
+  return tiers
+    .map((t) => ({
+      duration: Number(t?.duration) || 0,
+      price: Number(t?.price) || 0,
+    }))
+    .filter((t) => t.duration > 0 && t.price > 0)
+}
+
+/**
+ * Минимальная длительность брони в минутах: schedule_min_duration, иначе минимум из price_tiers, иначе 60.
+ * Учитывает пустую/битую строку в БД (Number('') === 0).
+ */
+export function getEffectiveMinDurationMinutes(boat) {
+  if (!boat) return 60
+  const raw = boat.schedule_min_duration
+  const n = raw != null && raw !== '' ? Number(raw) : NaN
+  if (Number.isFinite(n) && n > 0) return Math.round(n)
+  const fromTiers = parsePriceTierEntries(boat).map((t) => t.duration)
+  if (fromTiers.length > 0) return Math.min(...fromTiers)
+  return 60
+}
+
+/**
+ * Варианты длительности + цена для UI брони (как mobile BoatDetailScreen: базовый слот + price_tiers).
+ */
+export function buildBookingDurationTiers(boat) {
+  const minDuration = getEffectiveMinDurationMinutes(boat)
+  const minPrice = getMinDurationPrice(boat)
+  const baseHour = Number(boat?.price_per_hour) || 0
+  let entries = parsePriceTierEntries(boat).sort((a, b) => a.duration - b.duration)
+  const hasMinOnServer = entries.some((t) => t.duration === minDuration)
+  if (entries.length === 0) {
+    const p = minPrice > 0 ? minPrice : baseHour
+    return p > 0 ? [{ duration: minDuration, price: p }] : []
+  }
+  if (hasMinOnServer) return entries
+  const headPrice = minPrice > 0 ? minPrice : baseHour
+  return [{ duration: minDuration, price: headPrice }, ...entries].sort((a, b) => a.duration - b.duration)
+}
+
+export function getMinDurationPrice(boat) {
+  const minDuration = getEffectiveMinDurationMinutes(boat)
+  const base = Number(boat?.price_per_hour) || 0
+  if (minDuration === 60) return base
+  const match = parsePriceTierEntries(boat).find((t) => t.duration === minDuration)
   const tierPrice = Number(match?.price) || 0
   return tierPrice > 0 ? tierPrice : base
 }
 
 export function minDurationLabel(item) {
-  const mins = item.schedule_min_duration != null ? Number(item.schedule_min_duration) : 60
+  const raw = item?.schedule_min_duration
+  const n = raw != null && raw !== '' ? Number(raw) : NaN
+  const mins = Number.isFinite(n) && n > 0 ? Math.round(n) : 60
   if (mins < 60) return `${mins} мин`
   const h = Math.floor(mins / 60)
   const m = mins % 60
   if (m === 0) return `${h} ч`
   return `${h} ч ${m} мин`
+}
+
+/** Подпись минимума для карточки катера (учёт price_tiers, если в БД нет schedule_min_duration). */
+export function minDurationLabelForBoat(boat) {
+  return minDurationLabel({ schedule_min_duration: getEffectiveMinDurationMinutes(boat) })
 }
 
 export function parsePhotos(boat) {

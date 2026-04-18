@@ -8,7 +8,7 @@ import {
   formatCardLocation,
   formatPriceRu,
   getMinDurationPrice,
-  minDurationLabel,
+  minDurationLabelForBoat,
 } from '../boatUtils'
 
 const PLACEHOLDER = 'https://placehold.co/600x380/e8eef4/64748b?text=%D0%9A%D0%B0%D1%82%D0%B5%D1%80'
@@ -78,7 +78,7 @@ export default function PopularBoats() {
               const title = boat.title || boat.type_name || 'Катер'
               const img = firstPhotoUrl(boat, getPhotoUrl) || PLACEHOLDER
               const price = getMinDurationPrice(boat)
-              const unit = minDurationLabel(boat)
+              const unit = minDurationLabelForBoat(boat)
               const loc = formatCardLocation(boat)
               return (
                 <Link key={String(id)} to={boatDetailPath(boat)} className="lp-boatCard">
