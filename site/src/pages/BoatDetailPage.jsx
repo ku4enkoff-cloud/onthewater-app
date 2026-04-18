@@ -256,6 +256,27 @@ export default function BoatDetailPage() {
     return s ? `${base}/?${s}` : `${base}/`
   }, [resolvedId])
 
+  const onGalleryTouchStart = useCallback((e) => {
+    const t = e.changedTouches[0]
+    if (!t) return
+    galleryTouchRef.current = { x: t.clientX, y: t.clientY }
+  }, [])
+
+  const onGalleryTouchEnd = useCallback(
+    (e) => {
+      const n = photos.length
+      if (n < 2) return
+      const t = e.changedTouches[0]
+      if (!t) return
+      const dx = t.clientX - galleryTouchRef.current.x
+      const dy = t.clientY - galleryTouchRef.current.y
+      if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.2) return
+      if (dx < 0) setPhotoIndex((i) => (i >= n - 1 ? 0 : i + 1))
+      else setPhotoIndex((i) => (i <= 0 ? n - 1 : i - 1))
+    },
+    [photos.length],
+  )
+
   if (loading) {
     return (
       <div className="bd-page">
@@ -313,25 +334,6 @@ export default function BoatDetailPage() {
 
   const prevPhoto = () => setPhotoIndex((i) => (i <= 0 ? photos.length - 1 : i - 1))
   const nextPhoto = () => setPhotoIndex((i) => (i >= photos.length - 1 ? 0 : i + 1))
-
-  const onGalleryTouchStart = useCallback((e) => {
-    const t = e.changedTouches[0]
-    galleryTouchRef.current = { x: t.clientX, y: t.clientY }
-  }, [])
-
-  const onGalleryTouchEnd = useCallback(
-    (e) => {
-      const n = photos.length
-      if (n < 2) return
-      const t = e.changedTouches[0]
-      const dx = t.clientX - galleryTouchRef.current.x
-      const dy = t.clientY - galleryTouchRef.current.y
-      if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.2) return
-      if (dx < 0) setPhotoIndex((i) => (i >= n - 1 ? 0 : i + 1))
-      else setPhotoIndex((i) => (i <= 0 ? n - 1 : i - 1))
-    },
-    [photos.length],
-  )
 
   const durationOptions =
     tiers.length > 0
