@@ -50,8 +50,10 @@ function processUploadedImages(req, res, next) {
                 file.path = outputPath;
                 file.filename = uniqueName;
             } catch (err) {
-                console.error('[imageProcessor] Ошибка WebP:', file.originalname, err.message);
-                return next(Object.assign(err, { message: `Ошибка конвертации фото в WebP: ${err.message}` }));
+                // HEIC/прочие форматы без libheif в сборке sharp, сбои на Windows и т.п. —
+                // оставляем оригинал, иначе POST /boats даёт 500 при добавлении катера с галереи телефона.
+                try { if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath); } catch (_) {}
+                console.warn('[imageProcessor] WebP пропущен, сохраняем оригинал:', file.originalname, err.message);
             }
         }
         next();

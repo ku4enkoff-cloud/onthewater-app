@@ -327,14 +327,24 @@ router.post('/:id/reviews', authenticate, async (req, res, next) => {
     }
 });
 
+function uploadBoatMedia(req, res, next) {
+    upload.fields([
+        { name: 'photos', maxCount: 10 },
+        { name: 'videos', maxCount: 3 },
+    ])(req, res, (err) => {
+        if (err) {
+            console.error('[POST /boats] multer:', err.message);
+            return res.status(400).json({ error: err.message || 'Ошибка загрузки файлов' });
+        }
+        next();
+    });
+}
+
 router.post(
     '/',
     authenticate,
     requireRole(['owner']),
-    upload.fields([
-        { name: 'photos', maxCount: 10 },
-        { name: 'videos', maxCount: 3 },
-    ]),
+    uploadBoatMedia,
     processUploadedImages,
     async (req, res, next) => {
     try {
@@ -387,6 +397,13 @@ router.post(
 
         res.status(201).json(rows[0]);
     } catch (err) {
+        console.error('[POST /boats]', err.message, err.code || '');
+        if (err.code === '23503') {
+            return res.status(400).json({ error: 'Некорректные данные (пользователь или связь)' });
+        }
+        if (err.code === '23502' || err.code === '23514') {
+            return res.status(400).json({ error: 'Не хватает обязательных полей для сохранения катера' });
+        }
         next(err);
     }
 });

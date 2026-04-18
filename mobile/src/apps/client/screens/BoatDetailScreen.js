@@ -19,6 +19,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../../theme';
 import { api } from '../../../infrastructure/api';
 import { AuthContext } from '../../../context/AuthContext';
+import { getPhotoUrl } from '../../../shared/infrastructure/config';
+import { WebView } from 'react-native-webview';
 import {
     ChevronLeft,
     ChevronRight,
@@ -35,6 +37,7 @@ import {
     FileText,
     Share2,
     Heart,
+    Video as VideoIcon,
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -68,6 +71,8 @@ export default function BoatDetailScreen({ route, navigation }) {
     const [descriptionExpanded, setDescriptionExpanded] = useState(false);
     const [photoIndex, setPhotoIndex] = useState(0);
     const [isFavorite, setIsFavorite] = useState(false);
+    const [videoModalVisible, setVideoModalVisible] = useState(false);
+    const [videoIndex, setVideoIndex] = useState(0);
 
     useEffect(() => {
         if (boatId) fetchBoat();
@@ -136,7 +141,28 @@ export default function BoatDetailScreen({ route, navigation }) {
 
     const reviewsCount = boat?.reviews_count ?? 0;
     const rating = boat?.rating ?? 0;
-    const photos = boat?.photos?.length ? boat.photos : ['https://placehold.co/800x600/0F52BA/FFFFFF/png'];
+    const resolvePhotoUri = (src) => getPhotoUrl(src) || src;
+    const photos = boat?.photos?.length
+        ? boat.photos.map((p) => resolvePhotoUri(p)).filter((u) => typeof u === 'string' && u.trim().length > 0)
+        : [];
+    const photoUrls = photos.length > 0 ? photos : ['https://placehold.co/800x600/0F52BA/FFFFFF/png'];
+
+    const resolveVideoUri = (src) => getPhotoUrl(src) || src || null;
+    const videoUrisRaw = Array.isArray(boat.video_uris)
+        ? boat.video_uris
+        : (typeof boat.video_uris === 'string' ? (() => {
+            try { return JSON.parse(boat.video_uris); } catch (_) { return []; }
+        })() : []);
+    const videoUris = (Array.isArray(videoUrisRaw) ? videoUrisRaw : [])
+        .map(resolveVideoUri)
+        .filter((u, i, arr) =>
+            typeof u === 'string'
+            && u.trim().length > 0
+            && !u.startsWith('file://')
+            && !u.startsWith('content://')
+            && arr.indexOf(u) === i);
+    const activeVideoUri = videoUris[videoIndex] || null;
+
     const description = boat?.description || 'Нет описания.';
     const descShort = description.length > 180 ? description.slice(0, 180) + '...' : description;
     const showReadMore = description.length > 180;
@@ -177,7 +203,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                         showsHorizontalScrollIndicator={false}
                         onMomentumScrollEnd={(e) => setPhotoIndex(Math.round(e.nativeEvent.contentOffset.x / width))}
                     >
-                        {photos.map((uri, i) => (
+                        {photoUrls.map((uri, i) => (
                             <Image key={i} source={{ uri }} style={styles.heroImage} resizeMode="cover" />
                         ))}
                     </ScrollView>
@@ -211,14 +237,95 @@ export default function BoatDetailScreen({ route, navigation }) {
                             </TouchableOpacity>
                         </View>
                     </View>
-                    {photos.length > 1 && (
+                    {photoUrls.length > 1 && (
                         <View style={styles.dots}>
-                            {photos.map((_, i) => (
+                            {photoUrls.map((_, i) => (
                                 <View key={i} style={[styles.dot, i === photoIndex && styles.dotActive]} />
                             ))}
                         </View>
                     )}
+                    {photoUrls.length > 1 && (
+                        <View style={styles.photoCounter}>
+                            <Text style={styles.photoCounterText}>
+                                {photoIndex + 1}/{photoUrls.length}
+                            </Text>
+                        </View>
+                    )}
+                    {videoUris.length > 0 && (
+                        <TouchableOpacity
+                            style={styles.videoBadge}
+                            activeOpacity={0.85}
+                            onPress={() => {
+                                setVideoIndex(0);
+                                setVideoModalVisible(true);
+                            }}
+                        >
+                            <VideoIcon size={14} color="#fff" />
+                            <Text style={styles.videoBadgeText}>Видео: {videoUris.length}</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
+
+                <Modal
+                    visible={videoModalVisible}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setVideoModalVisible(false)}
+                >
+                    <View style={[styles.videoModalOverlay, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16 }]}>
+                        <View style={styles.videoModalCard}>
+                            <View style={styles.videoModalHeader}>
+                                <Text style={styles.videoModalTitle}>Видео катера</Text>
+                                <TouchableOpacity
+                                    onPress={() => setVideoModalVisible(false)}
+                                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                >
+                                    <X size={22} color="#fff" />
+                                </TouchableOpacity>
+                            </View>
+                            {activeVideoUri ? (
+                                <View style={styles.videoWebWrap}>
+                                    <WebView
+                                        source={{ uri: activeVideoUri }}
+                                        originWhitelist={['*']}
+                                        allowsFullscreenVideo
+                                        mediaPlaybackRequiresUserAction={false}
+                                        allowsInlineMediaPlayback
+                                        mixedContentMode="always"
+                                        javaScriptEnabled
+                                        domStorageEnabled
+                                        style={styles.videoWeb}
+                                    />
+                                </View>
+                            ) : (
+                                <View style={styles.videoEmpty}>
+                                    <Text style={styles.videoEmptyText}>Видео недоступно</Text>
+                                </View>
+                            )}
+                            <View style={styles.videoModalFooter}>
+                                {videoUris.length > 1 ? (
+                                    <View style={styles.videoPager}>
+                                        <TouchableOpacity
+                                            style={styles.videoPagerBtn}
+                                            onPress={() => setVideoIndex((v) => Math.max(0, v - 1))}
+                                            disabled={videoIndex <= 0}
+                                        >
+                                            <ChevronLeft size={20} color={videoIndex <= 0 ? 'rgba(255,255,255,0.4)' : '#fff'} />
+                                        </TouchableOpacity>
+                                        <Text style={styles.videoPagerText}>{videoIndex + 1}/{videoUris.length}</Text>
+                                        <TouchableOpacity
+                                            style={styles.videoPagerBtn}
+                                            onPress={() => setVideoIndex((v) => Math.min(videoUris.length - 1, v + 1))}
+                                            disabled={videoIndex >= videoUris.length - 1}
+                                        >
+                                            <ChevronRight size={20} color={videoIndex >= videoUris.length - 1 ? 'rgba(255,255,255,0.4)' : '#fff'} />
+                                        </TouchableOpacity>
+                                    </View>
+                                ) : <View />}
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
 
                 <View style={styles.content}>
                     {/* Заголовок */}
@@ -555,6 +662,103 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.5)',
     },
     dotActive: { backgroundColor: 'white' },
+    photoCounter: {
+        position: 'absolute',
+        bottom: 12,
+        left: 12,
+        backgroundColor: 'rgba(0,0,0,0.55)',
+        paddingVertical: 4,
+        paddingHorizontal: 10,
+        borderRadius: 8,
+    },
+    photoCounterText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#fff',
+    },
+    videoBadge: {
+        position: 'absolute',
+        bottom: 12,
+        right: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: 'rgba(0,0,0,0.55)',
+        paddingVertical: 6,
+        paddingHorizontal: 10,
+        borderRadius: 8,
+    },
+    videoBadgeText: { fontSize: 12, fontWeight: '600', color: '#fff' },
+    videoModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        justifyContent: 'center',
+        paddingHorizontal: 14,
+    },
+    videoModalCard: {
+        backgroundColor: '#0b1220',
+        borderRadius: 16,
+        overflow: 'hidden',
+    },
+    videoModalHeader: {
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.12)',
+    },
+    videoModalTitle: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    videoWebWrap: {
+        width: '100%',
+        aspectRatio: 16 / 9,
+        backgroundColor: '#000',
+    },
+    videoWeb: {
+        flex: 1,
+        backgroundColor: '#000',
+    },
+    videoEmpty: {
+        paddingVertical: 36,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    videoEmptyText: {
+        color: '#cbd5e1',
+        fontSize: 14,
+    },
+    videoModalFooter: {
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    videoPager: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    videoPagerBtn: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(255,255,255,0.1)',
+    },
+    videoPagerText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '600',
+        minWidth: 50,
+        textAlign: 'center',
+    },
     content: { paddingHorizontal: theme.spacing.lg },
     title: {
         fontSize: 22,
