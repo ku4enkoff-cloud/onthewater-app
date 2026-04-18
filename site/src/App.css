@@ -58,7 +58,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  padding: 20px clamp(20px, 4vw, 48px);
+  padding: 22px clamp(20px, 4vw, 48px);
   flex-wrap: wrap;
 }
 
@@ -76,7 +76,7 @@
 }
 
 .lp-logoText {
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 800;
   letter-spacing: -0.02em;
   text-transform: lowercase;
@@ -92,7 +92,7 @@
 
 .lp-nav a {
   color: #fff;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   text-decoration: none;
   opacity: 0.95;
@@ -113,7 +113,7 @@
 
 .lp-linkMuted {
   color: rgba(255, 255, 255, 0.92);
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
@@ -127,9 +127,9 @@
 .lp-btnGhost {
   border: 1px solid rgba(255, 255, 255, 0.85);
   color: #fff;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
-  padding: 10px 18px;
+  padding: 11px 20px;
   border-radius: 10px;
   text-decoration: none;
   background: rgba(255, 255, 255, 0.08);

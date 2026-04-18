@@ -61,7 +61,7 @@
   text-decoration: none;
   color: #002b5b;
   font-weight: 800;
-  font-size: 20px;
+  font-size: 23px;
   text-transform: lowercase;
 }
 
@@ -169,7 +169,7 @@
 }
 
 .bs-top__auth a {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: #0061c1;
   text-decoration: none;

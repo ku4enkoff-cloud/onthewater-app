@@ -42,7 +42,7 @@
   gap: 10px;
   text-decoration: none;
   color: #002b5b;
-  font-size: 20px;
+  font-size: 23px;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
@@ -73,7 +73,7 @@
 }
 
 .bd-topBar__link {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: #002b5b;
   text-decoration: none;
@@ -122,7 +122,7 @@
   }
 
   .bd-topBar__link {
-    font-size: 14px;
+    font-size: 16px;
   }
 
   .bd-topBar__pill {
