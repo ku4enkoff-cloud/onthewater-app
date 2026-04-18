@@ -242,49 +242,52 @@ export default function HomePage() {
             className={`lp-mobileNav${mobileNavOpen ? ' lp-mobileNav--open' : ''}`}
             aria-hidden={!mobileNavOpen}
           >
-            <nav className="lp-mobileNavLinks" aria-label="Меню (мобильная версия)">
-              <Link to="/boats" onClick={closeMobileNav}>
-                Катера
-              </Link>
-              <a href="#how" onClick={closeMobileNav}>
-                Как это работает
-              </a>
-              <a href="#destinations" onClick={closeMobileNav}>
-                Направления
-              </a>
-              <a href="#contact" onClick={closeMobileNav}>
-                Контакты
-              </a>
-            </nav>
-            <div className="lp-mobileNavActions">
-              <a
-                href={SITE_MAIN_URL}
-                className="lp-mobileNavMuted"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={closeMobileNav}
-              >
-                Разместить объявление
-              </a>
-              <div className="lp-mobileNavBtns">
+            <div className="lp-mobileNavInner">
+              <p className="lp-mobileNavEyebrow">Разделы</p>
+              <nav className="lp-mobileNavLinks" aria-label="Меню (мобильная версия)">
+                <Link to="/boats" onClick={closeMobileNav}>
+                  Катера
+                </Link>
+                <a href="#how" onClick={closeMobileNav}>
+                  Как это работает
+                </a>
+                <a href="#destinations" onClick={closeMobileNav}>
+                  Направления
+                </a>
+                <a href="#contact" onClick={closeMobileNav}>
+                  Контакты
+                </a>
+              </nav>
+              <div className="lp-mobileNavActions">
                 <a
                   href={SITE_MAIN_URL}
-                  className="lp-btnGhost lp-btnGhost--block"
+                  className="lp-mobileNavMuted"
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={closeMobileNav}
                 >
-                  Регистрация
+                  Разместить объявление
                 </a>
-                <a
-                  href={SITE_MAIN_URL}
-                  className="lp-btnGhost lp-btnGhost--block"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={closeMobileNav}
-                >
-                  Вход
-                </a>
+                <div className="lp-mobileNavBtns">
+                  <a
+                    href={SITE_MAIN_URL}
+                    className="lp-btnGhost lp-btnGhost--block lp-mobileNavBtnPrimary"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={closeMobileNav}
+                  >
+                    Регистрация
+                  </a>
+                  <a
+                    href={SITE_MAIN_URL}
+                    className="lp-btnGhost lp-btnGhost--block lp-mobileNavBtnSecondary"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={closeMobileNav}
+                  >
+                    Вход
+                  </a>
+                </div>
               </div>
             </div>
           </div>
