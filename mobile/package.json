@@ -34,6 +34,7 @@
     "bundle:owner": "npm run android:bump-version-code:owner && npm run prebuild:owner && npm run android:write-local-properties && npx cross-env EXPO_PUBLIC_APP_VARIANT=owner ANDROID_HOME=C:\\Users\\ku4en\\AppData\\Local\\Android\\Sdk android\\gradlew.bat -p android bundleRelease"
   },
   "dependencies": {
+    "@appmetrica/react-native-analytics": "^3.6.0",
     "@expo-google-fonts/jost": "^0.4.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "8.4.4",
