@@ -53,13 +53,77 @@
 
 .lp-header {
   position: relative;
-  z-index: 2;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
   padding: 22px clamp(20px, 4vw, 48px);
   flex-wrap: wrap;
+}
+
+.lp-headerTop {
+  display: contents;
+}
+
+.lp-navToggle {
+  display: none;
+}
+
+.lp-navBackdrop {
+  display: none;
+}
+
+.lp-mobileNav {
+  display: none;
+}
+
+.lp-mobileNavLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lp-mobileNavLinks a {
+  display: block;
+  padding: 14px 4px;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.lp-mobileNavLinks a:last-child {
+  border-bottom: 0;
+}
+
+.lp-mobileNavActions {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.lp-mobileNavMuted {
+  display: block;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  margin-bottom: 14px;
+}
+
+.lp-mobileNavBtns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lp-btnGhost--block {
+  display: block;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .lp-logo {
@@ -158,7 +222,7 @@
 
 .lp-heroTitle {
   margin: 0;
-  font-size: clamp(32px, 4.5vw, 52px);
+  font-size: clamp(28px, 4.5vw, 52px);
   font-weight: 800;
   line-height: 1.12;
   color: #fff;
@@ -169,7 +233,7 @@
 .lp-heroSub {
   margin: 16px 0 0;
   max-width: 520px;
-  font-size: clamp(18px, 1.8vw, 24px);
+  font-size: clamp(17px, 1.8vw, 24px);
   font-weight: 500;
   line-height: 1.5;
   color: rgba(255, 255, 255, 0.92);
@@ -844,19 +908,139 @@
   .lp-featuredGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
 
-  .lp-nav {
-    order: 3;
-    width: 100%;
-    justify-content: flex-start;
+@media (min-width: 1024px) {
+  .lp-headerTop {
+    display: contents;
   }
 
+  .lp-navToggle,
+  .lp-navBackdrop,
+  .lp-mobileNav {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1023px) {
   .lp-header {
-    justify-content: center;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
+    padding: 14px 16px 10px;
+    flex-wrap: nowrap;
   }
 
-  .lp-headerActions {
-    margin-left: auto;
+  .lp-headerTop {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: relative;
+    z-index: 12;
+  }
+
+  .lp-logoIcon svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .lp-logoText {
+    font-size: 22px;
+  }
+
+  .lp-navToggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .lp-navToggle:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .lp-navDesktop,
+  .lp-headerActionsDesktop {
+    display: none !important;
+  }
+
+  .lp-navBackdrop {
+    display: block !important;
+    position: fixed;
+    inset: 0;
+    z-index: 8;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: rgba(0, 27, 61, 0.5);
+    cursor: pointer;
+  }
+
+  .lp-mobileNav {
+    display: block !important;
+    position: relative;
+    z-index: 9;
+    width: 100%;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease, padding-top 0.25s ease;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: 0;
+    border-radius: 0 0 14px 14px;
+    background: rgba(0, 35, 70, 0.88);
+    backdrop-filter: blur(10px);
+  }
+
+  .lp-mobileNav--open {
+    max-height: min(520px, 85vh);
+    padding-top: 8px;
+    padding-bottom: 16px;
+    margin-top: 10px;
+  }
+
+  .lp-heroWrap {
+    min-height: min(88vh, 680px);
+  }
+
+  .lp-heroContent {
+    padding: 16px 16px 40px;
+  }
+
+  .lp-heroTitle {
+    font-size: clamp(22px, 7vw, 36px);
+    line-height: 1.15;
+  }
+
+  .lp-heroSub {
+    font-size: clamp(15px, 4vw, 19px);
+    margin-top: 12px;
+  }
+
+  .lp-searchBar--pill {
+    margin-top: 22px;
+    padding: 8px 8px 8px 14px;
+  }
+
+  .lp-searchBar--pill .lp-searchInput {
+    font-size: 16px;
+    padding: 12px 4px 12px 0;
+  }
+
+  .lp-searchBtn--pill {
+    padding: 12px 20px;
+    font-size: 14px;
   }
 }
 

@@ -30,6 +30,22 @@ const HOW_STEPS = [
   },
 ]
 
+function MenuIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function CloseIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export default function HomePage() {
   useHomePageSeo(heroImg)
   const navigate = useNavigate()
@@ -39,6 +55,7 @@ export default function HomePage() {
   const [knownCities, setKnownCities] = useState([])
   const [suggestOpen, setSuggestOpen] = useState(false)
   const [activeIdx, setActiveIdx] = useState(-1)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -71,6 +88,15 @@ export default function HomePage() {
     window.addEventListener('mousedown', onDown)
     return () => window.removeEventListener('mousedown', onDown)
   }, [])
+
+  useEffect(() => {
+    document.body.style.overflow = mobileNavOpen ? 'hidden' : ''
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [mobileNavOpen])
+
+  const closeMobileNav = () => setMobileNavOpen(false)
 
   useEffect(() => {
     const onNearest = (e) => {
@@ -146,40 +172,53 @@ export default function HomePage() {
         <div className="lp-heroTint" aria-hidden />
 
         <header className="lp-header">
-          <Link to="/" className="lp-logo" aria-label="ONTHEWATER">
-            <span className="lp-logoIcon" aria-hidden>
-              <svg viewBox="0 0 40 40" width="40" height="40" fill="none">
-                <circle cx="20" cy="20" r="19" fill="#0061C1" />
-                <path
-                  d="M8 22c3-4 7-6 12-6s9 2 12 6"
-                  stroke="#fff"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  fill="none"
-                />
-                <path
-                  d="M10 26c2.5-2 5.5-3 10-3s7.5 1 10 3"
-                  stroke="#fff"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  opacity="0.85"
-                  fill="none"
-                />
-              </svg>
-            </span>
-            <span className="lp-logoText">onthewater</span>
-          </Link>
+          <div className="lp-headerTop">
+            <Link to="/" className="lp-logo" aria-label="ONTHEWATER" onClick={closeMobileNav}>
+              <span className="lp-logoIcon" aria-hidden>
+                <svg viewBox="0 0 40 40" width="40" height="40" fill="none">
+                  <circle cx="20" cy="20" r="19" fill="#0061C1" />
+                  <path
+                    d="M8 22c3-4 7-6 12-6s9 2 12 6"
+                    stroke="#fff"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                  <path
+                    d="M10 26c2.5-2 5.5-3 10-3s7.5 1 10 3"
+                    stroke="#fff"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    opacity="0.85"
+                    fill="none"
+                  />
+                </svg>
+              </span>
+              <span className="lp-logoText">onthewater</span>
+            </Link>
 
-          <nav className="lp-nav" aria-label="Основное меню">
+            <button
+              type="button"
+              className="lp-navToggle"
+              aria-expanded={mobileNavOpen}
+              aria-controls="lp-mobile-menu"
+              aria-label={mobileNavOpen ? 'Закрыть меню' : 'Открыть меню'}
+              onClick={() => setMobileNavOpen((o) => !o)}
+            >
+              {mobileNavOpen ? <CloseIcon /> : <MenuIcon />}
+            </button>
+          </div>
+
+          <nav className="lp-nav lp-navDesktop" aria-label="Основное меню">
             <Link to="/boats">Катера</Link>
             <a href="#how">Как это работает</a>
             <a href="#destinations">Направления</a>
             <a href="#contact">Контакты</a>
           </nav>
 
-          <div className="lp-headerActions">
+          <div className="lp-headerActions lp-headerActionsDesktop">
             <a href={SITE_MAIN_URL} className="lp-linkMuted" target="_blank" rel="noopener noreferrer">
-              Разместить обьявление
+              Разместить объявление
             </a>
             <a href={SITE_MAIN_URL} className="lp-btnGhost" target="_blank" rel="noopener noreferrer">
               Регистрация
@@ -187,6 +226,67 @@ export default function HomePage() {
             <a href={SITE_MAIN_URL} className="lp-btnGhost" target="_blank" rel="noopener noreferrer">
               Вход
             </a>
+          </div>
+
+          {mobileNavOpen ? (
+            <button
+              type="button"
+              className="lp-navBackdrop"
+              aria-label="Закрыть меню"
+              onClick={closeMobileNav}
+            />
+          ) : null}
+
+          <div
+            id="lp-mobile-menu"
+            className={`lp-mobileNav${mobileNavOpen ? ' lp-mobileNav--open' : ''}`}
+            aria-hidden={!mobileNavOpen}
+          >
+            <nav className="lp-mobileNavLinks" aria-label="Меню (мобильная версия)">
+              <Link to="/boats" onClick={closeMobileNav}>
+                Катера
+              </Link>
+              <a href="#how" onClick={closeMobileNav}>
+                Как это работает
+              </a>
+              <a href="#destinations" onClick={closeMobileNav}>
+                Направления
+              </a>
+              <a href="#contact" onClick={closeMobileNav}>
+                Контакты
+              </a>
+            </nav>
+            <div className="lp-mobileNavActions">
+              <a
+                href={SITE_MAIN_URL}
+                className="lp-mobileNavMuted"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={closeMobileNav}
+              >
+                Разместить объявление
+              </a>
+              <div className="lp-mobileNavBtns">
+                <a
+                  href={SITE_MAIN_URL}
+                  className="lp-btnGhost lp-btnGhost--block"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={closeMobileNav}
+                >
+                  Регистрация
+                </a>
+                <a
+                  href={SITE_MAIN_URL}
+                  className="lp-btnGhost lp-btnGhost--block"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={closeMobileNav}
+                >
+                  Вход
+                </a>
+              </div>
+            </div>
           </div>
         </header>
 
@@ -290,7 +390,7 @@ export default function HomePage() {
           <h2 className="lp-ctaTitle">Владелец катера? Зарабатывайте</h2>
           <p className="lp-ctaSub">Сдавайте судно в аренду через ONTHEWATER.</p>
           <a href={SITE_MAIN_URL} className="lp-ctaBtn" target="_blank" rel="noopener noreferrer">
-            Разместить обьявление
+            Разместить объявление
           </a>
         </div>
       </section>
