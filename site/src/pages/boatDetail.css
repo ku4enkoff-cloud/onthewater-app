@@ -142,7 +142,16 @@
   box-sizing: border-box;
 }
 
+/* Отступ после полноэкранной галереи — карточка брони не заходит на фото */
+.bd-page--bs > .bd-galleryBleed + .bd-shell {
+  margin-top: 24px;
+}
+
 @media (max-width: 960px) {
+  .bd-page--bs > .bd-galleryBleed + .bd-shell {
+    margin-top: 16px;
+  }
+
   .bd-shell {
     padding: 0 16px 40px;
   }
@@ -246,6 +255,8 @@
 
 /* Галерея на всю ширину экрана: две панели, стрелки по краям, счётчик, избранное/шаринг */
 .bd-galleryBleed {
+  position: relative;
+  z-index: 1;
   width: 100vw;
   max-width: 100%;
   margin-left: calc(50% - 50vw);
