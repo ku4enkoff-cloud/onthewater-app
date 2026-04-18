@@ -19,6 +19,40 @@ function markerPriceText(boat, durationFilter) {
   return `${n} ₽`
 }
 
+/** Расстояние по поверхности Земли, м */
+function distanceMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000
+  const rad = (d) => (d * Math.PI) / 180
+  const dLat = rad(lat2 - lat1)
+  const dLon = rad(lon2 - lon1)
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLon / 2) ** 2
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)))
+}
+
+/** Расстояние между точками на карте в пикселях экрана (для визуально наложенных меток) */
+function pixelDistanceOnMap(map, lat1, lon1, lat2, lon2) {
+  try {
+    const z = map.getZoom()
+    const proj = map.options.get('projection')
+    const p1 = proj.toGlobalPixels([lat1, lon1], z)
+    const p2 = proj.toGlobalPixels([lat2, lon2], z)
+    const dx = p1[0] - p2[0]
+    const dy = p1[1] - p2[1]
+    return Math.hypot(dx, dy)
+  } catch {
+    return Infinity
+  }
+}
+
+/** Считаем метки «рядом», если близко на экране или по координатам */
+function isSameVisualCluster(map, lat1, lon1, lat2, lon2) {
+  const m = distanceMeters(lat1, lon1, lat2, lon2)
+  const px = pixelDistanceOnMap(map, lat1, lon1, lat2, lon2)
+  return px < 72 || m < 95
+}
+
 export default function YandexBoatsMap({
   apiKey,
   boats,
@@ -28,7 +62,7 @@ export default function YandexBoatsMap({
   searchOnMove,
   autoFitBounds,
   onGeoSearch,
-  onPlacemarkClick,
+  onPlacemarksPick,
   filters,
 }) {
   const containerRef = useRef(null)
@@ -38,7 +72,7 @@ export default function YandexBoatsMap({
   const [mapReady, setMapReady] = useState(false)
   const onGeoSearchRef = useRef(onGeoSearch)
   const searchOnMoveRef = useRef(searchOnMove)
-  const onPlacemarkClickRef = useRef(onPlacemarkClick)
+  const onPlacemarksPickRef = useRef(onPlacemarksPick)
 
   useEffect(() => {
     onGeoSearchRef.current = onGeoSearch
@@ -47,8 +81,8 @@ export default function YandexBoatsMap({
     searchOnMoveRef.current = searchOnMove
   }, [searchOnMove])
   useEffect(() => {
-    onPlacemarkClickRef.current = onPlacemarkClick
-  }, [onPlacemarkClick])
+    onPlacemarksPickRef.current = onPlacemarksPick
+  }, [onPlacemarksPick])
 
   const onActionEndRef = useRef(null)
   useEffect(() => {
@@ -141,8 +175,10 @@ export default function YandexBoatsMap({
     for (const boat of withCoords) {
       const id = String(boat.id)
       const instant = boat.instant_booking !== false
+      const lat = Number(boat.lat)
+      const lng = Number(boat.lng)
       const pm = new window.ymaps.Placemark(
-        [Number(boat.lat), Number(boat.lng)],
+        [lat, lng],
         {
           priceText: markerPriceText(boat, durationFilter),
           pinClass: 'yw-pin',
@@ -151,18 +187,40 @@ export default function YandexBoatsMap({
         },
         {
           iconLayout: LayoutClass,
-          iconOffset: [-40, -18],
+          /* якорь ближе к центру плашки; область клика шире длинных цен вроде «50k ₽» */
+          iconOffset: [-32, -20],
           iconShape: {
             type: 'Rectangle',
             coordinates: [
-              [-42, -36],
-              [42, 4],
+              [-12, -44],
+              [112, 20],
             ],
           },
+          interactiveZIndex: true,
+          zIndex: 650,
+          cursor: 'pointer',
         },
       )
-      pm.events.add('click', () => {
-        onPlacemarkClickRef.current?.(boat.id)
+      pm.events.add('click', (e) => {
+        try {
+          e.stopPropagation()
+        } catch {
+          /* ignore */
+        }
+        const neighbors = withCoords
+          .filter((b) =>
+            isSameVisualCluster(map, lat, lng, Number(b.lat), Number(b.lng)),
+          )
+          .sort((a, b) => {
+            if (a.id === boat.id) return -1
+            if (b.id === boat.id) return 1
+            return String(a.title || '').localeCompare(String(b.title || ''), 'ru')
+          })
+        const payload = neighbors.map((b) => ({
+          id: b.id,
+          title: b.title || 'Катер',
+        }))
+        onPlacemarksPickRef.current?.(payload)
       })
       map.geoObjects.add(pm)
       placemarksRef.current.set(id, pm)
@@ -195,6 +253,7 @@ export default function YandexBoatsMap({
       const selected = selectedBoatId != null && String(selectedBoatId) === id
       try {
         pm.properties.set('pinClass', `yw-pin${selected ? ' yw-pin--selected' : ''}`)
+        pm.options.set('zIndex', selected ? 4000 : 650)
       } catch {
         /* ignore */
       }

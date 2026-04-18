@@ -118,6 +118,7 @@ export default function BoatsSearchPage() {
   const [mapVisible, setMapVisible] = useState(true)
   const [searchOnMove, setSearchOnMove] = useState(false)
   const [selectedBoatId, setSelectedBoatId] = useState(null)
+  const [mapPickCandidates, setMapPickCandidates] = useState(null)
   const [apiTypes, setApiTypes] = useState([])
   const [filtersModalOpen, setFiltersModalOpen] = useState(false)
   const [filtersModalKey, setFiltersModalKey] = useState(0)
@@ -241,14 +242,42 @@ export default function BoatsSearchPage() {
     setFiltersModalOpen(true)
   }
 
-  const handleMapBoatClick = useCallback((boatId) => {
+  const scrollCardIntoView = useCallback((boatId) => {
     if (boatId == null) return
-    setSelectedBoatId(boatId)
     queueMicrotask(() => {
-      const el = document.getElementById(`bs-boat-${boatId}`)
-      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      document.getElementById(`bs-boat-${boatId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     })
   }, [])
+
+  const handleMapPlacemarksPick = useCallback((candidates) => {
+    if (!candidates?.length) return
+    if (candidates.length === 1) {
+      const id = candidates[0].id
+      setMapPickCandidates(null)
+      setSelectedBoatId(id)
+      scrollCardIntoView(id)
+      return
+    }
+    setMapPickCandidates(candidates)
+  }, [scrollCardIntoView])
+
+  const finishMapPick = useCallback(
+    (boatId) => {
+      setMapPickCandidates(null)
+      setSelectedBoatId(boatId)
+      scrollCardIntoView(boatId)
+    },
+    [scrollCardIntoView],
+  )
+
+  useEffect(() => {
+    if (!mapPickCandidates?.length) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') setMapPickCandidates(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [mapPickCandidates])
 
   const categoryItems = useMemo(() => {
     if (apiTypes.length > 0) {
@@ -549,9 +578,39 @@ export default function BoatsSearchPage() {
               searchOnMove={searchOnMove}
               autoFitBounds={!searchOnMove}
               onGeoSearch={handleGeoSearch}
-              onPlacemarkClick={handleMapBoatClick}
+              onPlacemarksPick={handleMapPlacemarksPick}
               filters={filters}
             />
+            {mapPickCandidates?.length ? (
+              <div
+                className="bs-mapPickOverlay"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="bs-mapPick-title"
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) setMapPickCandidates(null)
+                }}
+              >
+                <div className="bs-mapPickCard" onClick={(e) => e.stopPropagation()}>
+                  <h2 id="bs-mapPick-title" className="bs-mapPickTitle">
+                    Выберите катер
+                  </h2>
+                  <p className="bs-mapPickHint">Несколько судов рядом на карте — укажите нужное.</p>
+                  <ul className="bs-mapPickList">
+                    {mapPickCandidates.map((c) => (
+                      <li key={String(c.id)}>
+                        <button type="button" className="bs-mapPickBtn" onClick={() => finishMapPick(c.id)}>
+                          {c.title}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <button type="button" className="bs-mapPickCancel" onClick={() => setMapPickCandidates(null)}>
+                    Отмена
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
