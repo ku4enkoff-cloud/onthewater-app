@@ -1,0 +1,38 @@
+.fqd-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.fqd-panel {
+  position: fixed;
+  z-index: 1110;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.18);
+  border: 1px solid #e2e8f0;
+  padding: 16px 18px 18px;
+  max-height: min(72vh, 440px);
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.fqd-panel .fm-section {
+  padding: 0;
+}
+
+.fqd-panel .fm-divider {
+  display: none;
+}
+
+.fqd-panel .fm-chipRow--scroll {
+  flex-wrap: wrap;
+  max-height: none;
+  overflow: visible;
+}
+
+.bs-filterChipAnchor {
+  display: inline-flex;
+  vertical-align: middle;
+}

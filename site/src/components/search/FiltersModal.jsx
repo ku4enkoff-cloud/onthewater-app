@@ -20,7 +20,7 @@ function clamp(v, min, max) {
   return Math.min(Math.max(v, min), max)
 }
 
-function DualRangeSlider({ low, high, min, max, onChange }) {
+export function DualRangeSlider({ low, high, min, max, onChange }) {
   const trackRef = useRef(null)
   const dragging = useRef(null)
   const lowRef = useRef(low)

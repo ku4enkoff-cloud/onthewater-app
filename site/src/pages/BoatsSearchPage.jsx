@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import './boatsSearch.css'
 import { fetchBoatTypes, fetchBoatsSearch } from '../api/boats'
@@ -22,6 +22,7 @@ import {
   readNearestCityFromStorage,
 } from '../boatSearchUtils'
 import BoatResultCard from '../components/search/BoatResultCard.jsx'
+import FilterQuickDropdown from '../components/search/FilterQuickDropdown.jsx'
 import FiltersModal from '../components/search/FiltersModal.jsx'
 import YandexBoatsMap from '../components/search/YandexBoatsMap.jsx'
 import BookingCalendarModal, { formatBookingDateDots } from '../components/booking/BookingCalendarModal.jsx'
@@ -123,6 +124,21 @@ export default function BoatsSearchPage() {
   const [filtersModalOpen, setFiltersModalOpen] = useState(false)
   const [filtersModalKey, setFiltersModalKey] = useState(0)
   const [filtersModalFocus, setFiltersModalFocus] = useState(null)
+  const [filterDropdown, setFilterDropdown] = useState(null)
+
+  const priceFilterAnchorRef = useRef(null)
+  const guestsFilterAnchorRef = useRef(null)
+  const durationFilterAnchorRef = useRef(null)
+  const captainFilterAnchorRef = useRef(null)
+  const filterAnchorRefs = useMemo(
+    () => ({
+      price: priceFilterAnchorRef,
+      guests: guestsFilterAnchorRef,
+      duration: durationFilterAnchorRef,
+      captain: captainFilterAnchorRef,
+    }),
+    [],
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -237,10 +253,16 @@ export default function BoatsSearchPage() {
   const isCaptainActive = Boolean(filters.captain)
 
   const openFiltersModal = (focusSection) => {
+    setFilterDropdown(null)
     setFiltersModalFocus(focusSection ?? null)
     setFiltersModalKey((k) => k + 1)
     setFiltersModalOpen(true)
   }
+
+  const toggleFilterDropdown = useCallback((key) => {
+    setFiltersModalOpen(false)
+    setFilterDropdown((prev) => (prev === key ? null : key))
+  }, [])
 
   const scrollCardIntoView = useCallback((boatId) => {
     if (boatId == null) return
@@ -406,12 +428,13 @@ export default function BoatsSearchPage() {
           </button>
 
           {isPriceActive ? (
-            <div className="bs-quickChip bs-quickChip--value">
+            <div className="bs-quickChip bs-quickChip--value" ref={priceFilterAnchorRef}>
               <button
                 type="button"
                 className="bs-quickChip__main"
-                onClick={() => openFiltersModal('price')}
+                onClick={() => toggleFilterDropdown('price')}
                 aria-label="Фильтр по цене"
+                aria-expanded={filterDropdown === 'price'}
               >
                 {formatPriceShort(filters.priceLow)} – {formatPriceShort(filters.priceHigh)} ₽
               </button>
@@ -432,23 +455,27 @@ export default function BoatsSearchPage() {
               </button>
             </div>
           ) : (
-            <button
-              type="button"
-              className="bs-quickChip"
-              onClick={() => openFiltersModal('price')}
-            >
-              Цена
-              <ChevronDownIcon />
-            </button>
+            <span className="bs-filterChipAnchor" ref={priceFilterAnchorRef}>
+              <button
+                type="button"
+                className="bs-quickChip"
+                onClick={() => toggleFilterDropdown('price')}
+                aria-expanded={filterDropdown === 'price'}
+              >
+                Цена
+                <ChevronDownIcon />
+              </button>
+            </span>
           )}
 
           {isGuestsActive ? (
-            <div className="bs-quickChip bs-quickChip--value">
+            <div className="bs-quickChip bs-quickChip--value" ref={guestsFilterAnchorRef}>
               <button
                 type="button"
                 className="bs-quickChip__main"
-                onClick={() => openFiltersModal('passengers')}
+                onClick={() => toggleFilterDropdown('guests')}
                 aria-label="Количество гостей"
+                aria-expanded={filterDropdown === 'guests'}
               >
                 {formatGuestsQuickLabel(filters.passengers)}
               </button>
@@ -465,23 +492,27 @@ export default function BoatsSearchPage() {
               </button>
             </div>
           ) : (
-            <button
-              type="button"
-              className="bs-quickChip"
-              onClick={() => openFiltersModal('passengers')}
-            >
-              Гости
-              <ChevronDownIcon />
-            </button>
+            <span className="bs-filterChipAnchor" ref={guestsFilterAnchorRef}>
+              <button
+                type="button"
+                className="bs-quickChip"
+                onClick={() => toggleFilterDropdown('guests')}
+                aria-expanded={filterDropdown === 'guests'}
+              >
+                Гости
+                <ChevronDownIcon />
+              </button>
+            </span>
           )}
 
           {isDurationActive ? (
-            <div className="bs-quickChip bs-quickChip--value">
+            <div className="bs-quickChip bs-quickChip--value" ref={durationFilterAnchorRef}>
               <button
                 type="button"
                 className="bs-quickChip__main"
-                onClick={() => openFiltersModal('duration')}
+                onClick={() => toggleFilterDropdown('duration')}
                 aria-label="Длительность аренды"
+                aria-expanded={filterDropdown === 'duration'}
               >
                 {formatDurationListLabel(filters.duration)}
               </button>
@@ -498,24 +529,30 @@ export default function BoatsSearchPage() {
               </button>
             </div>
           ) : (
-            <button
-              type="button"
-              className="bs-quickChip"
-              onClick={() => openFiltersModal('duration')}
-            >
-              Длительность
-              <ChevronDownIcon />
-            </button>
+            <span className="bs-filterChipAnchor" ref={durationFilterAnchorRef}>
+              <button
+                type="button"
+                className="bs-quickChip"
+                onClick={() => toggleFilterDropdown('duration')}
+                aria-expanded={filterDropdown === 'duration'}
+              >
+                Длительность
+                <ChevronDownIcon />
+              </button>
+            </span>
           )}
 
-          <button
-            type="button"
-            className={`bs-quickChip${isCaptainActive ? ' bs-quickChip--on' : ''}`}
-            onClick={() => openFiltersModal('captain')}
-          >
-            Капитан
-            <ChevronDownIcon />
-          </button>
+          <span className="bs-filterChipAnchor" ref={captainFilterAnchorRef}>
+            <button
+              type="button"
+              className={`bs-quickChip${isCaptainActive ? ' bs-quickChip--on' : ''}`}
+              onClick={() => toggleFilterDropdown('captain')}
+              aria-expanded={filterDropdown === 'captain'}
+            >
+              Капитан
+              <ChevronDownIcon />
+            </button>
+          </span>
         </div>
 
         <label className="bs-mapToggle bs-mapToggle--mobileOnly">
@@ -627,6 +664,20 @@ export default function BoatsSearchPage() {
           </div>
         </div>
       </div>
+
+      <FilterQuickDropdown
+        open={filterDropdown}
+        anchorRefs={filterAnchorRefs}
+        onClose={() => setFilterDropdown(null)}
+        filters={filters}
+        onFiltersChange={(partial) => setFilters((prev) => ({ ...prev, ...partial }))}
+        priceRange={priceRange}
+        durationOptions={
+          durationOptions.length > 0 ? durationOptions : [30, 60, 120, 180, 240, 360, 480]
+        }
+        maxPassengers={maxPassengers}
+        allBoats={boatsOnDate}
+      />
 
       {filtersModalOpen ? (
         <FiltersModal
