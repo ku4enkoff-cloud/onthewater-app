@@ -358,7 +358,7 @@ export default function BoatDetailPage() {
 
       <div className="bd-shell">
         <div className="bd-topZone">
-          <div className={photos.length > 1 ? 'bd-galleryBs bd-galleryBs--split' : 'bd-galleryBs'}>
+          <div className="bd-galleryBs">
             <div className="bd-galleryBs__grid">
               <div
                 className="bd-galleryBs__main"
@@ -443,18 +443,6 @@ export default function BoatDetailPage() {
                   </>
                 ) : null}
               </div>
-              {photos.length > 1 ? (
-                <div className="bd-galleryBs__sideCol">
-                  <button
-                    type="button"
-                    className="bd-galleryBs__side"
-                    onClick={nextPhoto}
-                    aria-label="Следующее фото (превью)"
-                  >
-                    <img src={photos[(photoIndex + 1) % photos.length]} alt="" className="bd-galleryBs__img bd-galleryBs__img--side" />
-                  </button>
-                </div>
-              ) : null}
             </div>
           </div>
 

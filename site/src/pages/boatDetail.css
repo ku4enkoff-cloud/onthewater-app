@@ -237,7 +237,7 @@
   }
 }
 
-/* Галерея: основное фото + превью справа (как на Boatsetter) */
+/* Галерея: одно главное фото + миниатюры снизу */
 .bd-galleryBs {
   position: relative;
   margin-top: 8px;
@@ -245,57 +245,23 @@
 
 .bd-galleryBs__grid {
   display: grid;
-  gap: 10px;
+  grid-template-columns: 1fr;
+  gap: 0;
   align-items: stretch;
   min-height: 240px;
 }
 
-.bd-galleryBs--split .bd-galleryBs__grid {
-  grid-template-columns: 1.75fr 1fr;
-}
-
-.bd-galleryBs:not(.bd-galleryBs--split) .bd-galleryBs__grid {
-  grid-template-columns: 1fr;
-}
-
-.bd-galleryBs__main,
-.bd-galleryBs__side,
-.bd-galleryBs__sideCol {
+.bd-galleryBs__main {
   position: relative;
   border-radius: 14px;
   overflow: hidden;
   background: #eceff3;
-}
-
-.bd-galleryBs__sideCol {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-  padding: 0;
-  overflow: visible;
-}
-
-.bd-galleryBs__sideCol .bd-galleryBs__side {
-  flex: 1 1 auto;
-  min-height: 0;
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-.bd-galleryBs__main {
   display: flex;
   align-items: center;
   justify-content: center;
   aspect-ratio: 16 / 10;
   max-height: min(52vh, 520px);
   touch-action: pan-y pinch-zoom;
-}
-
-.bd-galleryBs--split .bd-galleryBs__side {
-  aspect-ratio: 4 / 5;
-  max-height: 520px;
-  height: 100%;
 }
 
 /* Главное фото: без обрезки и искажений, поля заполняет фон блока */
@@ -311,27 +277,6 @@
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
-}
-
-.bd-galleryBs__img--side {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.bd-galleryBs__side {
-  display: block;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  padding: 0;
-  margin: 0;
-  border: none;
-  cursor: pointer;
-}
-
-.bd-galleryBs__side:hover {
-  filter: brightness(1.04);
 }
 
 .bd-galleryBs__badge {
@@ -478,14 +423,6 @@
 }
 
 @media (max-width: 720px) {
-  .bd-galleryBs--split .bd-galleryBs__grid {
-    grid-template-columns: 1fr;
-  }
-
-  .bd-galleryBs__sideCol {
-    display: none;
-  }
-
   .bd-thumbBs {
     width: 108px;
     height: 76px;
