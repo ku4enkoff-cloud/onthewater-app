@@ -538,7 +538,7 @@ export default function BoatsSearchPage() {
       />
 
       {categoryItems.length > 0 ? (
-        <div className="bs-categories">
+        <div className="bs-categories" role="region" aria-label="Тип катера">
           {categoryItems.map((t) => (
             <button
               key={t.id}
@@ -553,7 +553,7 @@ export default function BoatsSearchPage() {
         </div>
       ) : null}
 
-      <div className="bs-filtersRow">
+      <div className="bs-filtersRow" role="region" aria-label="Фильтры и параметры">
         <div className="bs-filtersRow__chips">
           <button
             type="button"

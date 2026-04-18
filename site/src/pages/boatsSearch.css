@@ -324,12 +324,13 @@
 
 .bs-categories {
   border-bottom: 1px solid #e2e8f0;
-  padding: 10px 20px 6px;
+  padding: 12px 20px 20px;
   overflow-x: auto;
   display: flex;
-  gap: 10px;
-  align-items: center;
+  gap: 12px;
+  align-items: flex-start;
   -webkit-overflow-scrolling: touch;
+  scroll-padding-inline: 20px;
 }
 
 .bs-cat {
@@ -339,7 +340,7 @@
   align-items: center;
   gap: 6px;
   width: 104px;
-  padding: 6px 4px 10px;
+  padding: 8px 4px 10px;
   border: 1px solid transparent;
   border-radius: 12px;
   background: transparent;
@@ -350,6 +351,11 @@
 
 .bs-cat:hover {
   background: #f1f5f9;
+}
+
+.bs-cat:focus-visible {
+  outline: 2px solid #0061c1;
+  outline-offset: 2px;
 }
 
 .bs-cat--on {
@@ -377,10 +383,11 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 20px 14px;
+  padding: 16px 20px 14px;
   flex-wrap: nowrap;
   min-width: 0;
   border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
 }
 
 .bs-filtersRow__chips {
@@ -1061,12 +1068,14 @@
   }
 
   .bs-categories {
-    padding: 10px 14px 6px;
+    padding: 12px 14px 18px;
+    gap: 10px;
+    scroll-padding-inline: 14px;
   }
 
   .bs-cat {
     width: 88px;
-    padding: 6px 4px 8px;
+    padding: 6px 4px 10px;
   }
 
   .bs-cat__img {
@@ -1089,7 +1098,7 @@
   }
 
   .bs-filtersRow {
-    padding: 10px 14px 12px;
+    padding: 14px 14px 12px;
     gap: 8px;
   }
 
