@@ -383,12 +383,6 @@
   border-bottom: 1px solid #e2e8f0;
 }
 
-.bs-filtersRow__view {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-}
-
 .bs-filtersRow__chips {
   flex: 1;
   min-width: 0;
@@ -782,11 +776,28 @@
   color: #0f172a;
 }
 
+.bs-resultsHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  min-width: 0;
+}
+
+.bs-resultsHead__view {
+  flex-shrink: 0;
+}
+
 .bs-resultsTitle {
-  margin: 0 0 16px;
+  margin: 0;
   font-size: 22px;
   font-weight: 800;
   color: #002b5b;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.2;
 }
 
 .bs-grid {
@@ -1086,9 +1097,13 @@
     padding: 14px 16px 16px;
   }
 
+  .bs-resultsHead {
+    margin-bottom: 12px;
+    align-items: flex-start;
+  }
+
   .bs-resultsTitle {
     font-size: 18px;
-    margin-bottom: 12px;
   }
 
   .bs-mapSearchOpt {

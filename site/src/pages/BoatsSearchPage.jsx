@@ -694,36 +694,37 @@ export default function BoatsSearchPage() {
             </button>
           </span>
         </div>
-
-        <div className="bs-filtersRow__view" role="presentation">
-          <div className="bs-viewSeg bs-viewSeg--mobileOnly" role="tablist" aria-label="Вид: список или карта">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={!mapVisible}
-              className={`bs-viewSeg__btn${!mapVisible ? ' bs-viewSeg__btn--active' : ''}`}
-              onClick={() => setMapVisible(false)}
-            >
-              Список
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mapVisible}
-              className={`bs-viewSeg__btn${mapVisible ? ' bs-viewSeg__btn--active' : ''}`}
-              onClick={() => setMapVisible(true)}
-            >
-              Карта
-            </button>
-          </div>
-        </div>
       </div>
 
       <div className={`bs-main${!mapVisible ? ' bs-main--mapOff' : ''}`}>
         <div className="bs-listCol">
-          <h1 className="bs-resultsTitle">
-            {loading ? 'Загрузка…' : `${boats.length} катеров — ${displayLocation}`}
-          </h1>
+          <div className="bs-resultsHead">
+            <h1 className="bs-resultsTitle">
+              {loading ? 'Загрузка…' : `${boats.length} катеров — ${displayLocation}`}
+            </h1>
+            <div className="bs-resultsHead__view" role="presentation">
+              <div className="bs-viewSeg bs-viewSeg--mobileOnly" role="tablist" aria-label="Вид: список или карта">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={!mapVisible}
+                  className={`bs-viewSeg__btn${!mapVisible ? ' bs-viewSeg__btn--active' : ''}`}
+                  onClick={() => setMapVisible(false)}
+                >
+                  Список
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={mapVisible}
+                  className={`bs-viewSeg__btn${mapVisible ? ' bs-viewSeg__btn--active' : ''}`}
+                  onClick={() => setMapVisible(true)}
+                >
+                  Карта
+                </button>
+              </div>
+            </div>
+          </div>
           {loading ? (
             <div className="bs-loading">Загружаем катера…</div>
           ) : (
