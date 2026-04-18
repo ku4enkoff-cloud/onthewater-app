@@ -40,6 +40,23 @@ if (Platform.OS === 'android' || Platform.OS === 'ios') {
   } catch (_) {}
 }
 
+// AppMetrica (нативный модуль — не работает в Expo Go; ключ из extra / EXPO_PUBLIC_APPMETRICA_API_KEY).
+if ((Platform.OS === 'android' || Platform.OS === 'ios') && Constants.appOwnership !== 'expo') {
+  const appmetricaKey = Constants.expoConfig?.extra?.appmetricaApiKey;
+  if (appmetricaKey && String(appmetricaKey).trim()) {
+    try {
+      const AppMetrica = require('@appmetrica/react-native-analytics').default;
+      AppMetrica.activate({
+        apiKey: String(appmetricaKey).trim(),
+        sessionTimeout: 120,
+        logs: typeof __DEV__ !== 'undefined' && __DEV__,
+      });
+    } catch (e) {
+      console.warn('[AppMetrica]', e?.message || e);
+    }
+  }
+}
+
 export default function App() {
     const [fontsLoaded, setFontsLoaded] = useState(false);
 
