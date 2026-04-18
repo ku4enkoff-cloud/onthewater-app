@@ -1060,17 +1060,26 @@
     flex-direction: column;
   }
 
-  /* Список по умолчанию занимает основную высоту; карта — отдельный блок снизу */
+  /* «Карта»: только шапка (заголовок + Список/Карта) и карта на всю оставшуюся высоту */
+  .bs-main:not(.bs-main--mapOff) .bs-listCol > *:not(.bs-resultsHead) {
+    display: none !important;
+  }
+
   .bs-main:not(.bs-main--mapOff) .bs-listCol {
-    flex: 1 1 auto;
-    min-height: min(42vh, 360px);
-    max-height: 52vh;
+    flex: 0 0 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .bs-main:not(.bs-main--mapOff) .bs-resultsHead {
+    margin-bottom: 0;
   }
 
   .bs-main:not(.bs-main--mapOff) .bs-mapCol {
     flex: 1 1 auto;
-    min-height: 36vh;
-    max-height: 46vh;
+    min-height: 0;
+    max-height: none;
     min-width: 0;
     position: relative;
     border-left: 0;
