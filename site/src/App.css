@@ -1222,20 +1222,36 @@
   }
 
   .lp-searchBar--pill {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 10px 10px 10px 18px;
-    border-radius: 20px;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: nowrap;
+    padding: 5px 5px 5px 10px;
+    border-radius: 999px;
   }
 
   .lp-searchField--pill {
-    padding: 0 8px 0 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0 6px 0 0;
+  }
+
+  .lp-searchBar--pill .lp-searchPin svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .lp-searchBar--pill .lp-searchInput {
+    padding: 10px 2px 10px 0;
+    font-size: 15px;
   }
 
   .lp-searchBar--pill .lp-searchBtn--pill {
-    width: 100%;
-    margin-top: 4px;
-    padding: 16px 20px;
+    flex-shrink: 0;
+    width: auto;
+    margin-top: 0;
+    padding: 11px 14px;
+    font-size: 12px;
+    letter-spacing: 0.06em;
   }
 
   .lp-citySuggest {
