@@ -698,56 +698,60 @@ export default function BoatsSearchPage() {
 
       <div className={`bs-main${!mapVisible ? ' bs-main--mapOff' : ''}`}>
         <div className="bs-listCol">
-          <div className="bs-resultsHead">
-            <h1 className="bs-resultsTitle">
-              {loading ? 'Загрузка…' : `${boats.length} катеров — ${displayLocation}`}
-            </h1>
-            <div className="bs-resultsHead__view" role="presentation">
-              <div className="bs-viewSeg bs-viewSeg--mobileOnly" role="tablist" aria-label="Вид: список или карта">
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={!mapVisible}
-                  className={`bs-viewSeg__btn${!mapVisible ? ' bs-viewSeg__btn--active' : ''}`}
-                  onClick={() => setMapVisible(false)}
-                >
-                  Список
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={mapVisible}
-                  className={`bs-viewSeg__btn${mapVisible ? ' bs-viewSeg__btn--active' : ''}`}
-                  onClick={() => setMapVisible(true)}
-                >
-                  Карта
-                </button>
+          <div className="bs-listCol__head">
+            <div className="bs-resultsHead">
+              <h1 className="bs-resultsTitle">
+                {loading ? 'Загрузка…' : `${boats.length} катеров — ${displayLocation}`}
+              </h1>
+              <div className="bs-resultsHead__view" role="presentation">
+                <div className="bs-viewSeg bs-viewSeg--mobileOnly" role="tablist" aria-label="Вид: список или карта">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={!mapVisible}
+                    className={`bs-viewSeg__btn${!mapVisible ? ' bs-viewSeg__btn--active' : ''}`}
+                    onClick={() => setMapVisible(false)}
+                  >
+                    Список
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={mapVisible}
+                    className={`bs-viewSeg__btn${mapVisible ? ' bs-viewSeg__btn--active' : ''}`}
+                    onClick={() => setMapVisible(true)}
+                  >
+                    Карта
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-          {loading ? (
-            <div className="bs-loading">Загружаем катера…</div>
-          ) : (
-            <div className="bs-grid">
-              {boats.map((boat) => (
-                <BoatResultCard
-                  key={boat.id}
-                  boat={boat}
-                  filters={filters}
-                  selected={selectedBoatId === boat.id}
-                  onHover={(id) => setSelectedBoatId(id)}
-                  onLeave={() => setSelectedBoatId(null)}
-                />
-              ))}
-            </div>
-          )}
-          {!loading && boats.length === 0 ? (
-            <p className="bs-loading">
-              {allBoats.length > 0 && boatsOnDate.length === 0
-                ? `На ${formatBookingDateDots(dateStr)} в списке нет катеров с выходом в этот день — выберите другую дату.`
-                : 'Ничего не найдено — измените фильтры или город.'}
-            </p>
-          ) : null}
+          <div className="bs-listCol__scroll" role="region" aria-label="Список катеров">
+            {loading ? (
+              <div className="bs-loading">Загружаем катера…</div>
+            ) : (
+              <div className="bs-grid">
+                {boats.map((boat) => (
+                  <BoatResultCard
+                    key={boat.id}
+                    boat={boat}
+                    filters={filters}
+                    selected={selectedBoatId === boat.id}
+                    onHover={(id) => setSelectedBoatId(id)}
+                    onLeave={() => setSelectedBoatId(null)}
+                  />
+                ))}
+              </div>
+            )}
+            {!loading && boats.length === 0 ? (
+              <p className="bs-loading">
+                {allBoats.length > 0 && boatsOnDate.length === 0
+                  ? `На ${formatBookingDateDots(dateStr)} в списке нет катеров с выходом в этот день — выберите другую дату.`
+                  : 'Ничего не найдено — измените фильтры или город.'}
+              </p>
+            ) : null}
+          </div>
         </div>
 
         <div className="bs-mapCol">
