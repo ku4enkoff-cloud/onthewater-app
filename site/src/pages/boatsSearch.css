@@ -381,9 +381,9 @@
 
 .bs-filtersRow {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
-  padding: 16px 20px 14px;
+  padding: 14px 20px 18px;
   flex-wrap: nowrap;
   min-width: 0;
   border-bottom: 1px solid #e2e8f0;
@@ -397,10 +397,30 @@
   align-items: center;
   gap: 8px;
   overflow-x: auto;
+  overflow-y: hidden;
   flex-wrap: nowrap;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 2px;
+  /* Зазор под чипами: бегунок не наезжает на подписи (особенно overlay-скролл на iOS) */
+  padding: 6px 0 20px;
+  margin-bottom: 2px;
   scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.bs-filtersRow__chips::-webkit-scrollbar {
+  height: 10px;
+}
+
+.bs-filtersRow__chips::-webkit-scrollbar-track {
+  margin: 0 4px;
+  background: #f1f5f9;
+  border-radius: 999px;
+}
+
+.bs-filtersRow__chips::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+  border: 2px solid #f1f5f9;
 }
 
 .bs-filtersRow__chips .bs-chip {
@@ -1098,8 +1118,12 @@
   }
 
   .bs-filtersRow {
-    padding: 14px 14px 12px;
+    padding: 12px 14px 16px;
     gap: 8px;
+  }
+
+  .bs-filtersRow__chips {
+    padding: 8px 0 22px;
   }
 
   .bs-listCol {
