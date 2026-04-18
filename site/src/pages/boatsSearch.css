@@ -383,6 +383,12 @@
   border-bottom: 1px solid #e2e8f0;
 }
 
+.bs-filtersRow__view {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
 .bs-filtersRow__chips {
   flex: 1;
   min-width: 0;
@@ -528,30 +534,46 @@
   opacity: 0.85;
 }
 
-.bs-mapToggle {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #475569;
+.bs-viewSeg {
+  align-items: stretch;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  overflow: hidden;
+  background: #f1f5f9;
 }
 
-.bs-mapToggle input {
-  width: auto;
-  height: auto;
-  accent-color: #0061c1;
-}
-
-.bs-mapToggle--mobileOnly {
+.bs-viewSeg.bs-viewSeg--mobileOnly {
   display: none;
 }
 
-@media (max-width: 1024px) {
-  .bs-mapToggle--mobileOnly {
-    display: flex;
-  }
+.bs-viewSeg__btn {
+  min-width: 84px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.bs-viewSeg__btn:first-child {
+  border-right: 1px solid #cbd5e1;
+}
+
+.bs-viewSeg__btn--active {
+  background: #fff;
+  color: #002b5b;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.bs-viewSeg__btn:focus-visible {
+  outline: 2px solid #0061c1;
+  outline-offset: 2px;
+  z-index: 1;
 }
 
 .bs-main {
@@ -992,21 +1014,98 @@
 }
 
 @media (max-width: 1024px) {
-  .bs-mapCol {
-    flex: 0 0 45vh;
-    min-width: 0;
-    min-height: 0;
-    position: relative;
-    border-left: 0;
-    border-top: 1px solid #e2e8f0;
+  .bs-viewSeg.bs-viewSeg--mobileOnly {
+    display: inline-flex;
   }
 
   .bs-main {
     flex-direction: column;
   }
 
+  /* Список по умолчанию занимает основную высоту; карта — отдельный блок снизу */
+  .bs-main:not(.bs-main--mapOff) .bs-listCol {
+    flex: 1 1 auto;
+    min-height: min(42vh, 360px);
+    max-height: 52vh;
+  }
+
+  .bs-main:not(.bs-main--mapOff) .bs-mapCol {
+    flex: 1 1 auto;
+    min-height: 36vh;
+    max-height: 46vh;
+    min-width: 0;
+    position: relative;
+    border-left: 0;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .bs-main--mapOff .bs-listCol {
+    flex: 1;
+    max-height: none;
+    min-height: 0;
+  }
+
   .bs-grid {
     grid-template-columns: 1fr;
+  }
+
+  .bs-categories {
+    padding: 10px 14px 6px;
+  }
+
+  .bs-cat {
+    width: 88px;
+    padding: 6px 4px 8px;
+  }
+
+  .bs-cat__img {
+    width: 58px;
+    height: 58px;
+    border-radius: 16px;
+  }
+
+  .bs-cat__label {
+    font-size: 12px;
+    font-weight: 600;
+    max-width: 100%;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    line-height: 1.2;
+    word-break: break-word;
+  }
+
+  .bs-filtersRow {
+    padding: 10px 14px 12px;
+    gap: 8px;
+  }
+
+  .bs-listCol {
+    padding: 14px 16px 16px;
+  }
+
+  .bs-resultsTitle {
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+
+  .bs-mapSearchOpt {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 13px;
+    box-sizing: border-box;
+    max-width: calc(100% - 20px);
+  }
+
+  .bs-mapSearchOpt input {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
   }
 }
 
