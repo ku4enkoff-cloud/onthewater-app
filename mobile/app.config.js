@@ -66,6 +66,7 @@ export default {
     // Ключи Яндекс: MapKit — карты, Geosuggest — подсказки городов. В developer.tech.yandex.com включите нужные интерфейсы для ключа.
     extra: {
       appVariant: variant,
+      // AppMetrica: два ключа в кабинете Яндекса — клиент / владелец (см. .env.example).
       appmetricaApiKey: isOwner
         ? (process.env.EXPO_PUBLIC_APPMETRICA_API_KEY_OWNER || '')
         : (process.env.EXPO_PUBLIC_APPMETRICA_API_KEY || ''),

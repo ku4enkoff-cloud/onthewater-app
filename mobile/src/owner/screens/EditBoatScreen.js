@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import {
     ChevronLeft, ChevronRight, ChevronDown, FileText, AlignLeft, ShieldCheck, Camera, X, Trash2,
-    Ship, MapPin, Clock, Users, Wrench, ImageIcon, Check, Plus, XCircle, Anchor, Waves, Banknote,
+    Ship, MapPin, Clock, Users, Wrench, ImageIcon, Check, Plus, XCircle, Anchor, Waves, Banknote, Film,
 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../../shared/theme';
@@ -29,6 +29,7 @@ const AMENITIES_FALLBACK = [
 const WATER_SPORTS_OPTIONS = ['Вейксерф', 'Вейкборд', 'Водные лыжи'];
 const isWaterSportOption = (name) => WATER_SPORTS_OPTIONS.includes(String(name || '').trim());
 const isTugboat = (name) => (name || '').toLowerCase().includes('буксировщик');
+const MAX_VIDEOS = 3;
 
 const WEEKDAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
@@ -168,6 +169,7 @@ export default function EditBoatScreen({ route, navigation }) {
     const [weekendPrice, setWeekendPrice] = useState('');
     const [amenities, setAmenities] = useState([]);
     const [photos, setPhotos] = useState([]);
+    const [videos, setVideos] = useState([]);
 
     const [workDates, setWorkDates] = useState(new Set());
     const [calendarMonth, setCalendarMonth] = useState(() => {
@@ -297,6 +299,10 @@ export default function EditBoatScreen({ route, navigation }) {
             let ph = b.photos;
             if (typeof ph === 'string') try { ph = JSON.parse(ph); } catch (_) { ph = []; }
             setPhotos(Array.isArray(ph) ? ph : []);
+
+            let vids = b.video_uris;
+            if (typeof vids === 'string') try { vids = JSON.parse(vids); } catch (_) { vids = []; }
+            setVideos(Array.isArray(vids) ? vids : []);
         } catch (_) {
             Alert.alert('Ошибка', 'Не удалось загрузить катер');
             navigation.goBack();
@@ -328,6 +334,33 @@ export default function EditBoatScreen({ route, navigation }) {
     };
 
     const removeImage = (index) => setPhotos((prev) => prev.filter((_, i) => i !== index));
+
+    const pickVideos = async () => {
+        if (videos.length >= MAX_VIDEOS) {
+            Alert.alert('Лимит', `Максимум ${MAX_VIDEOS} видео`);
+            return;
+        }
+        try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Доступ к медиатеке', 'Разрешите доступ к галерее в настройках устройства.');
+                return;
+            }
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['videos'],
+                quality: 0.7,
+                allowsMultipleSelection: true,
+            });
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const remaining = MAX_VIDEOS - videos.length;
+                setVideos((prev) => [...prev, ...result.assets.slice(0, remaining).map((a) => a.uri)]);
+            }
+        } catch (e) {
+            Alert.alert('Ошибка', e?.message || 'Не удалось выбрать видео');
+        }
+    };
+
+    const removeVideo = (index) => setVideos((prev) => prev.filter((_, i) => i !== index));
 
     const toggleDate = (date) => {
         const key = toDateKey(date);
@@ -500,6 +533,17 @@ export default function EditBoatScreen({ route, navigation }) {
             payload.append('photo_urls', JSON.stringify(existingUrls));
             newFiles.forEach((uri, i) => {
                 payload.append('photos', { uri, type: 'image/jpeg', name: `photo_${i}.jpg` });
+            });
+
+            const existingVideoUrls = videos.filter((v) => typeof v === 'string' && !isLocalUri(v));
+            const newVideoFiles = videos.filter(isLocalUri);
+            payload.append('video_uris', JSON.stringify(existingVideoUrls));
+            newVideoFiles.forEach((uri, i) => {
+                const clean = String(uri || '');
+                const extMatch = clean.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
+                const ext = extMatch ? extMatch[1].toLowerCase() : 'mp4';
+                const type = ext === 'mov' ? 'video/quicktime' : `video/${ext}`;
+                payload.append('videos', { uri: clean, type, name: `video_${i}.${ext}` });
             });
 
             const token = await AsyncStorage.getItem('@token');
@@ -1091,6 +1135,35 @@ export default function EditBoatScreen({ route, navigation }) {
                         )}
                     </View>
 
+                    {/* Videos */}
+                    <View style={s.sectionHeader}>
+                        <Film size={18} color={TEAL} />
+                        <Text style={s.sectionTitle}>Видео о катере</Text>
+                        <Text style={s.counter}>{videos.length}/{MAX_VIDEOS}</Text>
+                    </View>
+                    <Text style={s.sectionHint}>
+                        До {MAX_VIDEOS} роликов. Можно удалить старые и добавить новые — после сохранения они отобразятся клиентам.
+                    </Text>
+                    <View style={s.mediaGrid}>
+                        {videos.map((uri, index) => (
+                            <View key={`v-${index}-${String(uri).slice(0, 24)}`} style={s.mediaCard}>
+                                <View style={s.videoPlaceholder}>
+                                    <Film size={32} color="rgba(255,255,255,0.85)" />
+                                    <Text style={s.videoLabel}>Видео {index + 1}</Text>
+                                </View>
+                                <TouchableOpacity style={s.removeBtn} onPress={() => removeVideo(index)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                                    <X size={14} color="#fff" />
+                                </TouchableOpacity>
+                            </View>
+                        ))}
+                        {videos.length < MAX_VIDEOS && (
+                            <TouchableOpacity style={s.addCard} onPress={pickVideos} activeOpacity={0.7}>
+                                <Film size={28} color="#9CA3AF" />
+                                <Text style={s.addCardText}>Добавить видео</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+
                     {/* Delete */}
                     <TouchableOpacity style={s.deleteBtn} onPress={handleDelete} activeOpacity={0.6}>
                         <Trash2 size={18} color="#EF4444" />
@@ -1451,6 +1524,15 @@ const s = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center', backgroundColor: '#FAFAFA',
     },
     addCardText: { fontSize: 13, fontFamily: theme.fonts.medium, color: '#9CA3AF', marginTop: 6 },
+
+    videoPlaceholder: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#1B365D',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    videoLabel: { fontSize: 12, fontFamily: theme.fonts.medium, color: 'rgba(255,255,255,0.75)', marginTop: 6 },
 
     deleteBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
