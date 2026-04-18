@@ -600,7 +600,13 @@ export default function BoatsSearchPage() {
                     {mapPickCandidates.map((c) => (
                       <li key={String(c.id)}>
                         <button type="button" className="bs-mapPickBtn" onClick={() => finishMapPick(c.id)}>
-                          {c.title}
+                          <span className="bs-mapPickBtn__title">{c.title}</span>
+                          {c.priceLine ? (
+                            <span className="bs-mapPickBtn__price">{c.priceLine}</span>
+                          ) : null}
+                          {c.minTimeLine ? (
+                            <span className="bs-mapPickBtn__min">{c.minTimeLine}</span>
+                          ) : null}
                         </button>
                       </li>
                     ))}

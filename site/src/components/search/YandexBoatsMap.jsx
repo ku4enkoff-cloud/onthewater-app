@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { loadYandexMaps } from '../../lib/yandexMaps'
-import { getExactPriceForDuration, radiusKmFromBounds } from '../../boatSearchUtils'
+import {
+  formatDurationChipLabel,
+  formatDurationListLabel,
+  getExactPriceForDuration,
+  radiusKmFromBounds,
+} from '../../boatSearchUtils'
 
 function debounce(fn, ms) {
   let t
@@ -17,6 +22,21 @@ function markerPriceText(boat, durationFilter) {
   const n = Math.round(p)
   if (n >= 1000) return `${Math.round(n / 1000)}k ₽`
   return `${n} ₽`
+}
+
+/** Данные для строки в модалке выбора при наложении меток */
+function buildPickCandidate(boat, durationFilter) {
+  const minDur = Number(boat.schedule_min_duration) || 60
+  const activeDuration = durationFilter || minDur
+  const price =
+    getExactPriceForDuration(boat, activeDuration) ?? (Number(boat.price_per_hour) || 0)
+  const n = Math.round(Number(price) || 0)
+  return {
+    id: boat.id,
+    title: boat.title || 'Катер',
+    priceLine: `от ${n.toLocaleString('ru-RU')} ₽ / ${formatDurationChipLabel(activeDuration)}`,
+    minTimeLine: `минимум ${formatDurationListLabel(minDur)}`,
+  }
 }
 
 /** Расстояние по поверхности Земли, м */
@@ -216,10 +236,7 @@ export default function YandexBoatsMap({
             if (b.id === boat.id) return 1
             return String(a.title || '').localeCompare(String(b.title || ''), 'ru')
           })
-        const payload = neighbors.map((b) => ({
-          id: b.id,
-          title: b.title || 'Катер',
-        }))
+        const payload = neighbors.map((b) => buildPickCandidate(b, durationFilter))
         onPlacemarksPickRef.current?.(payload)
       })
       map.geoObjects.add(pm)

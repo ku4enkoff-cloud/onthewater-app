@@ -547,6 +547,29 @@
   color: #0f172a;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.bs-mapPickBtn__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+.bs-mapPickBtn__price {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0061c1;
+}
+
+.bs-mapPickBtn__min {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
 }
 
 .bs-mapPickBtn:hover {
