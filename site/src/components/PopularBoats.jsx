@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchPopularBoats } from '../api/boats'
 import { API_BASE, getPhotoUrl } from '../config'
+import { boatDetailPath } from '../boatUrl'
 import {
   firstPhotoUrl,
   formatCardLocation,
@@ -80,7 +81,7 @@ export default function PopularBoats() {
               const unit = minDurationLabel(boat)
               const loc = formatCardLocation(boat)
               return (
-                <article key={String(id)} className="lp-boatCard">
+                <Link key={String(id)} to={boatDetailPath(boat)} className="lp-boatCard">
                   <div className="lp-boatImgWrap">
                     <img src={img} alt="" className="lp-boatImg" loading="lazy" />
                   </div>
@@ -91,7 +92,7 @@ export default function PopularBoats() {
                     </p>
                     <p className="lp-boatLoc">{loc}</p>
                   </div>
-                </article>
+                </Link>
               )
             })}
           </div>
