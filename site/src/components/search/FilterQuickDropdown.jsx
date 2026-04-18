@@ -69,7 +69,7 @@ function DurationPanel({ filters, onFiltersChange, durationOptions }) {
       <p className="fm-sectionTitle" style={{ marginBottom: 12 }}>
         Длительность
       </p>
-      <div className="fm-chipRow fm-chipRow--scroll">
+      <div className="fm-chipRow fm-chipRow--scroll fqd-durationRow">
         {durationOptions.map((mins) => (
           <button
             key={mins}
