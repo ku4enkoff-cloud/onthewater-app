@@ -1,7 +1,31 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SITE_MAIN_URL } from '../config'
 import { LOCATION_OPTIONS } from '../boatSearchUtils.js'
 import './SiteFooter.css'
+
+const MOBILE_FOOTER_MQ = '(max-width: 720px)'
+
+function FooterChevron({ open }) {
+  return (
+    <svg
+      className={`sf-col__chev${open ? ' sf-col__chev--open' : ''}`}
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+    >
+      <path
+        d="M6 9l6 6 6-6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
 
 const base = SITE_MAIN_URL.replace(/\/$/, '')
 
@@ -50,11 +74,47 @@ const SOCIAL = [
   { name: 'TikTok', href: `${base}/`, abbr: 'TT' },
 ]
 
-function FooterCol({ title, children }) {
+function FooterCol({ title, panelId, children }) {
+  const [mobile, setMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia(MOBILE_FOOTER_MQ).matches : false,
+  )
+  const [open, setOpen] = useState(() =>
+    typeof window !== 'undefined' ? !window.matchMedia(MOBILE_FOOTER_MQ).matches : true,
+  )
+
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_FOOTER_MQ)
+    const sync = () => {
+      const m = mq.matches
+      setMobile(m)
+      if (!m) setOpen(true)
+      else setOpen(false)
+    }
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
+
   return (
     <div className="sf-col">
-      <h3 className="sf-col__title">{title}</h3>
-      {children}
+      {mobile ? (
+        <button
+          type="button"
+          className="sf-col__trigger"
+          id={`${panelId}-btn`}
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => setOpen((v) => !v)}
+        >
+          <span className="sf-col__title">{title}</span>
+          <FooterChevron open={open} />
+        </button>
+      ) : (
+        <h3 className="sf-col__title">{title}</h3>
+      )}
+      <div id={panelId} className="sf-col__panel" hidden={mobile && !open}>
+        {children}
+      </div>
     </div>
   )
 }
@@ -68,7 +128,7 @@ export default function SiteFooter() {
       <div className="sf-top">
         <div className="sf-container">
           <div className="sf-cols">
-            <FooterCol title="Компания">
+            <FooterCol title="Компания" panelId="sf-col-company">
               <nav className="sf-links" aria-label="Компания">
                 {COL_COMPANY.map((item) => (
                   <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer">
@@ -78,7 +138,7 @@ export default function SiteFooter() {
               </nav>
             </FooterCol>
 
-            <FooterCol title="Сообщество">
+            <FooterCol title="Сообщество" panelId="sf-col-community">
               <nav className="sf-links" aria-label="Сообщество">
                 {COL_COMMUNITY.map((item) =>
                   item.to ? (
@@ -94,7 +154,7 @@ export default function SiteFooter() {
               </nav>
             </FooterCol>
 
-            <FooterCol title="Сервисы">
+            <FooterCol title="Сервисы" panelId="sf-col-services">
               <nav className="sf-links" aria-label="Сервисы">
                 {COL_EXPERIENCES.map((item) => (
                   <Link key={item.label} to={item.to}>
@@ -104,7 +164,7 @@ export default function SiteFooter() {
               </nav>
             </FooterCol>
 
-            <FooterCol title="Популярные локации">
+            <FooterCol title="Популярные локации" panelId="sf-col-locations">
               <nav className="sf-links" aria-label="Популярные локации">
                 {topLocations.map((o) => (
                   <Link key={o.value} to={boatsCityHref(o.value)}>
@@ -115,7 +175,7 @@ export default function SiteFooter() {
               </nav>
             </FooterCol>
 
-            <FooterCol title="Связь с нами">
+            <FooterCol title="Связь с нами" panelId="sf-col-contact">
               <div className="sf-social" role="list">
                 {SOCIAL.map((s) => (
                   <a
