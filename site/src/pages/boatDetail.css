@@ -1166,6 +1166,243 @@
   }
 }
 
+/* Карточка брони: стиль как на референсе (шапка, строки с иконками, синяя CTA, «Условия») */
+.bd-bookCard--setter {
+  padding: 22px 22px 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 14px;
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.07);
+}
+
+@media (min-width: 961px) {
+  .bd-topZone > .bd-asideFloat .bd-bookCard--setter {
+    border-radius: 16px;
+  }
+}
+
+.bd-bookCard--setter .bd-bookCard__head {
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.bd-bookCard--setter .bd-bookCard__price {
+  display: block;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #1a1a1a;
+}
+
+.bd-bookCard--setter .bd-bookCard__price strong {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1a1a1a;
+  letter-spacing: -0.02em;
+}
+
+.bd-bookCard--setter .bd-bookCard__unit {
+  display: inline;
+  font-size: 15px;
+  font-weight: 400;
+  color: #1a1a1a;
+}
+
+.bd-bookCard--setter .bd-bookCard__unitMuted {
+  font-size: 13px;
+  font-weight: 400;
+  color: #757575;
+}
+
+.bd-bookCard--setter .bd-bookCard__stack {
+  margin-top: 0;
+}
+
+.bd-bookCard--setter .bd-bookCard__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.bd-bookCard--setter .bd-bookCard__row:last-child {
+  border-bottom: none;
+}
+
+.bd-bookCard--setter .bd-bookCard__rowMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.bd-bookCard--setter .bd-bookCard__rowLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #757575;
+}
+
+.bd-bookCard--setter .bd-bookCard__rowValue {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.3;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  width: 100%;
+}
+
+.bd-bookCard--setter .bd-bookCard__rowValue:not(.bd-bookCard__rowValue--muted):hover {
+  color: #0052cc;
+}
+
+.bd-bookCard--setter .bd-bookCard__rowValue:focus-visible {
+  outline: 2px solid #0052cc;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.bd-bookCard--setter .bd-bookCard__rowValue--muted {
+  font-weight: 500;
+  color: #757575;
+  cursor: pointer;
+  width: auto;
+}
+
+.bd-bookCard--setter .bd-bookCard__row--tap {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.bd-bookCard--setter .bd-bookCard__row--tap:hover .bd-bookCard__rowValue--muted {
+  color: #525252;
+}
+
+.bd-bookCard--setter .bd-bookCard__row--tap:focus-visible {
+  outline: 2px solid #0052cc;
+  outline-offset: 4px;
+}
+
+.bd-bookCard--setter .bd-bookCard__selectBare {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent !important;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: none !important;
+  box-shadow: none;
+}
+
+.bd-bookCard--setter .bd-bookCard__selectBare:focus,
+.bd-bookCard--setter .bd-bookCard__selectBare:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.bd-bookCard--setter .bd-bookCard__dateBtn {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+
+.bd-bookCard--setter .bd-bookCard__dateBtn:hover {
+  color: #0052cc;
+  background: none !important;
+}
+
+.bd-bookCard--setter .bd-bookCard__rowIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.bd-bookCard--setter .bd-bookCard__cta--setter {
+  margin-top: 22px;
+  padding: 16px 18px;
+  border-radius: 6px;
+  background: #0052cc;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  border: 0;
+  width: 100%;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.bd-bookCard--setter .bd-bookCard__cta--setter:hover {
+  background: #0041a3;
+}
+
+.bd-bookCard--setter .bd-bookCard__cta--setter:focus-visible {
+  outline: 2px solid #0052cc;
+  outline-offset: 3px;
+}
+
+.bd-bookCard--setter .bd-bookCard__hint {
+  margin-top: 14px;
+  font-size: 12px;
+  color: #757575;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.bd-bookCard__termsBlock {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.bd-bookCard__termsHead {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.bd-bookCard--setter .bd-bookCard__termsList {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: #525252;
+  line-height: 1.55;
+}
+
+.bd-bookCard--setter .bd-bookCard__termsList li {
+  margin-bottom: 10px;
+}
+
+.bd-bookCard--setter .bd-bookCard__termsList li:last-child {
+  margin-bottom: 0;
+}
+
 .bd-bookCard__priceRow {
   margin-bottom: 4px;
 }
