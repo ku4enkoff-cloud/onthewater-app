@@ -161,6 +161,8 @@ export default function BookingRequestModal({
             <span className="brm-headSp" aria-hidden />
           </div>
 
+          <div className="brm-scroll">
+            <div className="brm-scrollInner">
           <div className="brm-body">
             <p className="brm-sectionLabel">Длительность</p>
 
@@ -271,6 +273,8 @@ export default function BookingRequestModal({
                 ЗАБРОНИРОВАТЬ
               </span>
             )}
+          </div>
+            </div>
           </div>
         </div>
       </div>
