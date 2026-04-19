@@ -173,6 +173,12 @@
   flex-direction: column;
 }
 
+/* Текст «Катер» и остальной main — на всю ширину левой колонки (не min(720px)) */
+.bd-page--bs .bd-detailGrid__leftCol .bd-main {
+  max-width: none;
+  width: 100%;
+}
+
 .bd-topZone__media {
   min-width: 0;
   display: flex;
