@@ -897,14 +897,6 @@ export default function BoatDetailPage() {
                       >
                         {formatBookingDateRu(bookDate)}
                       </button>
-                      <button
-                        type="button"
-                        className="bd-bookCard__dateClear"
-                        onClick={() => setBookDate(todayISO())}
-                        aria-label="Сбросить дату на сегодня"
-                      >
-                        ×
-                      </button>
                     </div>
                   </div>
                   <span className="bd-bookCard__rowIcon" aria-hidden>
