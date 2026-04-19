@@ -944,7 +944,7 @@ export default function BoatDetailPage() {
                     {bookStartTime ? (
                       <span className="bd-bookCard__rowValue">{bookStartTime}</span>
                     ) : (
-                      <span className="bd-bookCard__rowValue bd-bookCard__rowValue--muted">Укажите в запросе</span>
+                      <span className="bd-bookCard__rowValue bd-bookCard__rowValue--muted">Нажмите, чтобы выбрать время</span>
                     )}
                   </span>
                   <span className="bd-bookCard__rowIcon" aria-hidden>

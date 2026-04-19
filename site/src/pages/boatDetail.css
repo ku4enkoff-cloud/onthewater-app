@@ -1653,12 +1653,17 @@
   gap: 10px;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 4px 4px 10px;
-  margin: 0 -4px;
+  padding: 4px 0 10px;
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  align-self: stretch;
+  box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
-  scroll-padding-inline: 4px;
+  scroll-padding-inline: 2px;
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 #f1f5f9;
 }
@@ -1668,7 +1673,7 @@
 }
 
 .bd-bookCard__chips::-webkit-scrollbar-track {
-  margin: 0 4px;
+  margin: 0 2px;
   background: #f1f5f9;
   border-radius: 999px;
 }
