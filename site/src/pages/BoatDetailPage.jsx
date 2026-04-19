@@ -848,8 +848,7 @@ export default function BoatDetailPage() {
                     /{' '}
                     {minDurationLabel({
                       schedule_min_duration: Number(bookDuration) || getEffectiveMinDurationMinutes(boat),
-                    })}{' '}
-                    <span className="bd-bookCard__unitMuted">(без доп. сборов, если не указано иное)</span>
+                    })}
                   </span>
                 </div>
               </header>
@@ -928,15 +927,6 @@ export default function BoatDetailPage() {
               >
                 Запрос на бронирование
               </button>
-              <p className="bd-bookCard__hint">Оформление и оплата — в приложении ONTHEWATER.</p>
-
-              <div className="bd-bookCard__termsBlock">
-                <h3 className="bd-bookCard__termsHead">Условия</h3>
-                <ul className="bd-bookCard__termsList">
-                  <li>Итоговая стоимость может включать сервисный сбор — смотрите в приложении при оформлении.</li>
-                  <li>Бронируя, вы принимаете правила аренды и политику отмены владельца.</li>
-                </ul>
-              </div>
             </div>
           </aside>
         </div>
