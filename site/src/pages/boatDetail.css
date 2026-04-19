@@ -15,7 +15,8 @@
   font-family: 'Jost', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   /* Ширина основного текста — на всю сетку shell; полоса характеристик ограничена отдельно */
   --bd-content-max: 100%;
-  overflow-x: hidden;
+  /* clip вместо hidden — иначе у предка «ломается» position: sticky у карточки брони */
+  overflow-x: clip;
 }
 
 /* Шапка в духе boat listing: белая полоса, логотип слева, ссылки справа */
@@ -224,8 +225,8 @@
     max-width: 100%;
     min-width: 0;
     margin-top: clamp(-72px, -8vw, -40px);
-    position: relative;
-    top: auto;
+    position: sticky;
+    top: max(56px, calc(env(safe-area-inset-top, 0px) + 52px));
   }
 
   .bd-page--bs .bd-detailGrid__leftCol .bd-main--below {
