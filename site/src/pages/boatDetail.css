@@ -198,14 +198,17 @@
     display: none;
   }
 
+  /* Строка 1: заголовок + карточка; строка 2: только основной текст — карточка не «висит» на всю высоту скролла */
   .bd-page--bs .bd-detailGrid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) clamp(220px, 34vw, 480px);
+    grid-template-rows: auto auto;
     column-gap: clamp(16px, 3vw, 48px);
+    row-gap: 0;
     align-items: start;
   }
 
-  .bd-page--bs .bd-detailGrid > .bd-detailGrid__primary {
+  .bd-page--bs .bd-detailGrid > .bd-heroUnder {
     grid-column: 1;
     grid-row: 1;
     min-width: 0;
@@ -222,6 +225,14 @@
     margin-top: clamp(-72px, -8vw, -40px);
     position: relative;
     top: auto;
+  }
+
+  .bd-page--bs .bd-detailGrid > .bd-detailGrid__primary {
+    grid-column: 1;
+    grid-row: 2;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
   }
 
   .bd-main--below {
@@ -241,7 +252,7 @@
     gap: 0;
   }
 
-  /* DOM: primary → aside → media; на экране: миниатюры, бронь, описание */
+  /* DOM: hero → aside → primary(main); на экране: миниатюры, бронь, заголовок, контент */
   .bd-page--bs .bd-shell > .bd-topZone__media {
     order: 1;
   }
@@ -260,12 +271,13 @@
     margin-top: 20px;
   }
 
-  .bd-page--bs .bd-detailGrid > .bd-detailGrid__primary {
+  .bd-page--bs .bd-detailGrid > .bd-heroUnder {
     order: 2;
+    margin-top: 4px;
   }
 
-  .bd-page--bs .bd-detailGrid > .bd-detailGrid__primary > .bd-heroUnder {
-    margin-top: 4px;
+  .bd-page--bs .bd-detailGrid > .bd-detailGrid__primary {
+    order: 3;
   }
 
   .bd-main--below {
