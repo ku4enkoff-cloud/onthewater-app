@@ -61,7 +61,7 @@ function captainCopy(boat) {
   if (boat.captain_included) {
     return {
       title: 'С капитаном',
-      sub: 'Аренда только с капитаном владельца или назначенным капитаном.',
+      sub: 'Аренда только с капитаном',
     }
   }
   if (boat.has_captain_option) {
@@ -104,7 +104,7 @@ export default function BoatHeroSpecStrip({ lengthStr, capacity, boat, responseR
         <div className="bd-specStrip__cell" role="listitem">
           <IconChat />
           <span className="bd-specStrip__title">{responseRate}%</span>
-          <span className="bd-specStrip__sub">Отвечает на запросы</span>
+          <span className="bd-specStrip__sub">Уровень сервиса</span>
         </div>
       ) : null}
     </div>

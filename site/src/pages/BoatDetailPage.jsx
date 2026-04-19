@@ -10,6 +10,7 @@ import {
   allPhotoUrls,
   buildBookingDurationTiers,
   formatCardLocation,
+  formatGuestLabelRu,
   formatPriceRu,
   getEffectiveMinDurationMinutes,
   getMinDurationPrice,
@@ -24,7 +25,7 @@ import {
   pluralizeReviews,
 } from '../boatSearchUtils'
 import BookingCalendarModal, { formatBookingDateRu } from '../components/booking/BookingCalendarModal.jsx'
-import BookingRequestModal from '../components/booking/BookingRequestModal.jsx'
+import TimePickerModal from '../components/booking/TimePickerModal.jsx'
 import BoatHeroSpecStrip from '../components/boat/BoatHeroSpecStrip.jsx'
 import BoatResultCard from '../components/search/BoatResultCard.jsx'
 
@@ -120,7 +121,9 @@ export default function BoatDetailPage() {
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [favorite, setFavorite] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
-  const [bookingRequestOpen, setBookingRequestOpen] = useState(false)
+  const [timePickerOpen, setTimePickerOpen] = useState(false)
+  const [bookStartTime, setBookStartTime] = useState('')
+  const [bookGuests, setBookGuests] = useState(1)
   const [galleryLightboxOpen, setGalleryLightboxOpen] = useState(false)
   const [amenitiesExpanded, setAmenitiesExpanded] = useState(false)
   const [similarBoats, setSimilarBoats] = useState([])
@@ -212,6 +215,14 @@ export default function BoatDetailPage() {
   }, [load])
 
   useEffect(() => {
+    setBookStartTime('')
+  }, [bookDate, bookDuration, resolvedId])
+
+  useEffect(() => {
+    setBookGuests(1)
+  }, [resolvedId])
+
+  useEffect(() => {
     if (!boat?.id) {
       setSimilarBoats([])
       return
@@ -283,6 +294,19 @@ export default function BoatDetailPage() {
     return s ? `${base}/?${s}` : `${base}/`
   }, [resolvedId])
 
+  /** Диплинк в приложение с выбранными датой, длительностью, временем и гостями (как в бывшей модалке). */
+  const bookAppHref = useMemo(() => {
+    const base = SITE_MAIN_URL.replace(/\/$/, '')
+    const q = new URLSearchParams()
+    if (resolvedId) q.set('boat', String(resolvedId))
+    if (bookDate) q.set('date', bookDate)
+    if (bookDuration) q.set('duration', String(bookDuration))
+    if (bookStartTime) q.set('time', bookStartTime)
+    q.set('guests', String(bookGuests))
+    const s = q.toString()
+    return s ? `${base}/?${s}` : `${base}/`
+  }, [resolvedId, bookDate, bookDuration, bookStartTime, bookGuests])
+
   const onGalleryTouchStart = useCallback((e) => {
     const t = e.changedTouches[0]
     if (!t) return
@@ -344,6 +368,15 @@ export default function BoatDetailPage() {
       window.removeEventListener('keydown', onKey)
     }
   }, [galleryLightboxOpen, photos.length])
+
+  const maxBookGuests = useMemo(
+    () => Math.max(1, Math.min(50, Number(boat?.capacity) || 20)),
+    [boat?.capacity],
+  )
+
+  useEffect(() => {
+    setBookGuests((g) => Math.min(maxBookGuests, Math.max(1, g)))
+  }, [maxBookGuests])
 
   if (loading) {
     return (
@@ -410,11 +443,7 @@ export default function BoatDetailPage() {
 
   return (
     <div className="bd-page bd-page--bs">
-      <DetailPageHeader
-        bookDate={bookDate}
-        onOpenCalendar={() => setCalendarOpen(true)}
-        showCalendar
-      />
+      <DetailPageHeader showCalendar={false} />
 
       <BookingCalendarModal
         open={calendarOpen}
@@ -424,18 +453,18 @@ export default function BoatDetailPage() {
         onApply={(iso) => setBookDate(iso)}
       />
 
-      <BookingRequestModal
-        open={bookingRequestOpen}
-        onClose={() => setBookingRequestOpen(false)}
+      <TimePickerModal
+        open={timePickerOpen}
+        onClose={() => setTimePickerOpen(false)}
         boat={boat}
         boatId={resolvedId}
         bookDate={bookDate}
-        onBookDateChange={setBookDate}
-        bookDuration={bookDuration}
-        onBookDurationChange={setBookDuration}
-        tiers={tiers}
-        minDate={todayISO()}
-        heroImage={photos[photoIndex] || undefined}
+        durationMin={Number(bookDuration) || getEffectiveMinDurationMinutes(boat)}
+        value={bookStartTime}
+        onApply={(slot) => {
+          setBookStartTime(slot)
+          setTimePickerOpen(false)
+        }}
       />
 
       <section
@@ -854,19 +883,48 @@ export default function BoatDetailPage() {
               </header>
 
               <div className="bd-bookCard__stack">
-                <div className="bd-bookCard__row">
+                <div className="bd-bookCard__durBlock">
+                  <p className="bd-bookCard__stackLabel">Длительность</p>
+                  <div className="bd-bookCard__chips" role="group" aria-label="Длительность">
+                    {durationOptions.map((t) => {
+                      const active = String(t.duration) === String(bookDuration)
+                      return (
+                        <button
+                          key={t.duration}
+                          type="button"
+                          className={`bd-bookCard__chip${active ? ' bd-bookCard__chip--on' : ''}`}
+                          onClick={() => setBookDuration(String(t.duration))}
+                        >
+                          {minDurationLabel({ schedule_min_duration: t.duration })}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div className="bd-bookCard__row bd-bookCard__row--datePick">
                   <div className="bd-bookCard__rowMain">
                     <span className="bd-bookCard__rowLabel" id="bd-date-label">
                       Дата
                     </span>
-                    <button
-                      type="button"
-                      className="bd-bookCard__rowValue bd-bookCard__dateBtn"
-                      aria-labelledby="bd-date-label"
-                      onClick={() => setCalendarOpen(true)}
-                    >
-                      {formatBookingDateRu(bookDate)}
-                    </button>
+                    <div className="bd-bookCard__dateRow">
+                      <button
+                        type="button"
+                        className="bd-bookCard__dateBtn bd-bookCard__dateBtn--flex"
+                        aria-labelledby="bd-date-label"
+                        onClick={() => setCalendarOpen(true)}
+                      >
+                        {formatBookingDateRu(bookDate)}
+                      </button>
+                      <button
+                        type="button"
+                        className="bd-bookCard__dateClear"
+                        onClick={() => setBookDate(todayISO())}
+                        aria-label="Сбросить дату на сегодня"
+                      >
+                        ×
+                      </button>
+                    </div>
                   </div>
                   <span className="bd-bookCard__rowIcon" aria-hidden>
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -876,40 +934,18 @@ export default function BoatDetailPage() {
                   </span>
                 </div>
 
-                <div className="bd-bookCard__row">
-                  <div className="bd-bookCard__rowMain">
-                    <label className="bd-bookCard__rowLabel" htmlFor="bd-dur">
-                      Длительность
-                    </label>
-                    <select
-                      id="bd-dur"
-                      className="bd-bookCard__selectBare"
-                      value={bookDuration}
-                      onChange={(e) => setBookDuration(e.target.value)}
-                    >
-                      {durationOptions.map((t) => (
-                        <option key={t.duration} value={String(t.duration)}>
-                          {minDurationLabel({ schedule_min_duration: t.duration })} — {formatPriceRu(t.price)} ₽
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <span className="bd-bookCard__rowIcon" aria-hidden>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="13" r="7" stroke="#757575" strokeWidth="1.5" />
-                      <path d="M12 9v4l2.5 1.5M9 3h6" stroke="#757575" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
-                  </span>
-                </div>
-
                 <button
                   type="button"
                   className="bd-bookCard__row bd-bookCard__row--tap"
-                  onClick={() => setBookingRequestOpen(true)}
+                  onClick={() => setTimePickerOpen(true)}
                 >
                   <span className="bd-bookCard__rowMain">
                     <span className="bd-bookCard__rowLabel">Время начала</span>
-                    <span className="bd-bookCard__rowValue bd-bookCard__rowValue--muted">Укажите в запросе</span>
+                    {bookStartTime ? (
+                      <span className="bd-bookCard__rowValue">{bookStartTime}</span>
+                    ) : (
+                      <span className="bd-bookCard__rowValue bd-bookCard__rowValue--muted">Выберите время</span>
+                    )}
                   </span>
                   <span className="bd-bookCard__rowIcon" aria-hidden>
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -918,15 +954,50 @@ export default function BoatDetailPage() {
                     </svg>
                   </span>
                 </button>
+
+                <div className="bd-bookCard__guestRow" role="group" aria-label="Количество гостей">
+                  <button
+                    type="button"
+                    className="bd-bookCard__guestStepBtn bd-bookCard__guestStepBtn--dec"
+                    onClick={() => setBookGuests((g) => Math.max(1, g - 1))}
+                    disabled={bookGuests <= 1}
+                    aria-label="Меньше гостей"
+                  >
+                    −
+                  </button>
+                  <span className="bd-bookCard__guestStepLabel">{formatGuestLabelRu(bookGuests)}</span>
+                  <button
+                    type="button"
+                    className="bd-bookCard__guestStepBtn bd-bookCard__guestStepBtn--inc"
+                    onClick={() => setBookGuests((g) => Math.min(maxBookGuests, g + 1))}
+                    disabled={bookGuests >= maxBookGuests}
+                    aria-label="Больше гостей"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
 
-              <button
-                type="button"
-                className="bd-bookCard__cta bd-bookCard__cta--setter"
-                onClick={() => setBookingRequestOpen(true)}
-              >
-                Запрос на бронирование
-              </button>
+              <div className="bd-bookCard__footer">
+                <div className="bd-bookCard__footerTotal">
+                  <span className="bd-bookCard__footerSum">{formatPriceRu(selectedTierPrice)}</span>
+                  <span className="bd-bookCard__footerCur">₽</span>
+                </div>
+                {bookStartTime ? (
+                  <a
+                    className="bd-bookCard__footerCta"
+                    href={bookAppHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Забронировать
+                  </a>
+                ) : (
+                  <span className="bd-bookCard__footerCta bd-bookCard__footerCta--disabled" aria-disabled>
+                    Забронировать
+                  </span>
+                )}
+              </div>
             </div>
           </aside>
         </div>

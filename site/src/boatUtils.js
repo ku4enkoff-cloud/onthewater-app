@@ -93,6 +93,17 @@ export function minDurationLabelForBoat(boat) {
   return minDurationLabel({ schedule_min_duration: getEffectiveMinDurationMinutes(boat) })
 }
 
+/** «1 гость» / «2 гостя» / «5 гостей» — как в мобильном приложении. */
+export function formatGuestLabelRu(n) {
+  const v = Math.max(1, Math.floor(Number(n)) || 1)
+  const x = v % 100
+  if (x >= 11 && x <= 14) return `${v} гостей`
+  const d = v % 10
+  if (d === 1) return `${v} гость`
+  if (d >= 2 && d <= 4) return `${v} гостя`
+  return `${v} гостей`
+}
+
 export function parsePhotos(boat) {
   let p = boat?.photos
   if (typeof p === 'string') {

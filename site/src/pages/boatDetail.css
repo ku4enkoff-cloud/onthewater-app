@@ -1645,6 +1645,192 @@
   margin-top: 0;
 }
 
+.bd-bookCard__stackLabel {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.bd-bookCard__durBlock {
+  padding: 16px 0 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Чипы длительности: один ряд + горизонтальный скролл (как в референсе) */
+.bd-bookCard__chips {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 4px 10px;
+  margin: 0 -4px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.bd-bookCard__chips::-webkit-scrollbar {
+  height: 6px;
+}
+
+.bd-bookCard__chips::-webkit-scrollbar-track {
+  margin: 0 4px;
+  background: #f1f5f9;
+  border-radius: 999px;
+}
+
+.bd-bookCard__chips::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+.bd-bookCard__chip {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  box-sizing: border-box;
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 14px;
+  border: 3px solid #e2e8f0;
+  background: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: #002b5b;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.bd-bookCard__chip--on {
+  border-color: #002b5b;
+  color: #002b5b;
+  background: #eef2f7;
+  font-weight: 800;
+}
+
+.bd-bookCard__chip:hover:not(.bd-bookCard__chip--on) {
+  border-color: #cbd5e1;
+  background: #fafbfc;
+}
+
+.bd-bookCard__row--datePick .bd-bookCard__dateRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.bd-bookCard__dateBtn--flex {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.bd-bookCard__dateClear {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.bd-bookCard__dateClear:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.bd-bookCard__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: clamp(16px, 2vw, 22px);
+  padding-top: 16px;
+  border-top: 1px solid #e8e8e6;
+}
+
+.bd-bookCard__footerTotal {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+}
+
+.bd-bookCard__footerSum {
+  font-size: 22px;
+  font-weight: 800;
+  color: #002b5b;
+  letter-spacing: -0.02em;
+}
+
+.bd-bookCard__footerCur {
+  font-size: 16px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.bd-bookCard__footerCta {
+  flex: 0 0 auto;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #002b5b;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.bd-bookCard__footerCta:hover {
+  background: #001a38;
+  color: #fff;
+}
+
+.bd-bookCard__footerCta--disabled {
+  background: #c5ccda;
+  color: #fff;
+  cursor: not-allowed;
+  user-select: none;
+}
+
+@media (min-width: 961px) {
+  .bd-page--bs .bd-detailGrid > .bd-asideFloat .bd-bookCard__chip {
+    font-size: clamp(14px, 1.35vw, 16px);
+    padding: 0 clamp(16px, 1.8vw, 20px);
+    min-height: clamp(44px, 4.2vw, 48px);
+    border-radius: clamp(12px, 1.4vw, 16px);
+  }
+
+  .bd-page--bs .bd-detailGrid > .bd-asideFloat .bd-bookCard__footerSum {
+    font-size: clamp(20px, 2.2vw, 24px);
+  }
+
+  .bd-page--bs .bd-detailGrid > .bd-asideFloat .bd-bookCard__footerCta {
+    font-size: clamp(11px, 1.05vw, 13px);
+    padding: clamp(10px, 1.2vw, 14px) clamp(12px, 1.4vw, 18px);
+  }
+}
+
 .bd-bookCard--setter .bd-bookCard__row {
   display: flex;
   align-items: center;
@@ -1722,6 +1908,77 @@
 .bd-bookCard--setter .bd-bookCard__row--tap:focus-visible {
   outline: 2px solid #0052cc;
   outline-offset: 4px;
+}
+
+/* Степпер гостей (как в клиентском приложении) */
+.bd-bookCard--setter .bd-bookCard__guestRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 18px 0 10px;
+  border-bottom: none;
+}
+
+.bd-bookCard__guestStepBtn {
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.bd-bookCard__guestStepBtn--dec {
+  background: #f4f6f9;
+  color: #94a3b8;
+}
+
+.bd-bookCard__guestStepBtn--dec:hover:not(:disabled) {
+  background: #e8ecf2;
+}
+
+.bd-bookCard__guestStepBtn--inc {
+  background: #e8edf5;
+  color: #002b5b;
+}
+
+.bd-bookCard__guestStepBtn--inc:hover:not(:disabled) {
+  background: #dbe4f0;
+}
+
+.bd-bookCard__guestStepBtn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.bd-bookCard__guestStepLabel {
+  font-size: 18px;
+  font-weight: 700;
+  color: #17233c;
+  min-width: 7.5rem;
+  text-align: center;
+}
+
+@media (min-width: 961px) {
+  .bd-page--bs .bd-detailGrid > .bd-asideFloat .bd-bookCard__guestStepLabel {
+    font-size: clamp(16px, 1.5vw, 18px);
+  }
+
+  .bd-page--bs .bd-detailGrid > .bd-asideFloat .bd-bookCard__guestStepBtn {
+    width: clamp(44px, 4.5vw, 50px);
+    height: clamp(44px, 4.5vw, 50px);
+    font-size: clamp(20px, 2vw, 22px);
+    border-radius: clamp(12px, 1.4vw, 14px);
+  }
 }
 
 .bd-bookCard--setter .bd-bookCard__selectBare {
