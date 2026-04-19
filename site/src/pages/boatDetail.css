@@ -155,7 +155,8 @@
   padding: 25px clamp(40px, 5.5vw, 88px) 56px;
 }
 
-.bd-pageBsPrimary {
+/* Шапка листинга + бронь в одной строке (не тянем на высоту всего описания — карточка скроллится вместе со страницей) */
+.bd-bsAboveFold {
   min-width: 0;
 }
 
@@ -175,7 +176,8 @@
   box-sizing: border-box;
   z-index: 6;
   width: 100%;
-  max-width: 480px;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .bd-main--below {
@@ -186,31 +188,34 @@
 }
 
 @media (min-width: 961px) {
-  .bd-page--bs .bd-shell {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(312px, 480px);
-    column-gap: clamp(24px, 4vw, 48px);
-    align-items: start;
-  }
-
   .bd-page--bs .bd-shell > .bd-topZone__media {
     display: none;
   }
 
-  .bd-page--bs .bd-shell > .bd-pageBsPrimary {
+  .bd-page--bs .bd-bsAboveFold {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(220px, 34vw, 480px);
+    column-gap: clamp(16px, 3vw, 48px);
+    align-items: start;
+  }
+
+  .bd-page--bs .bd-bsAboveFold > .bd-heroUnder {
     grid-column: 1;
     grid-row: 1;
     min-width: 0;
   }
 
-  .bd-page--bs .bd-shell > .bd-asideFloat {
+  .bd-page--bs .bd-bsAboveFold > .bd-asideFloat {
     grid-column: 2;
     grid-row: 1;
     justify-self: stretch;
     align-self: start;
     width: 100%;
-    max-width: 480px;
+    max-width: 100%;
+    min-width: 0;
     margin-top: clamp(-72px, -8vw, -40px);
+    position: relative;
+    top: auto;
   }
 
   .bd-main--below {
@@ -235,16 +240,27 @@
     order: 1;
   }
 
-  .bd-page--bs .bd-shell > .bd-asideFloat {
+  .bd-page--bs .bd-shell > .bd-bsAboveFold {
     order: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .bd-page--bs .bd-bsAboveFold > .bd-asideFloat {
+    order: 1;
     align-self: stretch;
     max-width: none;
     margin-top: 20px;
   }
 
-  .bd-page--bs .bd-shell > .bd-pageBsPrimary {
-    order: 3;
+  .bd-page--bs .bd-bsAboveFold > .bd-heroUnder {
+    order: 2;
     margin-top: 4px;
+  }
+
+  .bd-page--bs .bd-shell > .bd-main--below {
+    order: 3;
   }
 
   .bd-main--below {
@@ -285,6 +301,7 @@
   overflow: hidden;
   background: #e8ecf1;
   min-height: 0;
+  cursor: zoom-in;
 }
 
 .bd-galleryBleed__grid--single .bd-galleryBleed__pane {
@@ -1260,8 +1277,9 @@
 }
 
 @media (min-width: 961px) {
-  .bd-page--bs .bd-shell > .bd-asideFloat .bd-bookCard--bs {
-    border-radius: 16px;
+  .bd-page--bs .bd-bsAboveFold > .bd-asideFloat .bd-bookCard--bs {
+    padding: clamp(18px, 2.2vw, 24px);
+    border-radius: clamp(12px, 1.4vw, 16px);
     border-color: #e2e8f0;
     box-shadow: 0 12px 40px rgba(15, 23, 42, 0.08);
   }
@@ -1276,12 +1294,36 @@
 }
 
 @media (min-width: 961px) {
-  .bd-page--bs .bd-shell > .bd-asideFloat .bd-bookCard--setter {
-    padding: 26px 26px 22px;
-    border-radius: 20px 20px 16px 16px;
+  .bd-page--bs .bd-bsAboveFold > .bd-asideFloat .bd-bookCard--setter {
+    padding: clamp(16px, 2.4vw, 26px) clamp(14px, 2.4vw, 26px) clamp(14px, 2vw, 22px);
+    border-radius: clamp(14px, 1.8vw, 20px) clamp(14px, 1.8vw, 20px) clamp(12px, 1.4vw, 16px) clamp(12px, 1.4vw, 16px);
     box-shadow:
       0 -6px 28px rgba(15, 23, 42, 0.08),
       0 18px 44px rgba(15, 23, 42, 0.1);
+  }
+
+  .bd-page--bs .bd-bsAboveFold > .bd-asideFloat .bd-bookCard--setter .bd-bookCard__price strong {
+    font-size: clamp(22px, 3.2vw, 28px);
+  }
+
+  .bd-page--bs .bd-bsAboveFold > .bd-asideFloat .bd-bookCard--setter .bd-bookCard__unit,
+  .bd-page--bs .bd-bsAboveFold > .bd-asideFloat .bd-bookCard--setter .bd-bookCard__price {
+    font-size: clamp(13px, 1.35vw, 15px);
+  }
+
+  .bd-page--bs .bd-bsAboveFold > .bd-asideFloat .bd-bookCard--setter .bd-bookCard__row {
+    padding: clamp(12px, 1.6vw, 16px) 0;
+    gap: clamp(10px, 1.2vw, 14px);
+  }
+
+  .bd-page--bs .bd-bsAboveFold > .bd-asideFloat .bd-bookCard--setter .bd-bookCard__rowValue {
+    font-size: clamp(14px, 1.5vw, 16px);
+  }
+
+  .bd-page--bs .bd-bsAboveFold > .bd-asideFloat .bd-bookCard--setter .bd-bookCard__cta--setter {
+    margin-top: clamp(16px, 2vw, 22px);
+    padding: clamp(12px, 1.5vw, 16px) clamp(12px, 1.6vw, 18px);
+    font-size: clamp(11px, 1.05vw, 13px);
   }
 }
 
@@ -1703,4 +1745,114 @@
 .bd-error a {
   color: #0061c1;
   font-weight: 700;
+}
+
+/* Полноэкранная галерея по клику на фото */
+.bd-galleryLightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.88);
+}
+
+.bd-galleryLightbox__sheet {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(100%, 1400px);
+  max-height: min(92vh, 900px);
+}
+
+.bd-galleryLightbox__stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  max-height: min(88vh, 860px);
+}
+
+.bd-galleryLightbox__img {
+  max-width: 100%;
+  max-height: min(88vh, 860px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.45);
+}
+
+.bd-galleryLightbox__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bd-galleryLightbox__close:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.bd-galleryLightbox__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  color: #0369a1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.bd-galleryLightbox__nav:hover {
+  filter: brightness(1.05);
+}
+
+.bd-galleryLightbox__nav--prev {
+  left: 8px;
+}
+
+.bd-galleryLightbox__nav--next {
+  right: 8px;
+}
+
+.bd-galleryLightbox__counter {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  pointer-events: none;
 }
