@@ -147,63 +147,36 @@
   margin-top: 0;
 }
 
-/* Контент катера на всю ширину экрана (поля только padding у .bd-shell) */
+/* Shell: отступы 25px от краёв; под фото — 2 колонки (описание | бронь) */
 .bd-page--bs .bd-shell {
   max-width: none;
   width: 100%;
+  box-sizing: border-box;
+  padding: 25px;
+  padding-bottom: 56px;
 }
 
-@media (max-width: 960px) {
-  .bd-shell {
-    padding: 0 16px 40px;
-  }
-}
-
-/* Верхняя зона: слева фото + миниатюры, справа карточка брони с отступом */
-.bd-topZone {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
-  column-gap: clamp(20px, 3vw, 36px);
-  row-gap: 24px;
-  align-items: start;
+.bd-pageBsPrimary {
+  min-width: 0;
 }
 
 .bd-topZone__media {
-  grid-column: 1;
-  grid-row: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .bd-topZone__media .bd-thumbsBs {
   margin-top: 0;
 }
 
-.bd-topZone > .bd-asideFloat {
-  grid-column: 2;
-  grid-row: 1;
-  align-self: start;
-  justify-self: stretch;
-  width: 100%;
-  max-width: 400px;
-  box-sizing: border-box;
-  position: relative;
-  z-index: 6;
-}
-
-.bd-topZone > .bd-heroUnder {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  min-width: 0;
-  padding-top: 0;
-  margin-top: 0;
-}
-
 .bd-asideFloat {
   position: relative;
   box-sizing: border-box;
+  z-index: 6;
+  width: 100%;
+  max-width: 400px;
 }
 
 .bd-main--below {
@@ -214,62 +187,65 @@
 }
 
 @media (min-width: 961px) {
-  .bd-main--below {
-    margin-top: 64px;
+  .bd-page--bs .bd-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 400px);
+    column-gap: clamp(24px, 4vw, 48px);
+    align-items: start;
   }
 
-  /* Десктоп: без миниатюр под галереей; карточка брони шире и у правого края shell */
-  .bd-page--bs .bd-topZone {
-    grid-template-columns: 1fr;
-  }
-
-  .bd-page--bs .bd-topZone__media {
+  .bd-page--bs .bd-shell > .bd-topZone__media {
     display: none;
   }
 
-  .bd-page--bs .bd-topZone > .bd-asideFloat {
+  .bd-page--bs .bd-shell > .bd-pageBsPrimary {
     grid-column: 1;
-    justify-self: end;
-    max-width: min(400px, 100%);
-    width: min(400px, 100%);
-    margin-top: clamp(-72px, -8vw, -40px);
-    /* Максимально вправо: компенсация padding .bd-shell (24px) */
-    margin-right: -24px;
+    grid-row: 1;
+    min-width: 0;
   }
 
-  .bd-page--bs .bd-topZone > .bd-heroUnder {
-    grid-column: 1;
+  .bd-page--bs .bd-shell > .bd-asideFloat {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: stretch;
+    align-self: start;
+    width: 100%;
+    max-width: 400px;
+    margin-top: clamp(-72px, -8vw, -40px);
+  }
+
+  .bd-main--below {
+    margin-top: 64px;
   }
 }
 
 @media (max-width: 960px) {
-  .bd-topZone {
+  .bd-shell {
+    padding: 0 16px 40px;
+  }
+
+  .bd-page--bs .bd-shell {
     display: flex;
     flex-direction: column;
+    padding: 25px 25px 40px;
     gap: 0;
   }
 
-  .bd-topZone__media {
+  /* DOM: primary → aside → media; на экране: миниатюры, бронь, описание */
+  .bd-page--bs .bd-shell > .bd-topZone__media {
     order: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
   }
 
-  .bd-topZone > .bd-asideFloat {
+  .bd-page--bs .bd-shell > .bd-asideFloat {
     order: 2;
-    position: relative;
-    top: auto;
     align-self: stretch;
     max-width: none;
-    margin: 20px 0 0;
-    justify-self: stretch;
+    margin-top: 20px;
   }
 
-  .bd-topZone > .bd-heroUnder {
+  .bd-page--bs .bd-shell > .bd-pageBsPrimary {
     order: 3;
     margin-top: 4px;
-    padding-top: 0;
   }
 
   .bd-main--below {
@@ -1285,7 +1261,7 @@
 }
 
 @media (min-width: 961px) {
-  .bd-topZone > .bd-asideFloat .bd-bookCard--bs {
+  .bd-page--bs .bd-shell > .bd-asideFloat .bd-bookCard--bs {
     border-radius: 16px;
     border-color: #e2e8f0;
     box-shadow: 0 12px 40px rgba(15, 23, 42, 0.08);
@@ -1301,7 +1277,7 @@
 }
 
 @media (min-width: 961px) {
-  .bd-topZone > .bd-asideFloat .bd-bookCard--setter {
+  .bd-page--bs .bd-shell > .bd-asideFloat .bd-bookCard--setter {
     padding: 26px 26px 22px;
     border-radius: 20px 20px 16px 16px;
     box-shadow:

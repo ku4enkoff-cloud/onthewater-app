@@ -491,9 +491,8 @@ export default function BoatDetailPage() {
       </section>
 
       <div className="bd-shell">
-        <div className="bd-topZone">
+        {photos.length > 1 ? (
           <div className="bd-topZone__media">
-          {photos.length > 1 ? (
             <div className="bd-thumbsBs bd-thumbsBs--belowBleed" role="tablist" aria-label="Миниатюры">
               {photos.map((src, i) => (
                 <button
@@ -509,110 +508,10 @@ export default function BoatDetailPage() {
                 </button>
               ))}
             </div>
-          ) : null}
           </div>
+        ) : null}
 
-          <aside className="bd-asideFloat">
-            <div className="bd-bookCard bd-bookCard--bs bd-bookCard--setter">
-              <header className="bd-bookCard__head">
-                <div className="bd-bookCard__price">
-                  <strong>{formatPriceRu(selectedTierPrice)} ₽</strong>
-                  <span className="bd-bookCard__unit">
-                    /{' '}
-                    {minDurationLabel({
-                      schedule_min_duration: Number(bookDuration) || getEffectiveMinDurationMinutes(boat),
-                    })}{' '}
-                    <span className="bd-bookCard__unitMuted">(без доп. сборов, если не указано иное)</span>
-                  </span>
-                </div>
-              </header>
-
-              <div className="bd-bookCard__stack">
-                <div className="bd-bookCard__row">
-                  <div className="bd-bookCard__rowMain">
-                    <span className="bd-bookCard__rowLabel" id="bd-date-label">
-                      Дата
-                    </span>
-                    <button
-                      type="button"
-                      className="bd-bookCard__rowValue bd-bookCard__dateBtn"
-                      aria-labelledby="bd-date-label"
-                      onClick={() => setCalendarOpen(true)}
-                    >
-                      {formatBookingDateRu(bookDate)}
-                    </button>
-                  </div>
-                  <span className="bd-bookCard__rowIcon" aria-hidden>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <rect x="3" y="5" width="18" height="16" rx="2" stroke="#757575" strokeWidth="1.5" />
-                      <path d="M3 10h18M8 3v4M16 3v4" stroke="#757575" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
-                  </span>
-                </div>
-
-                <div className="bd-bookCard__row">
-                  <div className="bd-bookCard__rowMain">
-                    <label className="bd-bookCard__rowLabel" htmlFor="bd-dur">
-                      Длительность
-                    </label>
-                    <select
-                      id="bd-dur"
-                      className="bd-bookCard__selectBare"
-                      value={bookDuration}
-                      onChange={(e) => setBookDuration(e.target.value)}
-                    >
-                      {durationOptions.map((t) => (
-                        <option key={t.duration} value={String(t.duration)}>
-                          {minDurationLabel({ schedule_min_duration: t.duration })} — {formatPriceRu(t.price)} ₽
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <span className="bd-bookCard__rowIcon" aria-hidden>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="13" r="7" stroke="#757575" strokeWidth="1.5" />
-                      <path d="M12 9v4l2.5 1.5M9 3h6" stroke="#757575" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  className="bd-bookCard__row bd-bookCard__row--tap"
-                  onClick={() => setBookingRequestOpen(true)}
-                >
-                  <span className="bd-bookCard__rowMain">
-                    <span className="bd-bookCard__rowLabel">Время начала</span>
-                    <span className="bd-bookCard__rowValue bd-bookCard__rowValue--muted">Укажите в запросе</span>
-                  </span>
-                  <span className="bd-bookCard__rowIcon" aria-hidden>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="12" r="9" stroke="#757575" strokeWidth="1.5" />
-                      <path d="M12 7v5l3 2" stroke="#757575" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
-                  </span>
-                </button>
-              </div>
-
-              <button
-                type="button"
-                className="bd-bookCard__cta bd-bookCard__cta--setter"
-                onClick={() => setBookingRequestOpen(true)}
-              >
-                Запрос на бронирование
-              </button>
-              <p className="bd-bookCard__hint">Оформление и оплата — в приложении ONTHEWATER.</p>
-
-              <div className="bd-bookCard__termsBlock">
-                <h3 className="bd-bookCard__termsHead">Условия</h3>
-                <ul className="bd-bookCard__termsList">
-                  <li>Итоговая стоимость может включать сервисный сбор — смотрите в приложении при оформлении.</li>
-                  <li>Бронируя, вы принимаете правила аренды и политику отмены владельца.</li>
-                </ul>
-              </div>
-            </div>
-          </aside>
-
+        <div className="bd-pageBsPrimary">
           <div className="bd-heroUnder">
             <header className="bd-heroBs">
               <div className="bd-heroBs__top">
@@ -641,9 +540,8 @@ export default function BoatDetailPage() {
               />
             </header>
           </div>
-        </div>
 
-        <main className="bd-main bd-main--below">
+          <main className="bd-main bd-main--below">
           {videos.length > 0 ? (
             <section className="bd-blockBs">
               <div className="bd-blockBs__head">
@@ -830,7 +728,109 @@ export default function BoatDetailPage() {
               </div>
             )}
           </section>
-        </main>
+          </main>
+        </div>
+
+        <aside className="bd-asideFloat">
+          <div className="bd-bookCard bd-bookCard--bs bd-bookCard--setter">
+            <header className="bd-bookCard__head">
+              <div className="bd-bookCard__price">
+                <strong>{formatPriceRu(selectedTierPrice)} ₽</strong>
+                <span className="bd-bookCard__unit">
+                  /{' '}
+                  {minDurationLabel({
+                    schedule_min_duration: Number(bookDuration) || getEffectiveMinDurationMinutes(boat),
+                  })}{' '}
+                  <span className="bd-bookCard__unitMuted">(без доп. сборов, если не указано иное)</span>
+                </span>
+              </div>
+            </header>
+
+            <div className="bd-bookCard__stack">
+              <div className="bd-bookCard__row">
+                <div className="bd-bookCard__rowMain">
+                  <span className="bd-bookCard__rowLabel" id="bd-date-label">
+                    Дата
+                  </span>
+                  <button
+                    type="button"
+                    className="bd-bookCard__rowValue bd-bookCard__dateBtn"
+                    aria-labelledby="bd-date-label"
+                    onClick={() => setCalendarOpen(true)}
+                  >
+                    {formatBookingDateRu(bookDate)}
+                  </button>
+                </div>
+                <span className="bd-bookCard__rowIcon" aria-hidden>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    <rect x="3" y="5" width="18" height="16" rx="2" stroke="#757575" strokeWidth="1.5" />
+                    <path d="M3 10h18M8 3v4M16 3v4" stroke="#757575" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </span>
+              </div>
+
+              <div className="bd-bookCard__row">
+                <div className="bd-bookCard__rowMain">
+                  <label className="bd-bookCard__rowLabel" htmlFor="bd-dur">
+                    Длительность
+                  </label>
+                  <select
+                    id="bd-dur"
+                    className="bd-bookCard__selectBare"
+                    value={bookDuration}
+                    onChange={(e) => setBookDuration(e.target.value)}
+                  >
+                    {durationOptions.map((t) => (
+                      <option key={t.duration} value={String(t.duration)}>
+                        {minDurationLabel({ schedule_min_duration: t.duration })} — {formatPriceRu(t.price)} ₽
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <span className="bd-bookCard__rowIcon" aria-hidden>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="13" r="7" stroke="#757575" strokeWidth="1.5" />
+                    <path d="M12 9v4l2.5 1.5M9 3h6" stroke="#757575" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </span>
+              </div>
+
+              <button
+                type="button"
+                className="bd-bookCard__row bd-bookCard__row--tap"
+                onClick={() => setBookingRequestOpen(true)}
+              >
+                <span className="bd-bookCard__rowMain">
+                  <span className="bd-bookCard__rowLabel">Время начала</span>
+                  <span className="bd-bookCard__rowValue bd-bookCard__rowValue--muted">Укажите в запросе</span>
+                </span>
+                <span className="bd-bookCard__rowIcon" aria-hidden>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="9" stroke="#757575" strokeWidth="1.5" />
+                    <path d="M12 7v5l3 2" stroke="#757575" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className="bd-bookCard__cta bd-bookCard__cta--setter"
+              onClick={() => setBookingRequestOpen(true)}
+            >
+              Запрос на бронирование
+            </button>
+            <p className="bd-bookCard__hint">Оформление и оплата — в приложении ONTHEWATER.</p>
+
+            <div className="bd-bookCard__termsBlock">
+              <h3 className="bd-bookCard__termsHead">Условия</h3>
+              <ul className="bd-bookCard__termsList">
+                <li>Итоговая стоимость может включать сервисный сбор — смотрите в приложении при оформлении.</li>
+                <li>Бронируя, вы принимаете правила аренды и политику отмены владельца.</li>
+              </ul>
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
   )
