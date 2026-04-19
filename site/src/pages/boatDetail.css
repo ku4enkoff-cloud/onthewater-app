@@ -147,13 +147,12 @@
   margin-top: 0;
 }
 
-/* Shell: отступы 25px от краёв; под фото — 2 колонки (описание | бронь) */
+/* Shell: под фото — 2 колонки; по бокам шире поля от краёв экрана */
 .bd-page--bs .bd-shell {
   max-width: none;
   width: 100%;
   box-sizing: border-box;
-  padding: 25px;
-  padding-bottom: 56px;
+  padding: 25px clamp(40px, 5.5vw, 88px) 56px;
 }
 
 .bd-pageBsPrimary {
@@ -176,7 +175,7 @@
   box-sizing: border-box;
   z-index: 6;
   width: 100%;
-  max-width: 400px;
+  max-width: 480px;
 }
 
 .bd-main--below {
@@ -189,7 +188,7 @@
 @media (min-width: 961px) {
   .bd-page--bs .bd-shell {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(260px, 400px);
+    grid-template-columns: minmax(0, 1fr) minmax(312px, 480px);
     column-gap: clamp(24px, 4vw, 48px);
     align-items: start;
   }
@@ -210,7 +209,7 @@
     justify-self: stretch;
     align-self: start;
     width: 100%;
-    max-width: 400px;
+    max-width: 480px;
     margin-top: clamp(-72px, -8vw, -40px);
   }
 
@@ -227,7 +226,7 @@
   .bd-page--bs .bd-shell {
     display: flex;
     flex-direction: column;
-    padding: 25px 25px 40px;
+    padding: 25px clamp(32px, 6vw, 48px) 40px;
     gap: 0;
   }
 
