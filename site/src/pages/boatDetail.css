@@ -1130,6 +1130,44 @@
   line-height: 1.55;
 }
 
+/* Единый 20px для текста подпунктов в основном блоке (удобства, характеристики, отзывы и т.д.) */
+.bd-page--bs .bd-main .bd-amenityColsBs__item,
+.bd-page--bs .bd-main .bd-amenityColsBs__more,
+.bd-page--bs .bd-main .bd-specTableBs dt,
+.bd-page--bs .bd-main .bd-specTableBs dd,
+.bd-page--bs .bd-main .bd-locationBs,
+.bd-page--bs .bd-main .bd-locationBs--muted,
+.bd-page--bs .bd-main .bd-crewBs__text,
+.bd-page--bs .bd-main .bd-crewBs__cta,
+.bd-page--bs .bd-main .bd-knowBs__h,
+.bd-page--bs .bd-main .bd-policy,
+.bd-page--bs .bd-main .bd-reviewsBs__summary,
+.bd-page--bs .bd-main .bd-reviewsBs__lbl,
+.bd-page--bs .bd-main .bd-review__author,
+.bd-page--bs .bd-main .bd-review__date,
+.bd-page--bs .bd-main .bd-review__text,
+.bd-page--bs .bd-main .bd-emptyReviews,
+.bd-page--bs .bd-main .bd-ownerStrip__label,
+.bd-page--bs .bd-main .bd-ownerStrip__name,
+.bd-page--bs .bd-main .bd-ownerStrip__meta,
+.bd-page--bs .bd-main .bd-videoCard__caption,
+.bd-page--bs .bd-main .bd-readMore {
+  font-size: 20px;
+  line-height: 1.55;
+}
+
+.bd-page--bs .bd-main .bd-readMore {
+  font-weight: 700;
+}
+
+.bd-page--bs .bd-main .bd-amenityColsBs__check {
+  margin-top: 4px;
+}
+
+.bd-page--bs .bd-main .bd-review__stars {
+  font-size: 18px;
+}
+
 .bd-desc--clamp {
   display: -webkit-box;
   -webkit-line-clamp: 6;
