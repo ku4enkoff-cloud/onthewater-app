@@ -213,8 +213,25 @@
     margin-top: 64px;
   }
 
-  .bd-topZone > .bd-asideFloat {
+  /* Десктоп: без миниатюр под галереей; карточка брони шире и у правого края shell */
+  .bd-page--bs .bd-topZone {
+    grid-template-columns: 1fr;
+  }
+
+  .bd-page--bs .bd-topZone__media {
+    display: none;
+  }
+
+  .bd-page--bs .bd-topZone > .bd-asideFloat {
+    grid-column: 1;
+    justify-self: end;
+    max-width: min(480px, 100%);
+    width: min(480px, 100%);
     margin-top: clamp(-72px, -8vw, -40px);
+  }
+
+  .bd-page--bs .bd-topZone > .bd-heroUnder {
+    grid-column: 1;
   }
 }
 
@@ -1187,6 +1204,7 @@
 
 @media (min-width: 961px) {
   .bd-topZone > .bd-asideFloat .bd-bookCard--setter {
+    padding: 26px 26px 22px;
     border-radius: 20px 20px 16px 16px;
     box-shadow:
       0 -6px 28px rgba(15, 23, 42, 0.08),
