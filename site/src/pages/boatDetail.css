@@ -2120,7 +2120,7 @@
 }
 
 .bd-similar__inner {
-  max-width: 1440px;
+  max-width: min(1680px, 100%);
   margin: 0 auto;
   padding: 0 clamp(16px, 5.5vw, 88px);
   box-sizing: border-box;
@@ -2136,9 +2136,22 @@
 
 .bd-similar__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
-  gap: 24px;
+  gap: clamp(18px, 2vw, 28px);
   align-items: stretch;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 700px) {
+  .bd-similar__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Четыре карточки в ряд на широкой сетке */
+@media (min-width: 1200px) {
+  .bd-similar__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .bd-similar__grid .bs-card {

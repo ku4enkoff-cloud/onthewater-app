@@ -232,7 +232,7 @@ export default function BoatDetailPage() {
         }
         if (cancelled) return
         const ex = Number(boat.id)
-        setSimilarBoats(list.filter((b) => Number(b.id) !== ex).slice(0, 6))
+        setSimilarBoats(list.filter((b) => Number(b.id) !== ex).slice(0, 8))
       } catch {
         if (!cancelled) setSimilarBoats([])
       }
