@@ -13,8 +13,8 @@
   background: #fff;
   color: #1a1a1a;
   font-family: 'Jost', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  /* Одна ширина колонки текста: описание «Катер», полоса длины/гостей и т.д. */
-  --bd-content-max: min(720px, 100%);
+  /* Ширина текстового блока и полосы характеристик — на всю сетку shell */
+  --bd-content-max: 100%;
   overflow-x: hidden;
 }
 
@@ -145,6 +145,12 @@
 /* Карточка брони чуть заходит на галерею снизу (как на референсе) — shell почти вплотную */
 .bd-page--bs > .bd-galleryBleed + .bd-shell {
   margin-top: 0;
+}
+
+/* Контент катера на всю ширину экрана (поля только padding у .bd-shell) */
+.bd-page--bs .bd-shell {
+  max-width: none;
+  width: 100%;
 }
 
 @media (max-width: 960px) {
