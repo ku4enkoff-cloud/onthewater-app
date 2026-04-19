@@ -744,8 +744,8 @@
 
 @media (min-width: 721px) {
   .bd-page--bs .bd-specStrip {
-    width: 100%;
-    max-width: 100%;
+    width: 80%;
+    max-width: 80%;
   }
 
   .bd-page--bs .bd-specStrip__cell {
