@@ -1572,6 +1572,7 @@
   border: 1px solid #e0e0e0;
   border-radius: 14px;
   box-shadow: 0 6px 28px rgba(0, 0, 0, 0.07);
+  background: #f5f5f4;
 }
 
 @media (min-width: 961px) {
@@ -1643,20 +1644,6 @@
 
 .bd-bookCard--setter .bd-bookCard__stack {
   margin-top: 0;
-}
-
-.bd-bookCard__stackLabel {
-  margin: 0 0 12px;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #475569;
-}
-
-.bd-bookCard__durBlock {
-  padding: 16px 0 12px;
-  border-bottom: 1px solid #e0e0e0;
 }
 
 /* Чипы длительности: один ряд + горизонтальный скролл (как в референсе) */
@@ -1839,10 +1826,6 @@
   border-bottom: 1px solid #e0e0e0;
 }
 
-.bd-bookCard--setter .bd-bookCard__row:last-child {
-  border-bottom: none;
-}
-
 .bd-bookCard--setter .bd-bookCard__rowMain {
   flex: 1;
   min-width: 0;
@@ -1893,7 +1876,10 @@
 .bd-bookCard--setter .bd-bookCard__row--tap {
   width: 100%;
   margin: 0;
-  border: 0;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  border-bottom: 1px solid #e0e0e0;
   background: none;
   font: inherit;
   text-align: left;
@@ -1910,14 +1896,15 @@
   outline-offset: 4px;
 }
 
-/* Степпер гостей (как в клиентском приложении) */
-.bd-bookCard--setter .bd-bookCard__guestRow {
+/* Степпер гостей в строке карточки */
+.bd-bookCard--setter .bd-bookCard__guestRow--inline {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 20px;
-  padding: 18px 0 10px;
-  border-bottom: none;
+  justify-content: flex-start;
+  gap: 14px;
+  padding: 0;
+  margin-top: 2px;
+  width: 100%;
 }
 
 .bd-bookCard__guestStepBtn {
@@ -2024,6 +2011,44 @@
   align-items: center;
   justify-content: center;
   line-height: 0;
+  color: #757575;
+}
+
+.bd-bookCard__row--dur .bd-bookCard__chips {
+  padding-bottom: 2px;
+}
+
+.bd-bookCard__ctaFull {
+  display: block;
+  width: 100%;
+  margin-top: 18px;
+  padding: 16px 20px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: #002b5b;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  text-decoration: none;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  line-height: 1.35;
+}
+
+.bd-bookCard__ctaFull:hover {
+  background: #001a38;
+  color: #fff;
+}
+
+.bd-bookCard__ctaFull--disabled {
+  background: #c5ccda;
+  color: #fff;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .bd-bookCard--setter .bd-bookCard__cta--setter {
