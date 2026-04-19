@@ -183,8 +183,7 @@
   width: 100%;
   max-width: 400px;
   box-sizing: border-box;
-  position: sticky;
-  top: 80px;
+  position: relative;
   z-index: 6;
 }
 
@@ -225,9 +224,11 @@
   .bd-page--bs .bd-topZone > .bd-asideFloat {
     grid-column: 1;
     justify-self: end;
-    max-width: min(480px, 100%);
-    width: min(480px, 100%);
+    max-width: min(400px, 100%);
+    width: min(400px, 100%);
     margin-top: clamp(-72px, -8vw, -40px);
+    /* Вправо до края shell (компенсация padding 24px у .bd-shell) */
+    margin-right: -24px;
   }
 
   .bd-page--bs .bd-topZone > .bd-heroUnder {
