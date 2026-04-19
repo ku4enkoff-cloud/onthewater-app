@@ -744,17 +744,28 @@
 
 @media (min-width: 721px) {
   .bd-page--bs .bd-specStrip {
-    width: fit-content;
-    max-width: min(880px, 100%);
+    width: 100%;
+    max-width: 100%;
   }
 
   .bd-page--bs .bd-specStrip__cell {
-    flex: 0 1 auto;
+    flex: 1 1 0;
+    min-width: 0;
   }
 
   .bd-page--bs .bd-specStrip__cell--wide {
-    flex: 0 1 clamp(200px, 24vw, 360px);
+    flex: 1.55 1 0;
     min-width: 0;
+  }
+
+  /* блок «Отвечает на запросы» — вправо в пределах своей колонки */
+  .bd-page--bs .bd-specStrip:not(.bd-specStrip--3) > .bd-specStrip__cell:last-child {
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .bd-page--bs .bd-specStrip__cell--wide .bd-specStrip__sub {
+    max-width: none;
   }
 }
 
