@@ -26,6 +26,7 @@ import BoatHeroSpecStrip from '../components/boat/BoatHeroSpecStrip.jsx'
 
 const PLACEHOLDER = 'https://placehold.co/1200x750/e8eef4/64748b?text=%D0%9A%D0%B0%D1%82%D0%B5%D1%80'
 const DESC_PREVIEW = 480
+const AMENITIES_PREVIEW = 15
 const FAVORITES_STORAGE_KEY = 'boatrent_site_favorites'
 
 function siteBaseUrl() {
@@ -117,6 +118,7 @@ export default function BoatDetailPage() {
   const [shareCopied, setShareCopied] = useState(false)
   const [bookingRequestOpen, setBookingRequestOpen] = useState(false)
   const [galleryLightboxOpen, setGalleryLightboxOpen] = useState(false)
+  const [amenitiesExpanded, setAmenitiesExpanded] = useState(false)
   const galleryTouchRef = useRef({ x: 0, y: 0 })
 
   useEffect(() => {
@@ -189,6 +191,7 @@ export default function BoatDetailPage() {
       setBoat(b)
       setReviews(rev)
       setPhotoIndex(0)
+      setAmenitiesExpanded(false)
       const minD = getEffectiveMinDurationMinutes(b)
       setBookDuration(String(minD))
     } catch (e) {
@@ -656,13 +659,28 @@ export default function BoatDetailPage() {
           </section>
 
           {amenities.length > 0 ? (
-            <section className="bd-blockBs">
-              <h2 className="bd-blockBs__h">Удобства</h2>
-              <ul className="bd-amenityListBs">
-                {amenities.map((a) => (
-                  <li key={a}>{a}</li>
+            <section className="bd-blockBs bd-amenitiesBs">
+              <h2 className="bd-blockBs__h bd-amenitiesBs__h">Удобства</h2>
+              <ul className="bd-amenityColsBs" role="list">
+                {(amenitiesExpanded || amenities.length <= AMENITIES_PREVIEW
+                  ? amenities
+                  : amenities.slice(0, AMENITIES_PREVIEW)
+                ).map((a) => (
+                  <li key={a} className="bd-amenityColsBs__item">
+                    <span className="bd-amenityColsBs__check" aria-hidden />
+                    <span className="bd-amenityColsBs__label">{a}</span>
+                  </li>
                 ))}
               </ul>
+              {amenities.length > AMENITIES_PREVIEW && !amenitiesExpanded ? (
+                <button
+                  type="button"
+                  className="bd-amenityColsBs__more"
+                  onClick={() => setAmenitiesExpanded(true)}
+                >
+                  Показать все
+                </button>
+              ) : null}
             </section>
           ) : null}
 
