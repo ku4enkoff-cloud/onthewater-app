@@ -660,7 +660,7 @@ export default function BoatDetailPage() {
 
           {amenities.length > 0 ? (
             <section className="bd-blockBs bd-amenitiesBs">
-              <h2 className="bd-blockBs__h bd-amenitiesBs__h">Удобства</h2>
+              <h2 className="bd-blockBs__h">Удобства</h2>
               <ul className="bd-amenityColsBs" role="list">
                 {(amenitiesExpanded || amenities.length <= AMENITIES_PREVIEW
                   ? amenities
