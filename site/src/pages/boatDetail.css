@@ -746,6 +746,26 @@
   }
 }
 
+/* Полоса под заголовком — крупнее, в тон 20px основного текста страницы BS */
+.bd-page--bs .bd-specStrip__title {
+  font-size: 20px;
+  line-height: 1.3;
+}
+
+.bd-page--bs .bd-specStrip__sub {
+  font-size: 17px;
+  line-height: 1.45;
+}
+
+.bd-page--bs .bd-specStrip__icon {
+  width: 26px;
+  height: 26px;
+}
+
+.bd-page--bs .bd-specStrip__cell {
+  gap: 10px;
+}
+
 .bd-specStrip__cell {
   position: relative;
   flex: 1 1 0;
