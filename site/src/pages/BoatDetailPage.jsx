@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom'
 import { boatDetailPath, boatUrlSegment, parseBoatUrlParam } from '../boatUrl'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import './boatDetail.css'
-import { fetchBoatById, fetchBoatReviews } from '../api/boats'
+import './boatsSearch.css'
+import { fetchBoatById, fetchBoatReviews, fetchBoatsSearch, fetchPopularBoats } from '../api/boats'
 import { SITE_MAIN_URL, getPhotoUrl } from '../config'
 import {
   allPhotoUrls,
@@ -17,12 +18,15 @@ import {
 import {
   getBoatAmenities,
   getBookingPeriodLabel,
+  isRegion,
+  LOCATION_OPTIONS,
   pluralizeBookings,
   pluralizeReviews,
 } from '../boatSearchUtils'
 import BookingCalendarModal, { formatBookingDateRu } from '../components/booking/BookingCalendarModal.jsx'
 import BookingRequestModal from '../components/booking/BookingRequestModal.jsx'
 import BoatHeroSpecStrip from '../components/boat/BoatHeroSpecStrip.jsx'
+import BoatResultCard from '../components/search/BoatResultCard.jsx'
 
 const PLACEHOLDER = 'https://placehold.co/1200x750/e8eef4/64748b?text=%D0%9A%D0%B0%D1%82%D0%B5%D1%80'
 const DESC_PREVIEW = 480
@@ -119,6 +123,7 @@ export default function BoatDetailPage() {
   const [bookingRequestOpen, setBookingRequestOpen] = useState(false)
   const [galleryLightboxOpen, setGalleryLightboxOpen] = useState(false)
   const [amenitiesExpanded, setAmenitiesExpanded] = useState(false)
+  const [similarBoats, setSimilarBoats] = useState([])
   const galleryTouchRef = useRef({ x: 0, y: 0 })
 
   useEffect(() => {
@@ -205,6 +210,37 @@ export default function BoatDetailPage() {
   useEffect(() => {
     load()
   }, [load])
+
+  useEffect(() => {
+    if (!boat?.id) {
+      setSimilarBoats([])
+      return
+    }
+    let cancelled = false
+    const locKeys = LOCATION_OPTIONS.map((o) => o.value).filter((v) => v !== '__all')
+    ;(async () => {
+      try {
+        const city = String(boat.location_city || boat.locationCity || '').trim()
+        const region = String(boat.location_region || boat.locationRegion || '').trim()
+        let list = []
+        if (city && locKeys.includes(city)) {
+          list = await fetchBoatsSearch({ city })
+        } else if (region && isRegion(region)) {
+          list = await fetchBoatsSearch({ region })
+        } else {
+          list = await fetchPopularBoats(40)
+        }
+        if (cancelled) return
+        const ex = Number(boat.id)
+        setSimilarBoats(list.filter((b) => Number(b.id) !== ex).slice(0, 6))
+      } catch {
+        if (!cancelled) setSimilarBoats([])
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [boat?.id, boat?.location_city, boat?.location_region, boat?.locationCity, boat?.locationRegion])
 
   /** Канонический URL с актуальным slug из названия (старые ссылки /boats/5 тоже работают). */
   useEffect(() => {
@@ -905,6 +941,21 @@ export default function BoatDetailPage() {
           </aside>
         </div>
       </div>
+
+      {similarBoats.length > 0 ? (
+        <section className="bd-similar" aria-labelledby="bd-similar-heading">
+          <div className="bd-similar__inner">
+            <h2 id="bd-similar-heading" className="bd-similar__title">
+              Похожие катера
+            </h2>
+            <div className="bd-similar__grid">
+              {similarBoats.map((b) => (
+                <BoatResultCard key={b.id} boat={b} filters={{}} />
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {galleryLightboxOpen
         ? createPortal(

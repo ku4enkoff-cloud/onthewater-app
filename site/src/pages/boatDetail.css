@@ -2105,3 +2105,42 @@
   font-weight: 600;
   pointer-events: none;
 }
+
+/* Похожие катера: полная ширина вьюпорта, блок перед футером сайта */
+.bd-page--bs .bd-similar {
+  width: 100vw;
+  max-width: 100%;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  box-sizing: border-box;
+  margin-top: 8px;
+  padding: 40px 0 56px;
+  background: #f5f5f4;
+  border-top: 1px solid #e8e8e6;
+}
+
+.bd-similar__inner {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 clamp(16px, 5.5vw, 88px);
+  box-sizing: border-box;
+}
+
+.bd-similar__title {
+  margin: 0 0 24px;
+  font-size: clamp(22px, 2.4vw, 28px);
+  font-weight: 800;
+  color: #002b5b;
+  letter-spacing: -0.025em;
+}
+
+.bd-similar__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 24px;
+  align-items: stretch;
+}
+
+.bd-similar__grid .bs-card {
+  min-width: 0;
+}
