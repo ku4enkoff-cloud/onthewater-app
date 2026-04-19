@@ -290,13 +290,10 @@
   width: 100%;
   padding: 0 0 12px;
   box-sizing: border-box;
-  min-height: min(52vh, 520px);
-  max-height: min(68vh, 780px);
 }
 
 .bd-galleryBleed__grid--single {
   grid-template-columns: 1fr;
-  max-height: min(58vh, 640px);
   padding: 0 0 12px;
 }
 
@@ -306,11 +303,10 @@
   overflow: hidden;
   background: #e8ecf1;
   min-height: 0;
-  aspect-ratio: 16 / 10;
-  max-height: min(62vh, 720px);
 }
 
 .bd-galleryBleed__grid--single .bd-galleryBleed__pane {
+  aspect-ratio: 16 / 10;
   max-height: min(58vh, 680px);
   border-radius: 0;
 }
@@ -476,6 +472,21 @@
 
 .bd-thumbsBs--belowBleed {
   margin-top: 4px;
+}
+
+@media (min-width: 721px) {
+  /* Два фото в ряд: общая высота, ширина ~65/35 — обе панели одной высоты, картинка cover на всю ячейку */
+  .bd-galleryBleed__grid:not(.bd-galleryBleed__grid--single) {
+    align-items: stretch;
+    grid-template-rows: clamp(280px, min(56vh, 62vw), 720px);
+  }
+
+  .bd-galleryBleed__grid:not(.bd-galleryBleed__grid--single) .bd-galleryBleed__pane {
+    height: 100%;
+    align-self: stretch;
+    max-height: none;
+    aspect-ratio: auto;
+  }
 }
 
 @media (max-width: 720px) {
