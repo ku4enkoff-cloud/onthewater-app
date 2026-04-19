@@ -13,7 +13,7 @@
   background: #fff;
   color: #1a1a1a;
   font-family: 'Jost', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  /* Ширина текстового блока и полосы характеристик — на всю сетку shell */
+  /* Ширина основного текста — на всю сетку shell; полоса характеристик ограничена отдельно */
   --bd-content-max: 100%;
   overflow-x: hidden;
 }
@@ -155,9 +155,15 @@
   padding: 25px clamp(40px, 5.5vw, 88px) 56px;
 }
 
-/* Шапка листинга + бронь в одной строке (не тянем на высоту всего описания — карточка скроллится вместе со страницей) */
-.bd-bsAboveFold {
+/* Сетка: слева заголовок + весь контент, справа бронь — высота строки по контенту, карточка уезжает при скролле вместе с текстом */
+.bd-detailGrid {
   min-width: 0;
+}
+
+.bd-detailGrid__primary {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .bd-topZone__media {
@@ -192,20 +198,20 @@
     display: none;
   }
 
-  .bd-page--bs .bd-bsAboveFold {
+  .bd-page--bs .bd-detailGrid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) clamp(220px, 34vw, 480px);
     column-gap: clamp(16px, 3vw, 48px);
     align-items: start;
   }
 
-  .bd-page--bs .bd-bsAboveFold > .bd-heroUnder {
+  .bd-page--bs .bd-detailGrid > .bd-detailGrid__primary {
     grid-column: 1;
     grid-row: 1;
     min-width: 0;
   }
 
-  .bd-page--bs .bd-bsAboveFold > .bd-asideFloat {
+  .bd-page--bs .bd-detailGrid > .bd-asideFloat {
     grid-column: 2;
     grid-row: 1;
     justify-self: stretch;
@@ -240,27 +246,26 @@
     order: 1;
   }
 
-  .bd-page--bs .bd-shell > .bd-bsAboveFold {
+  .bd-page--bs .bd-shell > .bd-detailGrid {
     order: 2;
     display: flex;
     flex-direction: column;
     gap: 0;
   }
 
-  .bd-page--bs .bd-bsAboveFold > .bd-asideFloat {
+  .bd-page--bs .bd-detailGrid > .bd-asideFloat {
     order: 1;
     align-self: stretch;
     max-width: none;
     margin-top: 20px;
   }
 
-  .bd-page--bs .bd-bsAboveFold > .bd-heroUnder {
+  .bd-page--bs .bd-detailGrid > .bd-detailGrid__primary {
     order: 2;
-    margin-top: 4px;
   }
 
-  .bd-page--bs .bd-shell > .bd-main--below {
-    order: 3;
+  .bd-page--bs .bd-detailGrid > .bd-detailGrid__primary > .bd-heroUnder {
+    margin-top: 4px;
   }
 
   .bd-main--below {
@@ -723,6 +728,22 @@
   border-bottom: 1px solid #e5e7eb;
   max-width: var(--bd-content-max, min(720px, 100%));
   box-sizing: border-box;
+}
+
+@media (min-width: 721px) {
+  .bd-page--bs .bd-specStrip {
+    width: fit-content;
+    max-width: min(880px, 100%);
+  }
+
+  .bd-page--bs .bd-specStrip__cell {
+    flex: 0 1 auto;
+  }
+
+  .bd-page--bs .bd-specStrip__cell--wide {
+    flex: 0 1 clamp(200px, 24vw, 360px);
+    min-width: 0;
+  }
 }
 
 .bd-specStrip__cell {
@@ -1277,7 +1298,7 @@
 }
 
 @media (min-width: 961px) {
-  .bd-page--bs .bd-bsAboveFold > .bd-asideFloat .bd-bookCard--bs {
+  .bd-page--bs .bd-detailGrid > .bd-asideFloat .bd-bookCard--bs {
     padding: clamp(18px, 2.2vw, 24px);
     border-radius: clamp(12px, 1.4vw, 16px);
     border-color: #e2e8f0;
@@ -1294,7 +1315,7 @@
 }
 
 @media (min-width: 961px) {
-  .bd-page--bs .bd-bsAboveFold > .bd-asideFloat .bd-bookCard--setter {
+  .bd-page--bs .bd-detailGrid > .bd-asideFloat .bd-bookCard--setter {
     padding: clamp(16px, 2.4vw, 26px) clamp(14px, 2.4vw, 26px) clamp(14px, 2vw, 22px);
     border-radius: clamp(14px, 1.8vw, 20px) clamp(14px, 1.8vw, 20px) clamp(12px, 1.4vw, 16px) clamp(12px, 1.4vw, 16px);
     box-shadow:
@@ -1302,25 +1323,25 @@
       0 18px 44px rgba(15, 23, 42, 0.1);
   }
 
-  .bd-page--bs .bd-bsAboveFold > .bd-asideFloat .bd-bookCard--setter .bd-bookCard__price strong {
+  .bd-page--bs .bd-detailGrid > .bd-asideFloat .bd-bookCard--setter .bd-bookCard__price strong {
     font-size: clamp(22px, 3.2vw, 28px);
   }
 
-  .bd-page--bs .bd-bsAboveFold > .bd-asideFloat .bd-bookCard--setter .bd-bookCard__unit,
-  .bd-page--bs .bd-bsAboveFold > .bd-asideFloat .bd-bookCard--setter .bd-bookCard__price {
+  .bd-page--bs .bd-detailGrid > .bd-asideFloat .bd-bookCard--setter .bd-bookCard__unit,
+  .bd-page--bs .bd-detailGrid > .bd-asideFloat .bd-bookCard--setter .bd-bookCard__price {
     font-size: clamp(13px, 1.35vw, 15px);
   }
 
-  .bd-page--bs .bd-bsAboveFold > .bd-asideFloat .bd-bookCard--setter .bd-bookCard__row {
+  .bd-page--bs .bd-detailGrid > .bd-asideFloat .bd-bookCard--setter .bd-bookCard__row {
     padding: clamp(12px, 1.6vw, 16px) 0;
     gap: clamp(10px, 1.2vw, 14px);
   }
 
-  .bd-page--bs .bd-bsAboveFold > .bd-asideFloat .bd-bookCard--setter .bd-bookCard__rowValue {
+  .bd-page--bs .bd-detailGrid > .bd-asideFloat .bd-bookCard--setter .bd-bookCard__rowValue {
     font-size: clamp(14px, 1.5vw, 16px);
   }
 
-  .bd-page--bs .bd-bsAboveFold > .bd-asideFloat .bd-bookCard--setter .bd-bookCard__cta--setter {
+  .bd-page--bs .bd-detailGrid > .bd-asideFloat .bd-bookCard--setter .bd-bookCard__cta--setter {
     margin-top: clamp(16px, 2vw, 22px);
     padding: clamp(12px, 1.5vw, 16px) clamp(12px, 1.6vw, 18px);
     font-size: clamp(11px, 1.05vw, 13px);
