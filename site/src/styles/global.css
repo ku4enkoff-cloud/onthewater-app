@@ -1914,7 +1914,7 @@ a.lp-boatCard:hover .lp-boatImg {
   border-radius: 999px;
   border: 1px solid #e2e8f0;
   background: #f1f5f9;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #475569;
   cursor: pointer;
@@ -2009,7 +2009,7 @@ a.lp-boatCard:hover .lp-boatImg {
   border-radius: 999px;
   border: 1px solid #cbd5e1;
   background: #fff;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #334155;
   cursor: pointer;
@@ -2079,6 +2079,12 @@ a.lp-boatCard:hover .lp-boatImg {
   flex: 1;
   display: flex;
   min-height: 0;
+}
+
+@media (min-width: 1600px) and (min-height: 900px) {
+  .bs-main {
+    min-height: 680px;
+  }
 }
 
 .bs-main--mapOff .bs-mapCol {
