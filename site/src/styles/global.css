@@ -2327,6 +2327,10 @@ a.lp-boatCard:hover .lp-boatImg {
   gap: 18px;
 }
 
+.bs-main:not(.bs-main--mapOff) .bs-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .bs-card {
   background: #fff;
   border-radius: 14px;
@@ -2748,10 +2752,6 @@ a.lp-boatCard:hover .lp-boatImg {
 }
 
 @media (max-width: 640px) {
-  .bs-grid {
-    grid-template-columns: 1fr;
-  }
-
   .bs-searchBar {
     width: 100%;
     max-width: none;
