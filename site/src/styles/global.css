@@ -2803,7 +2803,7 @@ a.lp-boatCard:hover .lp-boatImg {
 }
 
 .bd-topBar__link {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 600;
   color: #002b5b;
   text-decoration: none;
@@ -2852,7 +2852,7 @@ a.lp-boatCard:hover .lp-boatImg {
   }
 
   .bd-topBar__link {
-    font-size: 16px;
+    font-size: 14px;
   }
 
   .bd-topBar__pill {
