@@ -839,11 +839,11 @@ export default function BoatDetailPage() {
                 title={title}
               />
             ) : null}
-            <p className="bd-locationBs">
-              {boat.lat == null || boat.lng == null
-                ? 'Точные координаты и причал станут доступны после подтверждения бронирования.'
-                : 'Карта показывает ориентировочное расположение. Адрес причала — после подтверждения бронирования.'}
-            </p>
+            {boat.lat == null || boat.lng == null ? (
+              <p className="bd-locationBs">
+                Точные координаты и причал станут доступны после подтверждения бронирования.
+              </p>
+            ) : null}
             <p className="bd-locationBs bd-locationBs--muted">{locationFullLine}</p>
             {boat.location_yacht_club ? (
               <p className="bd-locationBs">Яхт-клуб: {boat.location_yacht_club}</p>

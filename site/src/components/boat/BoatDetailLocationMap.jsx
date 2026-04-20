@@ -65,8 +65,8 @@ export default function BoatDetailLocationMap({ apiKey, lat, lng, title = 'Ка�
   if (!Number.isFinite(la) || !Number.isFinite(lo)) return null
 
   if (useStatic) {
-    const w = 640
-    const h = 220
+    const w = 650
+    const h = 330
     const src = `https://static-maps.yandex.ru/1.x/?ll=${lo},${la}&size=${w},${h}&z=14&l=map&pt=${lo},${la},pm2rdm`
     return (
       <div className="bd-locationMap bd-locationMap--static">
