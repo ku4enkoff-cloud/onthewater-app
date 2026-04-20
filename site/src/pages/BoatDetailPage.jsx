@@ -128,6 +128,11 @@ export default function BoatDetailPage() {
   const [galleryLightboxOpen, setGalleryLightboxOpen] = useState(false)
   const [amenitiesExpanded, setAmenitiesExpanded] = useState(false)
   const [bookingTiersExpanded, setBookingTiersExpanded] = useState(false)
+  const [knowOpen, setKnowOpen] = useState({
+    cancellation: false,
+    rules: false,
+    payment: false,
+  })
   const [similarBoats, setSimilarBoats] = useState([])
   const galleryTouchRef = useRef({ x: 0, y: 0 })
 
@@ -223,6 +228,10 @@ export default function BoatDetailPage() {
 
   useEffect(() => {
     setBookGuests(1)
+  }, [resolvedId])
+
+  useEffect(() => {
+    setKnowOpen({ cancellation: false, rules: false, payment: false })
   }, [resolvedId])
 
   useEffect(() => {
@@ -394,6 +403,22 @@ export default function BoatDetailPage() {
       .filter(Boolean)
     return parts.length > 0 ? parts.join(', ') : loc
   }, [boat])
+
+  const knowAccordionItems = useMemo(() => {
+    if (!boat) return []
+    const items = []
+    const c = String(boat.cancellation_policy || '').trim()
+    if (c) items.push({ id: 'cancellation', title: 'Отмена бронирования', body: c })
+    const r = String(boat.rules || '').trim()
+    if (r) items.push({ id: 'rules', title: 'Правила', body: r })
+    const p = String(boat.payment_policy || '').trim()
+    if (p) items.push({ id: 'payment', title: 'Оплата', body: p })
+    return items
+  }, [boat])
+
+  const toggleKnow = useCallback((id) => {
+    setKnowOpen((prev) => ({ ...prev, [id]: !prev[id] }))
+  }, [])
 
   if (loading) {
     return (
@@ -921,27 +946,57 @@ export default function BoatDetailPage() {
             )}
           </section>
 
-          {(boat.cancellation_policy || boat.rules || boat.payment_policy) ? (
-            <section className="bd-blockBs">
+          {knowAccordionItems.length > 0 ? (
+            <section className="bd-blockBs bd-knowAccordionSection">
               <h2 className="bd-blockBs__h">Важно знать</h2>
-              {boat.cancellation_policy ? (
-                <div className="bd-knowBs">
-                  <h3 className="bd-knowBs__h">Отмена бронирования</h3>
-                  <p className="bd-policy">{boat.cancellation_policy}</p>
-                </div>
-              ) : null}
-              {boat.rules ? (
-                <div className="bd-knowBs">
-                  <h3 className="bd-knowBs__h">Правила</h3>
-                  <p className="bd-policy">{boat.rules}</p>
-                </div>
-              ) : null}
-              {boat.payment_policy ? (
-                <div className="bd-knowBs">
-                  <h3 className="bd-knowBs__h">Оплата</h3>
-                  <p className="bd-policy">{boat.payment_policy}</p>
-                </div>
-              ) : null}
+              <div className="bd-knowAccordion">
+                {knowAccordionItems.map((item) => {
+                  const open = knowOpen[item.id]
+                  const panelId = `bd-know-panel-${item.id}`
+                  const headId = `bd-know-head-${item.id}`
+                  return (
+                    <div key={item.id} className="bd-knowAccordion__item">
+                      <button
+                        type="button"
+                        className="bd-knowAccordion__trigger"
+                        id={headId}
+                        aria-expanded={open}
+                        aria-controls={panelId}
+                        onClick={() => toggleKnow(item.id)}
+                      >
+                        <span className="bd-knowAccordion__title">{item.title}</span>
+                        <span className="bd-knowAccordion__chevWrap" aria-hidden>
+                          <svg
+                            className={`bd-knowAccordion__chev${open ? ' bd-knowAccordion__chev--open' : ''}`}
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                          >
+                            <path
+                              d="M6 9l6 6 6-6"
+                              stroke="currentColor"
+                              strokeWidth="2.2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </span>
+                      </button>
+                      {open ? (
+                        <div
+                          id={panelId}
+                          className="bd-knowAccordion__panel"
+                          role="region"
+                          aria-labelledby={headId}
+                        >
+                          <p className="bd-policy">{item.body}</p>
+                        </div>
+                      ) : null}
+                    </div>
+                  )
+                })}
+              </div>
             </section>
           ) : null}
           </main>
