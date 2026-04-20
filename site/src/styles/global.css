@@ -276,7 +276,7 @@ code {
 
 .lp-nav a {
   color: #fff;
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 600;
   text-decoration: none;
   opacity: 0.95;
@@ -297,7 +297,7 @@ code {
 
 .lp-linkMuted {
   color: rgba(255, 255, 255, 0.92);
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
@@ -1761,7 +1761,7 @@ a.lp-boatCard:hover .lp-boatImg {
 }
 
 .bs-top__auth a {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 600;
   color: #0061c1;
   text-decoration: none;
