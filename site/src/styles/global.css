@@ -4007,6 +4007,115 @@ a.lp-boatCard:hover .lp-boatImg {
   font-size: 14px;
 }
 
+.bd-locationMap {
+  width: 100%;
+  height: 220px;
+  margin: 0 0 14px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  background: #e8eef4;
+}
+
+.bd-locationMap--static {
+  height: auto;
+  min-height: 120px;
+  line-height: 0;
+}
+
+.bd-locationMap--static img {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 180px;
+  object-fit: cover;
+}
+
+.bd-bookingTiersBs__kicker {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #002b5b;
+  letter-spacing: -0.01em;
+}
+
+.bd-bookingTiersBs__card {
+  border: 1px solid #e8e8e6;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fafaf9;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.bd-bookingTiersBs__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  margin: 0;
+  padding: 14px 18px;
+  border: 0;
+  border-bottom: 1px solid #e8e8e6;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: #0f172a;
+  transition: background 0.15s ease;
+}
+
+.bd-bookingTiersBs__row:last-child {
+  border-bottom: 0;
+}
+
+.bd-bookingTiersBs__row:hover {
+  background: #f8fafc;
+}
+
+.bd-bookingTiersBs__row--on {
+  background: #eff6ff;
+  box-shadow: inset 3px 0 0 #0369a1;
+}
+
+.bd-bookingTiersBs__dur {
+  font-size: 16px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.bd-bookingTiersBs__row--on .bd-bookingTiersBs__dur {
+  color: #002b5b;
+}
+
+.bd-bookingTiersBs__price {
+  font-size: 17px;
+  font-weight: 800;
+  color: #002b5b;
+  white-space: nowrap;
+}
+
+.bd-bookingTiersBs__price--base {
+  font-size: 18px;
+}
+
+.bd-page--bs .bd-main .bd-bookingTiersBs .bd-readMore {
+  margin-top: 12px;
+}
+
+.bd-page--bs .bd-ownerStrip--underH2 {
+  margin-top: 16px;
+  padding: 24px 22px;
+  border: 1px solid #e8e8e6;
+  border-radius: 12px;
+  background: #fafaf9;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.bd-page--bs .bd-ownerStrip--underH2.bd-ownerStrip {
+  border-top: 0;
+}
+
 .bd-crewBs__text {
   margin: 0 0 14px;
   font-size: 15px;

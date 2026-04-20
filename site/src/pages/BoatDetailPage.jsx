@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { boatDetailPath, boatUrlSegment, parseBoatUrlParam } from '../boatUrl'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { fetchBoatById, fetchBoatReviews, fetchBoatsSearch, fetchPopularBoats } from '../api/boats'
-import { SITE_MAIN_URL, getPhotoUrl } from '../config'
+import { SITE_MAIN_URL, YANDEX_MAPS_API_KEY, getPhotoUrl } from '../config'
 import {
   allPhotoUrls,
   buildBookingDurationTiers,
@@ -15,6 +15,7 @@ import {
   minDurationLabel,
 } from '../boatUtils'
 import {
+  formatDurationListLabel,
   getBoatAmenities,
   getBookingPeriodLabel,
   isRegion,
@@ -24,12 +25,14 @@ import {
 } from '../boatSearchUtils'
 import BookingCalendarModal, { formatBookingDateRu } from '../components/booking/BookingCalendarModal.jsx'
 import TimePickerModal from '../components/booking/TimePickerModal.jsx'
+import BoatDetailLocationMap from '../components/boat/BoatDetailLocationMap.jsx'
 import BoatHeroSpecStrip from '../components/boat/BoatHeroSpecStrip.jsx'
 import BoatResultCard from '../components/search/BoatResultCard.jsx'
 
 const PLACEHOLDER = 'https://placehold.co/1200x750/e8eef4/64748b?text=%D0%9A%D0%B0%D1%82%D0%B5%D1%80'
 const DESC_PREVIEW = 480
 const AMENITIES_PREVIEW = 15
+const BOOKING_TIERS_PREVIEW = 4
 const FAVORITES_STORAGE_KEY = 'boatrent_site_favorites'
 
 function siteBaseUrl() {
@@ -124,6 +127,7 @@ export default function BoatDetailPage() {
   const [bookGuests, setBookGuests] = useState(1)
   const [galleryLightboxOpen, setGalleryLightboxOpen] = useState(false)
   const [amenitiesExpanded, setAmenitiesExpanded] = useState(false)
+  const [bookingTiersExpanded, setBookingTiersExpanded] = useState(false)
   const [similarBoats, setSimilarBoats] = useState([])
   const galleryTouchRef = useRef({ x: 0, y: 0 })
 
@@ -198,6 +202,7 @@ export default function BoatDetailPage() {
       setReviews(rev)
       setPhotoIndex(0)
       setAmenitiesExpanded(false)
+      setBookingTiersExpanded(false)
       const minD = getEffectiveMinDurationMinutes(b)
       setBookDuration(String(minD))
     } catch (e) {
@@ -415,6 +420,17 @@ export default function BoatDetailPage() {
 
   const title = boat.title || boat.type_name || 'Катер'
   const loc = formatCardLocation(boat)
+  const locationFullLine = useMemo(() => {
+    const parts = [
+      boat.location_country,
+      boat.location_region,
+      boat.location_city,
+      boat.location_address,
+    ]
+      .map((x) => (x != null ? String(x).trim() : ''))
+      .filter(Boolean)
+    return parts.length > 0 ? parts.join(', ') : loc
+  }, [boat, loc])
   const lengthStr =
     boat.length_m != null && String(boat.length_m).trim() !== ''
       ? `${String(boat.length_m).replace(',', '.')} м`
@@ -438,6 +454,11 @@ export default function BoatDetailPage() {
     tiers.length > 0
       ? tiers
       : [{ duration: getEffectiveMinDurationMinutes(boat), price: getMinDurationPrice(boat) }]
+  const bookingTierRows =
+    bookingTiersExpanded || durationOptions.length <= BOOKING_TIERS_PREVIEW
+      ? durationOptions
+      : durationOptions.slice(0, BOOKING_TIERS_PREVIEW)
+  const showBookingTiersToggle = durationOptions.length > BOOKING_TIERS_PREVIEW
 
   return (
     <div className="bd-page bd-page--bs">
@@ -700,28 +721,6 @@ export default function BoatDetailPage() {
             )}
           </section>
 
-          <section className="bd-ownerStrip" aria-label="Владелец">
-            <p className="bd-ownerStrip__label">Владелец</p>
-            <div className="bd-ownerStrip__row">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="bd-ownerStrip__avatar" />
-              ) : (
-                <div className="bd-ownerStrip__avatar bd-ownerStrip__avatar--ph" aria-hidden>
-                  {ownerInitial}
-                </div>
-              )}
-              <div className="bd-ownerStrip__body">
-                <p className="bd-ownerStrip__name">{boat.owner_name || 'Владелец'}</p>
-                {boat.rating != null ? (
-                  <p className="bd-ownerStrip__meta">
-                    ★ {Number(boat.rating).toFixed(1)}
-                    {boat.reviews_count != null ? ` · ${boat.reviews_count} ${pluralizeReviews(boat.reviews_count)}` : null}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-          </section>
-
           {amenities.length > 0 ? (
             <section className="bd-blockBs bd-amenitiesBs">
               <h2 className="bd-blockBs__h">Удобства</h2>
@@ -782,16 +781,96 @@ export default function BoatDetailPage() {
             </dl>
           </section>
 
+          {durationOptions.length > 0 ? (
+            <section className="bd-blockBs bd-bookingTiersBs" aria-label="Варианты бронирования">
+              <h2 className="bd-blockBs__h">Варианты бронирования</h2>
+              <p className="bd-bookingTiersBs__kicker">
+                {boat.captain_included ? 'С капитаном' : 'Аренда'}
+              </p>
+              <div className="bd-bookingTiersBs__card" role="list">
+                {bookingTierRows.map((t) => {
+                  const active = String(t.duration) === String(bookDuration)
+                  const isBaseTier = t.duration === durationOptions[0]?.duration
+                  return (
+                    <button
+                      key={t.duration}
+                      type="button"
+                      className={`bd-bookingTiersBs__row${active ? ' bd-bookingTiersBs__row--on' : ''}`}
+                      onClick={() => setBookDuration(String(t.duration))}
+                    >
+                      <span className="bd-bookingTiersBs__dur">
+                        {formatDurationListLabel(t.duration)}
+                      </span>
+                      <span
+                        className={
+                          isBaseTier
+                            ? 'bd-bookingTiersBs__price bd-bookingTiersBs__price--base'
+                            : 'bd-bookingTiersBs__price'
+                        }
+                      >
+                        {formatPriceRu(t.price)} ₽
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+              {showBookingTiersToggle ? (
+                <button
+                  type="button"
+                  className="bd-readMore"
+                  onClick={() => setBookingTiersExpanded((v) => !v)}
+                >
+                  {bookingTiersExpanded ? 'Скрыть' : 'Показать все'}
+                </button>
+              ) : null}
+            </section>
+          ) : null}
+
           <section className="bd-blockBs">
-            <h2 className="bd-blockBs__h">Место</h2>
+            <h2 className="bd-blockBs__h">Расположение</h2>
+            {boat.lat != null && boat.lng != null ? (
+              <BoatDetailLocationMap
+                apiKey={YANDEX_MAPS_API_KEY}
+                lat={boat.lat}
+                lng={boat.lng}
+                title={title}
+              />
+            ) : null}
             <p className="bd-locationBs">
-              Точные координаты и причал станут доступны после подтверждения бронирования.
+              {boat.lat == null || boat.lng == null
+                ? 'Точные координаты и причал станут доступны после подтверждения бронирования.'
+                : 'Карта показывает ориентировочное расположение. Адрес причала — после подтверждения бронирования.'}
             </p>
-            <p className="bd-locationBs bd-locationBs--muted">{loc}</p>
+            <p className="bd-locationBs bd-locationBs--muted">{locationFullLine}</p>
+            {boat.location_yacht_club ? (
+              <p className="bd-locationBs">Яхт-клуб: {boat.location_yacht_club}</p>
+            ) : null}
           </section>
 
-          <section className="bd-blockBs bd-crewBs">
-            <h2 className="bd-blockBs__h">Связь с владельцем</h2>
+          <section className="bd-blockBs" aria-label="Владелец">
+            <h2 className="bd-blockBs__h">Владелец</h2>
+            <div className="bd-ownerStrip bd-ownerStrip--underH2">
+              <div className="bd-ownerStrip__row">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" className="bd-ownerStrip__avatar" />
+                ) : (
+                  <div className="bd-ownerStrip__avatar bd-ownerStrip__avatar--ph" aria-hidden>
+                    {ownerInitial}
+                  </div>
+                )}
+                <div className="bd-ownerStrip__body">
+                  <p className="bd-ownerStrip__name">{boat.owner_name || 'Владелец'}</p>
+                  {boat.rating != null ? (
+                    <p className="bd-ownerStrip__meta">
+                      ★ {Number(boat.rating).toFixed(1)}
+                      {boat.reviews_count != null
+                        ? ` · ${boat.reviews_count} ${pluralizeReviews(boat.reviews_count)}`
+                        : null}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            </div>
             <p className="bd-crewBs__text">
               Уточните детали выхода и маршрут в чате приложения — владелец ответит после запроса брони.
             </p>
@@ -799,30 +878,6 @@ export default function BoatDetailPage() {
               Написать владельцу
             </a>
           </section>
-
-          {(boat.cancellation_policy || boat.rules || boat.payment_policy) ? (
-            <section className="bd-blockBs">
-              <h2 className="bd-blockBs__h">Важно знать</h2>
-              {boat.cancellation_policy ? (
-                <div className="bd-knowBs">
-                  <h3 className="bd-knowBs__h">Отмена бронирования</h3>
-                  <p className="bd-policy">{boat.cancellation_policy}</p>
-                </div>
-              ) : null}
-              {boat.rules ? (
-                <div className="bd-knowBs">
-                  <h3 className="bd-knowBs__h">Правила</h3>
-                  <p className="bd-policy">{boat.rules}</p>
-                </div>
-              ) : null}
-              {boat.payment_policy ? (
-                <div className="bd-knowBs">
-                  <h3 className="bd-knowBs__h">Оплата</h3>
-                  <p className="bd-policy">{boat.payment_policy}</p>
-                </div>
-              ) : null}
-            </section>
-          ) : null}
 
           <section className="bd-blockBs">
             <h2 className="bd-blockBs__h">
@@ -862,6 +917,30 @@ export default function BoatDetailPage() {
               </div>
             )}
           </section>
+
+          {(boat.cancellation_policy || boat.rules || boat.payment_policy) ? (
+            <section className="bd-blockBs">
+              <h2 className="bd-blockBs__h">Важно знать</h2>
+              {boat.cancellation_policy ? (
+                <div className="bd-knowBs">
+                  <h3 className="bd-knowBs__h">Отмена бронирования</h3>
+                  <p className="bd-policy">{boat.cancellation_policy}</p>
+                </div>
+              ) : null}
+              {boat.rules ? (
+                <div className="bd-knowBs">
+                  <h3 className="bd-knowBs__h">Правила</h3>
+                  <p className="bd-policy">{boat.rules}</p>
+                </div>
+              ) : null}
+              {boat.payment_policy ? (
+                <div className="bd-knowBs">
+                  <h3 className="bd-knowBs__h">Оплата</h3>
+                  <p className="bd-policy">{boat.payment_policy}</p>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
           </main>
           </div>
           </div>
