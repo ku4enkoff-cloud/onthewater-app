@@ -257,6 +257,24 @@ export default function BoatsSearchPage() {
   )
 
   const priceRange = useMemo(() => computePriceRange(boatsOnDate), [boatsOnDate])
+  const prevPriceRangeRef = useRef(priceRange)
+
+  useEffect(() => {
+    const prevRange = prevPriceRangeRef.current
+    const hadDefaultPriceFilter = filters.priceLow === prevRange.min && filters.priceHigh === prevRange.max
+    const nextIsDifferent = filters.priceLow !== priceRange.min || filters.priceHigh !== priceRange.max
+
+    if (hadDefaultPriceFilter && nextIsDifferent) {
+      setFilters((prev) => {
+        const stillDefault = prev.priceLow === prevRange.min && prev.priceHigh === prevRange.max
+        if (!stillDefault) return prev
+        return { ...prev, priceLow: priceRange.min, priceHigh: priceRange.max }
+      })
+    }
+
+    prevPriceRangeRef.current = priceRange
+  }, [filters.priceHigh, filters.priceLow, priceRange])
+
   const boats = useMemo(
     () => filterBoatsList(boatsOnDate, filters, priceRange),
     [boatsOnDate, filters, priceRange],
