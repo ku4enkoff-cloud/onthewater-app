@@ -29,6 +29,19 @@
   box-sizing: border-box;
 }
 
+/* Boat detail page: auth buttons in blue style */
+.bd-topBar__nav > .authMenuBtn {
+  border-color: #0061c1 !important;
+  background: #0061c1 !important;
+  color: #fff !important;
+}
+
+.bd-topBar__nav > .authMenuBtn:hover {
+  border-color: #0052a3 !important;
+  background: #0052a3 !important;
+  color: #fff !important;
+}
+
 /* Source: index.css */
 
 :root {
