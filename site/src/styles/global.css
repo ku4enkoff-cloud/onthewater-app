@@ -1512,12 +1512,12 @@ a.lp-boatCard:hover .lp-boatImg {
 }
 
 .bs-page {
+  height: 100vh;
   min-height: 100vh;
-  height: auto;
-  max-height: none;
+  max-height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow: visible;
+  overflow: hidden;
   font-family: 'Jost', system-ui, sans-serif;
   font-size: 16px;
   line-height: 1.45;
