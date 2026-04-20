@@ -381,6 +381,20 @@ export default function BoatDetailPage() {
     setBookGuests((g) => Math.min(maxBookGuests, Math.max(1, g)))
   }, [maxBookGuests])
 
+  const locationFullLine = useMemo(() => {
+    if (!boat) return '—'
+    const loc = formatCardLocation(boat)
+    const parts = [
+      boat.location_country,
+      boat.location_region,
+      boat.location_city,
+      boat.location_address,
+    ]
+      .map((x) => (x != null ? String(x).trim() : ''))
+      .filter(Boolean)
+    return parts.length > 0 ? parts.join(', ') : loc
+  }, [boat])
+
   if (loading) {
     return (
       <div className="bd-page">
@@ -420,17 +434,6 @@ export default function BoatDetailPage() {
 
   const title = boat.title || boat.type_name || 'Катер'
   const loc = formatCardLocation(boat)
-  const locationFullLine = useMemo(() => {
-    const parts = [
-      boat.location_country,
-      boat.location_region,
-      boat.location_city,
-      boat.location_address,
-    ]
-      .map((x) => (x != null ? String(x).trim() : ''))
-      .filter(Boolean)
-    return parts.length > 0 ? parts.join(', ') : loc
-  }, [boat, loc])
   const lengthStr =
     boat.length_m != null && String(boat.length_m).trim() !== ''
       ? `${String(boat.length_m).replace(',', '.')} м`
