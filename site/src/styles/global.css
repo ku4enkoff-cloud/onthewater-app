@@ -1,0 +1,14 @@
+/* Base */
+@import '../index.css';
+@import '../App.css';
+
+/* Pages */
+@import '../pages/boatsSearch.css';
+@import '../pages/boatDetail.css';
+
+/* Components */
+@import '../components/SiteFooter.css';
+@import '../components/search/filtersModal.css';
+@import '../components/search/filterQuickDropdown.css';
+@import '../components/booking/bookingCalendarModal.css';
+@import '../components/booking/timePickerModal.css';

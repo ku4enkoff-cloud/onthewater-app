@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import './bookingCalendarModal.css'
 
 /** Локальный календарный день → YYYY-MM-DD */
 function toISOKey(d) {

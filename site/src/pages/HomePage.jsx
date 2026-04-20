@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import '../App.css'
 import heroImg from '../../images/app/hero.webp'
 import DestinationsSection from '../components/DestinationsSection.jsx'
 import PopularBoats from '../components/PopularBoats.jsx'

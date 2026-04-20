@@ -2,8 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { boatDetailPath, boatUrlSegment, parseBoatUrlParam } from '../boatUrl'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import './boatDetail.css'
-import './boatsSearch.css'
 import { fetchBoatById, fetchBoatReviews, fetchBoatsSearch, fetchPopularBoats } from '../api/boats'
 import { SITE_MAIN_URL, getPhotoUrl } from '../config'
 import {

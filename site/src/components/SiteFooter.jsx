@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SITE_MAIN_URL } from '../config'
 import { LOCATION_OPTIONS } from '../boatSearchUtils.js'
-import './SiteFooter.css'
 
 const MOBILE_FOOTER_MQ = '(max-width: 720px)'
 

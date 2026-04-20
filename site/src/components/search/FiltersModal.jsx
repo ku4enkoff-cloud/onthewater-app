@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import './filtersModal.css'
 import { filterBoatsList, formatDurationListLabel, formatPriceShort } from '../../boatSearchUtils'
 
 const NAVY = '#1b365d'

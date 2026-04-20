@@ -8,7 +8,6 @@ import {
   slotToMinutes,
   TIME_SLOTS,
 } from '../../bookingTimeSlots.js'
-import './timePickerModal.css'
 
 const NAVY = '#002b5b'
 

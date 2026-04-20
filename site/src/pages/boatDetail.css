@@ -30,8 +30,8 @@
   gap: 16px;
   padding: 14px 24px;
   background: #fff;
-  border-bottom: 1px solid #e8e8e6;
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+  border-bottom: 0;
+  box-shadow: none;
 }
 
 .bd-topBar__left {

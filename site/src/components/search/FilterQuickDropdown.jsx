@@ -2,8 +2,6 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from 'react-dom'
 import { DualRangeSlider } from './FiltersModal.jsx'
 import { filterBoatsList, formatDurationListLabel, formatPriceShort } from '../../boatSearchUtils'
-import './filtersModal.css'
-import './filterQuickDropdown.css'
 
 function clamp(v, min, max) {
   return Math.min(Math.max(v, min), max)
