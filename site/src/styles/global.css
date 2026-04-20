@@ -2081,9 +2081,14 @@ a.lp-boatCard:hover .lp-boatImg {
   min-height: 0;
 }
 
-@media (min-width: 1600px) and (min-height: 900px) {
+@media (min-width: 1025px) and (min-height: 900px) {
   .bs-main {
-    min-height: 680px;
+    min-height: 72vh;
+  }
+
+  .bs-listCol__scroll,
+  .bs-mapWrap {
+    min-height: 72vh;
   }
 }
 
