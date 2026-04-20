@@ -466,7 +466,7 @@ export default function BoatsSearchPage() {
               <div className="bs-mobileNavBtns">
                 <a
                   href={SITE_MAIN_URL}
-                  className="bs-mobileNavBtn bs-mobileNavBtn--primary"
+                  className="bs-mobileNavBtn bs-mobileNavBtn--primary authMenuBtn"
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={closeMobileNav}
@@ -475,7 +475,7 @@ export default function BoatsSearchPage() {
                 </a>
                 <a
                   href={SITE_MAIN_URL}
-                  className="bs-mobileNavBtn bs-mobileNavBtn--secondary"
+                  className="bs-mobileNavBtn bs-mobileNavBtn--secondary authMenuBtn"
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={closeMobileNav}
@@ -519,10 +519,10 @@ export default function BoatsSearchPage() {
         </div>
 
         <div className="bs-top__auth bs-top__authDesktop">
-          <a href={SITE_MAIN_URL} target="_blank" rel="noopener noreferrer">
+          <a href={SITE_MAIN_URL} className="authMenuBtn" target="_blank" rel="noopener noreferrer">
             Регистрация
           </a>
-          <a href={SITE_MAIN_URL} target="_blank" rel="noopener noreferrer">
+          <a href={SITE_MAIN_URL} className="authMenuBtn" target="_blank" rel="noopener noreferrer">
             Вход
           </a>
         </div>

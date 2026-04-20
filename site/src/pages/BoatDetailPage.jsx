@@ -58,10 +58,10 @@ function DetailPageHeader({ bookDate, onOpenCalendar, showCalendar }) {
         <Link to="/boats" className="bd-topBar__link">
           Поиск катеров
         </Link>
-        <a className="bd-topBar__link" href={`${base}/register`} target="_blank" rel="noopener noreferrer">
+        <a className="bd-topBar__link authMenuBtn" href={`${base}/register`} target="_blank" rel="noopener noreferrer">
           Регистрация
         </a>
-        <a className="bd-topBar__link" href={`${base}/login`} target="_blank" rel="noopener noreferrer">
+        <a className="bd-topBar__link authMenuBtn" href={`${base}/login`} target="_blank" rel="noopener noreferrer">
           Войти
         </a>
       </nav>

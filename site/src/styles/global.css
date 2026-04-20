@@ -1,5 +1,34 @@
 ﻿/* Monolithic global stylesheet for site/src */
 
+/* Unified auth buttons in top menus (Регистрация / Вход) */
+.authMenuBtn {
+  border: 2px solid rgba(255, 255, 255, 0.88) !important;
+  border-radius: 18px !important;
+  background: rgba(149, 170, 178, 0.78) !important;
+  color: #fff !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+}
+
+.authMenuBtn:hover {
+  background: rgba(136, 160, 169, 0.88) !important;
+  color: #fff !important;
+  text-decoration: none !important;
+}
+
+.bd-topBar__nav > .authMenuBtn,
+.bs-top__auth > .authMenuBtn,
+.lp-headerActions > .authMenuBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 22px;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
 /* Source: index.css */
 
 :root {
@@ -1483,12 +1512,12 @@ a.lp-boatCard:hover .lp-boatImg {
 }
 
 .bs-page {
-  height: 100vh;
   min-height: 100vh;
-  max-height: 100vh; 
+  height: auto;
+  max-height: none;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
   font-family: 'Jost', system-ui, sans-serif;
   font-size: 16px;
   line-height: 1.45;

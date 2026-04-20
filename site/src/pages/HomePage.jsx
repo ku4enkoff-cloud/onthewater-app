@@ -219,10 +219,10 @@ export default function HomePage() {
             <a href={SITE_MAIN_URL} className="lp-linkMuted" target="_blank" rel="noopener noreferrer">
               Разместить объявление
             </a>
-            <a href={SITE_MAIN_URL} className="lp-btnGhost" target="_blank" rel="noopener noreferrer">
+            <a href={SITE_MAIN_URL} className="lp-btnGhost authMenuBtn" target="_blank" rel="noopener noreferrer">
               Регистрация
             </a>
-            <a href={SITE_MAIN_URL} className="lp-btnGhost" target="_blank" rel="noopener noreferrer">
+            <a href={SITE_MAIN_URL} className="lp-btnGhost authMenuBtn" target="_blank" rel="noopener noreferrer">
               Вход
             </a>
           </div>
@@ -270,7 +270,7 @@ export default function HomePage() {
                 <div className="lp-mobileNavBtns">
                   <a
                     href={SITE_MAIN_URL}
-                    className="lp-btnGhost lp-btnGhost--block lp-mobileNavBtnPrimary"
+                    className="lp-btnGhost lp-btnGhost--block lp-mobileNavBtnPrimary authMenuBtn"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={closeMobileNav}
@@ -279,7 +279,7 @@ export default function HomePage() {
                   </a>
                   <a
                     href={SITE_MAIN_URL}
-                    className="lp-btnGhost lp-btnGhost--block lp-mobileNavBtnSecondary"
+                    className="lp-btnGhost lp-btnGhost--block lp-mobileNavBtnSecondary authMenuBtn"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={closeMobileNav}
