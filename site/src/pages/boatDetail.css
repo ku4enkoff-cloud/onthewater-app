@@ -303,13 +303,13 @@
   grid-template-columns: minmax(0, 1.86fr) minmax(0, 1fr);
   gap: 8px;
   width: 100%;
-  padding: 0 0 12px;
+  padding: 0 0 12px 8px;
   box-sizing: border-box;
 }
 
 .bd-galleryBleed__grid--single {
   grid-template-columns: 1fr;
-  padding: 0 0 12px;
+  padding: 0 0 12px 8px;
 }
 
 .bd-galleryBleed__pane {
@@ -511,11 +511,11 @@
     gap: 8px;
     min-height: 0;
     max-height: none;
-    padding: 0 0 10px;
+    padding: 0 0 10px 8px;
   }
 
   .bd-galleryBleed__grid--single {
-    padding: 0 0 10px;
+    padding: 0 0 10px 8px;
   }
 
   .bd-galleryBleed__pane {
