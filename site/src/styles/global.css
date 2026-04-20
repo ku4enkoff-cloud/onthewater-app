@@ -2323,7 +2323,7 @@ a.lp-boatCard:hover .lp-boatImg {
 
 .bs-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
 }
 
@@ -2546,6 +2546,10 @@ a.lp-boatCard:hover .lp-boatImg {
 }
 
 @media (max-width: 1024px) {
+  .bs-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .bs-viewSeg.bs-viewSeg--mobileOnly {
     display: inline-flex;
   }
@@ -2744,6 +2748,10 @@ a.lp-boatCard:hover .lp-boatImg {
 }
 
 @media (max-width: 640px) {
+  .bs-grid {
+    grid-template-columns: 1fr;
+  }
+
   .bs-searchBar {
     width: 100%;
     max-width: none;
