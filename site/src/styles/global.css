@@ -3718,7 +3718,7 @@ a.lp-boatCard:hover .lp-boatImg {
 /* РЎС‚СЂР°РЅРёС†Р° BS: СЃРµРєС†РёРё Рё hero РІ РґСѓС…Рµ Boatsetter (РїРѕСЂСЏРґРѕРє Р±Р»РѕРєРѕРІ Рё С„СѓС‚РµСЂ СЃР°Р№С‚Р° РЅРµ РјРµРЅСЏСЋС‚СЃСЏ) */
 .bd-page--bs .bd-heroBs__title {
   color: #002b5b;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .bd-page--bs .bd-heroBs__loc {
@@ -4081,7 +4081,7 @@ a.lp-boatCard:hover .lp-boatImg {
 
 .bd-page--bs .bd-desc {
   color: #374151;
-  font-size: 20px;
+  font-size: 14px;
   line-height: 1.55;
 }
 
@@ -4103,13 +4103,14 @@ a.lp-boatCard:hover .lp-boatImg {
 .bd-page--bs .bd-main .bd-ownerStrip__label,
 .bd-page--bs .bd-main .bd-ownerStrip__name,
 .bd-page--bs .bd-main .bd-ownerStrip__meta,
-.bd-page--bs .bd-main .bd-videoCard__caption,
-.bd-page--bs .bd-main .bd-readMore {
+.bd-page--bs .bd-main .bd-videoCard__caption {
   font-size: 20px;
   line-height: 1.55;
 }
 
 .bd-page--bs .bd-main .bd-readMore {
+  font-size: 14px;
+  line-height: 1.55;
   font-weight: 700;
 }
 

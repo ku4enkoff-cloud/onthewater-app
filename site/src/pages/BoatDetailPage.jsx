@@ -685,7 +685,7 @@ export default function BoatDetailPage() {
           ) : null}
 
           <section className="bd-blockBs">
-            <h2 className="bd-blockBs__h">Катер</h2>
+            <h2 className="bd-blockBs__h">Описание</h2>
             {desc ? (
               <>
                 <p className={`bd-desc${!descOpen && descLong ? ' bd-desc--clamp' : ''}`}>{desc}</p>
