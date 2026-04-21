@@ -258,17 +258,50 @@ export default function BoatDetailPage() {
       try {
         const city = String(boat.location_city || boat.locationCity || '').trim()
         const region = String(boat.location_region || boat.locationRegion || '').trim()
-        let list = []
-        if (city && locKeys.includes(city)) {
-          list = await fetchBoatsSearch({ city })
-        } else if (region && isRegion(region)) {
-          list = await fetchBoatsSearch({ region })
-        } else {
-          list = await fetchPopularBoats(40)
-        }
+        const typeId = boat.type_id != null ? Number(boat.type_id) : null
+        const typeName = String(boat.type_name || '').trim().toLowerCase()
+        const cityPool = city && locKeys.includes(city) ? await fetchBoatsSearch({ city }) : []
+        const regionPool = region && isRegion(region) ? await fetchBoatsSearch({ region }) : []
+        const fallbackPool =
+          cityPool.length === 0 && regionPool.length === 0 ? await fetchPopularBoats(60) : []
+        const list = [...cityPool, ...regionPool, ...fallbackPool]
         if (cancelled) return
         const ex = Number(boat.id)
-        setSimilarBoats(list.filter((b) => Number(b.id) !== ex).slice(0, 8))
+        const unique = []
+        const seen = new Set()
+        for (const item of list) {
+          const id = Number(item?.id)
+          if (!Number.isFinite(id) || id === ex || seen.has(id)) continue
+          seen.add(id)
+          unique.push(item)
+        }
+        const isSameType = (item) => {
+          const itemTypeId = item?.type_id != null ? Number(item.type_id) : null
+          const itemTypeName = String(item?.type_name || '').trim().toLowerCase()
+          if (typeId != null && itemTypeId != null && Number.isFinite(itemTypeId)) return itemTypeId === typeId
+          if (typeName && itemTypeName) return itemTypeName === typeName
+          return false
+        }
+        const inSameCity = (item) =>
+          city &&
+          String(item?.location_city || item?.locationCity || '')
+            .trim()
+            .toLowerCase() === city.toLowerCase()
+        const inSameRegion = (item) =>
+          region &&
+          String(item?.location_region || item?.locationRegion || '')
+            .trim()
+            .toLowerCase() === region.toLowerCase()
+
+        const top = unique.filter((item) => isSameType(item) && (inSameCity(item) || inSameRegion(item)))
+        const sameType = unique.filter((item) => isSameType(item) && !top.includes(item))
+        const closeLocation = unique.filter(
+          (item) => (inSameCity(item) || inSameRegion(item)) && !top.includes(item) && !sameType.includes(item),
+        )
+        const rest = unique.filter(
+          (item) => !top.includes(item) && !sameType.includes(item) && !closeLocation.includes(item),
+        )
+        setSimilarBoats([...top, ...sameType, ...closeLocation, ...rest].slice(0, 8))
       } catch {
         if (!cancelled) setSimilarBoats([])
       }
