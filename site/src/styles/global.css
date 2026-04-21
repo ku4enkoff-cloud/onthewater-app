@@ -4481,6 +4481,8 @@ a.lp-boatCard:hover .lp-boatImg {
 }
 
 .bd-review {
+  width: min(100%, 760px);
+  align-self: flex-start;
   padding: 18px;
   background: #fff;
   border-radius: 12px;

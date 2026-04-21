@@ -105,6 +105,19 @@ function formatReviewDate(iso) {
   }
 }
 
+function normalizeReviewAuthorName(name) {
+  const raw = String(name || '').trim()
+  if (!raw) return 'Гость'
+  const parts = raw.split(/\s+/).filter(Boolean)
+  if (parts.length >= 2 && parts.length % 2 === 0) {
+    const half = parts.length / 2
+    const left = parts.slice(0, half).join(' ').toLowerCase()
+    const right = parts.slice(half).join(' ').toLowerCase()
+    if (left === right) return parts.slice(0, half).join(' ')
+  }
+  return raw
+}
+
 export default function BoatDetailPage() {
   /** В App.jsx параметр называется :boatId (значение вида "12" или "12-nazvanie-katera"). */
   const { boatId: routeSegment, boatSlug: routeSlugAlt } = useParams()
@@ -933,7 +946,7 @@ export default function BoatDetailPage() {
                 {reviews.map((r, idx) => (
                   <article key={r.id ?? `rev-${idx}`} className="bd-review bd-review--bs">
                     <div className="bd-review__head">
-                      <span className="bd-review__author">{r.user_name || 'Гость'}</span>
+                      <span className="bd-review__author">{normalizeReviewAuthorName(r.user_name)}</span>
                       <span className="bd-review__stars" aria-label={`Оценка ${r.rating} из 5`}>
                         {'★'.repeat(Math.min(5, Math.max(1, Number(r.rating) || 5)))}
                       </span>
