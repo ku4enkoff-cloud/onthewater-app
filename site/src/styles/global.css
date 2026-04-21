@@ -1,7 +1,7 @@
 ﻿/* Monolithic global stylesheet for site/src */
 
 @font-face {
-  font-family: 'Segoe UI';
+  font-family: 'Segoe UI Local';
   src: url("../../fonts/Segoe UI/Segoe UI.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
@@ -9,7 +9,7 @@
 }
 
 @font-face {
-  font-family: 'Segoe UI';
+  font-family: 'Segoe UI Local';
   src: url("../../fonts/Segoe UI/Segoe UI Italic.ttf") format("truetype");
   font-weight: 400;
   font-style: italic;
@@ -17,7 +17,7 @@
 }
 
 @font-face {
-  font-family: 'Segoe UI';
+  font-family: 'Segoe UI Local';
   src: url("../../fonts/Segoe UI/Segoe UI Bold.ttf") format("truetype");
   font-weight: 700;
   font-style: normal;
@@ -25,7 +25,7 @@
 }
 
 @font-face {
-  font-family: 'Segoe UI';
+  font-family: 'Segoe UI Local';
   src: url("../../fonts/Segoe UI/Segoe UI Bold Italic.ttf") format("truetype");
   font-weight: 700;
   font-style: italic;
@@ -89,8 +89,8 @@
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
-  --sans: 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --heading: 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --sans: 'Segoe UI Local', 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --heading: 'Segoe UI Local', 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
   font: 19px/150% var(--sans);
