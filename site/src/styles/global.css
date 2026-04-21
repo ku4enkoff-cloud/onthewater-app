@@ -5010,7 +5010,7 @@ a.lp-boatCard:hover .lp-boatImg {
 }
 
 .bd-bookCard__row--dur .bd-bookCard__chips {
-  padding-bottom: 2px;
+  padding-bottom: 20px;
 }
 
 .bd-bookCard__ctaFull {
@@ -5445,22 +5445,15 @@ a.lp-boatCard:hover .lp-boatImg {
 
 .bd-similar__grid {
   display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(260px, 320px);
   gap: clamp(18px, 2vw, 28px);
   align-items: stretch;
-  grid-template-columns: 1fr;
-}
-
-@media (min-width: 700px) {
-  .bd-similar__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-/* Р§РµС‚С‹СЂРµ РєР°СЂС‚РѕС‡РєРё РІ СЂСЏРґ РЅР° С€РёСЂРѕРєРѕР№ СЃРµС‚РєРµ */
-@media (min-width: 1200px) {
-  .bd-similar__grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
+  grid-template-columns: none;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 6px;
+  scrollbar-gutter: stable;
 }
 
 .bd-similar__grid .bs-card {
