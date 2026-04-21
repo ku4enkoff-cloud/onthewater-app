@@ -4147,6 +4147,7 @@ a.lp-boatCard:hover .lp-boatImg {
 }
 
 .bd-bookingTiersBs__card {
+  width: min(100%, 620px);
   border: 1px solid #e8e8e6;
   border-radius: 12px;
   overflow: hidden;
