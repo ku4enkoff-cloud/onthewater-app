@@ -75,6 +75,16 @@
   background: #f8fafc;
 }
 
+.account-topBar {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.account-topBar__actions {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
 .auth-card {
   width: min(100%, 460px);
   padding: 28px 24px;

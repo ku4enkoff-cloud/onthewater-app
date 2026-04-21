@@ -132,8 +132,30 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-card auth-card--wide">
+    <>
+      <header className="bd-topBar account-topBar">
+        <div className="bd-topBar__left">
+          <Link to="/" className="bd-topBar__logo" aria-label="ONTHEWATER — на главную">
+            <span className="bd-topBar__logoMark" aria-hidden />
+            <span className="bd-topBar__logoText">onthewater</span>
+          </Link>
+        </div>
+        <nav className="bd-topBar__nav" aria-label="Разделы сайта">
+          <Link to="/" className="bd-topBar__link">
+            Главная
+          </Link>
+          <Link to="/boats" className="bd-topBar__link">
+            Катера
+          </Link>
+        </nav>
+        <div className="account-topBar__actions">
+          <button type="button" className="authMenuBtn authMenuBtn--action" onClick={logout}>
+            Выйти
+          </button>
+        </div>
+      </header>
+      <div className="auth-page">
+        <div className="auth-card auth-card--wide">
         <h1 className="auth-card__title">Личный кабинет</h1>
         <p className="auth-card__sub">Добро пожаловать, {user?.name || user?.email || 'пользователь'}.</p>
 
@@ -260,21 +282,13 @@ export default function AccountPage() {
             <p className="auth-card__sub">Раздел в разработке. Добавлю логику этого пункта следующим шагом.</p>
           </section>
         ) : null}
-        <div className="account-actions">
-          <Link className="auth-submit auth-submit--ghost" to="/boats">
-            К поиску катеров
-          </Link>
-          <button
-            type="button"
-            className="auth-submit"
-            onClick={() => {
-              logout()
-            }}
-          >
-            Выйти
-          </button>
+          <div className="account-actions">
+            <Link className="auth-submit auth-submit--ghost" to="/boats">
+              К поиску катеров
+            </Link>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
