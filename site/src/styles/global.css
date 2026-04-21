@@ -76,13 +76,79 @@
 }
 
 .account-topBar {
-  border-bottom: 1px solid #e2e8f0;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #dbe4ee;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+}
+
+.account-topBar .bd-topBar__logo {
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.account-topBar .bd-topBar__logoMark {
+  width: 30px;
+  height: 30px;
+}
+
+.account-topBar .bd-topBar__nav {
+  margin-left: auto;
+  gap: 16px;
+}
+
+.account-topBar .bd-topBar__link {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  text-decoration: none;
+}
+
+.account-topBar .bd-topBar__link:hover {
+  color: #002b5b;
+  text-decoration: none;
 }
 
 .account-topBar__actions {
   display: flex;
   align-items: center;
-  margin-left: auto;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.account-topBar__actions > .authMenuBtn {
+  min-height: 30px !important;
+  padding: 0 14px !important;
+  border-radius: 999px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+.account-topBar__pill.authMenuBtn {
+  border-color: #0061c1 !important;
+  background: #0061c1 !important;
+  color: #fff !important;
+}
+
+.account-topBar__pill--active.authMenuBtn {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+@media (max-width: 900px) {
+  .account-topBar {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .account-topBar .bd-topBar__nav {
+    order: 3;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .account-topBar__actions {
+    margin-left: auto;
+  }
 }
 
 .auth-card {

@@ -149,6 +149,9 @@ export default function AccountPage() {
           </Link>
         </nav>
         <div className="account-topBar__actions">
+          <Link to="/account" className="authMenuBtn account-topBar__pill account-topBar__pill--active">
+            Личный кабинет
+          </Link>
           <button type="button" className="authMenuBtn authMenuBtn--action" onClick={logout}>
             Выйти
           </button>
