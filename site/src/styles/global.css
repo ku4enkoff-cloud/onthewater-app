@@ -3813,6 +3813,7 @@ a.lp-boatCard:hover .lp-boatImg {
 
 .bd-page--bs .bd-specTableBs dd {
   color: #0f172a;
+  text-align: right;
 }
 
 .bd-page--bs .bd-knowBs {
