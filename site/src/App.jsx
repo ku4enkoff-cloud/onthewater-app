@@ -1,11 +1,14 @@
 import { useEffect, useRef } from 'react'
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import HomePage from './pages/HomePage.jsx'
 import BoatsSearchPage from './pages/BoatsSearchPage.jsx'
 import BoatDetailPage from './pages/BoatDetailPage.jsx'
+import LoginPage from './pages/LoginPage.jsx'
+import AccountPage from './pages/AccountPage.jsx'
 import SiteFooter from './components/SiteFooter.jsx'
 import { startSiteGeolocation } from './lib/siteGeolocation.js'
 import { metrikaHit } from './lib/yandexMetrika.js'
+import { useAuth } from './context/AuthContext.jsx'
 
 /**
  * Геолокацию для автовыбора города на /boats запускаем только с главной и со списка поиска.
@@ -36,6 +39,7 @@ function YandexMetrikaSpa() {
 }
 
 export default function App() {
+  const { user, loading } = useAuth()
   return (
     <>
       <YandexMetrikaSpa />
@@ -45,6 +49,19 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/boats" element={<BoatsSearchPage />} />
           <Route path="/boats/:boatSlug" element={<BoatDetailPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/account"
+            element={
+              loading ? (
+                <div className="bd-loading">Загружаем профиль…</div>
+              ) : user ? (
+                <AccountPage />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
         </Routes>
       </div>
       <SiteFooter />

@@ -25,6 +25,7 @@ import FilterQuickDropdown from '../components/search/FilterQuickDropdown.jsx'
 import FiltersModal from '../components/search/FiltersModal.jsx'
 import YandexBoatsMap from '../components/search/YandexBoatsMap.jsx'
 import BookingCalendarModal, { formatBookingDateDots } from '../components/booking/BookingCalendarModal.jsx'
+import { useAuth } from '../context/AuthContext.jsx'
 
 function readInitialLocationKey() {
   try {
@@ -122,6 +123,7 @@ function todayISO() {
 }
 
 export default function BoatsSearchPage() {
+  const { user, logout } = useAuth()
   const [searchParams] = useSearchParams()
   const cityFromUrl = searchParams.get('city')?.trim() || ''
 
@@ -482,24 +484,46 @@ export default function BoatsSearchPage() {
                 Разместить объявление
               </a>
               <div className="bs-mobileNavBtns">
-                <a
-                  href={SITE_MAIN_URL}
-                  className="bs-mobileNavBtn bs-mobileNavBtn--primary authMenuBtn"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={closeMobileNav}
-                >
-                  Регистрация
-                </a>
-                <a
-                  href={SITE_MAIN_URL}
-                  className="bs-mobileNavBtn bs-mobileNavBtn--secondary authMenuBtn"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={closeMobileNav}
-                >
-                  Вход
-                </a>
+                {user ? (
+                  <>
+                    <Link
+                      to="/account"
+                      className="bs-mobileNavBtn bs-mobileNavBtn--primary authMenuBtn"
+                      onClick={closeMobileNav}
+                    >
+                      Личный кабинет
+                    </Link>
+                    <button
+                      type="button"
+                      className="bs-mobileNavBtn bs-mobileNavBtn--secondary authMenuBtn authMenuBtn--action"
+                      onClick={() => {
+                        logout()
+                        closeMobileNav()
+                      }}
+                    >
+                      Выйти
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <a
+                      href={SITE_MAIN_URL}
+                      className="bs-mobileNavBtn bs-mobileNavBtn--primary authMenuBtn"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={closeMobileNav}
+                    >
+                      Регистрация
+                    </a>
+                    <Link
+                      to="/login"
+                      className="bs-mobileNavBtn bs-mobileNavBtn--secondary authMenuBtn"
+                      onClick={closeMobileNav}
+                    >
+                      Вход
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -537,12 +561,25 @@ export default function BoatsSearchPage() {
         </div>
 
         <div className="bs-top__auth bs-top__authDesktop">
-          <a href={SITE_MAIN_URL} className="authMenuBtn" target="_blank" rel="noopener noreferrer">
-            Регистрация
-          </a>
-          <a href={SITE_MAIN_URL} className="authMenuBtn" target="_blank" rel="noopener noreferrer">
-            Вход
-          </a>
+          {user ? (
+            <>
+              <Link to="/account" className="authMenuBtn">
+                Личный кабинет
+              </Link>
+              <button type="button" className="authMenuBtn authMenuBtn--action" onClick={logout}>
+                Выйти
+              </button>
+            </>
+          ) : (
+            <>
+              <a href={SITE_MAIN_URL} className="authMenuBtn" target="_blank" rel="noopener noreferrer">
+                Регистрация
+              </a>
+              <Link to="/login" className="authMenuBtn">
+                Вход
+              </Link>
+            </>
+          )}
         </div>
       </header>
 

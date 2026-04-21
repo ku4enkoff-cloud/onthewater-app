@@ -7,6 +7,7 @@ import { SITE_MAIN_URL } from '../config'
 import { useHomePageSeo } from '../seo/useHomePageSeo.js'
 import { fetchDestinations } from '../api/destinations.js'
 import { LOCATION_OPTIONS, readNearestCityFromStorage } from '../boatSearchUtils.js'
+import { useAuth } from '../context/AuthContext.jsx'
 
 const HOW_STEPS = [
   {
@@ -47,6 +48,7 @@ function CloseIcon() {
 
 export default function HomePage() {
   useHomePageSeo(heroImg)
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
   const searchRef = useRef(null)
   const userEditedCityRef = useRef(false)
@@ -219,12 +221,25 @@ export default function HomePage() {
             <a href={SITE_MAIN_URL} className="lp-linkMuted" target="_blank" rel="noopener noreferrer">
               Разместить объявление
             </a>
-            <a href={SITE_MAIN_URL} className="lp-btnGhost authMenuBtn" target="_blank" rel="noopener noreferrer">
-              Регистрация
-            </a>
-            <a href={SITE_MAIN_URL} className="lp-btnGhost authMenuBtn" target="_blank" rel="noopener noreferrer">
-              Вход
-            </a>
+            {user ? (
+              <>
+                <Link to="/account" className="lp-btnGhost authMenuBtn">
+                  Личный кабинет
+                </Link>
+                <button type="button" className="lp-btnGhost authMenuBtn authMenuBtn--action" onClick={logout}>
+                  Выйти
+                </button>
+              </>
+            ) : (
+              <>
+                <a href={SITE_MAIN_URL} className="lp-btnGhost authMenuBtn" target="_blank" rel="noopener noreferrer">
+                  Регистрация
+                </a>
+                <Link to="/login" className="lp-btnGhost authMenuBtn">
+                  Вход
+                </Link>
+              </>
+            )}
           </div>
 
           {mobileNavOpen ? (
@@ -268,24 +283,46 @@ export default function HomePage() {
                   Разместить объявление
                 </a>
                 <div className="lp-mobileNavBtns">
-                  <a
-                    href={SITE_MAIN_URL}
-                    className="lp-btnGhost lp-btnGhost--block lp-mobileNavBtnPrimary authMenuBtn"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={closeMobileNav}
-                  >
-                    Регистрация
-                  </a>
-                  <a
-                    href={SITE_MAIN_URL}
-                    className="lp-btnGhost lp-btnGhost--block lp-mobileNavBtnSecondary authMenuBtn"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={closeMobileNav}
-                  >
-                    Вход
-                  </a>
+                  {user ? (
+                    <>
+                      <Link
+                        to="/account"
+                        className="lp-btnGhost lp-btnGhost--block lp-mobileNavBtnPrimary authMenuBtn"
+                        onClick={closeMobileNav}
+                      >
+                        Личный кабинет
+                      </Link>
+                      <button
+                        type="button"
+                        className="lp-btnGhost lp-btnGhost--block lp-mobileNavBtnSecondary authMenuBtn authMenuBtn--action"
+                        onClick={() => {
+                          logout()
+                          closeMobileNav()
+                        }}
+                      >
+                        Выйти
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <a
+                        href={SITE_MAIN_URL}
+                        className="lp-btnGhost lp-btnGhost--block lp-mobileNavBtnPrimary authMenuBtn"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={closeMobileNav}
+                      >
+                        Регистрация
+                      </a>
+                      <Link
+                        to="/login"
+                        className="lp-btnGhost lp-btnGhost--block lp-mobileNavBtnSecondary authMenuBtn"
+                        onClick={closeMobileNav}
+                      >
+                        Вход
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

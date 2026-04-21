@@ -49,6 +49,11 @@
   text-decoration: none !important;
 }
 
+.authMenuBtn.authMenuBtn--action {
+  font: inherit;
+  cursor: pointer;
+}
+
 .bd-topBar__nav > .authMenuBtn,
 .bs-top__auth > .authMenuBtn,
 .lp-headerActions > .authMenuBtn {
@@ -59,6 +64,130 @@
   padding: 0 22px;
   white-space: nowrap;
   box-sizing: border-box;
+}
+
+.auth-page {
+  flex: 1 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px 64px;
+  background: #f8fafc;
+}
+
+.auth-card {
+  width: min(100%, 460px);
+  padding: 28px 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.auth-card__title {
+  margin: 0 0 8px;
+  font-size: 30px;
+  color: #002b5b;
+}
+
+.auth-card__sub {
+  margin: 0 0 18px;
+  color: #64748b;
+  font-size: 15px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-field {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  color: #334155;
+}
+
+.auth-field input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 11px 12px;
+  font: inherit;
+  background: #fff;
+  color: #0f172a;
+}
+
+.auth-field input:focus {
+  outline: 2px solid rgba(0, 97, 193, 0.25);
+  border-color: #0061c1;
+}
+
+.auth-error {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 14px;
+}
+
+.auth-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid #0061c1;
+  background: #0061c1;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.auth-submit:disabled {
+  opacity: 0.72;
+  cursor: default;
+}
+
+.auth-submit--ghost {
+  background: #fff;
+  color: #0061c1;
+}
+
+.auth-card__hint {
+  margin: 14px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.account-meta {
+  margin: 12px 0 20px;
+  display: grid;
+  gap: 10px;
+}
+
+.account-meta > div {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 10px;
+  font-size: 15px;
+}
+
+.account-meta dt {
+  color: #64748b;
+}
+
+.account-meta dd {
+  margin: 0;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.account-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 /* Boat detail page: auth buttons in blue style */
@@ -1836,14 +1965,14 @@ a.lp-boatCard:hover .lp-boatImg {
   gap: 12px;
 }
 
-.bs-top__auth a {
+.bs-top__auth > .authMenuBtn {
   font-size: 14px;
   font-weight: 600;
   color: #0061c1;
   text-decoration: none;
 }
 
-.bs-top__auth a:hover {
+.bs-top__auth > .authMenuBtn:hover {
   text-decoration: underline;
 }
 

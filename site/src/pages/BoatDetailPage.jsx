@@ -28,6 +28,7 @@ import TimePickerModal from '../components/booking/TimePickerModal.jsx'
 import BoatDetailLocationMap from '../components/boat/BoatDetailLocationMap.jsx'
 import BoatHeroSpecStrip from '../components/boat/BoatHeroSpecStrip.jsx'
 import BoatResultCard from '../components/search/BoatResultCard.jsx'
+import { useAuth } from '../context/AuthContext.jsx'
 
 const PLACEHOLDER = 'https://placehold.co/1200x750/e8eef4/64748b?text=%D0%9A%D0%B0%D1%82%D0%B5%D1%80'
 const DESC_PREVIEW = 480
@@ -35,12 +36,8 @@ const AMENITIES_PREVIEW = 15
 const BOOKING_TIERS_PREVIEW = 4
 const FAVORITES_STORAGE_KEY = 'boatrent_site_favorites'
 
-function siteBaseUrl() {
-  return SITE_MAIN_URL.replace(/\/$/, '')
-}
-
 function DetailPageHeader({ bookDate, onOpenCalendar, showCalendar }) {
-  const base = siteBaseUrl()
+  const { user, logout } = useAuth()
   return (
     <header className="bd-topBar">
       <div className="bd-topBar__left">
@@ -61,12 +58,25 @@ function DetailPageHeader({ bookDate, onOpenCalendar, showCalendar }) {
         <Link to="/boats" className="bd-topBar__link">
           Поиск катеров
         </Link>
-        <a className="bd-topBar__link authMenuBtn" href={`${base}/register`} target="_blank" rel="noopener noreferrer">
-          Регистрация
-        </a>
-        <a className="bd-topBar__link authMenuBtn" href={`${base}/login`} target="_blank" rel="noopener noreferrer">
-          Войти
-        </a>
+        {user ? (
+          <>
+            <Link className="bd-topBar__link authMenuBtn" to="/account">
+              Личный кабинет
+            </Link>
+            <button type="button" className="bd-topBar__link authMenuBtn authMenuBtn--action" onClick={logout}>
+              Выйти
+            </button>
+          </>
+        ) : (
+          <>
+            <a className="bd-topBar__link authMenuBtn" href={`${SITE_MAIN_URL}/register`} target="_blank" rel="noopener noreferrer">
+              Регистрация
+            </a>
+            <Link className="bd-topBar__link authMenuBtn" to="/login">
+              Войти
+            </Link>
+          </>
+        )}
       </nav>
     </header>
   )
