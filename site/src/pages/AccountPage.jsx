@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { fetchMyBookings } from '../api/bookings'
+import { changePassword, deleteMyAccount, updateProfile } from '../api/auth'
 
 const STATUS_LABELS = {
   pending: 'На рассмотрении',
@@ -35,8 +36,15 @@ function formatBookingDate(iso) {
 }
 
 export default function AccountPage() {
-  const { user, token, logout } = useAuth()
+  const { user, token, logout, setCurrentUser } = useAuth()
   const [activeMenu, setActiveMenu] = useState('bookings')
+  const [profileForm, setProfileForm] = useState({ first_name: '', last_name: '', phone: '' })
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [profileMsg, setProfileMsg] = useState('')
+  const [passwordForm, setPasswordForm] = useState({ current_password: '', new_password: '' })
+  const [passwordSaving, setPasswordSaving] = useState(false)
+  const [passwordMsg, setPasswordMsg] = useState('')
+  const [deletingAccount, setDeletingAccount] = useState(false)
   const [bookings, setBookings] = useState([])
   const [bookingsLoading, setBookingsLoading] = useState(true)
   const [bookingsError, setBookingsError] = useState('')
@@ -68,6 +76,60 @@ export default function AccountPage() {
       ),
     [bookings],
   )
+
+  useEffect(() => {
+    setProfileForm({
+      first_name: user?.first_name || '',
+      last_name: user?.last_name || '',
+      phone: user?.phone || '',
+    })
+  }, [user?.first_name, user?.last_name, user?.phone])
+
+  const saveProfile = async () => {
+    try {
+      setProfileSaving(true)
+      setProfileMsg('')
+      const updated = await updateProfile(token, {
+        first_name: profileForm.first_name.trim(),
+        last_name: profileForm.last_name.trim(),
+        phone: profileForm.phone.trim(),
+      })
+      setCurrentUser(updated)
+      setProfileMsg('Данные сохранены.')
+    } catch (err) {
+      setProfileMsg(err?.message || 'Не удалось сохранить данные')
+    } finally {
+      setProfileSaving(false)
+    }
+  }
+
+  const savePassword = async () => {
+    try {
+      setPasswordSaving(true)
+      setPasswordMsg('')
+      await changePassword(token, passwordForm)
+      setPasswordForm({ current_password: '', new_password: '' })
+      setPasswordMsg('Пароль успешно изменен.')
+    } catch (err) {
+      setPasswordMsg(err?.message || 'Не удалось изменить пароль')
+    } finally {
+      setPasswordSaving(false)
+    }
+  }
+
+  const onDeleteAccount = async () => {
+    const ok = window.confirm('Удалить аккаунт без возможности восстановления?')
+    if (!ok) return
+    try {
+      setDeletingAccount(true)
+      await deleteMyAccount(token)
+      logout()
+    } catch (err) {
+      alert(err?.message || 'Не удалось удалить аккаунт')
+    } finally {
+      setDeletingAccount(false)
+    }
+  }
 
   return (
     <div className="auth-page">
@@ -121,24 +183,74 @@ export default function AccountPage() {
         {activeMenu === 'account' ? (
           <section className="account-section">
             <h2 className="account-section__title">Данные аккаунта</h2>
-            <dl className="account-meta">
-              <div>
-                <dt>Имя</dt>
-                <dd>{user?.name || [user?.first_name, user?.last_name].filter(Boolean).join(' ') || '—'}</dd>
+            <div className="account-form">
+              <label className="auth-field">
+                <span>Имя</span>
+                <input
+                  type="text"
+                  value={profileForm.first_name}
+                  onChange={(e) => setProfileForm((v) => ({ ...v, first_name: e.target.value }))}
+                />
+              </label>
+              <label className="auth-field">
+                <span>Фамилия</span>
+                <input
+                  type="text"
+                  value={profileForm.last_name}
+                  onChange={(e) => setProfileForm((v) => ({ ...v, last_name: e.target.value }))}
+                />
+              </label>
+              <label className="auth-field">
+                <span>Телефон</span>
+                <input
+                  type="text"
+                  value={profileForm.phone}
+                  onChange={(e) => setProfileForm((v) => ({ ...v, phone: e.target.value }))}
+                />
+              </label>
+              <label className="auth-field">
+                <span>Почта</span>
+                <input type="text" value={user?.email || ''} readOnly />
+              </label>
+              <div className="account-inlineActions">
+                <button type="button" className="auth-submit" onClick={saveProfile} disabled={profileSaving}>
+                  {profileSaving ? 'Сохраняем…' : 'Сохранить данные'}
+                </button>
+                {profileMsg ? <p className="auth-card__sub">{profileMsg}</p> : null}
               </div>
-              <div>
-                <dt>Email</dt>
-                <dd>{user?.email || '—'}</dd>
+            </div>
+
+            <div className="account-form account-form--password">
+              <h3 className="account-section__subtitle">Изменить пароль</h3>
+              <label className="auth-field">
+                <span>Текущий пароль</span>
+                <input
+                  type="password"
+                  value={passwordForm.current_password}
+                  onChange={(e) => setPasswordForm((v) => ({ ...v, current_password: e.target.value }))}
+                />
+              </label>
+              <label className="auth-field">
+                <span>Новый пароль</span>
+                <input
+                  type="password"
+                  value={passwordForm.new_password}
+                  onChange={(e) => setPasswordForm((v) => ({ ...v, new_password: e.target.value }))}
+                />
+              </label>
+              <div className="account-inlineActions">
+                <button type="button" className="auth-submit auth-submit--ghost" onClick={savePassword} disabled={passwordSaving}>
+                  {passwordSaving ? 'Меняем…' : 'Изменить пароль'}
+                </button>
+                {passwordMsg ? <p className="auth-card__sub">{passwordMsg}</p> : null}
               </div>
-              <div>
-                <dt>Телефон</dt>
-                <dd>{user?.phone || '—'}</dd>
-              </div>
-              <div>
-                <dt>Роль</dt>
-                <dd>{user?.role || 'client'}</dd>
-              </div>
-            </dl>
+            </div>
+
+            <div className="account-inlineActions">
+              <button type="button" className="auth-submit auth-submit--danger" onClick={onDeleteAccount} disabled={deletingAccount}>
+                {deletingAccount ? 'Удаляем…' : 'Удалить аккаунт'}
+              </button>
+            </div>
           </section>
         ) : null}
 

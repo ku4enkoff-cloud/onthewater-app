@@ -26,3 +26,44 @@ export async function fetchMe(token) {
   if (!res.ok) throw new Error('unauthorized')
   return res.json()
 }
+
+export async function updateProfile(token, payload) {
+  const res = await fetch(authUrl('/auth/profile'), {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    credentials: 'omit',
+    body: JSON.stringify(payload),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data?.error || 'Не удалось обновить профиль')
+  return data
+}
+
+export async function changePassword(token, payload) {
+  const res = await fetch(authUrl('/auth/password'), {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    credentials: 'omit',
+    body: JSON.stringify(payload),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data?.error || 'Не удалось изменить пароль')
+  return data
+}
+
+export async function deleteMyAccount(token) {
+  const res = await fetch(authUrl('/auth/account'), {
+    method: 'DELETE',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: 'omit',
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data?.error || 'Не удалось удалить аккаунт')
+  return data
+}

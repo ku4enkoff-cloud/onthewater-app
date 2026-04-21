@@ -159,6 +159,12 @@
   color: #0061c1;
 }
 
+.auth-submit--danger {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  color: #fff;
+}
+
 .auth-card__hint {
   margin: 14px 0 0;
   color: #64748b;
@@ -229,6 +235,36 @@
   font-size: 22px;
   color: #002b5b;
   font-weight: 700;
+}
+
+.account-section__subtitle {
+  margin: 0 0 10px;
+  font-size: 18px;
+  color: #0f172a;
+}
+
+.account-form {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.account-form .auth-field input[readonly] {
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.account-form--password {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.account-inlineActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .account-bookings {
