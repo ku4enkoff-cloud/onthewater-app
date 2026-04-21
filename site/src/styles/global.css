@@ -3796,8 +3796,7 @@ a.lp-boatCard:hover .lp-boatImg {
 }
 
 .bd-page--bs .bd-specTableBs {
-  max-width: none;
-  width: 100%;
+  width: min(100%, 620px);
 }
 
 .bd-page--bs .bd-specTableBs__row {
