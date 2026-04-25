@@ -766,8 +766,8 @@ code {
   min-height: 44px;
   padding: 0 36px;
   border-radius: 999px;
-  font-size: 18px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 600;
   letter-spacing: 0.03em;
 }
 
@@ -874,7 +874,7 @@ code {
   flex-wrap: wrap;
   gap: 0;
   background: #fff;
-  border-radius: 12px;
+  border-radius: 30px;
   box-shadow: 0 16px 48px rgba(0, 43, 91, 0.22);
   overflow: hidden;
   max-width: 720px;
