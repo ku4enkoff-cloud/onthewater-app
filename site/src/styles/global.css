@@ -6131,9 +6131,10 @@ a.lp-boatCard:hover .lp-boatImg {
 }
 
 .sf-storeBadge--google {
-  background: #0b0f14;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  padding: 6px 8px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  min-height: auto;
 }
 
 .sf-storeBadge__img {
@@ -6145,7 +6146,7 @@ a.lp-boatCard:hover .lp-boatImg {
 }
 
 .sf-storeBadge--google:hover {
-  background: #000;
+  opacity: 0.92;
 }
 
 .sf-bottom {
