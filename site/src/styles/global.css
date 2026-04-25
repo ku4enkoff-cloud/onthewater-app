@@ -1863,7 +1863,7 @@ a.lp-boatCard:hover .lp-boatImg {
 
 @media (max-width: 768px) {
   .lp-stickySearch__inner {
-    padding: 8px 10px;
+    padding: 6px 10px;
   }
 
   .lp-logo--sticky .lp-logoText {
@@ -1872,10 +1872,20 @@ a.lp-boatCard:hover .lp-boatImg {
 
   .lp-searchBar--sticky {
     min-width: 0;
+    min-height: 42px;
+    padding: 3px 4px 3px 10px;
+  }
+
+  .lp-searchBar--sticky .lp-searchInput {
+    height: 32px;
+    line-height: 32px;
+    padding: 0 2px 0 0;
+    font-size: 14px;
   }
 
   .lp-searchBar--sticky .lp-searchBtn--pill {
-    padding: 10px 16px;
+    min-height: 32px;
+    padding: 0 14px;
     font-size: 12px;
   }
 
@@ -1913,12 +1923,12 @@ a.lp-boatCard:hover .lp-boatImg {
     height: 18px;
   }
 
-  .lp-searchBar--pill .lp-searchInput {
+  .lp-searchBar--pill:not(.lp-searchBar--sticky) .lp-searchInput {
     padding: 10px 2px 10px 0;
     font-size: 15px;
   }
 
-  .lp-searchBar--pill .lp-searchBtn--pill {
+  .lp-searchBar--pill:not(.lp-searchBar--sticky) .lp-searchBtn--pill {
     flex-shrink: 0;
     width: auto;
     margin-top: 0;
