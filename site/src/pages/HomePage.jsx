@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import heroImg from '../../images/app/hero.webp'
 import DestinationsSection from '../components/DestinationsSection.jsx'
 import PopularBoats from '../components/PopularBoats.jsx'
+import googlePlayIcon from '../assets/icon-g-p.webp'
+import appleStoreIcon from '../assets/icon-a-s.webp'
 import { SITE_MAIN_URL } from '../config'
 import { useHomePageSeo } from '../seo/useHomePageSeo.js'
 import { fetchDestinations } from '../api/destinations.js'
@@ -500,9 +502,20 @@ export default function HomePage() {
         <div className="lp-ctaInner">
           <h2 className="lp-ctaTitle">Владелец катера? Зарабатывайте</h2>
           <p className="lp-ctaSub">Сдавайте судно в аренду через ONTHEWATER.</p>
-          <a href={SITE_MAIN_URL} className="lp-ctaBtn" target="_blank" rel="noopener noreferrer">
-            Разместить объявление
-          </a>
+          <div className="lp-ctaStores" aria-label="Скачать приложение ONTHEWATER">
+            <span className="lp-ctaStoreBadge lp-ctaStoreBadge--apple" aria-disabled="true">
+              <img src={appleStoreIcon} alt="App Store (скоро)" className="lp-ctaStoreBadge__img" />
+            </span>
+            <a
+              href="https://play.google.com/store/apps/details?id=com.anonymous.onthewater"
+              className="lp-ctaStoreBadge lp-ctaStoreBadge--google"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Скачать приложение в Google Play"
+            >
+              <img src={googlePlayIcon} alt="Google Play" className="lp-ctaStoreBadge__img" />
+            </a>
+          </div>
         </div>
       </section>
 

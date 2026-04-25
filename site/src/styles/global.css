@@ -1469,8 +1469,7 @@ a.lp-boatCard:hover .lp-boatImg {
   inset: 0;
   background:
     linear-gradient(180deg, rgba(0, 43, 91, 0.55) 0%, rgba(0, 43, 91, 0.65) 100%),
-    url('https://images.unsplash.com/photo-1505118388757-f64f766c1885?w=1600&h=900&fit=crop') center /
-      cover no-repeat;
+    url('../assets/Book-a-Boat-Rental.jpg') center 38% / cover no-repeat;
   z-index: 0;
 }
 
@@ -1512,6 +1511,46 @@ a.lp-boatCard:hover .lp-boatImg {
 
 .lp-ctaBtn:hover {
   background: #0052a3;
+}
+
+.lp-ctaStores {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.lp-ctaStoreBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  border-radius: 12px;
+  transition: opacity 0.2s ease;
+}
+
+.lp-ctaStoreBadge__img {
+  display: block;
+  width: 100%;
+  max-width: 230px;
+  height: auto;
+  object-fit: contain;
+}
+
+.lp-ctaStoreBadge--google:hover {
+  opacity: 0.92;
+}
+
+@media (max-width: 768px) {
+  .lp-ctaStores {
+    gap: 10px;
+  }
+
+  .lp-ctaStoreBadge__img {
+    max-width: 190px;
+  }
 }
 
 .lp-footer {
