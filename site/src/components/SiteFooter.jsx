@@ -64,15 +64,6 @@ const COL_EXPERIENCES = [
   { label: 'Мальчишник на катере', to: '/boats' },
 ]
 
-const SOCIAL = [
-  { name: 'Instagram', href: `${base}/`, abbr: 'IG' },
-  { name: 'YouTube', href: `${base}/`, abbr: 'YT' },
-  { name: 'Facebook', href: `${base}/`, abbr: 'f' },
-  { name: 'Pinterest', href: `${base}/`, abbr: 'P' },
-  { name: 'X (Twitter)', href: `${base}/`, abbr: '𝕏' },
-  { name: 'TikTok', href: `${base}/`, abbr: 'TT' },
-]
-
 function FooterCol({ title, panelId, children }) {
   const [mobile, setMobile] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia(MOBILE_FOOTER_MQ).matches : false,
@@ -175,39 +166,32 @@ export default function SiteFooter() {
             </FooterCol>
 
             <FooterCol title="Связь с нами" panelId="sf-col-contact">
-              <div className="sf-social" role="list">
-                {SOCIAL.map((s) => (
+              <a className="sf-contactEmail" href="mailto:info@onthewater.ru">
+                info@onthewater.ru
+              </a>
+              <div className="sf-appCard">
+                <div className="sf-appCard__head">
+                  <div className="sf-appCard__logoWrap" aria-hidden>
+                    <span className="sf-appCard__logoMark" />
+                  </div>
+                  <div className="sf-appCard__text">
+                    <p className="sf-appCard__name">Приложение ONTHEWATER</p>
+                    <p className="sf-appCard__tagline">Найдите и забронируйте катер в десятках городов России</p>
+                  </div>
+                </div>
+                <div className="sf-appCard__stores">
+                  <span className="sf-store sf-store--disabled" aria-disabled="true">
+                    Скоро в App Store
+                  </span>
                   <a
-                    key={s.name}
-                    href={s.href}
-                    className="sf-social__btn"
+                    href="https://play.google.com/store/apps/details?id=com.anonymous.onthewater"
+                    className="sf-store"
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label={s.name}
-                    role="listitem"
                   >
-                    <span className="sf-social__abbr" aria-hidden>
-                      {s.abbr}
-                    </span>
+                    Доступно в Google Play
                   </a>
-                ))}
-              </div>
-              <div className="sf-app">
-                <div className="sf-app__brand" aria-hidden>
-                  <span className="sf-app__logo" />
                 </div>
-                <div className="sf-app__text">
-                  <p className="sf-app__name">Приложение ONTHEWATER</p>
-                  <p className="sf-app__tagline">Найдите и забронируйте катер в десятках городов России</p>
-                </div>
-              </div>
-              <div className="sf-stores">
-                <a href={`${base}/`} className="sf-store sf-store--apple" target="_blank" rel="noopener noreferrer">
-                  Загрузить в App&nbsp;Store
-                </a>
-                <a href={`${base}/`} className="sf-store sf-store--google" target="_blank" rel="noopener noreferrer">
-                  Доступно в Google&nbsp;Play
-                </a>
               </div>
             </FooterCol>
           </div>

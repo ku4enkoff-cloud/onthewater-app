@@ -11,24 +11,59 @@ import { useAuth } from '../context/AuthContext.jsx'
 
 const HOW_STEPS = [
   {
-    n: 1,
-    title: 'Выберите катер',
-    text: 'Найдите и забронируйте подходящее судно.',
-    img: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=280&h=200&fit=crop',
+    icon: 'shield',
+    title: 'Защита вашей поездки',
+    text: 'Если планы изменились из-за погоды или форс-мажора, мы поможем оформить возврат по правилам сервиса.',
   },
   {
-    n: 2,
-    title: 'Онлайн-бронь',
-    text: 'Быстрое и безопасное оформление.',
-    img: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=280&h=200&fit=crop',
+    icon: 'check',
+    title: 'Проверенные катера',
+    text: 'Каждое судно проходит модерацию: состояние, безопасность, чистота и соответствие описанию.',
   },
   {
-    n: 3,
-    title: 'Наслаждайтесь',
-    text: 'Выходите на воду и отдыхайте.',
-    img: 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=280&h=200&fit=crop',
+    icon: 'lock',
+    title: 'Безопасная оплата',
+    text: 'Оплачивайте онлайн через защищенный процессинг, а подтверждение бронирования получайте в одном месте.',
+  },
+  {
+    icon: 'lifebuoy',
+    title: 'Поддержка на каждом этапе',
+    text: 'Команда ONTHEWATER подскажет по маршруту, правилам выхода и поможет в нестандартной ситуации.',
   },
 ]
+
+function HowIcon({ kind }) {
+  if (kind === 'shield') {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path d="M12 3l7 3v6c0 5-3.6 8.5-7 9.8C8.6 20.5 5 17 5 12V6l7-3z" stroke="currentColor" strokeWidth="1.8" />
+      </svg>
+    )
+  }
+  if (kind === 'check') {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M8 12l2.6 2.6L16 9.4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    )
+  }
+  if (kind === 'lock') {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <rect x="6" y="10" width="12" height="10" rx="2" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M9 10V8a3 3 0 1 1 6 0v2" stroke="currentColor" strokeWidth="1.8" />
+      </svg>
+    )
+  }
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="12" cy="12" r="2.2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M12 3.5v2.5M12 18v2.5M3.5 12H6M18 12h2.5" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  )
+}
 
 function MenuIcon() {
   return (
@@ -51,12 +86,15 @@ export default function HomePage() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const searchRef = useRef(null)
+  const stickySearchRef = useRef(null)
   const userEditedCityRef = useRef(false)
   const [cityQuery, setCityQuery] = useState(() => readNearestCityFromStorage() || '')
   const [knownCities, setKnownCities] = useState([])
   const [suggestOpen, setSuggestOpen] = useState(false)
+  const [searchSurface, setSearchSurface] = useState('hero')
   const [activeIdx, setActiveIdx] = useState(-1)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [showStickyHeader, setShowStickyHeader] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -83,11 +121,22 @@ export default function HomePage() {
 
   useEffect(() => {
     const onDown = (e) => {
-      if (!searchRef.current) return
-      if (!searchRef.current.contains(e.target)) setSuggestOpen(false)
+      const inHero = searchRef.current?.contains(e.target)
+      const inSticky = stickySearchRef.current?.contains(e.target)
+      if (!inHero && !inSticky) setSuggestOpen(false)
     }
     window.addEventListener('mousedown', onDown)
     return () => window.removeEventListener('mousedown', onDown)
+  }, [])
+
+  useEffect(() => {
+    const onScroll = () => {
+      const next = window.scrollY > 260
+      setShowStickyHeader(next)
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   useEffect(() => {
@@ -166,8 +215,88 @@ export default function HomePage() {
     }
   }
 
+  const renderSearchBar = (mode) => (
+    <div
+      className={`lp-searchBar lp-searchBar--pill${mode === 'sticky' ? ' lp-searchBar--sticky' : ''}`}
+      role="search"
+      ref={mode === 'sticky' ? stickySearchRef : searchRef}
+    >
+      <div className="lp-searchField lp-searchField--pill lp-searchField--suggest">
+        <span className="lp-searchPin" aria-hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M12 21s-6-5.33-6-10a6 6 0 1 1 12 0c0 4.67-6 10-6 10z"
+              stroke="currentColor"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <circle cx="12" cy="11" r="2.25" stroke="currentColor" strokeWidth="1.75" />
+          </svg>
+        </span>
+        <label className="lp-srOnly" htmlFor={mode === 'sticky' ? 'where-sticky' : 'where'}>
+          Куда
+        </label>
+        <input
+          id={mode === 'sticky' ? 'where-sticky' : 'where'}
+          type="text"
+          placeholder="Куда хотите выйти на воду?"
+          className="lp-searchInput"
+          autoComplete="off"
+          value={cityQuery}
+          onChange={(e) => {
+            userEditedCityRef.current = true
+            setCityQuery(e.target.value)
+            setSearchSurface(mode)
+            setSuggestOpen(true)
+            setActiveIdx(-1)
+          }}
+          onFocus={() => {
+            setSearchSurface(mode)
+            setSuggestOpen(true)
+          }}
+          onKeyDown={handleInputKeyDown}
+          aria-expanded={suggestOpen && searchSurface === mode && suggestions.length > 0}
+        />
+        {suggestOpen && searchSurface === mode && suggestions.length > 0 ? (
+          <div className="lp-citySuggest" role="listbox" aria-label="Подсказки городов">
+            {suggestions.map((city, idx) => (
+              <button
+                key={city}
+                type="button"
+                className={`lp-citySuggest__item${idx === activeIdx ? ' lp-citySuggest__item--active' : ''}`}
+                onMouseEnter={() => setActiveIdx(idx)}
+                onClick={() => pickSuggestion(city)}
+              >
+                {city}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+      <button type="button" className="lp-searchBtn lp-searchBtn--pill" onClick={() => submitSearch(cityQuery)}>
+        Найти
+      </button>
+    </div>
+  )
+
   return (
     <main className="lp">
+      <header className={`lp-stickySearch${showStickyHeader ? ' lp-stickySearch--show' : ''}`} aria-hidden={!showStickyHeader}>
+        <div className="lp-stickySearch__inner">
+          <Link to="/" className="lp-logo lp-logo--sticky" aria-label="ONTHEWATER">
+            <span className="lp-logoIcon" aria-hidden>
+              <svg viewBox="0 0 40 40" width="32" height="32" fill="none">
+                <circle cx="20" cy="20" r="19" fill="#0061C1" />
+                <path d="M8 22c3-4 7-6 12-6s9 2 12 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" fill="none" />
+              </svg>
+            </span>
+            <span className="lp-logoText">onthewater</span>
+          </Link>
+          {renderSearchBar('sticky')}
+        </div>
+      </header>
+
       <section className="lp-heroWrap">
         <div className="lp-heroBg" style={{ backgroundImage: `url(${heroImg})` }} aria-hidden />
         <div className="lp-heroTint" aria-hidden />
@@ -339,65 +468,7 @@ export default function HomePage() {
             Найдите и забронируйте судно для любого случая — с капитаном или без.
           </p>
 
-          <div className="lp-searchBar lp-searchBar--pill" role="search" ref={searchRef}>
-            <div className="lp-searchField lp-searchField--pill lp-searchField--suggest">
-              <span className="lp-searchPin" aria-hidden>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M12 21s-6-5.33-6-10a6 6 0 1 1 12 0c0 4.67-6 10-6 10z"
-                    stroke="currentColor"
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <circle cx="12" cy="11" r="2.25" stroke="currentColor" strokeWidth="1.75" />
-                </svg>
-              </span>
-              <label className="lp-srOnly" htmlFor="where">
-                Куда
-              </label>
-              <input
-                id="where"
-                type="text"
-                placeholder="Куда хотите выйти на воду?"
-                className="lp-searchInput"
-                autoComplete="off"
-                value={cityQuery}
-                onChange={(e) => {
-                  userEditedCityRef.current = true
-                  setCityQuery(e.target.value)
-                  setSuggestOpen(true)
-                  setActiveIdx(-1)
-                }}
-                onFocus={() => setSuggestOpen(true)}
-                onKeyDown={handleInputKeyDown}
-                aria-expanded={suggestOpen && suggestions.length > 0}
-                aria-controls="lp-city-suggest"
-              />
-              {suggestOpen && suggestions.length > 0 ? (
-                <div className="lp-citySuggest" id="lp-city-suggest" role="listbox" aria-label="Подсказки городов">
-                  {suggestions.map((city, idx) => (
-                    <button
-                      key={city}
-                      type="button"
-                      className={`lp-citySuggest__item${idx === activeIdx ? ' lp-citySuggest__item--active' : ''}`}
-                      onMouseEnter={() => setActiveIdx(idx)}
-                      onClick={() => pickSuggestion(city)}
-                    >
-                      {city}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-            <button
-              type="button"
-              className="lp-searchBtn lp-searchBtn--pill"
-              onClick={() => submitSearch(cityQuery)}
-            >
-              Найти
-            </button>
-          </div>
+          {renderSearchBar('hero')}
         </div>
       </section>
 
@@ -407,18 +478,20 @@ export default function HomePage() {
 
       <section className="lp-section lp-how" id="how">
         <div className="lp-container">
-          <h2 className="lp-howTitle">Как это работает</h2>
-          <div className="lp-howRow">
+          <div className="lp-howBadge">onthewater promise</div>
+          <div className="lp-howCard">
+            <h2 className="lp-howTitle">Как это работает</h2>
+            <div className="lp-howRow">
             {HOW_STEPS.map((step) => (
-              <div key={step.n} className="lp-howStep">
-                <div className="lp-howCircle">{step.n}</div>
-                <div className="lp-howImgOval">
-                  <img src={step.img} alt="" loading="lazy" />
+              <div key={step.title} className="lp-howStep">
+                <div className="lp-howIconWrap">
+                  <HowIcon kind={step.icon} />
                 </div>
                 <h3 className="lp-howStepTitle">{step.title}</h3>
                 <p className="lp-howStepText">{step.text}</p>
               </div>
             ))}
+            </div>
           </div>
         </div>
       </section>
