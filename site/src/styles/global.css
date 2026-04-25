@@ -727,39 +727,47 @@ code {
 .lp-searchBar--sticky {
   margin-top: 0;
   flex: 1;
-  max-width: 760px;
-  box-shadow: none;
-  border-color: #d8dee7;
-  min-height: 44px;
-  padding: 4px 4px 4px 12px;
+  max-width: 820px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  border: 1px solid #cfd6df;
+  background: #fff;
+  min-height: 56px;
+  padding: 5px 6px 5px 16px;
+  border-radius: 999px;
   align-items: center;
 }
 
 .lp-searchBar--sticky .lp-searchField--pill {
   align-items: center;
-  padding: 0 6px 0 0;
-  gap: 8px;
+  padding: 0 8px 0 0;
+  gap: 10px;
 }
 
 .lp-searchBar--sticky .lp-searchPin svg {
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
 }
 
 .lp-searchBar--sticky .lp-searchInput {
-  height: 32px;
+  height: 44px;
   padding-top: 0;
   padding-bottom: 0;
-  line-height: 32px;
-  font-size: 14px;
-  color: #334155;
+  line-height: 44px;
+  font-size: 16px;
+  color: #6b7280;
+}
+
+.lp-searchBar--sticky .lp-searchInput::placeholder {
+  color: #a3a9b2;
 }
 
 .lp-searchBar--sticky .lp-searchBtn--pill {
-  min-height: 32px;
-  padding: 0 16px;
-  font-size: 11px;
-  letter-spacing: 0.07em;
+  min-height: 44px;
+  padding: 0 36px;
+  border-radius: 999px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
 }
 
 .lp-nav {
@@ -1883,21 +1891,21 @@ a.lp-boatCard:hover .lp-boatImg {
 
   .lp-searchBar--sticky {
     min-width: 0;
-    min-height: 38px;
-    padding: 3px 4px 3px 8px;
+    min-height: 48px;
+    padding: 4px 5px 4px 10px;
   }
 
   .lp-searchBar--sticky .lp-searchInput {
-    height: 28px;
-    line-height: 28px;
+    height: 38px;
+    line-height: 38px;
     padding: 0 2px 0 0;
-    font-size: 13px;
+    font-size: 14px;
   }
 
   .lp-searchBar--sticky .lp-searchBtn--pill {
-    min-height: 28px;
-    padding: 0 12px;
-    font-size: 10px;
+    min-height: 38px;
+    padding: 0 18px;
+    font-size: 12px;
   }
 
   .lp-howBadge {
