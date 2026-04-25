@@ -1216,8 +1216,10 @@ code {
 
 .lp-sectionTitle {
   margin: 0;
-  font-size: 14px;
+  font-size: clamp(28px, 4.5vw, 52px);
   font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
   color: #002b5b;
 }
 
