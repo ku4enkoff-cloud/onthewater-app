@@ -730,8 +730,8 @@ code {
   max-width: 760px;
   box-shadow: none;
   border-color: #d8dee7;
-  min-height: 28px;
-  padding: 2px 3px 2px 10px;
+  min-height: 44px;
+  padding: 4px 4px 4px 12px;
   align-items: center;
 }
 
@@ -747,18 +747,18 @@ code {
 }
 
 .lp-searchBar--sticky .lp-searchInput {
-  height: 20px;
+  height: 32px;
   padding-top: 0;
   padding-bottom: 0;
-  line-height: 20px;
-  font-size: 12px;
+  line-height: 32px;
+  font-size: 14px;
   color: #334155;
 }
 
 .lp-searchBar--sticky .lp-searchBtn--pill {
-  min-height: 20px;
-  padding: 0 14px;
-  font-size: 10px;
+  min-height: 32px;
+  padding: 0 16px;
+  font-size: 11px;
   letter-spacing: 0.07em;
 }
 
@@ -1883,20 +1883,20 @@ a.lp-boatCard:hover .lp-boatImg {
 
   .lp-searchBar--sticky {
     min-width: 0;
-    min-height: 24px;
-    padding: 2px 3px 2px 7px;
+    min-height: 38px;
+    padding: 3px 4px 3px 8px;
   }
 
   .lp-searchBar--sticky .lp-searchInput {
-    height: 18px;
-    line-height: 18px;
+    height: 28px;
+    line-height: 28px;
     padding: 0 2px 0 0;
-    font-size: 11px;
+    font-size: 13px;
   }
 
   .lp-searchBar--sticky .lp-searchBtn--pill {
-    min-height: 18px;
-    padding: 0 10px;
+    min-height: 28px;
+    padding: 0 12px;
     font-size: 10px;
   }
 
