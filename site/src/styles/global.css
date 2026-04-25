@@ -1216,20 +1216,20 @@ code {
 
 .lp-sectionTitle {
   margin: 0;
-  font-size: clamp(24px, 2.4vw, 34px);
+  font-size: 14px;
   font-weight: 800;
   color: #002b5b;
 }
 
 .lp-sectionItalic {
   margin: 6px 0 0;
-  font-size: 17px;
+  font-size: 14px;
   font-style: italic;
   color: #6b7f95;
 }
 
 .lp-viewMore {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   color: #0061c1;
   text-decoration: none;
@@ -1301,21 +1301,21 @@ a.lp-boatCard:hover .lp-boatImg {
 
 .lp-boatTitle {
   margin: 0;
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 700;
   color: #002b5b;
 }
 
 .lp-boatPrice {
   margin: 8px 0 0;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #0061c1;
 }
 
 .lp-boatLoc {
   margin: 4px 0 0;
-  font-size: 15px;
+  font-size: 14px;
   color: #6b7f95;
 }
 
@@ -1382,7 +1382,7 @@ a.lp-boatCard:hover .lp-boatImg {
 
 .lp-howTitle {
   margin: 0 0 18px;
-  font-size: clamp(22px, 2vw, 30px);
+  font-size: 14px;
   font-weight: 800;
   color: #0f172a;
 }
@@ -1438,8 +1438,8 @@ a.lp-boatCard:hover .lp-boatImg {
 
 .lp-howStepTitle {
   margin: 0 0 8px;
-  font-size: clamp(20px, 1.45vw, 29px);
-  line-height: 1.12;
+  font-size: 14px;
+  line-height: 1.25;
   font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.025em;
@@ -1447,7 +1447,7 @@ a.lp-boatCard:hover .lp-boatImg {
 
 .lp-howStepText {
   margin: 0;
-  font-size: clamp(17px, 1.05vw, 21px);
+  font-size: 14px;
   line-height: 1.45;
   color: #334155;
 }
