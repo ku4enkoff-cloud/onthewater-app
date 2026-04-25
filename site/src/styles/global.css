@@ -5983,7 +5983,7 @@ a.lp-boatCard:hover .lp-boatImg {
 
 .sf-col__title {
   margin: 0 0 16px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -6023,7 +6023,7 @@ a.lp-boatCard:hover .lp-boatImg {
 .sf-links a {
   display: inline-block;
   padding: 5px 0;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.35;
   color: #333;
   text-decoration: none;
@@ -6038,7 +6038,7 @@ a.lp-boatCard:hover .lp-boatImg {
   display: inline-block;
   margin-bottom: 16px;
   color: #0061c1;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   text-decoration: none;
 }
@@ -6088,7 +6088,7 @@ a.lp-boatCard:hover .lp-boatImg {
 
 .sf-appCard__name {
   margin: 0 0 2px;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   color: #111;
   letter-spacing: 0;
@@ -6156,7 +6156,7 @@ a.lp-boatCard:hover .lp-boatImg {
   flex-wrap: wrap;
   align-items: center;
   gap: 12px 16px;
-  font-size: 15px;
+  font-size: 14px;
   color: #333;
 }
 
@@ -6167,7 +6167,7 @@ a.lp-boatCard:hover .lp-boatImg {
   text-decoration: none;
   color: #002b5b;
   font-weight: 800;
-  font-size: 16px;
+  font-size: 14px;
   letter-spacing: -0.02em;
 }
 
