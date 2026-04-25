@@ -6,6 +6,7 @@ import BoatDetailPage from './pages/BoatDetailPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import AccountPage from './pages/AccountPage.jsx'
 import SiteFooter from './components/SiteFooter.jsx'
+import AndroidAppPrompt from './components/AndroidAppPrompt.jsx'
 import { startSiteGeolocation } from './lib/siteGeolocation.js'
 import { metrikaHit } from './lib/yandexMetrika.js'
 import { useAuth } from './context/AuthContext.jsx'
@@ -54,6 +55,7 @@ export default function App() {
       <ScrollToTopOnRouteChange />
       <YandexMetrikaSpa />
       <GeolocationOnAllowedRoutes />
+      <AndroidAppPrompt />
       <div className="app-outlet">
         <Routes>
           <Route path="/" element={<HomePage />} />
