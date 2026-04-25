@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SITE_MAIN_URL } from '../config'
 import { LOCATION_OPTIONS } from '../boatSearchUtils.js'
+import googlePlayIcon from '../assets/icon-g-p.webp'
 
 const MOBILE_FOOTER_MQ = '(max-width: 720px)'
 
@@ -189,6 +190,7 @@ export default function SiteFooter() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
+                    <img src={googlePlayIcon} alt="" className="sf-store__icon" aria-hidden />
                     Доступно в Google Play
                   </a>
                 </div>

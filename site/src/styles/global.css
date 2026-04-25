@@ -6111,6 +6111,7 @@ a.lp-boatCard:hover .lp-boatImg {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   min-height: 62px;
   padding: 12px 16px;
   border-radius: 12px;
@@ -6124,6 +6125,13 @@ a.lp-boatCard:hover .lp-boatImg {
   text-decoration: none;
   width: 100%;
   box-sizing: border-box;
+}
+
+.sf-store__icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .sf-store:hover {
