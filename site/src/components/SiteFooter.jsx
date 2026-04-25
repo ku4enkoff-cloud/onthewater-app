@@ -173,9 +173,6 @@ export default function SiteFooter() {
               </a>
               <div className="sf-appCard">
                 <div className="sf-appCard__head">
-                  <div className="sf-appCard__logoWrap" aria-hidden>
-                    <span className="sf-appCard__logoMark" />
-                  </div>
                   <div className="sf-appCard__text">
                     <p className="sf-appCard__name">Приложение ONTHEWATER</p>
                     <p className="sf-appCard__tagline">Найдите и забронируйте катер в десятках городов России</p>

@@ -38,10 +38,20 @@ function YandexMetrikaSpa() {
   return null
 }
 
+/** При клиентской навигации открываем новую страницу с начала. */
+function ScrollToTopOnRouteChange() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [pathname])
+  return null
+}
+
 export default function App() {
   const { user, loading } = useAuth()
   return (
     <>
+      <ScrollToTopOnRouteChange />
       <YandexMetrikaSpa />
       <GeolocationOnAllowedRoutes />
       <div className="app-outlet">
