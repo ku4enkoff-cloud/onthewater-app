@@ -857,7 +857,7 @@ code {
 }
 
 .lp-searchBar {
-  margin-top: 32px;
+  margin-top: 0px;
   align-self: center;
   width: 100%;
   display: flex;
