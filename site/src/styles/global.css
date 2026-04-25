@@ -873,7 +873,7 @@ code {
 }
 
 /* РћРґРёРЅ РёРЅРїСѓС‚ + РєРЅРѕРїРєР° РІ В«С‚Р°Р±Р»РµС‚РєРµВ» (РєР°Рє Boatsetter) */
-.lp-searchBar--pill {
+.lp-searchBar--pill:not(.lp-searchBar--sticky) {
   flex-wrap: nowrap;
   align-items: center;
   gap: 0;
@@ -1832,7 +1832,7 @@ a.lp-boatCard:hover .lp-boatImg {
     margin-top: 12px;
   }
 
-  .lp-searchBar--pill {
+  .lp-searchBar--pill:not(.lp-searchBar--sticky) {
     margin-top: 22px;
     padding: 8px 8px 8px 14px;
   }
@@ -1915,7 +1915,7 @@ a.lp-boatCard:hover .lp-boatImg {
     gap: 16px 12px;
   }
 
-  .lp-searchBar--pill {
+  .lp-searchBar--pill:not(.lp-searchBar--sticky) {
     flex-direction: row;
     align-items: center;
     flex-wrap: nowrap;
