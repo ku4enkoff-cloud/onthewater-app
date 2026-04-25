@@ -43,7 +43,7 @@ export default function DestinationsSection() {
       <div className="lp-container lp-destinationsInner">
         <div className="lp-destHead">
           <div className="lp-destHeadText">
-            <h2 className="lp-destTitle">Откройте направления на катере</h2>
+            <h2 className="lp-destTitle">Популярные направления</h2>
           </div>
           <div className="lp-destNav" role="group" aria-label="Прокрутка направлений">
             <button
