@@ -48,7 +48,6 @@ export default function PopularBoats() {
         <div className="lp-featuredHead">
           <div>
             <h2 className="lp-sectionTitle">Популярные катера</h2>
-            <p className="lp-sectionItalic">Варианты рядом с вами</p>
           </div>
             <Link to="/boats" className="lp-viewMore">
               Смотреть все <span aria-hidden>→</span>

@@ -464,9 +464,6 @@ export default function HomePage() {
             <br />
             для вашего отдыха
           </h1>
-          <p className="lp-heroSub">
-            Найдите и забронируйте судно для любого случая — с капитаном или без.
-          </p>
 
           {renderSearchBar('hero')}
         </div>
