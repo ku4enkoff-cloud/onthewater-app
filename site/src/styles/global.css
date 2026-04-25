@@ -729,9 +729,9 @@ code {
   max-width: 980px;
   box-shadow: none;
   border-color: #d1d5db;
-  min-height: 56px;
-  padding-top: 6px;
-  padding-bottom: 6px;
+  min-height: 48px;
+  padding-top: 4px;
+  padding-bottom: 4px;
   align-items: center;
 }
 
@@ -740,17 +740,17 @@ code {
 }
 
 .lp-searchBar--sticky .lp-searchInput {
-  height: 42px;
+  height: 36px;
   padding-top: 0;
   padding-bottom: 0;
-  line-height: 42px;
-  font-size: 15px;
+  line-height: 36px;
+  font-size: 14px;
 }
 
 .lp-searchBar--sticky .lp-searchBtn--pill {
-  min-height: 42px;
-  padding: 0 24px;
-  font-size: 13px;
+  min-height: 36px;
+  padding: 0 20px;
+  font-size: 12px;
 }
 
 .lp-nav {
