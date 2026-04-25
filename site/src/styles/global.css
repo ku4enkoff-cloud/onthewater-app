@@ -1401,7 +1401,7 @@ a.lp-boatCard:hover .lp-boatImg {
   border-radius: 4px;
 }
 
-.lp-howBadge::first-letter {
+.lp-howBadge__accent {
   color: #0061c1;
 }
 

@@ -475,7 +475,9 @@ export default function HomePage() {
 
       <section className="lp-section lp-how" id="how">
         <div className="lp-container">
-          <div className="lp-howBadge">onthewater promise</div>
+          <div className="lp-howBadge">
+            <span className="lp-howBadge__accent">on</span>thewater
+          </div>
           <div className="lp-howCard">
             <h2 className="lp-howTitle">Как это работает</h2>
             <div className="lp-howRow">
