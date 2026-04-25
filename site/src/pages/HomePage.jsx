@@ -294,6 +294,7 @@ export default function HomePage() {
             <span className="lp-logoText">onthewater</span>
           </Link>
           {renderSearchBar('sticky')}
+          <div className="lp-stickySearch__balance" aria-hidden />
         </div>
       </header>
 
