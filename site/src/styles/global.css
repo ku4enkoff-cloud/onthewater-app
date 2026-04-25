@@ -709,8 +709,7 @@ code {
   max-width: 1240px;
   margin: 0 auto;
   padding: 8px 16px;
-  display: grid;
-  grid-template-columns: 180px minmax(0, 1fr) 180px;
+  display: flex;
   align-items: center;
   gap: 16px;
 }
@@ -726,27 +725,31 @@ code {
 
 .lp-searchBar--sticky {
   margin-top: 0;
-  width: 100%;
+  flex: 1;
   max-width: 980px;
-  justify-self: center;
   box-shadow: none;
   border-color: #d1d5db;
-  padding-top: 4px;
-  padding-bottom: 4px;
+  min-height: 56px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  align-items: center;
 }
 
-.lp-stickySearch__balance {
-  width: 100%;
+.lp-searchBar--sticky .lp-searchField--pill {
+  align-items: center;
 }
 
 .lp-searchBar--sticky .lp-searchInput {
-  padding-top: 10px;
-  padding-bottom: 10px;
+  height: 42px;
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 42px;
   font-size: 15px;
 }
 
 .lp-searchBar--sticky .lp-searchBtn--pill {
-  padding: 11px 24px;
+  min-height: 42px;
+  padding: 0 24px;
   font-size: 13px;
 }
 
@@ -1849,7 +1852,6 @@ a.lp-boatCard:hover .lp-boatImg {
   }
 
   .lp-stickySearch__inner {
-    grid-template-columns: 150px minmax(0, 1fr) 150px;
     padding: 8px 12px;
     gap: 10px;
   }
@@ -1861,12 +1863,7 @@ a.lp-boatCard:hover .lp-boatImg {
 
 @media (max-width: 768px) {
   .lp-stickySearch__inner {
-    display: flex;
     padding: 8px 10px;
-  }
-
-  .lp-stickySearch__balance {
-    display: none;
   }
 
   .lp-logo--sticky .lp-logoText {
