@@ -44,9 +44,6 @@ export default function DestinationsSection() {
         <div className="lp-destHead">
           <div className="lp-destHeadText">
             <h2 className="lp-destTitle">Откройте направления на катере</h2>
-            <p className="lp-destSub">
-              Забронируйте катер или яхту в любом из городов — с капитаном или без.
-            </p>
           </div>
           <div className="lp-destNav" role="group" aria-label="Прокрутка направлений">
             <button
