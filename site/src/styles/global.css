@@ -905,12 +905,12 @@ code {
   color: #94a3b8;
 }
 
-.lp-searchBar--pill .lp-searchInput {
+.lp-searchBar--pill:not(.lp-searchBar--sticky) .lp-searchInput {
   padding: 14px 4px 14px 0;
   font-size: 17px;
 }
 
-.lp-searchBar--pill .lp-searchInput::placeholder {
+.lp-searchBar--pill:not(.lp-searchBar--sticky) .lp-searchInput::placeholder {
   color: #94a3b8;
 }
 
