@@ -6118,19 +6118,8 @@ a.lp-boatCard:hover .lp-boatImg {
   text-decoration: none;
 }
 
-.sf-storeBadge--placeholder {
-  min-height: 62px;
-  padding: 12px 16px;
-  background: #6b6f75;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #fff;
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.2;
-  text-align: center;
-}
-
-.sf-storeBadge--google {
+.sf-storeBadge--google,
+.sf-storeBadge--apple {
   background: transparent;
   border: 0;
   padding: 0;
