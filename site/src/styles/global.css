@@ -6088,17 +6088,17 @@ a.lp-boatCard:hover .lp-boatImg {
 
 .sf-appCard__name {
   margin: 0 0 2px;
-  font-size: clamp(18px, 2.2vw, 40px);
-  font-weight: 800;
-  color: #0f172a;
-  letter-spacing: -0.02em;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+  letter-spacing: 0;
 }
 
 .sf-appCard__tagline {
   margin: 0;
-  font-size: clamp(16px, 1.35vw, 26px);
-  line-height: 1.35;
-  color: #64748b;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #777;
 }
 
 .sf-appCard__stores {
