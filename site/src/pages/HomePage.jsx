@@ -500,14 +500,14 @@ export default function HomePage() {
       <section className="lp-cta" id="contact">
         <div className="lp-ctaBg" aria-hidden />
         <div className="lp-ctaInner">
-          <h2 className="lp-ctaTitle">Владелец катера? Зарабатывайте</h2>
+          <h2 className="lp-ctaTitle">Владеете катером? Зарабатывайте</h2>
           <p className="lp-ctaSub">Сдавайте судно в аренду через ONTHEWATER.</p>
           <div className="lp-ctaStores" aria-label="Скачать приложение ONTHEWATER">
             <span className="lp-ctaStoreBadge lp-ctaStoreBadge--apple" aria-disabled="true">
               <img src={appleStoreIcon} alt="App Store (скоро)" className="lp-ctaStoreBadge__img" />
             </span>
             <a
-              href="https://play.google.com/store/apps/details?id=com.anonymous.onthewater"
+              href="https://play.google.com/store/apps/details?id=com.anonymous.onthewater.owner"
               className="lp-ctaStoreBadge lp-ctaStoreBadge--google"
               target="_blank"
               rel="noopener noreferrer"
