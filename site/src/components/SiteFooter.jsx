@@ -181,17 +181,17 @@ export default function SiteFooter() {
                   </div>
                 </div>
                 <div className="sf-appCard__stores">
-                  <span className="sf-store sf-store--disabled" aria-disabled="true">
+                  <span className="sf-storeBadge sf-storeBadge--placeholder" aria-disabled="true">
                     Скоро в App Store
                   </span>
                   <a
                     href="https://play.google.com/store/apps/details?id=com.anonymous.onthewater"
-                    className="sf-store"
+                    className="sf-storeBadge sf-storeBadge--google"
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label="Открыть приложение в Google Play"
                   >
-                    <img src={googlePlayIcon} alt="" className="sf-store__icon" aria-hidden />
-                    Доступно в Google Play
+                    <img src={googlePlayIcon} alt="Google Play" className="sf-storeBadge__img" />
                   </a>
                 </div>
               </div>
