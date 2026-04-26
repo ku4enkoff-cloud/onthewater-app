@@ -1376,6 +1376,109 @@ a.lp-boatCard:hover .lp-boatImg {
   border: 1px solid rgba(0, 43, 91, 0.06);
 }
 
+.lp-cats {
+  background: #f8f5ec;
+}
+
+.lp-catsLayout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 18px 26px;
+  align-items: start;
+}
+
+.lp-catsHead {
+  padding-top: 12px;
+}
+
+.lp-catsTitle {
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(28px, 2.5vw, 38px);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+
+.lp-catsSub {
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.lp-catsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 160px;
+  gap: 10px;
+}
+
+.lp-catCard {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  text-decoration: none;
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+}
+
+.lp-catCard::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(2, 6, 23, 0.03) 45%, rgba(2, 6, 23, 0.7) 100%);
+}
+
+.lp-catCard__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.lp-catCard__name {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 10px;
+  z-index: 1;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+.lp-catCard:hover .lp-catCard__img {
+  transform: scale(1.04);
+}
+
+.lp-catCard--1 {
+  grid-column: 1 / 2;
+  grid-row: 1 / 2;
+}
+
+.lp-catCard--2 {
+  grid-column: 2 / 4;
+  grid-row: 1 / 2;
+}
+
+.lp-catCard--3 {
+  grid-column: 1 / 2;
+  grid-row: 2 / 3;
+}
+
+.lp-catCard--4 {
+  grid-column: 2 / 3;
+  grid-row: 2 / 3;
+}
+
+.lp-catCard--5 {
+  grid-column: 3 / 4;
+  grid-row: 2 / 3;
+}
+
 @keyframes lp-shimmer {
   0% {
     background-position: 100% 0;
@@ -1978,6 +2081,33 @@ a.lp-boatCard:hover .lp-boatImg {
   .lp-howRow {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px 12px;
+  }
+
+  .lp-catsLayout {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .lp-catsHead {
+    padding-top: 0;
+  }
+
+  .lp-catsTitle {
+    font-size: clamp(22px, 7vw, 32px);
+  }
+
+  .lp-catsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 150px;
+  }
+
+  .lp-catCard--1,
+  .lp-catCard--2,
+  .lp-catCard--3,
+  .lp-catCard--4,
+  .lp-catCard--5 {
+    grid-column: auto;
+    grid-row: auto;
   }
 
   .lp-searchBar--pill:not(.lp-searchBar--sticky) {

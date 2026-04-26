@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import heroImg from '../../images/app/hero.webp'
 import DestinationsSection from '../components/DestinationsSection.jsx'
 import PopularBoats from '../components/PopularBoats.jsx'
+import HomeCategoriesSection from '../components/HomeCategoriesSection.jsx'
 import googlePlayIcon from '../assets/icon-g-p.webp'
 import appleStoreIcon from '../assets/icon-a-s.webp'
 import { SITE_MAIN_URL } from '../config'
@@ -474,6 +475,7 @@ export default function HomePage() {
       <DestinationsSection />
 
       <PopularBoats />
+      <HomeCategoriesSection />
 
       <section className="lp-section lp-how" id="how">
         <div className="lp-container">
