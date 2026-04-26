@@ -42,18 +42,20 @@ export default function HomeCategoriesSection() {
             <h2 className="lp-catsTitle">Категории</h2>
           </header>
 
-          <div className="lp-catsGrid">
-            {types.map((type) => (
-              <Link
-                key={type.id}
-                to="/boats"
-                className="lp-catCard"
-                aria-label={`Перейти к поиску катеров: ${type.name}`}
-              >
-                <img src={type.image} alt={type.name} className="lp-catCard__img" loading="lazy" decoding="async" />
-                <span className="lp-catCard__name">{type.name}</span>
-              </Link>
-            ))}
+          <div className="lp-catsRail" role="region" aria-label="Прокрутка категорий">
+            <div className="lp-catsGrid">
+              {types.map((type) => (
+                <Link
+                  key={type.id}
+                  to="/boats"
+                  className="lp-catCard"
+                  aria-label={`Перейти к поиску катеров: ${type.name}`}
+                >
+                  <img src={type.image} alt={type.name} className="lp-catCard__img" loading="lazy" decoding="async" />
+                  <span className="lp-catCard__name">{type.name}</span>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </div>

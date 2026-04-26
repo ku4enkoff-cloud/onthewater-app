@@ -1383,7 +1383,7 @@ a.lp-boatCard:hover .lp-boatImg {
 .lp-catsLayout {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
-  gap: 18px 26px;
+  gap: 10px 26px;
   align-items: start;
 }
 
@@ -1407,11 +1407,22 @@ a.lp-boatCard:hover .lp-boatImg {
   line-height: 1.4;
 }
 
+.lp-catsRail {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scroll-snap-type: x proximity;
+  padding-bottom: 2px;
+}
+
 .lp-catsGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: 170px;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(2, 160px);
+  grid-auto-columns: 240px;
   gap: 10px;
+  width: max-content;
+  min-width: 100%;
 }
 
 .lp-catCard {
@@ -1421,6 +1432,7 @@ a.lp-boatCard:hover .lp-boatImg {
   text-decoration: none;
   color: #fff;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+  scroll-snap-align: start;
 }
 
 .lp-catCard::after {
@@ -2072,8 +2084,8 @@ a.lp-boatCard:hover .lp-boatImg {
   }
 
   .lp-catsGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: 150px;
+    grid-template-rows: repeat(2, 138px);
+    grid-auto-columns: 190px;
   }
 
   .lp-searchBar--pill:not(.lp-searchBar--sticky) {
