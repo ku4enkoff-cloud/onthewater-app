@@ -902,6 +902,12 @@ code {
   position: relative;
 }
 
+.lp-heroContent .lp-searchBar--pill:not(.lp-searchBar--sticky) {
+  margin-top: 26px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .lp-searchField--pill {
   flex: 1 1 auto;
   min-width: 0;
@@ -1979,6 +1985,10 @@ a.lp-boatCard:hover .lp-boatImg {
     flex-wrap: nowrap;
     padding: 5px 5px 5px 10px;
     border-radius: 999px;
+  }
+
+  .lp-heroContent .lp-searchBar--pill:not(.lp-searchBar--sticky) {
+    margin-top: 18px;
   }
 
   .lp-searchField--pill {
