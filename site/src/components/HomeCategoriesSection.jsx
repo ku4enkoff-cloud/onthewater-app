@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchBoatTypes } from '../api/boats'
 import { getPhotoUrl } from '../config'
@@ -32,8 +32,7 @@ export default function HomeCategoriesSection() {
     }
   }, [])
 
-  const visibleTypes = useMemo(() => types.slice(0, 5), [types])
-  if (visibleTypes.length === 0) return null
+  if (types.length === 0) return null
 
   return (
     <section className="lp-section lp-cats" aria-label="Категории судов">
@@ -41,15 +40,14 @@ export default function HomeCategoriesSection() {
         <div className="lp-catsLayout">
           <header className="lp-catsHead">
             <h2 className="lp-catsTitle">Категории</h2>
-            <p className="lp-catsSub">Выберите тип судна из клиентского приложения</p>
           </header>
 
           <div className="lp-catsGrid">
-            {visibleTypes.map((type, idx) => (
+            {types.map((type) => (
               <Link
                 key={type.id}
                 to="/boats"
-                className={`lp-catCard lp-catCard--${idx + 1}`}
+                className="lp-catCard"
                 aria-label={`Перейти к поиску катеров: ${type.name}`}
               >
                 <img src={type.image} alt={type.name} className="lp-catCard__img" loading="lazy" decoding="async" />
