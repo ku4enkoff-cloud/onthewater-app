@@ -4177,6 +4177,10 @@ a.lp-boatCard:hover .lp-boatImg {
   min-width: 0;
 }
 
+.bd-mobileBookBar {
+  display: none;
+}
+
 .bd-main--below {
   margin-top: 48px;
   width: 100%;
@@ -4244,6 +4248,7 @@ a.lp-boatCard:hover .lp-boatImg {
   }
 
   .bd-page--bs .bd-detailGrid > .bd-asideFloat {
+    display: none;
     order: 1;
     align-self: stretch;
     max-width: none;
@@ -4260,6 +4265,62 @@ a.lp-boatCard:hover .lp-boatImg {
 
   .bd-main--below {
     margin-top: 28px;
+  }
+
+  .bd-mobileBookBar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 62;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid #e5e7eb;
+    background: #fff;
+    box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.08);
+  }
+
+  .bd-mobileBookBar__price {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .bd-mobileBookBar__price strong {
+    font-size: 30px;
+    line-height: 1;
+    color: #111827;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+  }
+
+  .bd-mobileBookBar__price span {
+    margin-top: 4px;
+    font-size: 14px;
+    color: #6b7280;
+    line-height: 1.25;
+  }
+
+  .bd-mobileBookBar__cta {
+    min-width: 168px;
+    padding: 14px 20px;
+    border: 0;
+    border-radius: 14px;
+    background: linear-gradient(145deg, #1a8fff 0%, #0061c1 50%, #004a96 100%);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 0 10px 24px rgba(0, 97, 193, 0.28);
+  }
+
+  .bd-page--bs {
+    padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -6210,6 +6271,68 @@ a.lp-boatCard:hover .lp-boatImg {
   color: #b91c1c;
   font-size: 13px;
   line-height: 1.35;
+}
+
+.bd-mobileBookModal {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: rgba(10, 18, 34, 0.46);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.bd-mobileBookModal__sheet {
+  position: relative;
+  width: min(100%, 560px);
+  max-height: min(86vh, 780px);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 22px 54px rgba(15, 23, 42, 0.32);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.bd-mobileBookModal__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: #f3f4f6;
+  color: #111;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.bd-mobileBookModal__title {
+  margin: 0;
+  padding: 14px 48px 10px 16px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #111827;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.bd-mobileBookModal__body {
+  padding: 12px 12px 14px;
+  overflow: auto;
+}
+
+.bd-mobileBookModal__body .bd-bookCard {
+  margin: 0;
+  border: 0;
+  box-shadow: none;
+  max-width: 100%;
 }
 
 .bd-authPrompt {

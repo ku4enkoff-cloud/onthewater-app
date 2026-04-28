@@ -242,6 +242,7 @@ export default function BoatDetailPage() {
   const [amenitiesExpanded, setAmenitiesExpanded] = useState(false)
   const [bookingTiersExpanded, setBookingTiersExpanded] = useState(false)
   const [authPromptOpen, setAuthPromptOpen] = useState(false)
+  const [mobileBookingOpen, setMobileBookingOpen] = useState(false)
   const [bookingSubmitting, setBookingSubmitting] = useState(false)
   const [bookingError, setBookingError] = useState('')
   const [bookingSuccessOpen, setBookingSuccessOpen] = useState(false)
@@ -370,6 +371,24 @@ export default function BoatDetailPage() {
   }, [bookingSuccessOpen])
 
   useEffect(() => {
+    if (!mobileBookingOpen) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') setMobileBookingOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [mobileBookingOpen])
+
+  useEffect(() => {
+    if (!mobileBookingOpen) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prevOverflow
+    }
+  }, [mobileBookingOpen])
+
+  useEffect(() => {
     if (!boat?.id) {
       setSimilarBoats([])
       return
@@ -481,6 +500,7 @@ export default function BoatDetailPage() {
         captain: boat.captain_included !== false,
         total_price: Number(selectedTierPrice) || 0,
       })
+      setMobileBookingOpen(false)
       setBookingSuccessOpen(true)
     } catch (err) {
       setBookingError(err?.message || 'Не удалось отправить запрос на бронирование')
@@ -657,6 +677,144 @@ export default function BoatDetailPage() {
       ? durationOptions
       : durationOptions.slice(0, BOOKING_TIERS_PREVIEW)
   const showBookingTiersToggle = durationOptions.length > BOOKING_TIERS_PREVIEW
+  const renderBookingCard = () => (
+    <div className="bd-bookCard bd-bookCard--bs bd-bookCard--setter">
+      <header className="bd-bookCard__head">
+        <div className="bd-bookCard__price">
+          <strong>{formatPriceRu(selectedTierPrice)} ₽</strong>
+          <span className="bd-bookCard__unit">
+            /{' '}
+            {minDurationLabel({
+              schedule_min_duration: Number(bookDuration) || getEffectiveMinDurationMinutes(boat),
+            })}
+          </span>
+        </div>
+      </header>
+
+      <div className="bd-bookCard__stack">
+        <div className="bd-bookCard__row bd-bookCard__row--datePick">
+          <div className="bd-bookCard__rowMain">
+            <span className="bd-bookCard__rowLabel" id="bd-date-label">
+              Дата
+            </span>
+            <div className="bd-bookCard__dateRow">
+              <button
+                type="button"
+                className="bd-bookCard__dateBtn bd-bookCard__dateBtn--flex"
+                aria-labelledby="bd-date-label"
+                onClick={() => setCalendarOpen(true)}
+              >
+                {formatBookingDateRu(bookDate)}
+              </button>
+            </div>
+          </div>
+          <span className="bd-bookCard__rowIcon" aria-hidden>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </span>
+        </div>
+
+        <div className="bd-bookCard__row bd-bookCard__row--dur">
+          <div className="bd-bookCard__rowMain">
+            <span className="bd-bookCard__rowLabel">Длительность</span>
+            <div className="bd-bookCard__chips" role="group" aria-label="Длительность">
+              {durationOptions.map((t) => {
+                const active = String(t.duration) === String(bookDuration)
+                return (
+                  <button
+                    key={t.duration}
+                    type="button"
+                    className={`bd-bookCard__chip${active ? ' bd-bookCard__chip--on' : ''}`}
+                    onClick={() => setBookDuration(String(t.duration))}
+                  >
+                    {minDurationLabel({ schedule_min_duration: t.duration })}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          <span className="bd-bookCard__rowIcon" aria-hidden>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="13" r="7" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M12 9v4l2.5 1.5M9 3h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </span>
+        </div>
+
+        <button type="button" className="bd-bookCard__row bd-bookCard__row--tap" onClick={() => setTimePickerOpen(true)}>
+          <span className="bd-bookCard__rowMain">
+            <span className="bd-bookCard__rowLabel">Время начала</span>
+            {bookStartTime ? (
+              <span className="bd-bookCard__rowValue">{bookStartTime}</span>
+            ) : (
+              <span className="bd-bookCard__rowValue bd-bookCard__rowValue--muted">Нажмите, чтобы выбрать время</span>
+            )}
+          </span>
+          <span className="bd-bookCard__rowIcon" aria-hidden>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </span>
+        </button>
+
+        <div className="bd-bookCard__row bd-bookCard__row--guests" role="group" aria-label="Количество гостей">
+          <div className="bd-bookCard__rowMain">
+            <span className="bd-bookCard__rowLabel">Гости</span>
+            <div className="bd-bookCard__guestRow bd-bookCard__guestRow--inline">
+              <button
+                type="button"
+                className="bd-bookCard__guestStepBtn bd-bookCard__guestStepBtn--dec"
+                onClick={() => setBookGuests((g) => Math.max(1, g - 1))}
+                disabled={bookGuests <= 1}
+                aria-label="Меньше гостей"
+              >
+                −
+              </button>
+              <span className="bd-bookCard__guestStepLabel">{formatGuestLabelRu(bookGuests)}</span>
+              <button
+                type="button"
+                className="bd-bookCard__guestStepBtn bd-bookCard__guestStepBtn--inc"
+                onClick={() => setBookGuests((g) => Math.min(maxBookGuests, g + 1))}
+                disabled={bookGuests >= maxBookGuests}
+                aria-label="Больше гостей"
+              >
+                +
+              </button>
+            </div>
+          </div>
+          <span className="bd-bookCard__rowIcon" aria-hidden>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM5 20v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
+        </div>
+      </div>
+
+      {bookingError ? <p className="bd-bookCard__error">{bookingError}</p> : null}
+      {bookStartTime ? user ? (
+        <button type="button" className="bd-bookCard__ctaFull" onClick={submitBookingRequest} disabled={bookingSubmitting}>
+          {bookingSubmitting ? 'Отправляем…' : 'Запрос на бронирование'}
+        </button>
+      ) : (
+        <button type="button" className="bd-bookCard__ctaFull" onClick={() => setAuthPromptOpen(true)}>
+          Запрос на бронирование
+        </button>
+      ) : (
+        <span className="bd-bookCard__ctaFull bd-bookCard__ctaFull--disabled" aria-disabled>
+          Запрос на бронирование
+        </span>
+      )}
+    </div>
+  )
 
   return (
     <div className="bd-page bd-page--bs">
@@ -1171,148 +1329,19 @@ export default function BoatDetailPage() {
           </div>
 
           <aside className="bd-asideFloat">
-            <div className="bd-bookCard bd-bookCard--bs bd-bookCard--setter">
-              <header className="bd-bookCard__head">
-                <div className="bd-bookCard__price">
-                  <strong>{formatPriceRu(selectedTierPrice)} ₽</strong>
-                  <span className="bd-bookCard__unit">
-                    /{' '}
-                    {minDurationLabel({
-                      schedule_min_duration: Number(bookDuration) || getEffectiveMinDurationMinutes(boat),
-                    })}
-                  </span>
-                </div>
-              </header>
-
-              <div className="bd-bookCard__stack">
-                <div className="bd-bookCard__row bd-bookCard__row--datePick">
-                  <div className="bd-bookCard__rowMain">
-                    <span className="bd-bookCard__rowLabel" id="bd-date-label">
-                      Дата
-                    </span>
-                    <div className="bd-bookCard__dateRow">
-                      <button
-                        type="button"
-                        className="bd-bookCard__dateBtn bd-bookCard__dateBtn--flex"
-                        aria-labelledby="bd-date-label"
-                        onClick={() => setCalendarOpen(true)}
-                      >
-                        {formatBookingDateRu(bookDate)}
-                      </button>
-                    </div>
-                  </div>
-                  <span className="bd-bookCard__rowIcon" aria-hidden>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.5" />
-                      <path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
-                  </span>
-                </div>
-
-                <div className="bd-bookCard__row bd-bookCard__row--dur">
-                  <div className="bd-bookCard__rowMain">
-                    <span className="bd-bookCard__rowLabel">Длительность</span>
-                    <div className="bd-bookCard__chips" role="group" aria-label="Длительность">
-                      {durationOptions.map((t) => {
-                        const active = String(t.duration) === String(bookDuration)
-                        return (
-                          <button
-                            key={t.duration}
-                            type="button"
-                            className={`bd-bookCard__chip${active ? ' bd-bookCard__chip--on' : ''}`}
-                            onClick={() => setBookDuration(String(t.duration))}
-                          >
-                            {minDurationLabel({ schedule_min_duration: t.duration })}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                  <span className="bd-bookCard__rowIcon" aria-hidden>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="13" r="7" stroke="currentColor" strokeWidth="1.5" />
-                      <path d="M12 9v4l2.5 1.5M9 3h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  className="bd-bookCard__row bd-bookCard__row--tap"
-                  onClick={() => setTimePickerOpen(true)}
-                >
-                  <span className="bd-bookCard__rowMain">
-                    <span className="bd-bookCard__rowLabel">Время начала</span>
-                    {bookStartTime ? (
-                      <span className="bd-bookCard__rowValue">{bookStartTime}</span>
-                    ) : (
-                      <span className="bd-bookCard__rowValue bd-bookCard__rowValue--muted">Нажмите, чтобы выбрать время</span>
-                    )}
-                  </span>
-                  <span className="bd-bookCard__rowIcon" aria-hidden>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
-                      <path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
-                  </span>
-                </button>
-
-                <div className="bd-bookCard__row bd-bookCard__row--guests" role="group" aria-label="Количество гостей">
-                  <div className="bd-bookCard__rowMain">
-                    <span className="bd-bookCard__rowLabel">Гости</span>
-                    <div className="bd-bookCard__guestRow bd-bookCard__guestRow--inline">
-                      <button
-                        type="button"
-                        className="bd-bookCard__guestStepBtn bd-bookCard__guestStepBtn--dec"
-                        onClick={() => setBookGuests((g) => Math.max(1, g - 1))}
-                        disabled={bookGuests <= 1}
-                        aria-label="Меньше гостей"
-                      >
-                        −
-                      </button>
-                      <span className="bd-bookCard__guestStepLabel">{formatGuestLabelRu(bookGuests)}</span>
-                      <button
-                        type="button"
-                        className="bd-bookCard__guestStepBtn bd-bookCard__guestStepBtn--inc"
-                        onClick={() => setBookGuests((g) => Math.min(maxBookGuests, g + 1))}
-                        disabled={bookGuests >= maxBookGuests}
-                        aria-label="Больше гостей"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                  <span className="bd-bookCard__rowIcon" aria-hidden>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM5 20v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </span>
-                </div>
-              </div>
-
-              {bookingError ? <p className="bd-bookCard__error">{bookingError}</p> : null}
-              {bookStartTime ? user ? (
-                <button type="button" className="bd-bookCard__ctaFull" onClick={submitBookingRequest} disabled={bookingSubmitting}>
-                  {bookingSubmitting ? 'Отправляем…' : 'Запрос на бронирование'}
-                </button>
-              ) : (
-                <button type="button" className="bd-bookCard__ctaFull" onClick={() => setAuthPromptOpen(true)}>
-                  Запрос на бронирование
-                </button>
-              ) : (
-                <span className="bd-bookCard__ctaFull bd-bookCard__ctaFull--disabled" aria-disabled>
-                  Запрос на бронирование
-                </span>
-              )}
-            </div>
+            {renderBookingCard()}
           </aside>
         </div>
+      </div>
+
+      <div className="bd-mobileBookBar" role="region" aria-label="Быстрое бронирование">
+        <div className="bd-mobileBookBar__price">
+          <strong>{formatPriceRu(selectedTierPrice)} ₽</strong>
+          <span>{minDurationLabel({ schedule_min_duration: Number(bookDuration) || getEffectiveMinDurationMinutes(boat) })}</span>
+        </div>
+        <button type="button" className="bd-mobileBookBar__cta" onClick={() => setMobileBookingOpen(true)}>
+          Забронировать
+        </button>
       </div>
 
       {similarBoats.length > 0 ? (
@@ -1371,6 +1400,40 @@ export default function BoatDetailPage() {
                     {photoIndex + 1} / {photos.length}
                   </div>
                 ) : null}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+
+      {mobileBookingOpen
+        ? createPortal(
+            <div
+              className="bd-mobileBookModal"
+              role="presentation"
+              onMouseDown={(e) => {
+                if (e.target === e.currentTarget) setMobileBookingOpen(false)
+              }}
+            >
+              <div
+                className="bd-mobileBookModal__sheet"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="bd-mobile-booking-title"
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  className="bd-mobileBookModal__close"
+                  onClick={() => setMobileBookingOpen(false)}
+                  aria-label="Закрыть окно бронирования"
+                >
+                  ×
+                </button>
+                <h3 id="bd-mobile-booking-title" className="bd-mobileBookModal__title">
+                  Бронирование
+                </h3>
+                <div className="bd-mobileBookModal__body">{renderBookingCard()}</div>
               </div>
             </div>,
             document.body,
