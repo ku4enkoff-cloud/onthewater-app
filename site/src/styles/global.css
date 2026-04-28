@@ -5166,6 +5166,8 @@ a.lp-boatCard:hover .lp-boatImg {
 
 .bd-page--bs .bd-ownerStrip--underH2 {
   margin-top: 16px;
+  width: min(100%, 760px);
+  margin-right: auto;
   padding: 24px 22px;
   border: 1px solid #e8e8e6;
   border-radius: 12px;

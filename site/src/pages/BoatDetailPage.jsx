@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { boatDetailPath, boatUrlSegment, parseBoatUrlParam } from '../boatUrl'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { fetchBoatById, fetchBoatReviews, fetchBoatsSearch, fetchPopularBoats } from '../api/boats'
-import { SITE_MAIN_URL, YANDEX_MAPS_API_KEY, getPhotoUrl } from '../config'
+import { YANDEX_MAPS_API_KEY, getPhotoUrl } from '../config'
 import {
   allPhotoUrls,
   buildBookingDurationTiers,
@@ -377,14 +377,6 @@ export default function BoatDetailPage() {
     if (t) return t.price
     return getMinDurationPrice(boat)
   }, [boat, bookDuration, tiers])
-
-  const appBookingUrl = useMemo(() => {
-    const base = SITE_MAIN_URL.replace(/\/$/, '')
-    const q = new URLSearchParams()
-    if (resolvedId) q.set('boat', String(resolvedId))
-    const s = q.toString()
-    return s ? `${base}/?${s}` : `${base}/`
-  }, [resolvedId])
 
   const submitBookingRequest = useCallback(async () => {
     if (!boat || !resolvedId || !bookStartTime || bookingSubmitting) return
@@ -992,9 +984,6 @@ export default function BoatDetailPage() {
             <p className="bd-crewBs__text">
               Уточните детали выхода и маршрут в чате приложения — владелец ответит после запроса брони.
             </p>
-            <a href={appBookingUrl} className="bd-crewBs__cta" target="_blank" rel="noopener noreferrer">
-              Написать владельцу
-            </a>
           </section>
 
           <section className="bd-blockBs">
