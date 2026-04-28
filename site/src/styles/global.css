@@ -71,8 +71,76 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 48px 16px 64px;
+  padding: 38px 16px 64px;
   background: #f8fafc;
+}
+
+.auth-loginTopBar {
+  position: relative;
+  top: auto;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.auth-loginTopBar .bd-topBar__logo {
+  font-size: 34px;
+}
+
+.auth-loginTopBar .bd-topBar__logoMark {
+  width: 28px;
+  height: 28px;
+}
+
+.auth-loginTopBar .bd-topBar__nav {
+  margin-left: auto;
+  gap: 8px 16px;
+}
+
+.auth-loginTopBar .bd-topBar__link {
+  font-size: 12px;
+  color: #0f172a;
+}
+
+.auth-loginTopBar__btn.authMenuBtn {
+  min-height: 30px !important;
+  padding: 0 14px !important;
+  border-radius: 999px !important;
+  border-color: #0061c1 !important;
+  background: #0061c1 !important;
+  color: #fff !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+}
+
+.auth-loginTopBar__btn--active.authMenuBtn {
+  background: #0b4ea2 !important;
+  border-color: #0b4ea2 !important;
+}
+
+@media (max-width: 720px) {
+  .auth-loginTopBar {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .auth-loginTopBar .bd-topBar__logo {
+    font-size: 26px;
+  }
+
+  .auth-loginTopBar .bd-topBar__nav {
+    gap: 8px;
+  }
+
+  .auth-loginTopBar .bd-topBar__link {
+    display: none;
+  }
+
+  .auth-page {
+    padding-top: 28px;
+  }
 }
 
 .account-topBar {
