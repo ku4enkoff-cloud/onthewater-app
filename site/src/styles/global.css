@@ -5568,7 +5568,7 @@ a.lp-boatCard:hover .lp-boatImg {
   }
 
   .bd-page--bs .bd-detailGrid > .bd-asideFloat .bd-bookCard--setter .bd-bookCard__rowValue {
-    font-size: clamp(14px, 1.5vw, 16px);
+    font-size: clamp(14px, 1.5vw, 14px);
   }
 
   .bd-page--bs .bd-detailGrid > .bd-asideFloat .bd-bookCard--setter .bd-bookCard__cta--setter {
@@ -7621,7 +7621,7 @@ a.lp-boatCard:hover .lp-boatImg {
 
 .tpm-hintText {
   margin: 0;
-  font-size: 17px;
+  font-size: 14px;
   color: #5b6a82;
   text-align: center;
   line-height: 1.45;
@@ -7694,7 +7694,7 @@ a.lp-boatCard:hover .lp-boatImg {
 }
 
 .tpm-slotText {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: #002b5b;
 }
@@ -7728,7 +7728,7 @@ a.lp-boatCard:hover .lp-boatImg {
   background: #002b5b;
   color: #fff;
   font: inherit;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 800;
   letter-spacing: 0.05em;
   padding: 16px 20px;
