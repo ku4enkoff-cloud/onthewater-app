@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { fetchBoatTypes, fetchBoatsSearch } from '../api/boats'
 import { SITE_MAIN_URL, YANDEX_MAPS_API_KEY, getPhotoUrl } from '../config'
 import {
@@ -123,6 +123,7 @@ function todayISO() {
 }
 
 export default function BoatsSearchPage() {
+  const navigate = useNavigate()
   const { user, logout } = useAuth()
   const [searchParams] = useSearchParams()
   const cityFromUrl = searchParams.get('city')?.trim() || ''
@@ -346,25 +347,33 @@ export default function BoatsSearchPage() {
     })
   }, [])
 
+  const openBoatCard = useCallback(
+    (boatId) => {
+      if (boatId == null) return
+      navigate(`/boats/${encodeURIComponent(String(boatId))}`)
+    },
+    [navigate],
+  )
+
   const handleMapPlacemarksPick = useCallback((candidates) => {
     if (!candidates?.length) return
     if (candidates.length === 1) {
       const id = candidates[0].id
       setMapPickCandidates(null)
       setSelectedBoatId(id)
-      scrollCardIntoView(id)
+      openBoatCard(id)
       return
     }
     setMapPickCandidates(candidates)
-  }, [scrollCardIntoView])
+  }, [openBoatCard])
 
   const finishMapPick = useCallback(
     (boatId) => {
       setMapPickCandidates(null)
       setSelectedBoatId(boatId)
-      scrollCardIntoView(boatId)
+      openBoatCard(boatId)
     },
-    [scrollCardIntoView],
+    [openBoatCard],
   )
 
   useEffect(() => {
