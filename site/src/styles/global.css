@@ -5753,7 +5753,7 @@ a.lp-boatCard:hover .lp-boatImg {
 
 @media (min-width: 961px) {
   .bd-page--bs .bd-detailGrid > .bd-asideFloat .bd-bookCard__chip {
-    font-size: clamp(14px, 1.35vw, 16px);
+    font-size: clamp(14px, 1.35vw, 14px);
     padding: 0 clamp(16px, 1.8vw, 20px);
     min-height: clamp(44px, 4.2vw, 48px);
     border-radius: clamp(12px, 1.4vw, 16px);
