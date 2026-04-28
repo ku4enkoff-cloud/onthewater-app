@@ -83,7 +83,7 @@ export default function LoginPage() {
             </button>
           </form>
           <p className="auth-card__hint">
-            Нет аккаунта? <Link to="/">Вернуться на главную</Link>
+            Нет аккаунта? <Link to="/register">Зарегистрироваться</Link>
           </p>
         </div>
       </div>

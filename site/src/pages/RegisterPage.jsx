@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { registerAuth } from '../api/auth'
-import { SITE_MAIN_URL } from '../config'
 import { useAuth } from '../context/AuthContext'
+import googlePlayIcon from '../assets/icon-g-p.webp'
+import appleStoreIcon from '../assets/icon-a-s.webp'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -187,9 +188,23 @@ export default function RegisterPage() {
           <p className="auth-card__hint">
             Уже есть аккаунт? <Link to="/login">Войти</Link>
           </p>
-          <p className="auth-card__hint">
-            Для владельцев судов регистрация доступна в приложении для владельцев: <a href={`${SITE_MAIN_URL}/register`} target="_blank" rel="noopener noreferrer">подробнее</a>
+          <p className="auth-card__hint auth-card__hint--owner">
+            Для владельцев судов регистрация доступна в мобильном приложении для владельцев.
           </p>
+          <div className="auth-ownerStores" aria-label="Скачать приложение для владельцев">
+            <span className="auth-ownerStoreBadge auth-ownerStoreBadge--apple" aria-disabled="true">
+              <img src={appleStoreIcon} alt="App Store (скоро)" className="auth-ownerStoreBadge__img" />
+            </span>
+            <a
+              href="https://play.google.com/store/apps/details?id=com.anonymous.onthewater.owner"
+              className="auth-ownerStoreBadge auth-ownerStoreBadge--google"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Скачать приложение для владельцев в Google Play"
+            >
+              <img src={googlePlayIcon} alt="Google Play" className="auth-ownerStoreBadge__img" />
+            </a>
+          </div>
         </div>
       </div>
     </>

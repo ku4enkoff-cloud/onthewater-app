@@ -321,6 +321,38 @@
   font-size: 14px;
 }
 
+.auth-card__hint--owner {
+  margin-top: 16px;
+}
+
+.auth-ownerStores {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.auth-ownerStoreBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.auth-ownerStoreBadge__img {
+  display: block;
+  width: 100%;
+  max-width: 170px;
+  height: auto;
+  object-fit: contain;
+}
+
+.auth-ownerStoreBadge--google:hover {
+  opacity: 0.92;
+}
+
 .account-meta {
   margin: 12px 0 20px;
   display: grid;
