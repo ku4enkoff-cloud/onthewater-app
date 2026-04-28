@@ -130,6 +130,7 @@ function normalizeReviewAuthorName(name) {
 
 export default function BoatDetailPage() {
   /** В App.jsx параметр называется :boatId (значение вида "12" или "12-nazvanie-katera"). */
+  const { user } = useAuth()
   const { boatId: routeSegment, boatSlug: routeSlugAlt } = useParams()
   const routeSegmentResolved = (routeSlugAlt ?? routeSegment ?? '').trim()
   const navigate = useNavigate()
@@ -151,6 +152,7 @@ export default function BoatDetailPage() {
   const [galleryLightboxOpen, setGalleryLightboxOpen] = useState(false)
   const [amenitiesExpanded, setAmenitiesExpanded] = useState(false)
   const [bookingTiersExpanded, setBookingTiersExpanded] = useState(false)
+  const [authPromptOpen, setAuthPromptOpen] = useState(false)
   const [knowOpen, setKnowOpen] = useState({
     cancellation: false,
     rules: false,
@@ -256,6 +258,15 @@ export default function BoatDetailPage() {
   useEffect(() => {
     setKnowOpen({ cancellation: false, rules: false, payment: false })
   }, [resolvedId])
+
+  useEffect(() => {
+    if (!authPromptOpen) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') setAuthPromptOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [authPromptOpen])
 
   useEffect(() => {
     if (!boat?.id) {
@@ -1185,15 +1196,14 @@ export default function BoatDetailPage() {
                 </div>
               </div>
 
-              {bookStartTime ? (
-                <a
-                  className="bd-bookCard__ctaFull"
-                  href={bookAppHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
+              {bookStartTime ? user ? (
+                <a className="bd-bookCard__ctaFull" href={bookAppHref} target="_blank" rel="noopener noreferrer">
                   Запрос на бронирование
                 </a>
+              ) : (
+                <button type="button" className="bd-bookCard__ctaFull" onClick={() => setAuthPromptOpen(true)}>
+                  Запрос на бронирование
+                </button>
               ) : (
                 <span className="bd-bookCard__ctaFull bd-bookCard__ctaFull--disabled" aria-disabled>
                   Запрос на бронирование
@@ -1260,6 +1270,50 @@ export default function BoatDetailPage() {
                     {photoIndex + 1} / {photos.length}
                   </div>
                 ) : null}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+
+      {authPromptOpen
+        ? createPortal(
+            <div
+              className="bd-authPrompt"
+              role="presentation"
+              onMouseDown={(e) => {
+                if (e.target === e.currentTarget) setAuthPromptOpen(false)
+              }}
+            >
+              <div
+                className="bd-authPrompt__sheet"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="bd-authPrompt-title"
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  className="bd-authPrompt__close"
+                  onClick={() => setAuthPromptOpen(false)}
+                  aria-label="Закрыть"
+                >
+                  ×
+                </button>
+                <h3 id="bd-authPrompt-title" className="bd-authPrompt__title">
+                  Для бронирования нужна авторизация
+                </h3>
+                <p className="bd-authPrompt__text">
+                  Чтобы отправить запрос на бронирование, войдите в личный кабинет или зарегистрируйтесь на сайте.
+                </p>
+                <div className="bd-authPrompt__actions">
+                  <a className="bd-authPrompt__btn bd-authPrompt__btn--primary" href={`${SITE_MAIN_URL}/register`} target="_blank" rel="noopener noreferrer">
+                    Зарегистрироваться
+                  </a>
+                  <Link className="bd-authPrompt__btn bd-authPrompt__btn--ghost" to="/login" onClick={() => setAuthPromptOpen(false)}>
+                    Войти
+                  </Link>
+                </div>
               </div>
             </div>,
             document.body,

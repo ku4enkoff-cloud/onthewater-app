@@ -5673,6 +5673,115 @@ a.lp-boatCard:hover .lp-boatImg {
   pointer-events: none;
 }
 
+.bd-authPrompt {
+  position: fixed;
+  inset: 0;
+  z-index: 5600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.bd-authPrompt__sheet {
+  position: relative;
+  width: min(100%, 440px);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.24);
+  padding: 22px 20px 18px;
+}
+
+.bd-authPrompt__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.bd-authPrompt__title {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.2;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.bd-authPrompt__text {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #475569;
+}
+
+.bd-authPrompt__actions {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.bd-authPrompt__btn {
+  min-height: 42px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  border: 1px solid transparent;
+}
+
+.bd-authPrompt__btn--primary {
+  background: #0061c1;
+  border-color: #0061c1;
+  color: #fff;
+}
+
+.bd-authPrompt__btn--primary:hover {
+  background: #0052a3;
+  border-color: #0052a3;
+  color: #fff;
+}
+
+.bd-authPrompt__btn--ghost {
+  background: #fff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.bd-authPrompt__btn--ghost:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+@media (max-width: 420px) {
+  .bd-authPrompt__sheet {
+    padding: 20px 14px 14px;
+  }
+
+  .bd-authPrompt__title {
+    font-size: 18px;
+  }
+
+  .bd-authPrompt__actions {
+    grid-template-columns: 1fr;
+  }
+}
+
 .bd-bookCard--setter .bd-bookCard__cta--setter {
   margin-top: 22px;
   padding: 16px 18px;
