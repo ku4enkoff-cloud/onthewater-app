@@ -281,29 +281,6 @@ export default function BoatDetailPage() {
     return () => window.removeEventListener('keydown', onKey)
   }, [bookingSuccessOpen])
 
-  const submitBookingRequest = useCallback(async () => {
-    if (!boat || !resolvedId || !bookStartTime || bookingSubmitting) return
-    setBookingError('')
-    setBookingSubmitting(true)
-    try {
-      const start = new Date(`${bookDate}T${bookStartTime}:00`)
-      const startAt = Number.isNaN(start.getTime()) ? new Date().toISOString() : start.toISOString()
-      await createBooking(token, {
-        boat_id: Number(resolvedId),
-        start_at: startAt,
-        hours: Number(bookDuration) || getEffectiveMinDurationMinutes(boat),
-        passengers: Number(bookGuests) || 1,
-        captain: boat.captain_included !== false,
-        total_price: Number(selectedTierPrice) || 0,
-      })
-      setBookingSuccessOpen(true)
-    } catch (err) {
-      setBookingError(err?.message || 'Не удалось отправить запрос на бронирование')
-    } finally {
-      setBookingSubmitting(false)
-    }
-  }, [boat, resolvedId, bookStartTime, bookingSubmitting, bookDate, token, bookDuration, bookGuests, selectedTierPrice])
-
   useEffect(() => {
     if (!boat?.id) {
       setSimilarBoats([])
@@ -408,6 +385,29 @@ export default function BoatDetailPage() {
     const s = q.toString()
     return s ? `${base}/?${s}` : `${base}/`
   }, [resolvedId])
+
+  const submitBookingRequest = useCallback(async () => {
+    if (!boat || !resolvedId || !bookStartTime || bookingSubmitting) return
+    setBookingError('')
+    setBookingSubmitting(true)
+    try {
+      const start = new Date(`${bookDate}T${bookStartTime}:00`)
+      const startAt = Number.isNaN(start.getTime()) ? new Date().toISOString() : start.toISOString()
+      await createBooking(token, {
+        boat_id: Number(resolvedId),
+        start_at: startAt,
+        hours: Number(bookDuration) || getEffectiveMinDurationMinutes(boat),
+        passengers: Number(bookGuests) || 1,
+        captain: boat.captain_included !== false,
+        total_price: Number(selectedTierPrice) || 0,
+      })
+      setBookingSuccessOpen(true)
+    } catch (err) {
+      setBookingError(err?.message || 'Не удалось отправить запрос на бронирование')
+    } finally {
+      setBookingSubmitting(false)
+    }
+  }, [boat, resolvedId, bookStartTime, bookingSubmitting, bookDate, token, bookDuration, bookGuests, selectedTierPrice])
 
   const onGalleryTouchStart = useCallback((e) => {
     const t = e.changedTouches[0]
