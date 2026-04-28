@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { fetchMyBookings } from '../api/bookings'
+import { cancelBooking, fetchMyBookings } from '../api/bookings'
 import { changePassword, deleteMyAccount, updateProfile } from '../api/auth'
 
 const STATUS_LABELS = {
@@ -48,6 +48,9 @@ export default function AccountPage() {
   const [bookings, setBookings] = useState([])
   const [bookingsLoading, setBookingsLoading] = useState(true)
   const [bookingsError, setBookingsError] = useState('')
+  const [bookingModal, setBookingModal] = useState(null)
+  const [bookingActionError, setBookingActionError] = useState('')
+  const [bookingCancelling, setBookingCancelling] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -131,6 +134,34 @@ export default function AccountPage() {
     }
   }
 
+  useEffect(() => {
+    if (!bookingModal) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') setBookingModal(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [bookingModal])
+
+  const canCancelBooking = (b) => ['pending', 'pending_payment'].includes(String(b?.status || '').toLowerCase())
+
+  const handleCancelBooking = async () => {
+    if (!bookingModal?.id) return
+    const ok = window.confirm('Вы уверены, что хотите отменить бронирование?')
+    if (!ok) return
+    try {
+      setBookingCancelling(true)
+      setBookingActionError('')
+      const updated = await cancelBooking(token, bookingModal.id)
+      setBookings((prev) => prev.map((b) => (b.id === updated.id ? { ...b, ...updated } : b)))
+      setBookingModal((prev) => (prev ? { ...prev, ...updated } : prev))
+    } catch (err) {
+      setBookingActionError(err?.message || 'Не удалось отменить бронирование')
+    } finally {
+      setBookingCancelling(false)
+    }
+  }
+
   return (
     <>
       <header className="bd-topBar account-topBar">
@@ -187,7 +218,23 @@ export default function AccountPage() {
             ) : (
               <div className="account-bookings">
                 {bookingsSorted.map((b) => (
-                  <article key={b.id} className="account-bookingCard">
+                  <article
+                    key={b.id}
+                    className="account-bookingCard"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      setBookingActionError('')
+                      setBookingModal(b)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        setBookingActionError('')
+                        setBookingModal(b)
+                      }
+                    }}
+                  >
                     <div className="account-bookingCard__head">
                       <h3>{b.boat_title || 'Катер'}</h3>
                       <span className={`account-bookingCard__status account-bookingCard__status--${b.status || 'pending'}`}>
@@ -292,6 +339,60 @@ export default function AccountPage() {
           </div>
         </div>
       </div>
+      {bookingModal ? (
+        <div
+          className="account-bookingModal"
+          role="presentation"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setBookingModal(null)
+          }}
+        >
+          <div
+            className="account-bookingModal__sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="account-booking-title"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="account-bookingModal__close"
+              onClick={() => setBookingModal(null)}
+              aria-label="Закрыть"
+            >
+              ×
+            </button>
+            <h3 id="account-booking-title" className="account-bookingModal__title">
+              {bookingModal.boat_title || 'Бронирование'}
+            </h3>
+            <span className={`account-bookingCard__status account-bookingCard__status--${bookingModal.status || 'pending'}`}>
+              {STATUS_LABELS[bookingModal.status] || bookingModal.status || '—'}
+            </span>
+            <div className="account-bookingModal__meta">
+              <p>Дата выхода: {formatBookingDate(bookingModal.start_at)}</p>
+              <p>Длительность: {Number(bookingModal.hours) || 0} мин</p>
+              <p>Гостей: {Number(bookingModal.passengers) || 1}</p>
+              <p>Сумма: {(Number(bookingModal.total_price) || 0).toLocaleString('ru-RU')} ₽</p>
+            </div>
+            {bookingActionError ? <p className="auth-error">{bookingActionError}</p> : null}
+            <div className="account-bookingModal__actions">
+              {canCancelBooking(bookingModal) ? (
+                <button
+                  type="button"
+                  className="auth-submit auth-submit--danger"
+                  onClick={handleCancelBooking}
+                  disabled={bookingCancelling}
+                >
+                  {bookingCancelling ? 'Отменяем…' : 'Отменить бронирование'}
+                </button>
+              ) : null}
+              <button type="button" className="auth-submit auth-submit--ghost" onClick={() => setBookingModal(null)}>
+                Закрыть
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   )
 }

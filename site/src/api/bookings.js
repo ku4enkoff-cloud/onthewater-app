@@ -30,3 +30,14 @@ export async function createBooking(token, payload) {
   if (!res.ok) throw new Error(data?.error || 'Не удалось отправить запрос на бронирование')
   return data
 }
+
+export async function cancelBooking(token, bookingId) {
+  const res = await fetch(bookingsUrl(`/${encodeURIComponent(bookingId)}/cancel`), {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: 'omit',
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data?.error || 'Не удалось отменить бронирование')
+  return data
+}

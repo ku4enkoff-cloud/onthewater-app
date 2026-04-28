@@ -466,6 +466,17 @@
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   background: #fff;
+  cursor: pointer;
+}
+
+.account-bookingCard:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.account-bookingCard:focus-visible {
+  outline: 2px solid #0061c1;
+  outline-offset: 2px;
 }
 
 .account-bookingCard__head {
@@ -514,6 +525,87 @@
 .account-bookingCard__status--cancelled {
   background: #fee2e2;
   color: #991b1b;
+}
+
+.account-bookingModal {
+  position: fixed;
+  inset: 0;
+  z-index: 5600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.account-bookingModal__sheet {
+  width: min(100%, 520px);
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 24px 46px rgba(15, 23, 42, 0.22);
+  padding: 20px 18px 16px;
+  position: relative;
+}
+
+.account-bookingModal__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.account-bookingModal__title {
+  margin: 0;
+  font-size: 26px;
+  color: #0f172a;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  padding-right: 36px;
+}
+
+.account-bookingModal .account-bookingCard__status {
+  margin-top: 10px;
+  display: inline-flex;
+}
+
+.account-bookingModal__meta {
+  margin-top: 12px;
+}
+
+.account-bookingModal__meta p {
+  margin: 6px 0;
+  font-size: 15px;
+  color: #334155;
+}
+
+.account-bookingModal__actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .account-bookingModal__sheet {
+    padding: 16px 14px 14px;
+  }
+
+  .account-bookingModal__title {
+    font-size: 22px;
+  }
+
+  .account-bookingModal__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Boat detail page: auth buttons in blue style */
