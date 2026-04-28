@@ -5806,11 +5806,11 @@ a.lp-boatCard:hover .lp-boatImg {
 
 .bd-authPrompt__sheet {
   position: relative;
-  width: min(100%, 440px);
+  width: min(100%, 560px);
   border-radius: 16px;
   background: #fff;
   box-shadow: 0 24px 48px rgba(15, 23, 42, 0.24);
-  padding: 22px 20px 18px;
+  padding: 22px 22px 18px;
 }
 
 .bd-authPrompt__close {
@@ -5830,18 +5830,22 @@ a.lp-boatCard:hover .lp-boatImg {
 
 .bd-authPrompt__title {
   margin: 0;
+  padding-right: 38px;
   font-size: 22px;
   line-height: 1.2;
   font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .bd-authPrompt__text {
   margin: 10px 0 0;
   font-size: 14px;
-  line-height: 1.45;
+  line-height: 1.5;
   color: #475569;
+  overflow-wrap: anywhere;
 }
 
 .bd-authPrompt__actions {
