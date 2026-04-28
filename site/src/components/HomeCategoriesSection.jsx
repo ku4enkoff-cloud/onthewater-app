@@ -42,8 +42,8 @@ export default function HomeCategoriesSection() {
             <h2 className="lp-catsTitle">Категории</h2>
           </header>
 
-          <div className="lp-catsRail" role="region" aria-label="Прокрутка категорий">
-            <div className="lp-catsGrid">
+          <div className="lp-catsRail" role="region" aria-label="Категории судов">
+            <div className="lp-catsMosaic">
               {types.map((type) => (
                 <Link
                   key={type.id}
