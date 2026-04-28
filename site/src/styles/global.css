@@ -389,6 +389,22 @@
   flex-wrap: wrap;
 }
 
+.account-actions .auth-submit--ghost {
+  min-height: 50px;
+  padding: 0 22px;
+  border-color: #0061c1;
+  background: #0061c1;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.account-actions .auth-submit--ghost:hover {
+  border-color: #0052a3;
+  background: #0052a3;
+  color: #fff;
+}
+
 .account-section {
   margin: 18px 0 20px;
 }
