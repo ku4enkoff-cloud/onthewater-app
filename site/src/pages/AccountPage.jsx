@@ -35,6 +35,22 @@ function formatBookingDate(iso) {
   }
 }
 
+function formatBookingMooringAddress(booking) {
+  if (!booking) return '—'
+  const parts = [
+    booking.location_country,
+    booking.location_region,
+    booking.location_city,
+    booking.location_address,
+  ]
+    .map((v) => String(v || '').trim())
+    .filter(Boolean)
+
+  const yachtClub = String(booking.location_yacht_club || '').trim()
+  if (yachtClub) parts.push(`Яхт-клуб: ${yachtClub}`)
+  return parts.length > 0 ? parts.join(', ') : '—'
+}
+
 export default function AccountPage() {
   const { user, token, logout, setCurrentUser } = useAuth()
   const [activeMenu, setActiveMenu] = useState('bookings')
@@ -244,6 +260,7 @@ export default function AccountPage() {
                     <p>Дата выхода: {formatBookingDate(b.start_at)}</p>
                     <p>Длительность: {Number(b.hours) || 0} мин</p>
                     <p>Гостей: {Number(b.passengers) || 1}</p>
+                    <p>Стоянка: {formatBookingMooringAddress(b)}</p>
                     <p>Сумма: {(Number(b.total_price) || 0).toLocaleString('ru-RU')} ₽</p>
                   </article>
                 ))}
@@ -372,6 +389,7 @@ export default function AccountPage() {
               <p>Дата выхода: {formatBookingDate(bookingModal.start_at)}</p>
               <p>Длительность: {Number(bookingModal.hours) || 0} мин</p>
               <p>Гостей: {Number(bookingModal.passengers) || 1}</p>
+              <p>Стоянка: {formatBookingMooringAddress(bookingModal)}</p>
               <p>Сумма: {(Number(bookingModal.total_price) || 0).toLocaleString('ru-RU')} ₽</p>
             </div>
             {bookingActionError ? <p className="auth-error">{bookingActionError}</p> : null}
