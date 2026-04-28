@@ -15,3 +15,18 @@ export async function fetchMyBookings(token) {
   const data = await res.json()
   return Array.isArray(data) ? data : []
 }
+
+export async function createBooking(token, payload) {
+  const res = await fetch(bookingsUrl(), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    credentials: 'omit',
+    body: JSON.stringify(payload),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data?.error || 'Не удалось отправить запрос на бронирование')
+  return data
+}

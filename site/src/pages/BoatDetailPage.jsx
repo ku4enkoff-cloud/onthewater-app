@@ -29,6 +29,7 @@ import BoatDetailLocationMap from '../components/boat/BoatDetailLocationMap.jsx'
 import BoatHeroSpecStrip from '../components/boat/BoatHeroSpecStrip.jsx'
 import BoatResultCard from '../components/search/BoatResultCard.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
+import { createBooking } from '../api/bookings'
 
 const PLACEHOLDER = 'https://placehold.co/1200x750/e8eef4/64748b?text=%D0%9A%D0%B0%D1%82%D0%B5%D1%80'
 const DESC_PREVIEW = 480
@@ -130,7 +131,7 @@ function normalizeReviewAuthorName(name) {
 
 export default function BoatDetailPage() {
   /** В App.jsx параметр называется :boatId (значение вида "12" или "12-nazvanie-katera"). */
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const { boatId: routeSegment, boatSlug: routeSlugAlt } = useParams()
   const routeSegmentResolved = (routeSlugAlt ?? routeSegment ?? '').trim()
   const navigate = useNavigate()
@@ -153,6 +154,9 @@ export default function BoatDetailPage() {
   const [amenitiesExpanded, setAmenitiesExpanded] = useState(false)
   const [bookingTiersExpanded, setBookingTiersExpanded] = useState(false)
   const [authPromptOpen, setAuthPromptOpen] = useState(false)
+  const [bookingSubmitting, setBookingSubmitting] = useState(false)
+  const [bookingError, setBookingError] = useState('')
+  const [bookingSuccessOpen, setBookingSuccessOpen] = useState(false)
   const [knowOpen, setKnowOpen] = useState({
     cancellation: false,
     rules: false,
@@ -269,6 +273,38 @@ export default function BoatDetailPage() {
   }, [authPromptOpen])
 
   useEffect(() => {
+    if (!bookingSuccessOpen) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') setBookingSuccessOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [bookingSuccessOpen])
+
+  const submitBookingRequest = useCallback(async () => {
+    if (!boat || !resolvedId || !bookStartTime || bookingSubmitting) return
+    setBookingError('')
+    setBookingSubmitting(true)
+    try {
+      const start = new Date(`${bookDate}T${bookStartTime}:00`)
+      const startAt = Number.isNaN(start.getTime()) ? new Date().toISOString() : start.toISOString()
+      await createBooking(token, {
+        boat_id: Number(resolvedId),
+        start_at: startAt,
+        hours: Number(bookDuration) || getEffectiveMinDurationMinutes(boat),
+        passengers: Number(bookGuests) || 1,
+        captain: boat.captain_included !== false,
+        total_price: Number(selectedTierPrice) || 0,
+      })
+      setBookingSuccessOpen(true)
+    } catch (err) {
+      setBookingError(err?.message || 'Не удалось отправить запрос на бронирование')
+    } finally {
+      setBookingSubmitting(false)
+    }
+  }, [boat, resolvedId, bookStartTime, bookingSubmitting, bookDate, token, bookDuration, bookGuests, selectedTierPrice])
+
+  useEffect(() => {
     if (!boat?.id) {
       setSimilarBoats([])
       return
@@ -372,19 +408,6 @@ export default function BoatDetailPage() {
     const s = q.toString()
     return s ? `${base}/?${s}` : `${base}/`
   }, [resolvedId])
-
-  /** Диплинк в приложение с выбранными датой, длительностью, временем и гостями (как в бывшей модалке). */
-  const bookAppHref = useMemo(() => {
-    const base = SITE_MAIN_URL.replace(/\/$/, '')
-    const q = new URLSearchParams()
-    if (resolvedId) q.set('boat', String(resolvedId))
-    if (bookDate) q.set('date', bookDate)
-    if (bookDuration) q.set('duration', String(bookDuration))
-    if (bookStartTime) q.set('time', bookStartTime)
-    q.set('guests', String(bookGuests))
-    const s = q.toString()
-    return s ? `${base}/?${s}` : `${base}/`
-  }, [resolvedId, bookDate, bookDuration, bookStartTime, bookGuests])
 
   const onGalleryTouchStart = useCallback((e) => {
     const t = e.changedTouches[0]
@@ -1196,10 +1219,11 @@ export default function BoatDetailPage() {
                 </div>
               </div>
 
+              {bookingError ? <p className="bd-bookCard__error">{bookingError}</p> : null}
               {bookStartTime ? user ? (
-                <a className="bd-bookCard__ctaFull" href={bookAppHref} target="_blank" rel="noopener noreferrer">
-                  Запрос на бронирование
-                </a>
+                <button type="button" className="bd-bookCard__ctaFull" onClick={submitBookingRequest} disabled={bookingSubmitting}>
+                  {bookingSubmitting ? 'Отправляем…' : 'Запрос на бронирование'}
+                </button>
               ) : (
                 <button type="button" className="bd-bookCard__ctaFull" onClick={() => setAuthPromptOpen(true)}>
                   Запрос на бронирование
@@ -1313,6 +1337,61 @@ export default function BoatDetailPage() {
                   <Link className="bd-authPrompt__btn bd-authPrompt__btn--ghost" to="/login" onClick={() => setAuthPromptOpen(false)}>
                     Войти
                   </Link>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+
+      {bookingSuccessOpen
+        ? createPortal(
+            <div
+              className="bd-authPrompt"
+              role="presentation"
+              onMouseDown={(e) => {
+                if (e.target === e.currentTarget) setBookingSuccessOpen(false)
+              }}
+            >
+              <div
+                className="bd-authPrompt__sheet"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="bd-bookingSuccess-title"
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  className="bd-authPrompt__close"
+                  onClick={() => setBookingSuccessOpen(false)}
+                  aria-label="Закрыть"
+                >
+                  ×
+                </button>
+                <h3 id="bd-bookingSuccess-title" className="bd-authPrompt__title">
+                  Запрос на бронирование отправлен
+                </h3>
+                <p className="bd-authPrompt__text">
+                  Мы передали вашу заявку владельцу судна. Статус можно отслеживать в разделе «Мои бронирования».
+                </p>
+                <div className="bd-authPrompt__actions">
+                  <button
+                    type="button"
+                    className="bd-authPrompt__btn bd-authPrompt__btn--primary"
+                    onClick={() => {
+                      setBookingSuccessOpen(false)
+                      navigate('/account')
+                    }}
+                  >
+                    Мои бронирования
+                  </button>
+                  <button
+                    type="button"
+                    className="bd-authPrompt__btn bd-authPrompt__btn--ghost"
+                    onClick={() => setBookingSuccessOpen(false)}
+                  >
+                    Закрыть
+                  </button>
                 </div>
               </div>
             </div>,
