@@ -261,7 +261,7 @@ export default function HomePage() {
           onKeyDown={handleInputKeyDown}
           aria-expanded={suggestOpen && searchSurface === mode && suggestions.length > 0}
         />
-        {suggestOpen && searchSurface === mode && suggestions.length > 0 ? (
+        {suggestOpen && (searchSurface === mode || (mode === 'sticky' && showStickyHeader)) && suggestions.length > 0 ? (
           <div className="lp-citySuggest" role="listbox" aria-label="Подсказки городов">
             {suggestions.map((city, idx) => (
               <button
