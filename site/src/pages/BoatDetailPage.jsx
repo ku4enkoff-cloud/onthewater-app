@@ -39,15 +39,38 @@ const FAVORITES_STORAGE_KEY = 'boatrent_site_favorites'
 
 function DetailPageHeader({ bookDate, onOpenCalendar, showCalendar }) {
   const { user, logout } = useAuth()
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const closeMobileNav = useCallback(() => setMobileNavOpen(false), [])
   return (
     <header className="bd-topBar">
-      <div className="bd-topBar__left">
-        <Link to="/" className="bd-topBar__logo" aria-label="ONTHEWATER — на главную">
-          <span className="bd-topBar__logoMark" aria-hidden />
-          <span className="bd-topBar__logoText">onthewater</span>
-        </Link>
+      <div className="bd-topBar__lead">
+        <div className="bd-topBar__left">
+          <Link to="/" className="bd-topBar__logo" aria-label="ONTHEWATER — на главную" onClick={closeMobileNav}>
+            <span className="bd-topBar__logoMark" aria-hidden />
+            <span className="bd-topBar__logoText">onthewater</span>
+          </Link>
+        </div>
+        <button
+          type="button"
+          className="bd-navToggle"
+          aria-expanded={mobileNavOpen}
+          aria-controls="bd-mobile-menu"
+          aria-label={mobileNavOpen ? 'Закрыть меню' : 'Открыть меню'}
+          onClick={() => setMobileNavOpen((o) => !o)}
+        >
+          {mobileNavOpen ? (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          ) : (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          )}
+        </button>
       </div>
-      <nav className="bd-topBar__nav" aria-label="Разделы сайта">
+
+      <nav className="bd-topBar__nav bd-topBar__navDesktop" aria-label="Разделы сайта">
         {showCalendar ? (
           <button type="button" className="bd-topBar__pill" onClick={onOpenCalendar} aria-label="Выбрать дату бронирования">
             <span className="bd-topBar__pillIcon" aria-hidden>
@@ -79,6 +102,71 @@ function DetailPageHeader({ bookDate, onOpenCalendar, showCalendar }) {
           </>
         )}
       </nav>
+
+      {mobileNavOpen ? (
+        <button type="button" className="bd-navBackdrop" aria-label="Закрыть меню" onClick={closeMobileNav} />
+      ) : null}
+
+      <div id="bd-mobile-menu" className={`bd-mobileNav${mobileNavOpen ? ' bd-mobileNav--open' : ''}`} aria-hidden={!mobileNavOpen}>
+        <div className="bd-mobileNavInner">
+          <p className="bd-mobileNavEyebrow">Разделы</p>
+          <nav className="bd-mobileNavLinks" aria-label="Меню страницы катера">
+            <Link to="/boats" onClick={closeMobileNav}>
+              Катера
+            </Link>
+            <Link to="/#how" onClick={closeMobileNav}>
+              Как это работает
+            </Link>
+            <Link to="/#destinations" onClick={closeMobileNav}>
+              Направления
+            </Link>
+            <Link to="/#contact" onClick={closeMobileNav}>
+              Контакты
+            </Link>
+          </nav>
+
+          <div className="bd-mobileNavActions">
+            {showCalendar ? (
+              <button
+                type="button"
+                className="bd-mobileNavBtn bd-mobileNavBtn--secondary"
+                onClick={() => {
+                  onOpenCalendar?.()
+                  closeMobileNav()
+                }}
+              >
+                {formatBookingDateRu(bookDate)}
+              </button>
+            ) : null}
+            {user ? (
+              <div className="bd-mobileNavBtns">
+                <Link to="/account" className="bd-mobileNavBtn bd-mobileNavBtn--primary" onClick={closeMobileNav}>
+                  Личный кабинет
+                </Link>
+                <button
+                  type="button"
+                  className="bd-mobileNavBtn bd-mobileNavBtn--secondary"
+                  onClick={() => {
+                    logout()
+                    closeMobileNav()
+                  }}
+                >
+                  Выйти
+                </button>
+              </div>
+            ) : (
+              <div className="bd-mobileNavBtns">
+                <Link to="/register" className="bd-mobileNavBtn bd-mobileNavBtn--primary" onClick={closeMobileNav}>
+                  Регистрация
+                </Link>
+                <Link to="/login" className="bd-mobileNavBtn bd-mobileNavBtn--secondary" onClick={closeMobileNav}>
+                  Войти
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </header>
   )
 }
