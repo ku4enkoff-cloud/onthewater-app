@@ -1393,8 +1393,8 @@ a.lp-boatCard:hover .lp-boatImg {
 
 .lp-catsTitle {
   margin: 0;
-  color: #0f172a;
-  font-size: clamp(28px, 2.5vw, 38px);
+  color: #002b5b;
+  font-size: clamp(28px, 2.5vw, 32px);
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.02em;
