@@ -810,6 +810,7 @@ code {
   opacity: 0;
   pointer-events: none;
   transition: transform 0.2s ease, opacity 0.2s ease;
+  overflow: visible;
 }
 
 .lp-stickySearch--show {
@@ -827,6 +828,7 @@ code {
   align-items: center;
   justify-content: center;
   position: relative;
+  overflow: visible;
 }
 
 .lp-logo--sticky {
@@ -862,6 +864,14 @@ code {
   align-items: center;
   padding: 0 8px 0 0;
   gap: 10px;
+  position: relative;
+}
+
+.lp-searchBar--sticky .lp-citySuggest {
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 120;
 }
 
 .lp-searchBar--sticky .lp-searchPin svg {
