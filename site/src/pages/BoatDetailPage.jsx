@@ -69,9 +69,9 @@ function DetailPageHeader({ bookDate, onOpenCalendar, showCalendar }) {
           </>
         ) : (
           <>
-            <a className="bd-topBar__link authMenuBtn" href={`${SITE_MAIN_URL}/register`} target="_blank" rel="noopener noreferrer">
+            <Link className="bd-topBar__link authMenuBtn" to="/register">
               Регистрация
-            </a>
+            </Link>
             <Link className="bd-topBar__link authMenuBtn" to="/login">
               Войти
             </Link>
@@ -1307,9 +1307,9 @@ export default function BoatDetailPage() {
                   Чтобы отправить запрос на бронирование, войдите в личный кабинет или зарегистрируйтесь на сайте.
                 </p>
                 <div className="bd-authPrompt__actions">
-                  <a className="bd-authPrompt__btn bd-authPrompt__btn--primary" href={`${SITE_MAIN_URL}/register`} target="_blank" rel="noopener noreferrer">
+                  <Link className="bd-authPrompt__btn bd-authPrompt__btn--primary" to="/register" onClick={() => setAuthPromptOpen(false)}>
                     Зарегистрироваться
-                  </a>
+                  </Link>
                   <Link className="bd-authPrompt__btn bd-authPrompt__btn--ghost" to="/login" onClick={() => setAuthPromptOpen(false)}>
                     Войти
                   </Link>

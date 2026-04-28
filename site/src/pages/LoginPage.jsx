@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { SITE_MAIN_URL } from '../config'
 
 export default function LoginPage() {
   const { user, login } = useAuth()
@@ -42,9 +41,9 @@ export default function LoginPage() {
           <Link to="/boats" className="bd-topBar__link">
             Поиск катеров
           </Link>
-          <a className="authMenuBtn auth-loginTopBar__btn" href={`${SITE_MAIN_URL}/register`} target="_blank" rel="noopener noreferrer">
+          <Link className="authMenuBtn auth-loginTopBar__btn" to="/register">
             Регистрация
-          </a>
+          </Link>
           <span className="authMenuBtn auth-loginTopBar__btn auth-loginTopBar__btn--active" aria-current="page">
             Войти
           </span>

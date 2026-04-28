@@ -364,9 +364,9 @@ export default function HomePage() {
               </>
             ) : (
               <>
-                <a href={SITE_MAIN_URL} className="lp-btnGhost authMenuBtn" target="_blank" rel="noopener noreferrer">
+                <Link to="/register" className="lp-btnGhost authMenuBtn">
                   Регистрация
-                </a>
+                </Link>
                 <Link to="/login" className="lp-btnGhost authMenuBtn">
                   Вход
                 </Link>
@@ -437,15 +437,13 @@ export default function HomePage() {
                     </>
                   ) : (
                     <>
-                      <a
-                        href={SITE_MAIN_URL}
+                      <Link
+                        to="/register"
                         className="lp-btnGhost lp-btnGhost--block lp-mobileNavBtnPrimary authMenuBtn"
-                        target="_blank"
-                        rel="noopener noreferrer"
                         onClick={closeMobileNav}
                       >
                         Регистрация
-                      </a>
+                      </Link>
                       <Link
                         to="/login"
                         className="lp-btnGhost lp-btnGhost--block lp-mobileNavBtnSecondary authMenuBtn"

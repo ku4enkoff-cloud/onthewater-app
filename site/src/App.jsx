@@ -4,6 +4,7 @@ import HomePage from './pages/HomePage.jsx'
 import BoatsSearchPage from './pages/BoatsSearchPage.jsx'
 import BoatDetailPage from './pages/BoatDetailPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
+import RegisterPage from './pages/RegisterPage.jsx'
 import AccountPage from './pages/AccountPage.jsx'
 import SiteFooter from './components/SiteFooter.jsx'
 import AndroidAppPrompt from './components/AndroidAppPrompt.jsx'
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="/boats" element={<BoatsSearchPage />} />
           <Route path="/boats/:boatSlug" element={<BoatDetailPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route
             path="/account"
             element={

@@ -506,15 +506,13 @@ export default function BoatsSearchPage() {
                   </>
                 ) : (
                   <>
-                    <a
-                      href={SITE_MAIN_URL}
+                    <Link
+                      to="/register"
                       className="bs-mobileNavBtn bs-mobileNavBtn--primary authMenuBtn"
-                      target="_blank"
-                      rel="noopener noreferrer"
                       onClick={closeMobileNav}
                     >
                       Регистрация
-                    </a>
+                    </Link>
                     <Link
                       to="/login"
                       className="bs-mobileNavBtn bs-mobileNavBtn--secondary authMenuBtn"
@@ -572,9 +570,9 @@ export default function BoatsSearchPage() {
             </>
           ) : (
             <>
-              <a href={SITE_MAIN_URL} className="authMenuBtn" target="_blank" rel="noopener noreferrer">
+              <Link to="/register" className="authMenuBtn">
                 Регистрация
-              </a>
+              </Link>
               <Link to="/login" className="authMenuBtn">
                 Вход
               </Link>

@@ -17,6 +17,18 @@ export async function loginAuth({ login, password }) {
   return data
 }
 
+export async function registerAuth({ name, email, phone, password, role = 'client' }) {
+  const res = await fetch(authUrl('/auth/register'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'omit',
+    body: JSON.stringify({ name, email, phone, password, role }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data?.error || 'Не удалось зарегистрироваться')
+  return data
+}
+
 export async function fetchMe(token) {
   const res = await fetch(authUrl('/auth/me'), {
     method: 'GET',
