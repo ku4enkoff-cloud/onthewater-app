@@ -6,7 +6,6 @@ import PopularBoats from '../components/PopularBoats.jsx'
 import HomeCategoriesSection from '../components/HomeCategoriesSection.jsx'
 import googlePlayIcon from '../assets/icon-g-p.webp'
 import appleStoreIcon from '../assets/icon-a-s.webp'
-import { SITE_MAIN_URL } from '../config'
 import { useHomePageSeo } from '../seo/useHomePageSeo.js'
 import { fetchDestinations } from '../api/destinations.js'
 import { LOCATION_OPTIONS, readNearestCityFromStorage } from '../boatSearchUtils.js'
@@ -350,9 +349,9 @@ export default function HomePage() {
           </nav>
 
           <div className="lp-headerActions lp-headerActionsDesktop">
-            <a href={SITE_MAIN_URL} className="lp-linkMuted" target="_blank" rel="noopener noreferrer">
+            <Link to="/owners" className="lp-linkMuted">
               Разместить объявление
-            </a>
+            </Link>
             {user ? (
               <>
                 <Link to="/account" className="lp-btnGhost authMenuBtn">
@@ -405,15 +404,9 @@ export default function HomePage() {
                 </a>
               </nav>
               <div className="lp-mobileNavActions">
-                <a
-                  href={SITE_MAIN_URL}
-                  className="lp-mobileNavMuted"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={closeMobileNav}
-                >
+                <Link to="/owners" className="lp-mobileNavMuted" onClick={closeMobileNav}>
                   Разместить объявление
-                </a>
+                </Link>
                 <div className="lp-mobileNavBtns">
                   {user ? (
                     <>

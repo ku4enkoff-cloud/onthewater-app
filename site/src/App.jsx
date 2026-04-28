@@ -6,6 +6,7 @@ import BoatDetailPage from './pages/BoatDetailPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
 import AccountPage from './pages/AccountPage.jsx'
+import OwnerLandingPage from './pages/OwnerLandingPage.jsx'
 import SiteFooter from './components/SiteFooter.jsx'
 import AndroidAppPrompt from './components/AndroidAppPrompt.jsx'
 import { startSiteGeolocation } from './lib/siteGeolocation.js'
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/boats" element={<BoatsSearchPage />} />
           <Route path="/boats/:boatSlug" element={<BoatDetailPage />} />
+          <Route path="/owners" element={<OwnerLandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route
