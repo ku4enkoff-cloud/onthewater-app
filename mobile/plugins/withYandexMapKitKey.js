@@ -52,7 +52,12 @@ function patchObjCAppDelegate(contents, apiKey) {
 
 function patchSwiftAppDelegate(contents, apiKey) {
   const key = escapeNativeString(apiKey);
-  if (contents.includes(MAPKIT_INIT_TAG)) return contents;
+  if (contents.includes(MAPKIT_INIT_TAG)) {
+    return contents.replace(
+      'YMKMapKit.setLocale(withLocale: "ru_RU")',
+      'YMKMapKit.setLocale("ru_RU")'
+    );
+  }
 
   if (!contents.includes('import YandexMapsMobile')) {
     const importAnchor = contents.includes('import Expo') ? 'import Expo' : 'import UIKit';
@@ -61,7 +66,7 @@ function patchSwiftAppDelegate(contents, apiKey) {
 
   const block = `
     // ${MAPKIT_INIT_TAG}
-    YMKMapKit.setLocale(withLocale: "ru_RU")
+    YMKMapKit.setLocale("ru_RU")
     YMKMapKit.setApiKey("${key}")
     _ = YMKMapKit.sharedInstance()
 `;
