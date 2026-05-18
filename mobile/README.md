@@ -64,20 +64,80 @@ npx eas-cli submit --platform ios --latest
 
 Используется единый `slug: onthewater` в `app.config.js`, чтобы совпадать с `extra.eas.projectId` на [expo.dev](https://expo.dev). Имя для пользователя и Bundle ID по-прежнему различают клиента и владельца.
 
+## react-native-yamap-plus: что важно для iOS
+
+После перехода с `react-native-yamap` на **yamap-plus** (MapKit **4.30**) для Android достаточно `expo prebuild` и ключа в манифесте. Для **iOS** нужно три вещи сразу:
+
+### 1. Нативный проект (prebuild на Mac или EAS Build)
+
+Папка `ios/` генерируется при `expo prebuild --platform ios` (на Mac) или при **EAS Build**. Без этого CocoaPods не подтянет `YandexMapsMobile`.
+
+Локально на Mac:
+
+```bash
+cd mobile
+npx cross-env EXPO_PUBLIC_APP_VARIANT=client expo prebuild --platform ios
+cd ios && pod install && cd ..
+```
+
+### 2. AppDelegate — в начале `didFinishLaunchingWithOptions`
+
+В **Expo SDK 54** сначала вызывается `factory.startReactNative(...)`, и только потом `return super.application(...)`.  
+Ключ MapKit нужно ставить **в начале** `application(_:didFinishLaunchingWithOptions:)`, **до** `startReactNative` — иначе на iOS тайлы не грузятся (серая сетка), а на Android может работать.
+
+В **`AppDelegate`** должно быть:
+
+```swift
+import YandexMapsMobile
+
+// в application(_:didFinishLaunchingWithOptions:)
+YMKMapKit.setLocale("ru_RU")
+YMKMapKit.setApiKey("ВАШ_КЛЮЧ")
+YMKMapKit.sharedInstance().onStart()
+```
+
+Это делает плагин [`plugins/withYandexMapKitKey.js`](./plugins/withYandexMapKitKey.js) при prebuild (ключ из `extra.yandexMapkitApiKey` / `EXPO_PUBLIC_YANDEX_MAPKIT_API_KEY`).
+
+Если собираете в Xcode вручную — проверьте `ios/ONTHEWATER/AppDelegate.swift`: блок с комментарием `@boatrent/yandex-mapkit-init`. Ошибка `withLocale:` — неверный синтаксис; должно быть `YMKMapKit.setLocale("ru_RU")`.
+
+### 3. JavaScript — `YamapInstance.init`
+
+В корне приложения ([`App.client.js`](./App.client.js), [`src/shared/yamapInit.js`](./src/shared/yamapInit.js)):
+
+```js
+await YamapInstance.init(API_KEY);
+```
+
+Карта на экране поиска ждёт `ensureYamapInitialized()` перед монтированием `ClusteredYamap`.
+
+**Expo Go** карты не поддерживает — только dev build / TestFlight / App Store.
+
+---
+
 ## iOS TestFlight: серая сетка вместо карты (клиент)
 
-Симптом: в модалке «катера на карте» видны кластеры/маркеры, но **нет тайлов** (серая сетка), логотип Яндекса есть.
+Симптом: кластеры и логотип Яндекса есть, **тайлов нет** (серая сетка). На Android при том же ключе карта может работать.
 
-**Причина:** ключ [MapKit Mobile SDK](https://developer.tech.yandex.ru) не привязан к Bundle ID сборки или не задан в EAS при `eas build`.
+### Типичные причины (по приоритету)
 
-1. [developer.tech.yandex.ru](https://developer.tech.yandex.ru) → ключ → включить **MapKit Mobile SDK**.
-2. В ограничениях ключа добавить **iOS**: `ru.onthewater.client` (клиент) или `com.anonymous.onthewater.owner` (владелец). Подождать ~15 минут после сохранения.
-3. В [Expo → Environment variables](https://expo.dev) для профиля production задать `EXPO_PUBLIC_YANDEX_MAPKIT_API_KEY` (локальный `.env` в облачную сборку не попадает).
-4. Пересобрать клиентский iOS-билд:
+1. **Ключ в кабинете Яндекса без iOS Bundle ID** — для Android указан `com.anonymous.onthewater`, для iOS нужен отдельно **`ru.onthewater.client`** (ограничения платформ разные).
+2. **Поздняя инициализация в AppDelegate** — `setApiKey` стоял перед `return super.application`, уже после `startReactNative` (исправлено в `withYandexMapKitKey.js` — блок переносится в начало `didFinishLaunchingWithOptions`).
+3. **Нет `EXPO_PUBLIC_YANDEX_MAPKIT_API_KEY` в EAS** — в TestFlight уходит запасной ключ из `app.config.js`; он может быть привязан только к Android.
+4. **Старый IPA** — после правок AppDelegate нужен новый `eas build`, не повторная загрузка того же билда.
+
+Чаще всего ключ MapKit **не разрешён для Bundle ID** реальной сборки или не попал в EAS.
+
+| Вариант | iOS Bundle ID |
+|--------|----------------|
+| Клиент | `ru.onthewater.client` |
+| Владелец | `com.anonymous.onthewater.owner` |
+
+1. [developer.tech.yandex.ru](https://developer.tech.yandex.ru) → ключ → **MapKit Mobile SDK**.
+2. Ограничение **iOS** = `ru.onthewater.client` (для клиента). Подождать ~15 мин.
+3. [Expo → Environment variables](https://expo.dev): `EXPO_PUBLIC_YANDEX_MAPKIT_API_KEY` для профиля production.
+4. **Новый** EAS-билд (не тот же IPA без пересборки после правок AppDelegate):
 
 ```bash
 cd mobile
 npx eas-cli build --platform ios --profile production-client
 ```
-
-Плагин `plugins/withYandexMapKitKey.js` при prebuild прописывает ключ в AndroidManifest и **AppDelegate** (iOS). JS-инициализация: `src/shared/yamapInit.js`.

@@ -36,7 +36,12 @@ export function ensureYamapInitialized() {
         return true;
     })().catch((err) => {
         initPromise = null;
-        console.warn('[YaMap] init failed:', err?.message || err);
+        const bundleId = Constants.expoConfig?.ios?.bundleIdentifier || Constants.expoConfig?.android?.package;
+        console.warn(
+            '[YaMap] init failed:',
+            err?.message || err,
+            Platform.OS === 'ios' ? `(iOS bundle: ${bundleId || '?'})` : ''
+        );
         return false;
     });
 

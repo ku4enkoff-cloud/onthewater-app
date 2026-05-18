@@ -1,10 +1,11 @@
 const fs = require('fs');
 const path = require('path');
-const { withAndroidManifest, withDangerousMod } = require('@expo/config-plugins');
+const { withAndroidManifest, withDangerousMod, withInfoPlist } = require('@expo/config-plugins');
 const { getMainApplication, addMetaDataItemToMainApplication } = require('@expo/config-plugins/build/android/Manifest');
 
 const YANDEX_MAPS_API_KEY_META = 'com.yandex.maps.apikey';
 const MAPKIT_INIT_TAG = '@boatrent/yandex-mapkit-init';
+const MAPKIT_INFOPLIST_KEY = 'MAPKIT_API_KEY';
 
 function getMapKitApiKey(config) {
   return (config.extra?.yandexMapkitApiKey || '').trim();
@@ -14,9 +15,17 @@ function escapeNativeString(value) {
   return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
+function stripExistingMapKitBlock(contents) {
+  const blockRe = new RegExp(
+    `\\s*// ${MAPKIT_INIT_TAG}[\\s\\S]*?(?=\\n\\s*(?:let |var |#if |return |@))`,
+    'm'
+  );
+  return contents.replace(blockRe, '\n');
+}
+
 function patchObjCAppDelegate(contents, apiKey) {
   const key = escapeNativeString(apiKey);
-  if (contents.includes(MAPKIT_INIT_TAG)) return contents;
+  contents = stripExistingMapKitBlock(contents);
 
   if (!contents.includes('#import <YandexMapsMobile/YMKMapKitFactory.h>')) {
     if (contents.includes('#import "AppDelegate.h"')) {
@@ -38,9 +47,13 @@ function patchObjCAppDelegate(contents, apiKey) {
   // ${MAPKIT_INIT_TAG}
   [YMKMapKit setLocale:@"ru_RU"];
   [YMKMapKit setApiKey:@"${key}"];
-  [YMKMapKit mapKit];
+  [[YMKMapKit sharedInstance] onStart];
 `;
 
+  const launchAnchor = /didFinishLaunchingWithOptions:[\s\S]*?\)\s*\{/;
+  if (launchAnchor.test(contents)) {
+    return contents.replace(launchAnchor, (match) => `${match}${block}`);
+  }
   if (contents.includes('return [super application:')) {
     return contents.replace('return [super application:', `${block}\n  return [super application:`);
   }
@@ -52,12 +65,11 @@ function patchObjCAppDelegate(contents, apiKey) {
 
 function patchSwiftAppDelegate(contents, apiKey) {
   const key = escapeNativeString(apiKey);
-  if (contents.includes(MAPKIT_INIT_TAG)) {
-    return contents.replace(
-      'YMKMapKit.setLocale(withLocale: "ru_RU")',
-      'YMKMapKit.setLocale("ru_RU")'
-    );
-  }
+  contents = stripExistingMapKitBlock(contents);
+  contents = contents
+    .replace('YMKMapKit.setLocale(withLocale: "ru_RU")', 'YMKMapKit.setLocale("ru_RU")')
+    .replace('_ = YMKMapKit.sharedInstance()', 'YMKMapKit.sharedInstance().onStart()')
+    .replace('[YMKMapKit mapKit];', '[[YMKMapKit sharedInstance] onStart];');
 
   if (!contents.includes('import YandexMapsMobile')) {
     const importAnchor = contents.includes('import Expo') ? 'import Expo' : 'import UIKit';
@@ -68,9 +80,14 @@ function patchSwiftAppDelegate(contents, apiKey) {
     // ${MAPKIT_INIT_TAG}
     YMKMapKit.setLocale("ru_RU")
     YMKMapKit.setApiKey("${key}")
-    _ = YMKMapKit.sharedInstance()
+    YMKMapKit.sharedInstance().onStart()
 `;
 
+  // Важно: в Expo SDK 54 setApiKey должен быть ДО factory.startReactNative(), не перед return super.
+  const launchAnchor = /didFinishLaunchingWithOptions[\s\S]*?\)\s*->\s*Bool\s*\{/;
+  if (launchAnchor.test(contents)) {
+    return contents.replace(launchAnchor, (match) => `${match}${block}`);
+  }
   if (contents.includes('return super.application(application, didFinishLaunchingWithOptions: launchOptions)')) {
     return contents.replace(
       'return super.application(application, didFinishLaunchingWithOptions: launchOptions)',
@@ -112,6 +129,16 @@ function findAppDelegateFiles(iosRoot) {
   return candidates;
 }
 
+function withYandexMapKitInfoPlist(config) {
+  return withInfoPlist(config, (cfg) => {
+    const apiKey = getMapKitApiKey(cfg);
+    if (apiKey) {
+      cfg.modResults[MAPKIT_INFOPLIST_KEY] = apiKey;
+    }
+    return cfg;
+  });
+}
+
 function withYandexMapKitIos(config) {
   return withDangerousMod(config, [
     'ios',
@@ -142,6 +169,7 @@ function withYandexMapKitAndroid(config) {
 }
 
 function withYandexMapKitKey(config) {
+  config = withYandexMapKitInfoPlist(config);
   config = withYandexMapKitAndroid(config);
   config = withYandexMapKitIos(config);
   return config;
