@@ -5,6 +5,7 @@ import { ChevronLeft } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 import { isYamapNativeAvailable } from '../../shared/yamapNative';
+import { ensureYamapInitialized } from '../../shared/yamapInit';
 
 const CITY_COORDS = {
     'Москва': { lat: 55.751244, lon: 37.618423 },
@@ -34,6 +35,16 @@ export default function CityMapScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
     const { cityName, useMyLocation, boats = [] } = route.params || {};
     const [center, setCenter] = useState(DEFAULT_COORDS);
+    const [mapReady, setMapReady] = useState(false);
+
+    useEffect(() => {
+        if (!isMapAvailable || !YaMap) return;
+        let cancelled = false;
+        ensureYamapInitialized().then((ok) => {
+            if (!cancelled && ok) setMapReady(true);
+        });
+        return () => { cancelled = true; };
+    }, []);
 
     useEffect(() => {
         if (useMyLocation) {
@@ -74,6 +85,14 @@ export default function CityMapScreen({ route, navigation }) {
     }
 
     const markers = boats.filter((b) => b.lat != null && b.lng != null);
+
+    if (!mapReady) {
+        return (
+            <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
+                <ActivityIndicator size="large" color={theme.colors.waveDark} />
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>

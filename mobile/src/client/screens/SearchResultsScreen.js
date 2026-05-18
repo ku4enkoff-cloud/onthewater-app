@@ -28,6 +28,7 @@ import DurationFilterModal from '../components/DurationFilterModal';
 import BoatTypeFilterModal from '../components/BoatTypeFilterModal';
 import LocationDateModal from '../components/LocationDateModal';
 import { isYamapNativeAvailable } from '../../shared/yamapNative';
+import { ensureYamapInitialized } from '../../shared/yamapInit';
 
 const NAVY = '#1B365D';
 
@@ -196,6 +197,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     const [filters, setFilters] = useState(DEFAULT_FILTERS);
     const [mapModalVisible, setMapModalVisible] = useState(false);
     const [mapViewReady, setMapViewReady] = useState(false);
+    const [mapInitFailed, setMapInitFailed] = useState(false);
     const [mapBoats, setMapBoats] = useState([]);
     const [mapLoading, setMapLoading] = useState(false);
     const [mapCenter, setMapCenter] = useState(DEFAULT_MAP_CENTER);
@@ -345,10 +347,25 @@ export default function SearchResultsScreen({ route, navigation }) {
         if (!mapModalVisible) {
             mapModalOpenRef.current = false;
             setMapViewReady(false);
+            setMapInitFailed(false);
             return;
         }
-        const t = setTimeout(() => setMapViewReady(true), 400);
-        return () => clearTimeout(t);
+        let cancelled = false;
+        let timer;
+        ensureYamapInitialized().then((ok) => {
+            if (cancelled) return;
+            if (!ok) {
+                setMapInitFailed(true);
+                return;
+            }
+            timer = setTimeout(() => {
+                if (!cancelled) setMapViewReady(true);
+            }, 400);
+        });
+        return () => {
+            cancelled = true;
+            if (timer) clearTimeout(timer);
+        };
     }, [mapModalVisible]);
 
     useEffect(() => {
@@ -994,7 +1011,13 @@ export default function SearchResultsScreen({ route, navigation }) {
                             </View>
                         ) : (
                             <View style={styles.mapContainer}>
-                                {!mapViewReady ? (
+                                {mapInitFailed ? (
+                                    <View style={styles.mapLoadingOverlay}>
+                                        <Text style={styles.mapPlaceholderText}>
+                                            Не удалось загрузить карту. Проверьте ключ MapKit в кабинете Яндекса для Bundle ID ru.onthewater.client и пересоберите приложение.
+                                        </Text>
+                                    </View>
+                                ) : !mapViewReady ? (
                                     <View style={styles.mapLoadingOverlay}>
                                         <ActivityIndicator size="large" color={NAVY} />
                                         <Text style={styles.mapPlaceholderText}>Загрузка карты...</Text>

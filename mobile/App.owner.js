@@ -1,8 +1,7 @@
 import React, { useContext, useState, useEffect, useCallback } from 'react';
-import { Platform, View, ActivityIndicator, Text } from 'react-native';
+import { View, ActivityIndicator, Text } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import Constants from 'expo-constants';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
 import {
@@ -21,15 +20,11 @@ import OwnerAuthStack from './src/owner/OwnerAuthStack';
 import OwnerNavigator from './src/owner/navigation/OwnerNavigator';
 import { useRegisterPushToken } from './src/client/hooks/useRegisterPushToken';
 import { usePushNotificationNavigation } from './src/shared/hooks/usePushNotificationNavigation';
+import { ensureYamapInitialized } from './src/shared/yamapInit';
 
 SplashScreen.preventAutoHideAsync();
 
-if ((Platform.OS === 'android' || Platform.OS === 'ios') && Constants.appOwnership !== 'expo') {
-  try {
-    const { YamapInstance } = require('react-native-yamap-plus');
-    YamapInstance.init('84448445-01d9-454b-8398-9adaaf19ad61');
-  } catch (_) {}
-}
+ensureYamapInitialized();
 
 class ErrorBoundary extends React.Component {
   state = { error: null };

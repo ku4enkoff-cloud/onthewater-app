@@ -30,7 +30,9 @@ function getAndroidVersionCode() {
 export default {
   expo: {
     name: isOwner ? 'ONTHEWATER для владельцев' : 'ONTHEWATER',
-    slug: isOwner ? 'boatrent-owner' : 'onthewater', // для EAS (projectId) должен совпадать с slug проекта на expo.dev
+    // Один slug для всех вариантов — должен совпадать с проектом на expo.dev (extra.eas.projectId).
+    // Имя приложения для пользователя задаётся через expo.name, Bundle ID — через ios.bundleIdentifier / android.package.
+    slug: 'onthewater',
     owner: 'sadfary',
     version: '2.0.1',
     // default — без жёсткой блокировки ориентации (требование Google Play для Android 16 и планшетов).
@@ -44,8 +46,12 @@ export default {
     },
     ios: {
       supportsTablet: true,
+      // Должен совпадать с App ID в Apple Developer и записью в App Store Connect (owner ≠ client).
+      bundleIdentifier: isOwner ? 'com.anonymous.onthewater.owner' : 'ru.onthewater.client',
       infoPlist: {
         LSApplicationQueriesSchemes: ['yandexmaps', 'yandexnavi'],
+        // Экспортное соответствие (Apple): false — только стандартное HTTPS/TLS; при собственном шифровании смените на true и пройдите документы в ASC.
+        ITSAppUsesNonExemptEncryption: false,
       },
     },
     android: {
@@ -132,6 +138,8 @@ export default {
     @com.facebook.yoga.annotations.DoNotStrip *;
 }
 -dontwarn okio.**
+-keep class com.yandex.** { *; }
+-dontwarn com.yandex.**
 -keep class expo.modules.** { *; }
 `.trim(),
             // useLegacyPackaging: false — по умолчанию; современная упаковка .so нужна для 16 КБ.

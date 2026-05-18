@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 5.0.0"
+    "version": ">= 5.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -14,8 +15,17 @@
       }
     },
     "production": {
+      "env": {
+        "EXPO_PUBLIC_APP_VARIANT": "client"
+      },
       "android": {
         "buildType": "apk"
+      }
+    },
+    "production-client": {
+      "extends": "production",
+      "env": {
+        "EXPO_PUBLIC_APP_VARIANT": "client"
       }
     },
     "production-owner": {

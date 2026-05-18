@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useCallback } from 'react';
-import { Platform, View, Text, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -13,7 +13,6 @@ import {
     Jost_700Bold,
 } from '@expo-google-fonts/jost';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import Constants from 'expo-constants';
 import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { AuthProvider, AuthContext } from './src/shared/context/AuthContext';
 import { FavoritesProvider } from './src/shared/context/FavoritesContext';
@@ -24,6 +23,7 @@ import ClientNavigator from './src/client/navigation/ClientNavigator';
 import OnboardingScreen from './src/client/screens/OnboardingScreen';
 import { useRegisterPushToken } from './src/client/hooks/useRegisterPushToken';
 import { usePushNotificationNavigation } from './src/shared/hooks/usePushNotificationNavigation';
+import { ensureYamapInitialized } from './src/shared/yamapInit';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -120,16 +120,7 @@ export default function App() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
 
   useEffect(() => {
-    if (Platform.OS !== 'android' && Platform.OS !== 'ios') return;
-    if (Constants.appOwnership === 'expo') return;
-    let cancelled = false;
-    try {
-      const { YANDEX_MAPKIT_API_KEY } = require('./src/shared/infrastructure/config');
-      const { YamapInstance } = require('react-native-yamap-plus');
-      const key = YANDEX_MAPKIT_API_KEY && String(YANDEX_MAPKIT_API_KEY).trim();
-      if (key && !cancelled) YamapInstance.init(key).catch((err) => { if (__DEV__) console.warn('[YaMap] init failed:', err?.message || err); });
-    } catch (_) {}
-    return () => { cancelled = true; };
+    ensureYamapInitialized();
   }, []);
 
   useEffect(() => {
