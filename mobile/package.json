@@ -17,6 +17,8 @@
     "android:bump-version-code:owner": "node scripts/bump-version-code.mjs owner",
     "prebuild:client": "npx cross-env EXPO_PUBLIC_APP_VARIANT=client expo prebuild --platform android --clean",
     "prebuild:owner": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner expo prebuild --platform android --clean",
+    "prebuild:owner:ios": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner expo prebuild --platform ios --clean",
+    "prebuild:client:ios": "npx cross-env EXPO_PUBLIC_APP_VARIANT=client expo prebuild --platform ios --clean",
     "ios": "expo run:ios",
     "ios:owner": "npx cross-env EXPO_PUBLIC_APP_VARIANT=owner expo run:ios",
     "web": "expo start --web",

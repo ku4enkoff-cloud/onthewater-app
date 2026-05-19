@@ -2,13 +2,66 @@
 
 Один репозиторий, два варианта сборки: **client** и **owner** (`EXPO_PUBLIC_APP_VARIANT`). Конфигурация: [app.config.js](./app.config.js).
 
+## iOS owner: сборка в Xcode (ошибка «No script URL provided»)
+
+Красный экран **No script URL provided** значит: нативное приложение запустилось, но **не нашло JS** (ни Metro, ни встроенный `main.jsbundle`).
+
+### Перед первой сборкой owner
+
+Папка `ios/` должна быть сгенерирована **для владельца**, не для клиента:
+
+```bash
+cd mobile
+npm run prebuild:owner:ios
+cd ios && pod install && cd ..
+open ios/*.xcworkspace
+```
+
+В Xcode проверьте **Bundle ID** = `ru.onthewater.owner` (General → Identity).
+
+### Debug в симуляторе (кнопка Run в Xcode)
+
+Нужен **Metro** с вариантом owner:
+
+**Терминал 1:**
+
+```bash
+cd mobile
+npm run start:owner
+```
+
+**Терминал 2** (или Xcode): схема **Debug**, затем Run (⌘R).
+
+Проще одной командой (Metro + сборка + установка):
+
+```bash
+cd mobile
+npm run ios:owner
+```
+
+### Release / Archive в Xcode
+
+Схема **Release** без Metro **не подхватит** JS, если бандл не собран. Варианты:
+
+- **EAS (рекомендуется):** `npx eas-cli build --platform ios --profile production-owner`
+- **Локально:** `npm run ios:owner` с конфигурацией Release, либо перед Archive:
+
+```bash
+cd mobile
+npx cross-env EXPO_PUBLIC_APP_VARIANT=owner npx expo export:embed --platform ios
+```
+
+и затем Archive в Xcode.
+
+---
+
 ## iOS: сборка приложения владельца для App Store (EAS)
 
 ### Bundle ID
 
 | Вариант | `ios.bundleIdentifier` | Android `package` |
 |--------|-------------------------|-------------------|
-| Владелец | `com.anonymous.onthewater.owner` | `com.anonymous.onthewater.owner` |
+| Владелец | `ru.onthewater.owner` | `com.anonymous.onthewater.owner` |
 | Клиент | `ru.onthewater.client` | `com.anonymous.onthewater` |
 
 В [Apple Developer → Identifiers](https://developer.apple.com/account/resources/identifiers/list) создайте **App ID** с тем же Bundle ID, что для owner в `app.config.js`.
@@ -16,7 +69,7 @@
 ### App Store Connect (вручную)
 
 1. [App Store Connect](https://appstoreconnect.apple.com/) → «Мои приложения» → **+** → новое приложение.
-2. Укажите тот же **Bundle ID**, что зарегистрирован в Developer (например `com.anonymous.onthewater.owner`).
+2. Укажите тот же **Bundle ID**, что зарегистрирован в Developer (например `ru.onthewater.owner`).
 3. После загрузки билда заполните метаданные, скриншоты, политику конфиденциальности и отправьте на ревью.
 
 ### Переменные окружения для релиза владельца
@@ -130,10 +183,10 @@ await YamapInstance.init(API_KEY);
 | Вариант | iOS Bundle ID |
 |--------|----------------|
 | Клиент | `ru.onthewater.client` |
-| Владелец | `com.anonymous.onthewater.owner` |
+| Владелец | `ru.onthewater.owner` |
 
 1. [developer.tech.yandex.ru](https://developer.tech.yandex.ru) → ключ → **MapKit Mobile SDK**.
-2. Ограничение **iOS** = `ru.onthewater.client` (для клиента). Подождать ~15 мин.
+2. Ограничение **iOS** = `ru.onthewater.client` (клиент) или `ru.onthewater.owner` (владелец). Подождать ~15 мин.
 3. [Expo → Environment variables](https://expo.dev): `EXPO_PUBLIC_YANDEX_MAPKIT_API_KEY` для профиля production.
 4. **Новый** EAS-билд (не тот же IPA без пересборки после правок AppDelegate):
 

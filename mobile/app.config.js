@@ -47,7 +47,7 @@ export default {
     ios: {
       supportsTablet: true,
       // Должен совпадать с App ID в Apple Developer и записью в App Store Connect (owner ≠ client).
-      bundleIdentifier: isOwner ? 'com.anonymous.onthewater.owner' : 'ru.onthewater.client',
+      bundleIdentifier: isOwner ? 'ru.onthewater.owner' : 'ru.onthewater.client',
       infoPlist: {
         LSApplicationQueriesSchemes: ['yandexmaps', 'yandexnavi'],
         // Экспортное соответствие (Apple): false — только стандартное HTTPS/TLS; при собственном шифровании смените на true и пройдите документы в ASC.
