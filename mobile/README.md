@@ -6,9 +6,16 @@
 
 Красный экран **No script URL provided** значит: нативное приложение запустилось, но **не нашло JS** (ни Metro, ни встроенный `main.jsbundle`).
 
-### Перед первой сборкой owner
+### Почему в Xcode открывается клиент, а не owner
 
-Папка `ios/` должна быть сгенерирована **для владельца**, не для клиента:
+Две причины:
+
+1. **Папка `ios/` собрана под клиента** (`prebuild:client:ios` или старый prebuild) — в нативном проекте зашито `extra.appVariant: client`, другое имя, иконка, Bundle ID `ru.onthewater.client`.
+2. **Metro** — даже при `start:owner` раньше в коде приоритет был у значения из prebuild; сейчас в dev побеждает `EXPO_PUBLIC_APP_VARIANT` из Metro (см. `src/shared/appVariant.js`).
+
+Для **релиза и Archive** всё равно нужен **`prebuild:owner:ios`**, иначе Bundle ID и нативный конфиг останутся клиентскими.
+
+### Перед сборкой owner в Xcode
 
 ```bash
 cd mobile
@@ -17,7 +24,7 @@ cd ios && pod install && cd ..
 open ios/*.xcworkspace
 ```
 
-В Xcode проверьте **Bundle ID** = `ru.onthewater.owner` (General → Identity).
+В Xcode: **Bundle ID** = `ru.onthewater.owner`, имя приложения — «ONTHEWATER для владельцев».
 
 ### Debug в симуляторе (кнопка Run в Xcode)
 

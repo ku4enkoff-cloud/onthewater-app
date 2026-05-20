@@ -10,16 +10,16 @@ import {
     Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Constants from 'expo-constants';
 import { api } from '../../shared/infrastructure/api';
 import { theme } from '../../shared/theme';
+import { getAppVariant } from '../../shared/appVariant';
 
 function normalizeEmail(v) {
     return String(v || '').trim().toLowerCase();
 }
 
 export default function ForgotPasswordScreen({ navigation }) {
-    const appVariant = Constants.expoConfig?.extra?.appVariant || process.env.EXPO_PUBLIC_APP_VARIANT || 'client';
+    const appVariant = getAppVariant();
     const [step, setStep] = useState('request'); // request -> reset
 
     const [email, setEmail] = useState('');

@@ -1,11 +1,11 @@
 import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Constants from 'expo-constants';
 import { AuthContext } from '../../shared/context/AuthContext';
 import { theme } from '../../shared/theme';
+import { getAppVariant } from '../../shared/appVariant';
 
-const appVariant = Constants.expoConfig?.extra?.appVariant || process.env.EXPO_PUBLIC_APP_VARIANT || 'client';
+const appVariant = getAppVariant();
 
 /** Маска российского номера: только цифры, формат +7 (999) 999-99-99 */
 function formatPhoneRu(value) {
