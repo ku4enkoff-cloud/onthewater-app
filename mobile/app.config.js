@@ -86,6 +86,7 @@ export default {
     permissions: ['android.permission.RECORD_AUDIO'],
     web: { favicon: './assets/favicon.png' },
     plugins: [
+      './plugins/withFixAppIcons.js',
       './plugins/withAndroidSigning.js',
       './plugins/withAndroidOpenGlPlayCompat.js',
       './plugins/withYandexMapKitKey.js',

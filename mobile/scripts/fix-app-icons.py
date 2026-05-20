@@ -2,7 +2,8 @@
 Full-bleed иконки для iOS/Android: градиент на весь квадрат 1024×1024, лодка поверх.
 Исходники со скруглением и чёрными/белыми полями не подходят — iOS сам скругляет углы.
 
-Запуск из mobile/: python scripts/fix-app-icons.py
+Запускается автоматически при expo prebuild (плагин withFixAppIcons).
+Вручную: npm run icons:fix  или  python scripts/fix-app-icons.py
 """
 from __future__ import annotations
 
