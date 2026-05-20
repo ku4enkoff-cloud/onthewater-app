@@ -297,7 +297,7 @@ export default function SearchScreen({ navigation }) {
     const ListHeader = () => (
         <>
             {/* Hero: full-width image with text overlay (Boatsetter style) */}
-            <View style={[styles.heroWrap, { paddingTop: insets.top }]}>
+            <View style={[styles.heroWrap, { paddingTop: insets.top + 12 }]}>
                 <Image
                     source={HERO_IMAGE}
                     style={styles.heroImage}
@@ -308,13 +308,11 @@ export default function SearchScreen({ navigation }) {
                     style={styles.heroGradient}
                     pointerEvents="none"
                 />
-                <View style={[styles.heroContent, { top: insets.top + 12 }]}>
+                <View style={styles.heroInner}>
                     <Text style={styles.heroTitle}>Бронируй, плыви, отдыхай</Text>
                     <Text style={styles.heroSubtitle}>
                         Аренда катеров, прогулки с капитаном{'\n'}и незабываемые впечатления на воде.
                     </Text>
-                </View>
-                <View style={styles.searchBarWrap}>
                     <TouchableOpacity
                         style={styles.searchBar}
                         onPress={() => setLocationModalVisible(true)}
@@ -448,11 +446,12 @@ const styles = StyleSheet.create({
     },
     /* ---- Hero (full-width image + overlay text) ---- */
     heroWrap: {
-        height: 380,
+        minHeight: 300,
         marginHorizontal: -theme.spacing.lg,
         position: 'relative',
         overflow: 'hidden',
         marginBottom: theme.spacing.sm,
+        paddingBottom: theme.spacing.lg,
     },
     heroImage: {
         ...StyleSheet.absoluteFillObject,
@@ -466,10 +465,9 @@ const styles = StyleSheet.create({
         right: 0,
         height: '55%',
     },
-    heroContent: {
-        position: 'absolute',
-        left: theme.spacing.lg,
-        right: theme.spacing.lg,
+    heroInner: {
+        paddingHorizontal: theme.spacing.lg,
+        zIndex: 1,
     },
     heroTitle: {
         fontSize: 24,
@@ -483,13 +481,7 @@ const styles = StyleSheet.create({
         fontFamily: theme.fonts.regular,
         color: NAVY,
         lineHeight: 22,
-    },
-    searchBarWrap: {
-        position: 'absolute',
-        bottom: 56,
-        left: theme.spacing.lg,
-        right: theme.spacing.lg,
-        alignItems: 'center',
+        marginBottom: 20,
     },
     searchBar: {
         flexDirection: 'row',
@@ -497,6 +489,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         width: '100%',
         maxWidth: 760,
+        alignSelf: 'center',
         paddingVertical: 16,
         paddingHorizontal: 20,
         borderRadius: 999,
