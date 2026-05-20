@@ -15,16 +15,27 @@
 
 Для **релиза и Archive** всё равно нужен **`prebuild:owner:ios`**, иначе Bundle ID и нативный конфиг останутся клиентскими.
 
-### Перед сборкой owner в Xcode
+### Перед сборкой owner в Xcode (обязательно)
+
+Папку `ios/` **нельзя** переиспользовать от клиента — только пересоздать:
 
 ```bash
 cd mobile
 npm run prebuild:owner:ios
 cd ios && pod install && cd ..
+npm run verify:ios:owner
 open ios/*.xcworkspace
 ```
 
-В Xcode: **Bundle ID** = `ru.onthewater.owner`, имя приложения — «ONTHEWATER для владельцев».
+Скрипт `verify:ios:owner` должен вывести **✓ Bundle ID … ru.onthewater.owner**. Если там `ru.onthewater.client` — в Xcode снова соберётся клиент.
+
+В Xcode: **Bundle ID** = `ru.onthewater.owner`, имя — «ONTHEWATER для владельцев».
+
+После запуска в Metro-логе (терминал `npm run start:owner`) ищите строку:
+
+`[ONTHEWATER] startup` → `variant: "owner"`, `applicationId: "ru.onthewater.owner"`.
+
+Если `applicationId` = `ru.onthewater.client` — на симуляторе установлен **другой** билд; удалите приложение ONTHEWATER с экрана и Run снова.
 
 ### Debug в симуляторе (кнопка Run в Xcode)
 
