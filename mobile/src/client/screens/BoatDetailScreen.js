@@ -1435,7 +1435,13 @@ export default function BoatDetailScreen({ route, navigation }) {
             </View>
 
             {/* ============ BOOKING MODAL ============ */}
-            <Modal visible={bookingVisible} animationType="slide" transparent onRequestClose={() => setBookingVisible(false)}>
+            <Modal
+                visible={bookingVisible}
+                animationType="slide"
+                transparent
+                presentationStyle="overFullScreen"
+                onRequestClose={() => setBookingVisible(false)}
+            >
                 <View style={[bk.overlay, isTabletLandscape && bk.overlayTabletLandscape]}>
                     <View style={[bk.sheet, isTabletLandscape && bk.sheetTabletLandscape, { paddingBottom: insets.bottom + 16 }]}>
                         {/* Header */}
@@ -1666,7 +1672,13 @@ export default function BoatDetailScreen({ route, navigation }) {
             </Modal>
 
             {/* ============ TIME PICKER MODAL ============ */}
-            <Modal visible={bookShowTimePicker} animationType="slide" transparent onRequestClose={() => setBookShowTimePicker(false)}>
+            <Modal
+                visible={bookShowTimePicker}
+                animationType="slide"
+                transparent
+                presentationStyle="overFullScreen"
+                onRequestClose={() => setBookShowTimePicker(false)}
+            >
                 <View style={[tp.overlay, isTabletLandscape && tp.overlayTabletLandscape]}>
                     <View style={[tp.sheet, isTabletLandscape && tp.sheetTabletLandscape, { paddingBottom: insets.bottom + 16 }]}>
                         <View style={tp.header}>
