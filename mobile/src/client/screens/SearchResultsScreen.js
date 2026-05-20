@@ -173,6 +173,62 @@ const getBoatAmenities = (boat) => {
     return [];
 };
 
+/** Те же фильтры, что и для списка — карта должна показывать то же количество катеров. */
+function applyBoatFilters(list, filters, priceRange) {
+    let result = [...list];
+    const { priceLow, priceHigh, passengers, captain } = filters;
+    if (priceLow > priceRange.min || priceHigh < priceRange.max) {
+        result = result.filter((b) => {
+            const p = filters.duration
+                ? (getExactPriceForDuration(b, filters.duration) ?? 0)
+                : (Number(b.price_per_hour) || 0);
+            return p >= priceLow && p <= priceHigh;
+        });
+    }
+    if (passengers > 1) {
+        result = result.filter((b) => (Number(b.capacity) || 0) >= passengers);
+    }
+    if (filters.duration) {
+        result = result.filter((b) => getExactPriceForDuration(b, filters.duration) != null);
+    }
+    if (Array.isArray(filters.waterSports) && filters.waterSports.length > 0) {
+        const selected = filters.waterSports.map((s) => String(s || '').trim().toLowerCase()).filter(Boolean);
+        result = result.filter((b) => {
+            const am = getBoatAmenities(b).map((s) => s.toLowerCase());
+            return selected.some((s) => am.includes(s));
+        });
+    }
+    if (captain === 'С капитаном') {
+        result = result.filter((b) => b.captain_included);
+    } else if (captain === 'Без капитана') {
+        result = result.filter((b) => !b.captain_included);
+    }
+    if (filters.boatTypeId || filters.boatTypeName) {
+        const byName = (filters.boatTypeName || '').trim();
+        const typeIdRaw = String(filters.boatTypeId || '');
+        const typeIdPart = typeIdRaw.includes('|') ? typeIdRaw.split('|')[0] : typeIdRaw;
+        result = result.filter((b) => {
+            if (byName) {
+                return (b.type_name || '').toLowerCase() === byName.toLowerCase();
+            }
+            if (typeIdPart) return String(b.type_id) === typeIdPart;
+            return false;
+        });
+    }
+    return result;
+}
+
+function dedupeBoatsById(list) {
+    const seen = new Set();
+    return list.filter((b) => {
+        if (b.id == null) return true;
+        const id = String(b.id);
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
+    });
+}
+
 export default function SearchResultsScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
     const { width } = useWindowDimensions();
@@ -266,7 +322,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                         (boatTypeName && (b.type_name || '').toLowerCase() === (boatTypeName || '').toLowerCase()),
                 );
             }
-            setAllBoats(filtered);
+            setAllBoats(dedupeBoatsById(filtered));
         } catch (e) {
             console.log('SearchResults fetch error', e);
             setAllBoats([]);
@@ -278,6 +334,21 @@ export default function SearchResultsScreen({ route, navigation }) {
     useEffect(() => {
         fetchBoats();
     }, [fetchBoats]);
+
+    const priceRange = useMemo(() => {
+        const prices = allBoats
+            .map((b) => Number(b.price_per_hour) || 0)
+            .filter((p) => p > 0);
+        if (prices.length === 0) return { min: 0, max: 50000 };
+        const min = Math.min(...prices);
+        const max = Math.max(...prices);
+        return { min, max: max > min ? max : min + 1000 };
+    }, [allBoats]);
+
+    const boats = useMemo(
+        () => applyBoatFilters(allBoats, filters, priceRange),
+        [allBoats, filters, priceRange.min, priceRange.max],
+    );
 
     const fetchBoatsForMap = useCallback(async (opts = {}) => {
         const { lat, lng, cityFilter = null, regionFilter = null } = opts;
@@ -294,13 +365,15 @@ export default function SearchResultsScreen({ route, navigation }) {
                 const res = await api.get('/boats', { params: { lat, lng, radius: 50 } });
                 list = Array.isArray(res.data) ? res.data : [];
             }
-            if (mapModalOpenRef.current) setMapBoats(list);
+            if (mapModalOpenRef.current) {
+                setMapBoats(applyBoatFilters(list, filters, priceRange));
+            }
         } catch (_) {
             if (mapModalOpenRef.current) setMapBoats([]);
         } finally {
             if (mapModalOpenRef.current) setMapLoading(false);
         }
-    }, []);
+    }, [filters, priceRange]);
 
     const openMapModal = useCallback(() => {
         let center;
@@ -370,18 +443,19 @@ export default function SearchResultsScreen({ route, navigation }) {
 
     useEffect(() => {
         if (!mapModalVisible || !mapViewReady || !ClusteredYamap || !mapRef.current) return;
+
+        // Для поиска по городу/региону — те же катера, что в списке (без повторной загрузки без фильтров).
+        if (cityName && !useMyLocation) {
+            setMapBoats(boats);
+            return;
+        }
+
         const doFetch = (opts) => {
             lastMapCenterRef.current = opts.lat != null && opts.lng != null ? { lat: opts.lat, lon: opts.lng } : lastMapCenterRef.current;
             fetchBoatsForMap(opts);
         };
-        if (cityName && isRegion(cityName)) {
-            doFetch({ regionFilter: cityName });
-            return;
-        }
         if (useMyLocation && userLocationRef.current) {
             doFetch({ lat: userLocationRef.current.lat, lng: userLocationRef.current.lon });
-        } else if (cityName) {
-            doFetch({ cityFilter: cityName });
         } else {
             doFetch({ lat: mapCenter.lat, lng: mapCenter.lon });
         }
@@ -397,13 +471,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                     const same = last && Math.abs(last.lat - lat) < 0.01 && Math.abs(last.lon - lon) < 0.01;
                     if (!same) {
                         lastMapCenterRef.current = { lat, lon };
-                        if (useMyLocation) {
-                            fetchBoatsForMap({ lat, lng: lon });
-                        } else if (cityName) {
-                            fetchBoatsForMap({ cityFilter: cityName });
-                        } else {
-                            fetchBoatsForMap({ lat, lng: lon });
-                        }
+                        fetchBoatsForMap({ lat, lng: lon });
                     }
                 });
             } catch (_) {}
@@ -413,24 +481,33 @@ export default function SearchResultsScreen({ route, navigation }) {
         return () => {
             if (mapPollRef.current) clearInterval(mapPollRef.current);
         };
-    }, [mapModalVisible, mapViewReady, fetchBoatsForMap, cityName, useMyLocation, mapCenter]);
+    }, [mapModalVisible, mapViewReady, fetchBoatsForMap, cityName, useMyLocation, mapCenter, boats]);
+
+    useEffect(() => {
+        if (!mapModalVisible || mapClosing) return;
+        if (cityName && !useMyLocation) {
+            setMapBoats(boats);
+        }
+    }, [mapModalVisible, mapClosing, boats, cityName, useMyLocation]);
 
     const clusteredMarkersData = useMemo(() => {
         if (mapClosing) return [];
+        const seen = new Set();
         return mapBoats
-            .filter((b) => b.lat != null && b.lng != null)
-            .map((b) => ({ point: { lat: b.lat, lon: b.lng }, data: b }));
+            .filter((b) => {
+                const lat = Number(b.lat);
+                const lon = Number(b.lng);
+                if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
+                const id = b.id != null ? String(b.id) : null;
+                if (id && seen.has(id)) return false;
+                if (id) seen.add(id);
+                return true;
+            })
+            .map((b) => ({
+                point: { lat: Number(b.lat), lon: Number(b.lng) },
+                data: b,
+            }));
     }, [mapBoats, mapClosing]);
-
-    const priceRange = useMemo(() => {
-        const prices = allBoats
-            .map((b) => Number(b.price_per_hour) || 0)
-            .filter((p) => p > 0);
-        if (prices.length === 0) return { min: 0, max: 50000 };
-        const min = Math.min(...prices);
-        const max = Math.max(...prices);
-        return { min, max: max > min ? max : min + 1000 };
-    }, [allBoats]);
 
     const maxPassengers = useMemo(() => {
         const caps = allBoats.map((b) => Number(b.capacity) || 0).filter((c) => c > 0);
@@ -499,51 +576,6 @@ export default function SearchResultsScreen({ route, navigation }) {
             return prev;
         });
     }, [priceRange.min, priceRange.max]);
-
-    const boats = useMemo(() => {
-        let list = [...allBoats];
-        const { priceLow, priceHigh, passengers, captain } = filters;
-        if (priceLow > priceRange.min || priceHigh < priceRange.max) {
-            list = list.filter((b) => {
-                const p = filters.duration
-                    ? (getExactPriceForDuration(b, filters.duration) ?? 0)
-                    : (Number(b.price_per_hour) || 0);
-                return p >= priceLow && p <= priceHigh;
-            });
-        }
-        if (passengers > 1) {
-            list = list.filter((b) => (Number(b.capacity) || 0) >= passengers);
-        }
-        if (filters.duration) {
-            list = list.filter((b) => getExactPriceForDuration(b, filters.duration) != null);
-        }
-        if (Array.isArray(filters.waterSports) && filters.waterSports.length > 0) {
-            const selected = filters.waterSports.map((s) => String(s || '').trim().toLowerCase()).filter(Boolean);
-            list = list.filter((b) => {
-                const am = getBoatAmenities(b).map((s) => s.toLowerCase());
-                return selected.some((s) => am.includes(s));
-            });
-        }
-        if (captain === 'С капитаном') {
-            list = list.filter((b) => b.captain_included);
-        } else if (captain === 'Без капитана') {
-            list = list.filter((b) => !b.captain_included);
-        }
-        if (filters.boatTypeId || filters.boatTypeName) {
-            const byName = (filters.boatTypeName || '').trim();
-            const typeIdRaw = String(filters.boatTypeId || '');
-            const typeIdPart = typeIdRaw.includes('|') ? typeIdRaw.split('|')[0] : typeIdRaw;
-            list = list.filter((b) => {
-                // При выборе типа по имени — фильтруем только по названию (type_id может совпадать у разных типов)
-                if (byName) {
-                    return (b.type_name || '').toLowerCase() === byName.toLowerCase();
-                }
-                if (typeIdPart) return String(b.type_id) === typeIdPart;
-                return false;
-            });
-        }
-        return list;
-    }, [allBoats, filters, priceRange.min, priceRange.max]);
 
     const isPriceFilterActive = filters.priceLow > priceRange.min || filters.priceHigh < priceRange.max;
     const isPassengersFilterActive = filters.passengers !== 1;
