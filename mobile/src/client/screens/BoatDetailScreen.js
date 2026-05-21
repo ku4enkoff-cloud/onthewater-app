@@ -1440,13 +1440,22 @@ export default function BoatDetailScreen({ route, navigation }) {
                 animationType="slide"
                 transparent
                 presentationStyle="overFullScreen"
-                onRequestClose={() => setBookingVisible(false)}
+                onRequestClose={() => {
+                    setBookShowTimePicker(false);
+                    setBookingVisible(false);
+                }}
             >
                 <View style={[bk.overlay, isTabletLandscape && bk.overlayTabletLandscape]}>
                     <View style={[bk.sheet, isTabletLandscape && bk.sheetTabletLandscape, { paddingBottom: insets.bottom + 16 }]}>
                         {/* Header */}
                         <View style={bk.header}>
-                            <TouchableOpacity onPress={() => setBookingVisible(false)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setBookShowTimePicker(false);
+                                    setBookingVisible(false);
+                                }}
+                                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                            >
                                 <ChevronLeft size={24} color={NAVY} />
                             </TouchableOpacity>
                             <Text style={bk.headerTitle}>Запрос на бронирование</Text>
@@ -1615,6 +1624,84 @@ export default function BoatDetailScreen({ route, navigation }) {
                                 <Clock size={18} color={theme.colors.gray400} />
                             </TouchableOpacity>
 
+                            {/* Выбор времени — тот же вложенный Modal, что и календарь (работает на iOS) */}
+                            {bookShowTimePicker && (
+                                <Modal visible transparent animationType="fade">
+                                    <View style={cal.overlay}>
+                                        <View style={cal.sheet}>
+                                            <View style={cal.header}>
+                                                <TouchableOpacity onPress={() => setBookShowTimePicker(false)} hitSlop={12}>
+                                                    <X size={22} color={NAVY} />
+                                                </TouchableOpacity>
+                                                <Text style={cal.headerTitle}>Время начала</Text>
+                                                <View style={{ width: 22 }} />
+                                            </View>
+                                            <View style={tp.hintInSheet}>
+                                                {busySlotsLoading ? (
+                                                    <ActivityIndicator size="small" color={NAVY} style={{ marginVertical: 4 }} />
+                                                ) : (
+                                                    <Text style={tp.hintText}>Доступное время — зелёным, недоступное — красным.</Text>
+                                                )}
+                                            </View>
+                                            <ScrollView
+                                                showsVerticalScrollIndicator={false}
+                                                style={tp.slotsScroll}
+                                                contentContainerStyle={tp.gridInSheet}
+                                            >
+                                                {TIME_SLOTS.map((slot) => {
+                                                    const inSchedule = getAvailableTimeSlotsBySchedule(boat, bookDate, bookHours).includes(slot);
+                                                    const now = new Date();
+                                                    const isToday = bookDate && toLocalDateKey(bookDate) === toLocalDateKey(now);
+                                                    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                                                    const isPast = isToday && slotToMinutes(slot) <= currentMinutes;
+                                                    const canStart = !isPast && inSchedule && isStartTimeValid(slot, bookHours, busyIntervals);
+                                                    const isSelected = pendingTime === slot;
+                                                    const disabled = !canStart;
+                                                    return (
+                                                        <TouchableOpacity
+                                                            key={slot}
+                                                            style={[
+                                                                tp.slot,
+                                                                isSelected && tp.slotSelected,
+                                                                !canStart && tp.slotUnavailable,
+                                                                canStart && !isSelected && tp.slotAvailable,
+                                                            ]}
+                                                            onPress={() => { if (canStart) setPendingTime(slot); }}
+                                                            disabled={disabled}
+                                                            activeOpacity={disabled ? 1 : 0.7}
+                                                        >
+                                                            <Text
+                                                                style={[
+                                                                    tp.slotText,
+                                                                    isSelected && tp.slotTextSelected,
+                                                                    !canStart && tp.slotTextUnavailable,
+                                                                    canStart && !isSelected && tp.slotTextAvailable,
+                                                                ]}
+                                                            >
+                                                                {slot}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    );
+                                                })}
+                                            </ScrollView>
+                                            <View style={tp.footerInSheet}>
+                                                <TouchableOpacity
+                                                    style={[tp.applyBtn, !pendingTime && tp.applyBtnDisabled]}
+                                                    onPress={() => {
+                                                        setBookTime(pendingTime);
+                                                        setBookShowTimePicker(false);
+                                                    }}
+                                                    disabled={!pendingTime}
+                                                    activeOpacity={0.9}
+                                                >
+                                                    <Text style={tp.applyBtnText}>ПРИМЕНИТЬ</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    </View>
+                                </Modal>
+                            )}
+
                             {/* Passengers stepper */}
                             <View style={bk.passengerRow}>
                                 <TouchableOpacity
@@ -1667,84 +1754,6 @@ export default function BoatDetailScreen({ route, navigation }) {
                         <TouchableOpacity style={successModal.btn} onPress={() => setBookingSuccessVisible(false)} activeOpacity={0.85}>
                             <Text style={successModal.btnText}>Понятно</Text>
                         </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* ============ TIME PICKER MODAL ============ */}
-            <Modal
-                visible={bookShowTimePicker}
-                animationType="slide"
-                transparent
-                presentationStyle="overFullScreen"
-                onRequestClose={() => setBookShowTimePicker(false)}
-            >
-                <View style={[tp.overlay, isTabletLandscape && tp.overlayTabletLandscape]}>
-                    <View style={[tp.sheet, isTabletLandscape && tp.sheetTabletLandscape, { paddingBottom: insets.bottom + 16 }]}>
-                        <View style={tp.header}>
-                            <TouchableOpacity onPress={() => setBookShowTimePicker(false)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                                <X size={22} color={NAVY} />
-                            </TouchableOpacity>
-                            <Text style={tp.headerTitle}>Время начала</Text>
-                            <View style={{ width: 22 }} />
-                        </View>
-                        <View style={tp.hint}>
-                            {busySlotsLoading ? (
-                                <ActivityIndicator size="small" color={NAVY} style={{ marginVertical: 4 }} />
-                            ) : (
-                                <Text style={tp.hintText}>Доступное время — зелёным, недоступное — красным.</Text>
-                            )}
-                        </View>
-                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tp.grid}>
-                            {TIME_SLOTS.map((slot) => {
-                                const inSchedule = getAvailableTimeSlotsBySchedule(boat, bookDate, bookHours).includes(slot);
-                                const now = new Date();
-                                const isToday = bookDate && toLocalDateKey(bookDate) === toLocalDateKey(now);
-                                const currentMinutes = now.getHours() * 60 + now.getMinutes();
-                                const isPast = isToday && slotToMinutes(slot) <= currentMinutes;
-                                const canStart = !isPast && inSchedule && isStartTimeValid(slot, bookHours, busyIntervals);
-                                const isSelected = pendingTime === slot;
-                                const disabled = !canStart;
-                                return (
-                                    <TouchableOpacity
-                                        key={slot}
-                                        style={[
-                                            tp.slot,
-                                            isSelected && tp.slotSelected,
-                                            !canStart && tp.slotUnavailable,
-                                            canStart && !isSelected && tp.slotAvailable,
-                                        ]}
-                                        onPress={() => { if (canStart) setPendingTime(slot); }}
-                                        disabled={disabled}
-                                        activeOpacity={disabled ? 1 : 0.7}
-                                    >
-                                        <Text
-                                            style={[
-                                                tp.slotText,
-                                                isSelected && tp.slotTextSelected,
-                                                !canStart && tp.slotTextUnavailable,
-                                                canStart && !isSelected && tp.slotTextAvailable,
-                                            ]}
-                                        >
-                                            {slot}
-                                        </Text>
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </ScrollView>
-                        <View style={tp.footer}>
-                            <TouchableOpacity
-                                style={[tp.applyBtn, !pendingTime && tp.applyBtnDisabled]}
-                                onPress={() => {
-                                    setBookTime(pendingTime);
-                                    setBookShowTimePicker(false);
-                                }}
-                                disabled={!pendingTime}
-                                activeOpacity={0.9}
-                            >
-                                <Text style={tp.applyBtnText}>ПРИМЕНИТЬ</Text>
-                            </TouchableOpacity>
-                        </View>
                     </View>
                 </View>
             </Modal>
@@ -2421,32 +2430,20 @@ const bk = StyleSheet.create({
 });
 
 const tp = StyleSheet.create({
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
-    overlayTabletLandscape: { justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 16 },
-    sheet: {
-        backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20,
-        paddingTop: 16, maxHeight: '80%',
-    },
-    sheetTabletLandscape: {
-        width: '100%',
-        maxWidth: 760,
-        alignSelf: 'center',
-        borderRadius: 20,
-        maxHeight: '90%',
-    },
-    header: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: 20, paddingBottom: 12,
-    },
-    headerTitle: { fontSize: 18, fontFamily: theme.fonts.bold, color: NAVY },
-    hint: {
-        backgroundColor: '#F0F4FA', marginHorizontal: 20, borderRadius: 10,
-        paddingVertical: 10, paddingHorizontal: 16, marginBottom: 12,
+    hintInSheet: {
+        backgroundColor: '#F0F4FA',
+        borderRadius: 10,
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        marginBottom: 12,
     },
     hintText: { fontSize: 13, fontFamily: theme.fonts.regular, color: '#5B6A82', textAlign: 'center' },
-    grid: {
-        flexDirection: 'row', flexWrap: 'wrap',
-        paddingHorizontal: 20, paddingBottom: 12, justifyContent: 'space-between',
+    slotsScroll: { maxHeight: 360 },
+    gridInSheet: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        paddingBottom: 8,
+        justifyContent: 'space-between',
     },
     slot: {
         width: '48%', paddingVertical: 14, borderRadius: 10,
@@ -2460,7 +2457,7 @@ const tp = StyleSheet.create({
     slotTextSelected: { fontFamily: theme.fonts.bold, color: NAVY },
     slotTextUnavailable: { color: '#DC2626', textDecorationLine: 'line-through' },
     slotTextAvailable: { color: '#047857', fontFamily: theme.fonts.semiBold },
-    footer: { paddingHorizontal: 20, paddingTop: 8 },
+    footerInSheet: { paddingTop: 8 },
     applyBtn: {
         backgroundColor: NAVY, borderRadius: 12, paddingVertical: 16,
         alignItems: 'center',

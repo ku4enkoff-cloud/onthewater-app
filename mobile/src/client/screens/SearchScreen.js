@@ -297,7 +297,7 @@ export default function SearchScreen({ navigation }) {
     const ListHeader = () => (
         <>
             {/* Hero: full-width image with text overlay (Boatsetter style) */}
-            <View style={[styles.heroWrap, { paddingTop: insets.top + 12 }]}>
+            <View style={[styles.heroWrap, { paddingTop: insets.top }]}>
                 <Image
                     source={HERO_IMAGE}
                     style={styles.heroImage}
@@ -308,11 +308,13 @@ export default function SearchScreen({ navigation }) {
                     style={styles.heroGradient}
                     pointerEvents="none"
                 />
-                <View style={styles.heroInner}>
+                <View style={[styles.heroContent, { top: insets.top + 12 }]}>
                     <Text style={styles.heroTitle}>Бронируй, плыви, отдыхай</Text>
                     <Text style={styles.heroSubtitle}>
                         Аренда катеров, прогулки с капитаном{'\n'}и незабываемые впечатления на воде.
                     </Text>
+                </View>
+                <View style={[styles.searchBarWrap, { top: insets.top + 118 }]}>
                     <TouchableOpacity
                         style={styles.searchBar}
                         onPress={() => setLocationModalVisible(true)}
@@ -446,12 +448,11 @@ const styles = StyleSheet.create({
     },
     /* ---- Hero (full-width image + overlay text) ---- */
     heroWrap: {
-        minHeight: 300,
+        height: 380,
         marginHorizontal: -theme.spacing.lg,
         position: 'relative',
         overflow: 'hidden',
         marginBottom: theme.spacing.sm,
-        paddingBottom: theme.spacing.lg,
     },
     heroImage: {
         ...StyleSheet.absoluteFillObject,
@@ -465,8 +466,10 @@ const styles = StyleSheet.create({
         right: 0,
         height: '55%',
     },
-    heroInner: {
-        paddingHorizontal: theme.spacing.lg,
+    heroContent: {
+        position: 'absolute',
+        left: theme.spacing.lg,
+        right: theme.spacing.lg,
         zIndex: 1,
     },
     heroTitle: {
@@ -481,7 +484,12 @@ const styles = StyleSheet.create({
         fontFamily: theme.fonts.regular,
         color: NAVY,
         lineHeight: 22,
-        marginBottom: 20,
+    },
+    searchBarWrap: {
+        position: 'absolute',
+        left: theme.spacing.lg,
+        right: theme.spacing.lg,
+        zIndex: 1,
     },
     searchBar: {
         flexDirection: 'row',
