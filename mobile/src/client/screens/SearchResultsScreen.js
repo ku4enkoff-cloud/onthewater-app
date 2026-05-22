@@ -229,6 +229,55 @@ function dedupeBoatsById(list) {
     });
 }
 
+/** Одинаковые lat/lng дают один кластер с завышенным числом; слегка разводим точки. */
+const MAP_COORD_GROUP_DECIMALS = 4;
+const MAP_SPREAD_RADIUS_DEG = 0.00008;
+
+function buildClusteredMapMarkers(boats) {
+    const seenIds = new Set();
+    const groups = new Map();
+
+    for (const b of boats) {
+        const lat = Number(b.lat);
+        const lon = Number(b.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+        const id = b.id != null ? String(b.id) : null;
+        if (id) {
+            if (seenIds.has(id)) continue;
+            seenIds.add(id);
+        }
+        const key = `${lat.toFixed(MAP_COORD_GROUP_DECIMALS)},${lon.toFixed(MAP_COORD_GROUP_DECIMALS)}`;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(b);
+    }
+
+    const markers = [];
+    for (const group of groups.values()) {
+        if (group.length === 1) {
+            const boat = group[0];
+            markers.push({
+                point: { lat: Number(boat.lat), lon: Number(boat.lng) },
+                data: boat,
+            });
+            continue;
+        }
+        const baseLat = Number(group[0].lat);
+        const baseLon = Number(group[0].lng);
+        const cosLat = Math.cos((baseLat * Math.PI) / 180) || 1;
+        group.forEach((boat, i) => {
+            const angle = (2 * Math.PI * i) / group.length;
+            markers.push({
+                point: {
+                    lat: baseLat + MAP_SPREAD_RADIUS_DEG * Math.cos(angle),
+                    lon: baseLon + (MAP_SPREAD_RADIUS_DEG * Math.sin(angle)) / cosLat,
+                },
+                data: boat,
+            });
+        });
+    }
+    return markers;
+}
+
 export default function SearchResultsScreen({ route, navigation }) {
     const insets = useSafeAreaInsets();
     const { width } = useWindowDimensions();
@@ -366,7 +415,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                 list = Array.isArray(res.data) ? res.data : [];
             }
             if (mapModalOpenRef.current) {
-                setMapBoats(applyBoatFilters(list, filters, priceRange));
+                setMapBoats(dedupeBoatsById(applyBoatFilters(list, filters, priceRange)));
             }
         } catch (_) {
             if (mapModalOpenRef.current) setMapBoats([]);
@@ -492,22 +541,13 @@ export default function SearchResultsScreen({ route, navigation }) {
 
     const clusteredMarkersData = useMemo(() => {
         if (mapClosing) return [];
-        const seen = new Set();
-        return mapBoats
-            .filter((b) => {
-                const lat = Number(b.lat);
-                const lon = Number(b.lng);
-                if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
-                const id = b.id != null ? String(b.id) : null;
-                if (id && seen.has(id)) return false;
-                if (id) seen.add(id);
-                return true;
-            })
-            .map((b) => ({
-                point: { lat: Number(b.lat), lon: Number(b.lng) },
-                data: b,
-            }));
+        return buildClusteredMapMarkers(mapBoats);
     }, [mapBoats, mapClosing]);
+
+    const mapClusterKey = useMemo(() => {
+        const ids = clusteredMarkersData.map((m) => m.data?.id).filter((id) => id != null);
+        return `${ids.length}-${ids.join(',')}`;
+    }, [clusteredMarkersData]);
 
     const maxPassengers = useMemo(() => {
         const caps = allBoats.map((b) => Number(b.capacity) || 0).filter((c) => c > 0);
@@ -1056,7 +1096,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                                     </View>
                                 ) : (
                                     <ClusteredYamap
-                                        key="map-cluster"
+                                        key={`map-cluster-${mapClusterKey}`}
                                         ref={mapRef}
                                         style={StyleSheet.absoluteFillObject}
                                         initialRegion={{
