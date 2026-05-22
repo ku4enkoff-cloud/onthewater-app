@@ -52,6 +52,10 @@ export default {
         LSApplicationQueriesSchemes: ['yandexmaps', 'yandexnavi'],
         // Экспортное соответствие (Apple): false — только стандартное HTTPS/TLS; при собственном шифровании смените на true и пройдите документы в ASC.
         ITSAppUsesNonExemptEncryption: false,
+        // Требование App Store (ITC 90683): MapKit / SDK могут ссылаться на Core Location даже без явного запроса в JS.
+        NSLocationWhenInUseUsageDescription: isOwner
+          ? 'Геолокация нужна, чтобы указать на карте место стоянки катера при добавлении и редактировании объявления.'
+          : 'Геолокация нужна, чтобы показывать катера рядом с вами и искать аренду по вашему местоположению.',
       },
     },
     android: {
