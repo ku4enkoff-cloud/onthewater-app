@@ -25,6 +25,9 @@ export default defineConfig(({ mode }) => {
         '/boat-types': { target: 'http://localhost:3000', changeOrigin: true },
         '/uploads': { target: 'http://localhost:3000', changeOrigin: true },
         '/destinations': { target: 'http://localhost:3000', changeOrigin: true },
+        '/legal-documents': { target: 'http://localhost:3000', changeOrigin: true },
+        '/auth': { target: 'http://localhost:3000', changeOrigin: true },
+        '/bookings': { target: 'http://localhost:3000', changeOrigin: true },
       },
     },
   }

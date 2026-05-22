@@ -7,6 +7,8 @@ import LoginPage from './pages/LoginPage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
 import AccountPage from './pages/AccountPage.jsx'
 import OwnerLandingPage from './pages/OwnerLandingPage.jsx'
+import LegalDocumentPage from './pages/LegalDocumentPage.jsx'
+import SitemapPage from './pages/SitemapPage.jsx'
 import SiteFooter from './components/SiteFooter.jsx'
 import AndroidAppPrompt from './components/AndroidAppPrompt.jsx'
 import { startSiteGeolocation } from './lib/siteGeolocation.js'
@@ -64,6 +66,27 @@ export default function App() {
           <Route path="/boats" element={<BoatsSearchPage />} />
           <Route path="/boats/:boatSlug" element={<BoatDetailPage />} />
           <Route path="/owners" element={<OwnerLandingPage />} />
+          <Route
+            path="/privacy"
+            element={
+              <LegalDocumentPage
+                slug="privacy_policy"
+                defaultTitle="Политика конфиденциальности"
+                pathForCanonical="/privacy"
+              />
+            }
+          />
+          <Route
+            path="/terms"
+            element={
+              <LegalDocumentPage
+                slug="terms_of_service"
+                defaultTitle="Условия использования"
+                pathForCanonical="/terms"
+              />
+            }
+          />
+          <Route path="/sitemap" element={<SitemapPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route

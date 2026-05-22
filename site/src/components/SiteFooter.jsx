@@ -224,21 +224,15 @@ export default function SiteFooter() {
               © {year} ONTHEWATER. Все права защищены.
             </p>
             <nav className="sf-bottom__legal" aria-label="Правовая информация">
-              <a href={`${base}/`} target="_blank" rel="noopener noreferrer">
-                Политика конфиденциальности
-              </a>
+              <Link to="/privacy">Политика конфиденциальности</Link>
               <span className="sf-bottom__dot" aria-hidden>
                 ·
               </span>
-              <a href={`${base}/`} target="_blank" rel="noopener noreferrer">
-                Условия использования
-              </a>
+              <Link to="/terms">Условия использования</Link>
               <span className="sf-bottom__dot" aria-hidden>
                 ·
               </span>
-              <a href={`${base}/`} target="_blank" rel="noopener noreferrer">
-                Карта сайта
-              </a>
+              <Link to="/sitemap">Карта сайта</Link>
             </nav>
           </div>
         </div>

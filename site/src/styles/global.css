@@ -6700,6 +6700,103 @@ a.lp-boatCard:hover .lp-boatImg {
   line-height: 1.5;
 }
 
+.legal-page {
+  padding: 32px 20px 64px;
+  background: #fbf8f3;
+  min-height: 50vh;
+}
+
+.legal-page__inner {
+  max-width: 760px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 28px 40px;
+  box-shadow: 0 4px 24px rgba(27, 54, 93, 0.06);
+}
+
+.legal-page__title {
+  margin: 0 0 24px;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1b365d;
+  line-height: 1.25;
+}
+
+.legal-page__status,
+.legal-page__error {
+  font-size: 16px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.legal-page__error a {
+  color: #0061c1;
+  font-weight: 600;
+}
+
+.legal-page__body {
+  font-size: 16px;
+  color: #334155;
+  line-height: 1.6;
+}
+
+.legal-page__body h2,
+.legal-page__body h3 {
+  color: #1b365d;
+  margin: 1.25em 0 0.5em;
+}
+
+.legal-page__body p {
+  margin: 0 0 1em;
+}
+
+.legal-page__body a {
+  color: #0061c1;
+}
+
+.legal-page__pre {
+  white-space: pre-wrap;
+}
+
+.sitemap-page__nav {
+  display: grid;
+  gap: 28px;
+}
+
+@media (min-width: 640px) {
+  .sitemap-page__nav {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.sitemap-page__section h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1b365d;
+}
+
+.sitemap-page__section ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sitemap-page__section li {
+  margin-bottom: 8px;
+}
+
+.sitemap-page__section a {
+  color: #0061c1;
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.sitemap-page__section a:hover {
+  text-decoration: underline;
+}
+
 .bd-loading,
 .bd-error {
   max-width: 560px;
