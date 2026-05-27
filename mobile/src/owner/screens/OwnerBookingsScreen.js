@@ -12,6 +12,7 @@ import { Calendar, Clock, Timer, CheckCircle, XCircle, AlertCircle, Pencil, Chev
 import * as LucideIcons from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
+import AppModal from '../../shared/components/AppModal';
 
 /** Длительности из карточки катера: schedule_min_duration + price_tiers */
 const getDurationOptionsFromBoat = (boat) => {
@@ -940,7 +941,7 @@ export default function OwnerBookingsScreen() {
             })()}
 
             {/* Edit modal */}
-            <Modal visible={editModalVisible} animationType="fade" transparent>
+            <AppModal visible={editModalVisible} animationType="fade" transparent>
                 <TouchableOpacity
                     style={[s.modalOverlay, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
                     activeOpacity={1}
@@ -1092,7 +1093,7 @@ export default function OwnerBookingsScreen() {
                         </View>
                     </TouchableOpacity>
                 </TouchableOpacity>
-            </Modal>
+            </AppModal>
 
             {/* Тайм-пикер модальное окно */}
             {showTimePicker && (

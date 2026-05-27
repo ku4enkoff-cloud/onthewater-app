@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-    View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Image, RefreshControl, Alert, Modal, ActivityIndicator,
+    View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Image, RefreshControl, Alert, ActivityIndicator,
 } from 'react-native';
+import AppModal from '../../shared/components/AppModal';
 import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../shared/theme';
@@ -280,7 +281,7 @@ export default function OwnerChatScreen({ navigation }) {
                 />
             )}
 
-            <Modal visible={archiveModalVisible} animationType="slide" transparent onRequestClose={() => setArchiveModalVisible(false)}>
+            <AppModal visible={archiveModalVisible} animationType="slide" transparent onRequestClose={() => setArchiveModalVisible(false)}>
                 <GestureHandlerRootView style={styles.modalOverlay}>
                     <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setArchiveModalVisible(false)} />
                     <View style={[styles.archiveModal, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24, maxHeight: '90%' }]}>
@@ -386,7 +387,7 @@ export default function OwnerChatScreen({ navigation }) {
                         )}
                     </View>
                 </GestureHandlerRootView>
-            </Modal>
+            </AppModal>
         </View>
     );
 }

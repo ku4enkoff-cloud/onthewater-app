@@ -1,7 +1,8 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useCallback } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Linking,
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Linking, Alert,
 } from 'react-native';
+import { registerPushTokenNow } from '../../client/hooks/useRegisterPushToken';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Lock } from 'lucide-react-native';
 import { AuthContext } from '../../shared/context/AuthContext';
@@ -28,6 +29,16 @@ export default function OwnerNotificationsScreen({ navigation }) {
     const [emailNews, setEmailNews] = useState(true);
 
     const trackColor = { false: '#E0E4EA', true: TEAL };
+
+    const handleTogglePush = useCallback(async (nextValue) => {
+        await setPushEnabled(nextValue);
+        if (nextValue) {
+            const result = await registerPushTokenNow();
+            if (!result.ok && result.reason) {
+                Alert.alert('Push-уведомления', result.reason);
+            }
+        }
+    }, [setPushEnabled]);
 
     return (
         <View style={s.root}>
@@ -99,7 +110,7 @@ export default function OwnerNotificationsScreen({ navigation }) {
 
                     <View style={s.toggleRow}>
                         <Text style={s.toggleLabel}>Push-уведомления</Text>
-                        <Switch value={pushEnabled !== false} onValueChange={setPushEnabled} trackColor={trackColor} thumbColor="#fff" />
+                        <Switch value={pushEnabled !== false} onValueChange={handleTogglePush} trackColor={trackColor} thumbColor="#fff" />
                     </View>
                 </View>
             </ScrollView>

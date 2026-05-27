@@ -1,5 +1,6 @@
 import React, { useContext, useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Pressable, Image, ScrollView, Alert, Modal, FlatList, TextInput, ActivityIndicator, Switch, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, Image, ScrollView, Alert, FlatList, TextInput, ActivityIndicator, Switch, useWindowDimensions } from 'react-native';
+import AppModal from '../../shared/components/AppModal';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthContext } from '../../shared/context/AuthContext';
@@ -76,6 +77,16 @@ export default function ProfileScreen({ navigation }) {
     useEffect(() => {
         fetchNotificationSettings();
     }, [fetchNotificationSettings]);
+
+    const handleTogglePush = useCallback(async (nextValue) => {
+        await setPushEnabled(nextValue);
+        if (nextValue) {
+            const result = await registerPushTokenNow();
+            if (!result.ok && result.reason) {
+                Alert.alert('Push-уведомления', result.reason);
+            }
+        }
+    }, [setPushEnabled]);
 
     const handleToggleEmailMessages = useCallback(async (nextValue) => {
         const prev = emailMessages;
@@ -363,7 +374,7 @@ export default function ProfileScreen({ navigation }) {
             <View style={styles.versionContainer}><Text style={styles.versionText}>ONTHEWATER v2.0.1</Text></View>
         </ScrollView>
 
-        <Modal visible={reviewsModalVisible} animationType="slide" transparent>
+        <AppModal visible={reviewsModalVisible} animationType="slide" transparent>
             <View style={styles.modalOverlay}>
                 <View style={[styles.reviewsModal, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16 }]}>
                     <View style={styles.reviewsModalHeader}>
@@ -446,9 +457,9 @@ export default function ProfileScreen({ navigation }) {
                     )}
                 </View>
             </View>
-        </Modal>
+        </AppModal>
 
-        <Modal visible={notificationsModalVisible} animationType="slide" transparent>
+        <AppModal visible={notificationsModalVisible} animationType="slide" transparent>
             <View style={styles.modalOverlay}>
                 <View style={[styles.notificationsModal, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
                     <View style={styles.notificationsModalHeader}>
@@ -485,12 +496,12 @@ export default function ProfileScreen({ navigation }) {
                         </Text>
                         <View style={styles.notificationRow}>
                             <Text style={styles.notificationLabel}>Push-уведомления</Text>
-                            <Switch value={pushEnabled !== false} onValueChange={setPushEnabled} trackColor={{ false: theme.colors.gray300, true: theme.colors.primary }} thumbColor="#fff" />
+                            <Switch value={pushEnabled !== false} onValueChange={handleTogglePush} trackColor={{ false: theme.colors.gray300, true: theme.colors.primary }} thumbColor="#fff" />
                         </View>
                     </ScrollView>
                 </View>
             </View>
-        </Modal>
+        </AppModal>
 
     </>
     );

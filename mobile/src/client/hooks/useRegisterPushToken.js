@@ -84,12 +84,9 @@ export function useRegisterPushToken(user, pushEnabled) {
                 if (!Device.isDevice) return;
                 const Notifications = require('expo-notifications');
                 const { status: existing } = await Notifications.getPermissionsAsync();
-                let finalStatus = existing;
-                if (existing !== 'granted') {
-                    const { status } = await Notifications.requestPermissionsAsync();
-                    finalStatus = status;
-                }
-                if (finalStatus !== 'granted') return;
+                // Не запрашиваем разрешение автоматически (после входа на iPad диалог/слой ломает тапы).
+                // Запрос — в registerPushTokenNow() при явном включении push в настройках.
+                if (existing !== 'granted') return;
                 const projectId = Constants.expoConfig?.extra?.eas?.projectId;
                 if (!projectId) return;
                 const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });

@@ -1,5 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { nativeStackScreenOptions } from '../../shared/navigation/stackScreenOptions';
 import ClientTabs from './ClientTabs';
 import BoatDetailScreen from '../screens/BoatDetailScreen';
 import BookingDetailScreen from '../screens/BookingDetailScreen';
@@ -21,13 +22,7 @@ const Stack = createNativeStackNavigator();
 
 export default function ClientNavigator() {
     return (
-        <Stack.Navigator
-            screenOptions={{
-                headerShown: false,
-                gestureEnabled: true,
-                fullScreenGestureEnabled: true,
-            }}
-        >
+        <Stack.Navigator screenOptions={nativeStackScreenOptions}>
             <Stack.Screen name="MainTabs" component={ClientTabs} />
             <Stack.Screen name="ClientAccount" component={ClientAccountScreen} />
             <Stack.Screen name="ClientAccountInfo" component={ClientAccountInfoScreen} />

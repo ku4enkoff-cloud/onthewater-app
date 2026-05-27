@@ -1,5 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { nativeStackScreenOptions } from '../../shared/navigation/stackScreenOptions';
 import OwnerTabs from './OwnerTabs';
 import AddBoatScreen from '../screens/AddBoatScreen';
 import EditBoatScreen from '../screens/EditBoatScreen';
@@ -24,13 +25,7 @@ const Stack = createNativeStackNavigator();
 
 export default function OwnerNavigator() {
     return (
-        <Stack.Navigator
-            screenOptions={{
-                headerShown: false,
-                gestureEnabled: true,
-                fullScreenGestureEnabled: true,
-            }}
-        >
+        <Stack.Navigator screenOptions={nativeStackScreenOptions}>
             <Stack.Screen name="MainTabs" component={OwnerTabs} />
             <Stack.Screen name="BoatType" component={BoatTypeScreen} />
             <Stack.Screen name="BoatInfo" component={BoatInfoScreen} />

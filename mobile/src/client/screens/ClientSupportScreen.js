@@ -1,7 +1,8 @@
 import React from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Modal, ActivityIndicator,
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, ActivityIndicator,
 } from 'react-native';
+import AppModal from '../../shared/components/AppModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     ChevronLeft, Mail, AlertTriangle, FileText, Shield, Lock, X,
@@ -111,7 +112,7 @@ export default function ClientSupportScreen({ navigation }) {
                 </View>
             </ScrollView>
 
-            <Modal visible={legalModalVisible} animationType="slide" transparent onRequestClose={() => setLegalModalVisible(false)}>
+            <AppModal visible={legalModalVisible} animationType="slide" transparent onRequestClose={() => setLegalModalVisible(false)}>
                 <View style={s.modalOverlay}>
                     <View style={[s.legalModal, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16 }]}>
                         <View style={s.legalModalHeader}>
@@ -143,7 +144,7 @@ export default function ClientSupportScreen({ navigation }) {
                         )}
                     </View>
                 </View>
-            </Modal>
+            </AppModal>
         </View>
     );
 }
