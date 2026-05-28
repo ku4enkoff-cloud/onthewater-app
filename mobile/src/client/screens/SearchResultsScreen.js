@@ -307,6 +307,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     const [mapLoading, setMapLoading] = useState(false);
     const [mapCenter, setMapCenter] = useState(DEFAULT_MAP_CENTER);
     const [mapZoom, setMapZoom] = useState(10);
+    const [mapCurrentZoom, setMapCurrentZoom] = useState(10);
     const [selectedMapBoat, setSelectedMapBoat] = useState(null);
     const userLocationRef = useRef(null);
     const mapRef = useRef(null);
@@ -446,6 +447,7 @@ export default function SearchResultsScreen({ route, navigation }) {
         }
         setMapCenter(center);
         setMapZoom(zoom);
+        setMapCurrentZoom(zoom);
         setMapBoats(boats);
         setSelectedMapBoat(null);
         mapModalOpenRef.current = true;
@@ -515,6 +517,8 @@ export default function SearchResultsScreen({ route, navigation }) {
                     if (!mapModalOpenRef.current) return;
                     const lat = pos?.point?.lat ?? pos?.lat ?? pos?.latitude;
                     const lon = pos?.point?.lon ?? pos?.lon ?? pos?.longitude;
+                    const zoom = Number(pos?.zoom);
+                    if (Number.isFinite(zoom)) setMapCurrentZoom(zoom);
                     if (lat == null || lon == null) return;
                     const last = lastMapCenterRef.current;
                     const same = last && Math.abs(last.lat - lat) < 0.01 && Math.abs(last.lon - lon) < 0.01;
@@ -548,6 +552,11 @@ export default function SearchResultsScreen({ route, navigation }) {
         const ids = clusteredMarkersData.map((m) => m.data?.id).filter((id) => id != null);
         return `${ids.length}-${ids.join(',')}`;
     }, [clusteredMarkersData]);
+    const mapMarkersKey = useMemo(() => {
+        const ids = clusteredMarkersData.map((m) => m.data?.id).filter((id) => id != null);
+        return `${ids.length}-${ids.join(',')}-${Math.round(mapCurrentZoom)}`;
+    }, [clusteredMarkersData, mapCurrentZoom]);
+    const useUnclusteredMarkers = mapCurrentZoom >= 14;
 
     const maxPassengers = useMemo(() => {
         const caps = allBoats.map((b) => Number(b.capacity) || 0).filter((c) => c > 0);
@@ -1094,6 +1103,33 @@ export default function SearchResultsScreen({ route, navigation }) {
                                         <ActivityIndicator size="large" color={NAVY} />
                                         <Text style={styles.mapPlaceholderText}>Загрузка карты...</Text>
                                     </View>
+                                ) : useUnclusteredMarkers ? (
+                                    <YaMap
+                                        key={`map-markers-${mapMarkersKey}`}
+                                        ref={mapRef}
+                                        style={StyleSheet.absoluteFillObject}
+                                        initialRegion={{
+                                            lat: mapCenter.lat,
+                                            lon: mapCenter.lon,
+                                            zoom: mapZoom,
+                                        }}
+                                    >
+                                        {clusteredMarkersData.map((info, index) => {
+                                            const boat = info.data;
+                                            const isSelected = selectedMapBoat?.id === boat?.id;
+                                            const price = boat ? (Number(boat.price_per_hour) || 0).toLocaleString('ru-RU') + ' ₽' : '';
+                                            return (
+                                                <Marker
+                                                    key={`map-unclustered-${boat?.id ?? index}`}
+                                                    point={info.point}
+                                                    anchor={{ x: 0.5, y: 1 }}
+                                                    onPress={() => boat && setSelectedMapBoat(isSelected ? null : boat)}
+                                                >
+                                                    <MapPriceBubble price={price} selected={isSelected} />
+                                                </Marker>
+                                            );
+                                        })}
+                                    </YaMap>
                                 ) : (
                                     <ClusteredYamap
                                         key={`map-cluster-${mapClusterKey}`}
