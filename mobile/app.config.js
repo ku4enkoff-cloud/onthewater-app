@@ -87,7 +87,11 @@ export default {
         projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID || '1458b8bd-8918-409a-b2fa-75d6be05ccde', // Expo Project ID для push на APK
       },
     },
-    permissions: ['android.permission.RECORD_AUDIO'],
+    permissions: [
+      'android.permission.RECORD_AUDIO',
+      // Требуется Play Console, если в декларации указано использование рекламного идентификатора.
+      'com.google.android.gms.permission.AD_ID',
+    ],
     web: { favicon: './assets/favicon.png' },
     plugins: [
       './plugins/withFixAppIcons.js',
