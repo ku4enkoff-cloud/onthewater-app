@@ -21,10 +21,12 @@ import OwnerNavigator from './src/owner/navigation/OwnerNavigator';
 import { useRegisterPushToken } from './src/client/hooks/useRegisterPushToken';
 import { usePushNotificationNavigation } from './src/shared/hooks/usePushNotificationNavigation';
 import { ensureYamapInitialized } from './src/shared/yamapInit';
+import { initAppMetrica } from './src/shared/analytics/appMetrica';
 
 SplashScreen.preventAutoHideAsync();
 
 ensureYamapInitialized();
+initAppMetrica();
 
 class ErrorBoundary extends React.Component {
   state = { error: null };

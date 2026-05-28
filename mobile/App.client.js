@@ -24,6 +24,7 @@ import OnboardingScreen from './src/client/screens/OnboardingScreen';
 import { useRegisterPushToken } from './src/client/hooks/useRegisterPushToken';
 import { usePushNotificationNavigation } from './src/shared/hooks/usePushNotificationNavigation';
 import { ensureYamapInitialized } from './src/shared/yamapInit';
+import { initAppMetrica } from './src/shared/analytics/appMetrica';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -121,6 +122,7 @@ export default function App() {
 
   useEffect(() => {
     ensureYamapInitialized();
+    initAppMetrica();
   }, []);
 
   useEffect(() => {
