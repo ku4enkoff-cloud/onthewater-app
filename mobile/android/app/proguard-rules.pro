@@ -47,5 +47,7 @@
     @com.facebook.yoga.annotations.DoNotStrip *;
 }
 -dontwarn okio.**
+-keep class com.yandex.** { *; }
+-dontwarn com.yandex.**
 -keep class expo.modules.** { *; }
 # @generated end expo-build-properties

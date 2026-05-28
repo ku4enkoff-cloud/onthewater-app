@@ -1,4 +1,4 @@
-package com.anonymous.onthewater.owner
+package com.anonymous.onthewater
 
 import android.app.Application
 import android.content.res.Configuration
