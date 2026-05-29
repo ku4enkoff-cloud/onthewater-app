@@ -14,9 +14,18 @@ const { sendVerificationEmail, sendPasswordResetEmail } = require('../services/e
 
 const router = express.Router();
 
+/** Явное согласие с условиями (boolean / "true"). Старые сборки owner не слали поле, но чекбокс на UI был. */
+function parseAcceptTerms(body, role) {
+    const v = body?.accept_terms;
+    if (v === true || v === 'true' || v === 1 || v === '1') return true;
+    if ((v === undefined || v === null) && role === 'owner') return true;
+    return false;
+}
+
 router.post('/register', authLimiter, validate(registerSchema), async (req, res, next) => {
-    const { email, phone, password, name, role, accept_terms: acceptTerms } = req.body;
+    const { email, phone, password, name, role } = req.body;
     const safeRole = role || 'client';
+    const acceptTerms = parseAcceptTerms(req.body, safeRole);
     if ((safeRole === 'client' || safeRole === 'owner') && !acceptTerms) {
         return res.status(400).json({
             error: 'Для регистрации необходимо принять Условия обслуживания и политики конфиденциальности.',
