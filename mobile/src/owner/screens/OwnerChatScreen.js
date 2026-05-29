@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
-    View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Image, RefreshControl, Alert, ActivityIndicator,
+    View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Image, RefreshControl, Alert, ActivityIndicator, Platform,
 } from 'react-native';
 import AppModal from '../../shared/components/AppModal';
 import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -423,12 +423,20 @@ const styles = StyleSheet.create({
         backgroundColor: theme.colors.surface,
         borderRadius: theme.borderRadius.pill,
         paddingHorizontal: theme.spacing.md,
-        paddingVertical: 6,
+        paddingVertical: Platform.OS === 'ios' ? 12 : 6,
+        minHeight: 48,
         borderWidth: 1,
         borderColor: theme.colors.border,
     },
     searchIcon: { marginRight: theme.spacing.xs },
-    searchInput: { flex: 1, fontSize: 14, color: theme.colors.textMain, lineHeight: 18 },
+    searchInput: {
+        flex: 1,
+        fontSize: 14,
+        color: theme.colors.textMain,
+        lineHeight: Platform.OS === 'ios' ? 20 : 18,
+        paddingVertical: Platform.OS === 'ios' ? 2 : 0,
+        ...(Platform.OS === 'android' ? { includeFontPadding: false } : null),
+    },
     listContainer: { paddingHorizontal: theme.spacing.lg, paddingBottom: 100 },
     chatRowWrapper: { marginBottom: theme.spacing.md, width: '100%' },
     chatItem: {

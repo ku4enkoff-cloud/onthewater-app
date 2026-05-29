@@ -86,10 +86,9 @@ export default function ChatDetailScreen({ route, navigation }) {
         }, [loading, messages.length, scrollToBottom])
     );
 
-    const inputRowPaddingBottom =
-        Platform.OS === 'android' && keyboardVisible
-            ? theme.spacing.sm
-            : theme.spacing.lg + insets.bottom;
+    const inputRowPaddingBottom = keyboardVisible
+        ? theme.spacing.sm
+        : theme.spacing.lg + insets.bottom;
 
     useEffect(() => {
         if (chatId) {
@@ -409,8 +408,8 @@ export default function ChatDetailScreen({ route, navigation }) {
             ) : (
                 <KeyboardAvoidingView
                     style={styles.keyboardWrap}
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
-                    keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                    keyboardVerticalOffset={0}
                 >
                     <FlatList
                         ref={flatListRef}
