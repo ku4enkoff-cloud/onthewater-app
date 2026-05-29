@@ -1,48 +1,73 @@
 import { useEffect, useRef } from 'react';
-import { Platform } from 'react-native';
+import { Platform, AppState } from 'react-native';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import { api } from '../../shared/infrastructure/api';
 
-// expo-notifications не поддерживается в Expo Go (SDK 53+). Загружаем только для development build.
 const isExpoGo = Constants.appOwnership === 'expo';
 
-/**
- * Один раз зарегистрировать push-токен на сервере (можно вызвать при нажатии «Тестовое уведомление»).
- * Возвращает { ok: true } или { ok: false, reason: '...' } для показа пользователю.
- */
-export async function registerPushTokenNow() {
+function getNotificationsModule() {
+    if (isExpoGo) return null;
+    try {
+        return require('expo-notifications');
+    } catch {
+        return null;
+    }
+}
+
+async function ensurePermissionAndRegister(lastTokenRef, isCancelled) {
     if (Platform.OS !== 'android' && Platform.OS !== 'ios') {
         return { ok: false, reason: 'Push только на Android и iOS.' };
     }
     if (isExpoGo) {
-        return { ok: false, reason: 'В Expo Go push не работает. Соберите и установите APK (npm run build:client:release), затем откройте приложение из списка приложений.' };
+        return { ok: false, reason: 'В Expo Go push не работает. Установите сборку из App Store / TestFlight.' };
     }
     if (!Device.isDevice) {
         return { ok: false, reason: 'Запустите приложение на реальном устройстве, не в эмуляторе.' };
     }
-    try {
-        const Notifications = require('expo-notifications');
-        const { status: existing } = await Notifications.getPermissionsAsync();
-        let finalStatus = existing;
-        if (existing !== 'granted') {
-            const { status } = await Notifications.requestPermissionsAsync();
-            finalStatus = status;
-        }
-        if (finalStatus !== 'granted') {
-            return { ok: false, reason: 'Нет разрешения на уведомления. Включите в Настройки → Приложения → ONTHEWATER → Уведомления.' };
-        }
-        const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-        if (!projectId) {
-            return { ok: false, reason: 'Не задан Expo projectId. Добавьте в app.config.js (extra.eas.projectId) или переменную EXPO_PUBLIC_EAS_PROJECT_ID. Получить: expo.dev → ваш проект → Project ID или команда eas init. См. mobile/PUSH_SETUP.md' };
-        }
-        const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
-        const token = tokenData?.data;
-        if (!token) {
-            return { ok: false, reason: 'Не удалось получить push-токен. Для Android добавьте google-services.json из Firebase в папку mobile/ и пересоберите APK. Подробно: mobile/PUSH_SETUP.md' };
-        }
-        await api.post('/auth/push-token', { push_token: token });
+
+    const Notifications = getNotificationsModule();
+    if (!Notifications) {
+        return { ok: false, reason: 'Модуль уведомлений недоступен.' };
+    }
+
+    let { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') {
+        const req = await Notifications.requestPermissionsAsync();
+        status = req.status;
+    }
+    if (status !== 'granted') {
+        return { ok: false, reason: 'Нет разрешения на уведомления. Включите в Настройки → ONTHEWATER → Уведомления.' };
+    }
+
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+    if (!projectId) {
+        return { ok: false, reason: 'Не задан Expo projectId (extra.eas.projectId). См. mobile/PUSH_SETUP.md' };
+    }
+
+    const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+    const token = tokenData?.data;
+    if (!token) {
+        return { ok: false, reason: 'Не удалось получить push-токен. Перезапустите приложение.' };
+    }
+    if (isCancelled?.()) {
+        return { ok: false, reason: 'cancelled' };
+    }
+    if (token === lastTokenRef.current) {
         return { ok: true };
+    }
+    lastTokenRef.current = token;
+    await api.post('/auth/push-token', { push_token: token });
+    return { ok: true };
+}
+
+/**
+ * Зарегистрировать push-токен на сервере (кнопка «Тестовое уведомление» / переключатель в профиле).
+ */
+export async function registerPushTokenNow() {
+    const lastTokenRef = { current: null };
+    try {
+        return await ensurePermissionAndRegister(lastTokenRef, () => false);
     } catch (e) {
         const msg = e?.message || '';
         const status = e?.response?.status;
@@ -55,50 +80,62 @@ export async function registerPushTokenNow() {
         if (msg.includes('Network') || msg.includes('network') || status >= 500) {
             return { ok: false, reason: 'Нет связи с сервером. Проверьте интернет и попробуйте позже.' };
         }
-        if (__DEV__) console.warn('[push] registerPushTokenNow error:', e?.message || e);
+        if (__DEV__) console.warn('[push] registerPushTokenNow error:', msg || e);
         return { ok: false, reason: msg || 'Ошибка регистрации. Попробуйте перезапустить приложение.' };
     }
 }
 
 /**
- * Регистрирует Expo Push Token на сервере (клиент и владелец).
- * Учитывает pushEnabled: если false — токен на сервере очищается.
- * В Expo Go пропускается без ошибки (push работает только в development build).
+ * Авторегистрация Expo Push Token после входа.
+ * pushLoaded — дождаться чтения @push_enabled из AsyncStorage.
  */
-export function useRegisterPushToken(user, pushEnabled) {
+export function useRegisterPushToken(user, pushEnabled, pushLoaded) {
     const lastTokenRef = useRef(null);
 
     useEffect(() => {
-        if (!user || Platform.OS !== 'android' && Platform.OS !== 'ios') return;
-        if (pushEnabled === undefined || pushEnabled === null) return;
-        if (isExpoGo) return; // Expo Go — push не поддерживается, не грузим expo-notifications
+        if (!user || !pushLoaded) return;
+        if (Platform.OS !== 'android' && Platform.OS !== 'ios') return;
+        if (isExpoGo) return;
 
         let cancelled = false;
-        (async () => {
-            try {
-                if (pushEnabled === false) {
-                    lastTokenRef.current = null;
-                    await api.post('/auth/push-token', { push_token: '' });
-                    return;
-                }
-                if (!Device.isDevice) return;
-                const Notifications = require('expo-notifications');
-                const { status: existing } = await Notifications.getPermissionsAsync();
-                // Не запрашиваем разрешение автоматически (после входа на iPad диалог/слой ломает тапы).
-                // Запрос — в registerPushTokenNow() при явном включении push в настройках.
-                if (existing !== 'granted') return;
-                const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-                if (!projectId) return;
-                const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
-                const token = tokenData?.data;
-                if (!token || cancelled) return;
-                if (token === lastTokenRef.current) return;
-                lastTokenRef.current = token;
-                await api.post('/auth/push-token', { push_token: token });
-            } catch (e) {
-                if (__DEV__) console.warn('[push] register error:', e?.message || e);
-            }
-        })();
-        return () => { cancelled = true; };
-    }, [user?.id, pushEnabled]);
+        const isCancelled = () => cancelled;
+
+        if (pushEnabled === false) {
+            lastTokenRef.current = null;
+            api.post('/auth/push-token', { push_token: '' }).catch(() => {});
+            return () => { cancelled = true; };
+        }
+        if (pushEnabled !== true) return undefined;
+
+        // Задержка: не пересекается с TermsAcceptModal и фиксом тапов на iPad после входа.
+        const delayMs = user.terms_accepted_at ? 2000 : 4000;
+        const timer = setTimeout(() => {
+            ensurePermissionAndRegister(lastTokenRef, isCancelled).catch((e) => {
+                if (__DEV__) console.warn('[push] auto-register error:', e?.message || e);
+            });
+        }, delayMs);
+
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [user?.id, user?.terms_accepted_at, pushEnabled, pushLoaded]);
+
+    useEffect(() => {
+        if (!user || !pushLoaded || pushEnabled !== true || isExpoGo) return undefined;
+
+        let cancelled = false;
+        const sync = () => {
+            ensurePermissionAndRegister(lastTokenRef, () => cancelled).catch(() => {});
+        };
+
+        const sub = AppState.addEventListener('change', (state) => {
+            if (state === 'active') sync();
+        });
+
+        return () => {
+            cancelled = true;
+            sub.remove();
+        };
+    }, [user?.id, pushEnabled, pushLoaded]);
 }

@@ -26,6 +26,7 @@ import { useRegisterPushToken } from './src/client/hooks/useRegisterPushToken';
 import { usePushNotificationNavigation } from './src/shared/hooks/usePushNotificationNavigation';
 import { ensureYamapInitialized } from './src/shared/yamapInit';
 import { initAppMetrica } from './src/shared/analytics/appMetrica';
+import { initPushNotifications } from './src/shared/notifications/initPushNotifications';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -54,8 +55,8 @@ function ClientRoot() {
   const [navReady, setNavReady] = useState(false);
   const { loading, user, refreshUser } = useContext(AuthContext);
   const needsTermsAccept = user && !user.terms_accepted_at;
-  const { pushEnabled } = useContext(NotificationsContext);
-  useRegisterPushToken(user, pushEnabled);
+  const { pushEnabled, loaded: pushLoaded } = useContext(NotificationsContext);
+  useRegisterPushToken(user, pushEnabled, pushLoaded);
   usePushNotificationNavigation(navigationRef, { user, navReady });
   const [onboardingDone, setOnboardingDone] = useState(null);
   const [loadingTimedOut, setLoadingTimedOut] = useState(false);
@@ -129,6 +130,7 @@ export default function App() {
   useEffect(() => {
     ensureYamapInitialized();
     initAppMetrica();
+    initPushNotifications();
   }, []);
 
   useEffect(() => {

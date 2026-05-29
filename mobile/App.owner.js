@@ -23,11 +23,13 @@ import { useRegisterPushToken } from './src/client/hooks/useRegisterPushToken';
 import { usePushNotificationNavigation } from './src/shared/hooks/usePushNotificationNavigation';
 import { ensureYamapInitialized } from './src/shared/yamapInit';
 import { initAppMetrica } from './src/shared/analytics/appMetrica';
+import { initPushNotifications } from './src/shared/notifications/initPushNotifications';
 
 SplashScreen.preventAutoHideAsync();
 
 ensureYamapInitialized();
 initAppMetrica();
+initPushNotifications();
 
 class ErrorBoundary extends React.Component {
   state = { error: null };
@@ -51,8 +53,8 @@ function OwnerRoot() {
   const [navReady, setNavReady] = useState(false);
   const { user, loading, refreshUser } = useContext(AuthContext);
   const needsTermsAccept = user && !user.terms_accepted_at;
-  const { pushEnabled } = useContext(NotificationsContext);
-  useRegisterPushToken(user, pushEnabled);
+  const { pushEnabled, loaded: pushLoaded } = useContext(NotificationsContext);
+  useRegisterPushToken(user, pushEnabled, pushLoaded);
   usePushNotificationNavigation(navigationRef, { user, navReady });
   if (loading) {
     return (
