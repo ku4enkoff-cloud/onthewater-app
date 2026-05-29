@@ -106,8 +106,10 @@ const boatTypesRoutes = require('./routes/boatTypes');
 const destinationsRoutes = require('./routes/destinations');
 const amenitiesRoutes = require('./routes/amenities');
 const legalDocumentsRoutes = require('./routes/legalDocuments');
+const moderationRoutes = require('./routes/moderation');
 
 app.use('/auth', authRoutes);
+app.use('/moderation', moderationRoutes);
 app.use('/boats', boatRoutes);
 app.use('/chats', chatRoutes);
 app.use('/bookings', bookingRoutes);

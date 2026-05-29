@@ -75,6 +75,16 @@ export default function LoginScreen({ navigation, route }) {
                     <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleLogin} disabled={loading}>
                         <Text style={styles.buttonText}>{loading ? 'Вход...' : 'Войти'}</Text>
                     </TouchableOpacity>
+                    <Text style={styles.termsHint}>
+                        Входя в приложение, вы принимаете{' '}
+                        <Text
+                            style={styles.termsLink}
+                            onPress={() => navigation.navigate('LegalDocument', { slug: 'terms_of_service', title: 'Условия обслуживания' })}
+                        >
+                            Условия обслуживания
+                        </Text>
+                        {' '}и политику нулевой терпимости к недопустимому контенту.
+                    </Text>
                     <TouchableOpacity style={styles.forgotRow} onPress={() => navigation.navigate('ForgotPassword')} disabled={loading}>
                         <Text style={styles.forgotText}>Забыли пароль?</Text>
                     </TouchableOpacity>
@@ -105,6 +115,14 @@ const styles = StyleSheet.create({
     button: { backgroundColor: theme.colors.primary, padding: 16, borderRadius: theme.borderRadius.md, alignItems: 'center', marginTop: 16 },
     buttonDisabled: { opacity: 0.7 },
     buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+    termsHint: {
+        marginTop: 14,
+        fontSize: 12,
+        lineHeight: 18,
+        color: theme.colors.textMuted,
+        textAlign: 'center',
+    },
+    termsLink: { color: theme.colors.primary, textDecorationLine: 'underline' },
     forgotRow: { alignItems: 'center', marginTop: 12 },
     forgotText: { color: theme.colors.primary, fontFamily: theme.fonts.medium, fontSize: 14, fontWeight: '600' },
     footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 32 },

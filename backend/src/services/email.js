@@ -283,10 +283,47 @@ async function verifyConnection() {
     await transporter.verify();
 }
 
+/**
+ * Уведомление администратору о новой жалобе UGC.
+ * @param {object} report — строка content_reports
+ */
+async function sendUgcReportEmail(report) {
+    const to = process.env.ADMIN_REPORT_EMAIL || process.env.SMTP_USER;
+    if (!to) {
+        console.warn('[email] ADMIN_REPORT_EMAIL не задан — жалоба не отправлена по email');
+        return false;
+    }
+    const subject = `[ONTHEWATER] Жалоба #${report.id} — ${report.reason}`;
+    const html = `
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="font-family: sans-serif; max-width: 560px;">
+  <h2>Новая жалоба на контент</h2>
+  <p><b>ID:</b> ${report.id}</p>
+  <p><b>От пользователя:</b> ${report.reporter_id}</p>
+  <p><b>На пользователя:</b> ${report.reported_user_id}</p>
+  <p><b>Тип:</b> ${report.content_type}${report.content_id ? ` #${report.content_id}` : ''}</p>
+  <p><b>Причина:</b> ${report.reason}</p>
+  <p><b>Комментарий:</b> ${report.details || '—'}</p>
+  <p>Обработайте в админ-панели в течение 24 часов.</p>
+</body></html>`;
+    const text = `Жалоба #${report.id}: reporter=${report.reporter_id}, reported=${report.reported_user_id}, type=${report.content_type}, reason=${report.reason}`;
+
+    try {
+        await transporter.sendMail({ from: FROM, to, subject, text, html });
+        console.log('[email] UGC report notification sent to', to);
+        return true;
+    } catch (err) {
+        console.error('[email] UGC report email error:', err.message);
+        return false;
+    }
+}
+
 module.exports = {
     sendVerificationEmail,
     sendPasswordResetEmail,
     sendBookingStatusEmail,
     sendNewMessageEmail,
+    sendUgcReportEmail,
     verifyConnection,
 };

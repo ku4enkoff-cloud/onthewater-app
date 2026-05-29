@@ -15,7 +15,13 @@ const { sendVerificationEmail, sendPasswordResetEmail } = require('../services/e
 const router = express.Router();
 
 router.post('/register', authLimiter, validate(registerSchema), async (req, res, next) => {
-    const { email, phone, password, name, role } = req.body;
+    const { email, phone, password, name, role, accept_terms: acceptTerms } = req.body;
+    const safeRole = role || 'client';
+    if ((safeRole === 'client' || safeRole === 'owner') && !acceptTerms) {
+        return res.status(400).json({
+            error: 'Для регистрации необходимо принять Условия обслуживания и политики конфиденциальности.',
+        });
+    }
 
     try {
         const client = await pool.connect();
@@ -29,14 +35,14 @@ router.post('/register', authLimiter, validate(registerSchema), async (req, res,
 
             const salt = await bcrypt.genSalt(10);
             const hash = await bcrypt.hash(password, salt);
-            const safeRole = role || 'client';
             const requiresEmailVerification = safeRole === 'owner' || safeRole === 'client';
             const verificationToken = requiresEmailVerification ? crypto.randomBytes(32).toString('hex') : null;
+            const termsAcceptedAt = acceptTerms ? new Date() : null;
 
             const result = await client.query(
-                `INSERT INTO users (email, phone, password_hash, name, role, email_verified, email_verify_token, email_verify_expires_at) 
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
-                 RETURNING id, email, name, role, first_name, last_name, phone, email_verified`,
+                `INSERT INTO users (email, phone, password_hash, name, role, email_verified, email_verify_token, email_verify_expires_at, terms_accepted_at) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+                 RETURNING id, email, name, role, first_name, last_name, phone, email_verified, terms_accepted_at`,
                 [
                     email,
                     phone || null,
@@ -46,6 +52,7 @@ router.post('/register', authLimiter, validate(registerSchema), async (req, res,
                     !requiresEmailVerification,
                     verificationToken,
                     requiresEmailVerification ? new Date(Date.now() + 24 * 60 * 60 * 1000) : null,
+                    termsAcceptedAt,
                 ]
             );
 
@@ -209,7 +216,9 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res, next)
 
     try {
         const result = await pool.query(
-            'SELECT id, email, password_hash, name, role, first_name, last_name, phone, email_verified, email_verify_token, email_verify_expires_at, avatar FROM users WHERE email = $1 OR phone = $1',
+            `SELECT id, email, password_hash, name, role, first_name, last_name, phone, email_verified,
+                    email_verify_token, email_verify_expires_at, avatar, terms_accepted_at, suspended_at
+             FROM users WHERE email = $1 OR phone = $1`,
             [loginValue]
         );
 
@@ -222,6 +231,9 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res, next)
 
         if (!isMatch) {
             return res.status(401).json({ error: 'Неверный логин или пароль' });
+        }
+        if (user.suspended_at) {
+            return res.status(403).json({ error: 'Аккаунт ограничен модератором.' });
         }
         if ((user.role === 'owner' || user.role === 'client') && user.email_verified === false) {
             let verificationToken = user.email_verify_token;
@@ -247,9 +259,29 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res, next)
 
         const token = generateToken({ id: user.id, role: user.role });
         delete user.password_hash;
+        delete user.email_verify_token;
+        delete user.email_verify_expires_at;
+        delete user.suspended_at;
 
         res.json({ token, user });
     } catch (err) {
+        next(err);
+    }
+});
+
+router.post('/accept-terms', authenticate, async (req, res, next) => {
+    try {
+        const { rows } = await pool.query(
+            `UPDATE users SET terms_accepted_at = COALESCE(terms_accepted_at, NOW())
+             WHERE id = $1
+             RETURNING id, email, name, role, first_name, last_name, phone, email_verified, avatar, terms_accepted_at`,
+            [req.user.id]
+        );
+        res.json({ ok: true, user: rows[0] });
+    } catch (err) {
+        if (err.code === '42703') {
+            return res.status(500).json({ error: 'Запустите миграцию БД (node src/migrate.js)' });
+        }
         next(err);
     }
 });

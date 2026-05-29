@@ -335,6 +335,53 @@ async function migrate() {
             ON CONFLICT (slug) DO NOTHING
         `).catch(() => {});
 
+        const ugcTermsBody = `
+<h2>Пользовательский контент и правила сообщества</h2>
+<p>Используя ONTHEWATER, вы соглашаетесь с нулевой терпимостью к неприемлемому контенту и оскорбительному поведению.</p>
+<ul>
+<li>Запрещены оскорбления, угрозы, спам, мошенничество, незаконный контент.</li>
+<li>Вы можете пожаловаться на сообщение или пользователя и заблокировать собеседника.</li>
+<li>Заблокированный пользователь исчезает из ваших чатов; модераторы получают уведомление.</li>
+<li>Мы рассматриваем жалобы в течение 24 часов и можем удалить контент или ограничить аккаунт.</li>
+</ul>
+`.trim();
+        await client.query(
+            `UPDATE legal_documents SET body = $1
+             WHERE slug = 'terms_of_service' AND (body IS NULL OR TRIM(body) = '')`,
+            [ugcTermsBody]
+        ).catch(() => {});
+
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMPTZ`).catch(() => {});
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS suspended_at TIMESTAMPTZ`).catch(() => {});
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS user_blocks (
+                id SERIAL PRIMARY KEY,
+                blocker_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                blocked_user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                UNIQUE (blocker_id, blocked_user_id)
+            )
+        `);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_user_blocks_blocker ON user_blocks(blocker_id)`).catch(() => {});
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS content_reports (
+                id SERIAL PRIMARY KEY,
+                reporter_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                reported_user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                content_type VARCHAR(32) NOT NULL,
+                content_id INT,
+                reason VARCHAR(64) NOT NULL,
+                details TEXT,
+                status VARCHAR(32) NOT NULL DEFAULT 'open',
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                resolved_at TIMESTAMPTZ,
+                admin_note TEXT
+            )
+        `);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_content_reports_status ON content_reports(status, created_at DESC)`).catch(() => {});
+
         console.log('Миграция успешно завершена!');
     } catch (err) {
         console.error('Ошибка миграции:', err);

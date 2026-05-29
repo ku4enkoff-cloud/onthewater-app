@@ -13,6 +13,7 @@ import Bookings from './pages/Bookings';
 import Reviews from './pages/Reviews';
 import AccountDeletionAudits from './pages/AccountDeletionAudits';
 import Documents from './pages/Documents';
+import UgcReports from './pages/UgcReports';
 
 function RequireAuth({ children }) {
   const token = getToken();
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="amenities" element={<Amenities />} />
         <Route path="bookings" element={<Bookings />} />
         <Route path="reviews" element={<Reviews />} />
+        <Route path="ugc-reports" element={<UgcReports />} />
         <Route path="deletion-audits" element={<AccountDeletionAudits />} />
         <Route path="documents" element={<Documents />} />
       </Route>

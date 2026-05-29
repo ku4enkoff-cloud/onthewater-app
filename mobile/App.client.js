@@ -20,6 +20,7 @@ import { NotificationsProvider, NotificationsContext } from './src/shared/contex
 import { theme } from './src/shared/theme';
 import AppSplashScreen from './src/shared/components/AppSplashScreen';
 import ClientNavigator from './src/client/navigation/ClientNavigator';
+import TermsAcceptModal from './src/shared/components/TermsAcceptModal';
 import OnboardingScreen from './src/client/screens/OnboardingScreen';
 import { useRegisterPushToken } from './src/client/hooks/useRegisterPushToken';
 import { usePushNotificationNavigation } from './src/shared/hooks/usePushNotificationNavigation';
@@ -51,7 +52,8 @@ class ErrorBoundary extends React.Component {
 function ClientRoot() {
   const navigationRef = useNavigationContainerRef();
   const [navReady, setNavReady] = useState(false);
-  const { loading, user } = useContext(AuthContext);
+  const { loading, user, refreshUser } = useContext(AuthContext);
+  const needsTermsAccept = user && !user.terms_accepted_at;
   const { pushEnabled } = useContext(NotificationsContext);
   useRegisterPushToken(user, pushEnabled);
   usePushNotificationNavigation(navigationRef, { user, navReady });
@@ -111,6 +113,10 @@ function ClientRoot() {
   return (
     <NavigationContainer ref={navigationRef} onReady={() => setNavReady(true)}>
       <ClientNavigator />
+      <TermsAcceptModal
+        visible={!!needsTermsAccept}
+        onAccepted={() => refreshUser()}
+      />
     </NavigationContainer>
   );
 }

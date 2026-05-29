@@ -12,11 +12,17 @@ const authenticate = async (req, res, next) => {
         const decoded = verifyToken(token);
 
         const { rows } = await pool.query(
-            'SELECT id, email, name, first_name, last_name, phone, role, email_verified, birthdate, about, address_line, address_city, address_zip, address_country, avatar, created_at FROM users WHERE id = $1',
+            `SELECT id, email, name, first_name, last_name, phone, role, email_verified,
+                    birthdate, about, address_line, address_city, address_zip, address_country,
+                    avatar, created_at, terms_accepted_at, suspended_at
+             FROM users WHERE id = $1`,
             [decoded.id]
         );
         if (rows.length === 0) {
             return res.status(401).json({ error: 'Пользователь не найден.' });
+        }
+        if (rows[0].suspended_at) {
+            return res.status(403).json({ error: 'Аккаунт ограничен модератором.' });
         }
 
         req.user = rows[0];

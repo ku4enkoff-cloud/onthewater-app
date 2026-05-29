@@ -638,4 +638,68 @@ router.delete('/users/:id', async (req, res, next) => {
     }
 });
 
+router.get('/ugc-reports', async (req, res, next) => {
+    try {
+        const status = req.query.status || 'open';
+        const { rows } = await pool.query(
+            `SELECT cr.*,
+                    ru.email AS reporter_email,
+                    ru.name AS reporter_name,
+                    tu.email AS reported_email,
+                    tu.name AS reported_name,
+                    m.text AS message_text
+             FROM content_reports cr
+             LEFT JOIN users ru ON ru.id = cr.reporter_id
+             LEFT JOIN users tu ON tu.id = cr.reported_user_id
+             LEFT JOIN messages m ON m.id = cr.content_id AND cr.content_type = 'message'
+             WHERE ($1::text = 'all' OR cr.status = $1)
+             ORDER BY cr.created_at DESC
+             LIMIT 300`,
+            [status]
+        );
+        res.json(rows);
+    } catch (err) {
+        if (err.code === '42P01') return res.json([]);
+        next(err);
+    }
+});
+
+router.patch('/ugc-reports/:id', async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const { status, suspend_user: suspendUser } = req.body || {};
+        if (!['resolved', 'dismissed', 'open'].includes(status)) {
+            return res.status(400).json({ error: 'status: open | resolved | dismissed' });
+        }
+        const { rows } = await pool.query(
+            `UPDATE content_reports SET status = $1 WHERE id = $2 RETURNING *`,
+            [status, id]
+        );
+        if (rows.length === 0) return res.status(404).json({ error: 'Жалоба не найдена' });
+        const report = rows[0];
+        if (suspendUser && report.reported_user_id) {
+            await pool.query(
+                `UPDATE users SET suspended_at = COALESCE(suspended_at, NOW()) WHERE id = $1`,
+                [report.reported_user_id]
+            ).catch((e) => {
+                if (e.code !== '42703') throw e;
+            });
+        }
+        res.json({ ok: true, report });
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.delete('/ugc-reports/:reportId/messages/:messageId', async (req, res, next) => {
+    try {
+        const messageId = parseInt(req.params.messageId, 10);
+        const { rowCount } = await pool.query('DELETE FROM messages WHERE id = $1', [messageId]);
+        if (rowCount === 0) return res.status(404).json({ error: 'Сообщение не найдено' });
+        res.json({ ok: true });
+    } catch (err) {
+        next(err);
+    }
+});
+
 module.exports = router;

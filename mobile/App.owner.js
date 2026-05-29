@@ -18,6 +18,7 @@ import { NotificationsProvider, NotificationsContext } from './src/shared/contex
 import { theme } from './src/shared/theme';
 import OwnerAuthStack from './src/owner/OwnerAuthStack';
 import OwnerNavigator from './src/owner/navigation/OwnerNavigator';
+import TermsAcceptModal from './src/shared/components/TermsAcceptModal';
 import { useRegisterPushToken } from './src/client/hooks/useRegisterPushToken';
 import { usePushNotificationNavigation } from './src/shared/hooks/usePushNotificationNavigation';
 import { ensureYamapInitialized } from './src/shared/yamapInit';
@@ -48,7 +49,8 @@ class ErrorBoundary extends React.Component {
 function OwnerRoot() {
   const navigationRef = useNavigationContainerRef();
   const [navReady, setNavReady] = useState(false);
-  const { user, loading } = useContext(AuthContext);
+  const { user, loading, refreshUser } = useContext(AuthContext);
+  const needsTermsAccept = user && !user.terms_accepted_at;
   const { pushEnabled } = useContext(NotificationsContext);
   useRegisterPushToken(user, pushEnabled);
   usePushNotificationNavigation(navigationRef, { user, navReady });
@@ -62,6 +64,12 @@ function OwnerRoot() {
   return (
     <NavigationContainer ref={navigationRef} onReady={() => setNavReady(true)}>
       {user == null ? <OwnerAuthStack /> : <OwnerNavigator />}
+      {user != null ? (
+        <TermsAcceptModal
+          visible={!!needsTermsAccept}
+          onAccepted={() => refreshUser()}
+        />
+      ) : null}
     </NavigationContainer>
   );
 }

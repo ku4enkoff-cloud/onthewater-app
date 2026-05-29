@@ -4,6 +4,7 @@ const { authenticate } = require('../middleware/auth');
 const { sendPush } = require('../utils/push');
 const { attachLastMessageMeta } = require('../utils/chatFormat');
 const { sendBookingStatusEmail } = require('../services/email');
+const { getBlockedUserIdsFor } = require('../utils/moderationHelpers');
 
 const router = express.Router();
 
@@ -1062,7 +1063,12 @@ router.get('/chats', authenticate, async (req, res, next) => {
             [req.user.id, showArchived]
         );
 
-        const mapped = rows.map((c) => {
+        const blockedIds = await getBlockedUserIdsFor(req.user.id);
+        const blockedSet = new Set(blockedIds);
+
+        const mapped = rows
+            .filter((c) => !blockedSet.has(c.user_id) && !blockedSet.has(c.owner_id))
+            .map((c) => {
             const display =
                 [c.user_first_name, c.user_last_name]
                     .filter(Boolean)

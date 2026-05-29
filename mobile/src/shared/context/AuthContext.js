@@ -102,8 +102,14 @@ export const AuthProvider = ({ children }) => {
         } catch (_) {}
     };
 
+    const acceptTerms = async () => {
+        const res = await api.post('/auth/accept-terms');
+        if (res.data?.user) setUser(res.data.user);
+        else await refreshUser();
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
+        <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser, acceptTerms }}>
             {children}
         </AuthContext.Provider>
     );

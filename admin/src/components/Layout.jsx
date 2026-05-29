@@ -41,6 +41,9 @@ export default function Layout() {
           <NavLink to="/admin/reviews" className={({ isActive }) => (isActive ? styles.linkActive : styles.link)}>
             Отзывы (модерация)
           </NavLink>
+          <NavLink to="/admin/ugc-reports" className={({ isActive }) => (isActive ? styles.linkActive : styles.link)}>
+            Жалобы UGC
+          </NavLink>
           <NavLink to="/admin/documents" className={({ isActive }) => (isActive ? styles.linkActive : styles.link)}>
             Документы
           </NavLink>

@@ -4,6 +4,8 @@ const { authenticate } = require('../middleware/auth');
 const { sendPush } = require('../utils/push');
 const { attachLastMessageMeta } = require('../utils/chatFormat');
 const { sendNewMessageEmail } = require('../services/email');
+const { validateMessageText } = require('../utils/contentFilter');
+const { getBlockedUserIdsFor, isBlockedBetween } = require('../utils/moderationHelpers');
 
 const router = express.Router();
 
@@ -41,8 +43,15 @@ async function sendMessageEmailToClientIfEnabled({ recipientId, senderName, text
     } catch (_) {}
 }
 
+function filterChatsByBlocks(chats, blockedIds) {
+    if (!blockedIds.length) return chats;
+    const blocked = new Set(blockedIds);
+    return chats.filter((c) => !blocked.has(c.owner_id) && !blocked.has(c.user_id));
+}
+
 router.get('/', authenticate, async (req, res, next) => {
     try {
+        const blockedIds = await getBlockedUserIdsFor(req.user.id);
         const showArchived = req.query.archived === '1';
         const { rows } = await pool.query(
             showArchived
@@ -68,7 +77,7 @@ router.get('/', authenticate, async (req, res, next) => {
                    ORDER BY c.created_at DESC`,
             [req.user.id]
         );
-        res.json(rows.map(attachLastMessageMeta));
+        res.json(filterChatsByBlocks(rows, blockedIds).map(attachLastMessageMeta));
     } catch (err) {
         next(err);
     }
@@ -109,6 +118,9 @@ router.post('/', authenticate, async (req, res, next) => {
         const ownerId = boat.owner_id;
         if (userId === ownerId) {
             return res.status(400).json({ error: 'Нельзя создать чат с самим собой' });
+        }
+        if (await isBlockedBetween(userId, ownerId)) {
+            return res.status(403).json({ error: 'Общение с этим пользователем недоступно' });
         }
         let { rows: existing } = await pool.query(
             'SELECT * FROM chats WHERE user_id = $1 AND boat_id = $2 LIMIT 1',
@@ -171,7 +183,11 @@ router.get('/:id', authenticate, async (req, res, next) => {
             [id, req.user.id]
         );
         if (rows.length === 0) return res.status(404).json({ error: 'Not found' });
-        res.json(rows[0]);
+        const chat = rows[0];
+        if (await isBlockedBetween(req.user.id, chat.owner_id) || await isBlockedBetween(req.user.id, chat.user_id)) {
+            return res.status(403).json({ error: 'Чат недоступен' });
+        }
+        res.json(chat);
     } catch (err) {
         next(err);
     }
@@ -233,20 +249,25 @@ router.get('/:id/messages', authenticate, async (req, res, next) => {
             'SELECT owner_id, user_id FROM chats WHERE id = $1',
             [id]
         );
+        if (chatRows.length === 0) return res.status(404).json({ error: 'Not found' });
+        const chat = chatRows[0];
         const uid = parseInt(req.user.id, 10);
-        if (chatRows.length > 0) {
-            const chat = chatRows[0];
-            if (parseInt(chat.owner_id, 10) === uid) {
-                await pool.query(
-                    `UPDATE messages SET read = true WHERE chat_id = $1 AND sender = 'me' AND (read = false OR read IS NULL)`,
-                    [id]
-                );
-            } else if (parseInt(chat.user_id, 10) === uid) {
-                await pool.query(
-                    `UPDATE messages SET read = true WHERE chat_id = $1 AND sender = 'owner' AND (read = false OR read IS NULL)`,
-                    [id]
-                );
-            }
+        if (uid !== parseInt(chat.owner_id, 10) && uid !== parseInt(chat.user_id, 10)) {
+            return res.status(403).json({ error: 'Нет доступа к чату' });
+        }
+        if (await isBlockedBetween(uid, chat.owner_id) || await isBlockedBetween(uid, chat.user_id)) {
+            return res.status(403).json({ error: 'Чат недоступен' });
+        }
+        if (parseInt(chat.owner_id, 10) === uid) {
+            await pool.query(
+                `UPDATE messages SET read = true WHERE chat_id = $1 AND sender = 'me' AND (read = false OR read IS NULL)`,
+                [id]
+            );
+        } else if (parseInt(chat.user_id, 10) === uid) {
+            await pool.query(
+                `UPDATE messages SET read = true WHERE chat_id = $1 AND sender = 'owner' AND (read = false OR read IS NULL)`,
+                [id]
+            );
         }
         const { rows } = await pool.query(
             'SELECT * FROM messages WHERE chat_id = $1 ORDER BY created_at',
@@ -264,7 +285,19 @@ router.post('/:id/messages', authenticate, async (req, res, next) => {
         const { rows: chatRows } = await pool.query('SELECT * FROM chats WHERE id = $1', [chatId]);
         if (chatRows.length === 0) return res.status(404).json({ error: 'Not found' });
         const chat = chatRows[0];
+        const uid = req.user.id;
+        if (uid !== chat.owner_id && uid !== chat.user_id) {
+            return res.status(403).json({ error: 'Нет доступа к чату' });
+        }
+        const otherId = uid === chat.owner_id ? chat.user_id : chat.owner_id;
+        if (await isBlockedBetween(uid, otherId)) {
+            return res.status(403).json({ error: 'Общение с этим пользователем недоступно' });
+        }
         const text = (req.body && req.body.text) || '';
+        const validation = validateMessageText(text);
+        if (!validation.ok) {
+            return res.status(400).json({ error: validation.error });
+        }
         const sender = req.user.role === 'owner' ? 'owner' : 'me';
         const isOwn = sender === 'me';
         const recipientId = sender === 'owner' ? chat.user_id : chat.owner_id;

@@ -15,6 +15,17 @@ const registerSchema = z.object({
         name: z.string().optional().default(''),
         phone: z.string().optional().default(''),
         role: z.enum(['client', 'owner']).optional().default('client'),
+        accept_terms: z.boolean().optional(),
+    }),
+});
+
+const reportContentSchema = z.object({
+    body: z.object({
+        reported_user_id: z.number().int().positive(),
+        content_type: z.enum(['message', 'user', 'review']),
+        content_id: z.number().int().positive().optional().nullable(),
+        reason: z.enum(['spam', 'harassment', 'fraud', 'other', 'user_blocked']),
+        details: z.string().max(2000).optional().nullable(),
     }),
 });
 
@@ -34,6 +45,7 @@ const resetPasswordSchema = z.object({
 module.exports = {
     loginSchema,
     registerSchema,
+    reportContentSchema,
     requestPasswordResetSchema,
     resetPasswordSchema,
 };

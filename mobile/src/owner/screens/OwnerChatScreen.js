@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
     View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Image, RefreshControl, Alert, ActivityIndicator,
 } from 'react-native';
@@ -25,12 +26,17 @@ export default function OwnerChatScreen({ navigation }) {
     const insets = useSafeAreaInsets();
 
     useEffect(() => {
-        fetchChats();
         const id = setInterval(() => {
             fetchChats();
         }, 30000);
         return () => clearInterval(id);
     }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchChats();
+        }, [])
+    );
 
     const fetchChats = async (isRefresh = false) => {
         try {

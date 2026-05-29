@@ -85,7 +85,7 @@ export default function RegisterScreen({ navigation, route }) {
 
     const handleRegister = async () => {
         if (!validate()) return;
-        if (appVariant === 'owner' && !acceptedLegal) {
+        if (!acceptedLegal) {
             Alert.alert('Ошибка', 'Чтобы зарегистрироваться, подтвердите согласие с юридическими документами.');
             return;
         }
@@ -98,6 +98,7 @@ export default function RegisterScreen({ navigation, route }) {
                 phone: phoneDigits,
                 password,
                 role,
+                accept_terms: true,
             });
             const data = res?.data || {};
             if (data.token && data.user) {
@@ -160,8 +161,7 @@ export default function RegisterScreen({ navigation, route }) {
                         <TextInput style={styles.input} placeholder="Повторите пароль" value={passwordRepeat} onChangeText={setPasswordRepeat} secureTextEntry autoComplete="new-password" />
                     </View>
 
-                    {appVariant === 'owner' ? (
-                        <View style={styles.legalWrap}>
+                    <View style={styles.legalWrap}>
                             <View style={styles.checkboxRow}>
                                 <TouchableOpacity
                                     onPress={() => setAcceptedLegal((v) => !v)}
@@ -199,16 +199,15 @@ export default function RegisterScreen({ navigation, route }) {
                                 </View>
                             </View>
                         </View>
-                    ) : null}
 
                     <TouchableOpacity
                         style={[
                             styles.button,
                             loading && styles.buttonDisabled,
-                            appVariant === 'owner' && !acceptedLegal && !loading ? { opacity: 0.55 } : null,
+                            !acceptedLegal && !loading ? { opacity: 0.55 } : null,
                         ]}
                         onPress={handleRegister}
-                        disabled={loading || (appVariant === 'owner' && !acceptedLegal)}
+                        disabled={loading || !acceptedLegal}
                     >
                         <Text style={styles.buttonText}>{loading ? 'Регистрация...' : 'Зарегистрироваться'}</Text>
                     </TouchableOpacity>

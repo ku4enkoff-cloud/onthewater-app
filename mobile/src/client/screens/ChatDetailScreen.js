@@ -12,6 +12,8 @@ import {
     ActivityIndicator,
     Image,
     InteractionManager,
+    Alert,
+    ActionSheetIOS,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,8 +21,10 @@ import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 import { getPhotoUrl } from '../../shared/infrastructure/config';
 import { AuthContext } from '../../shared/context/AuthContext';
-import { ChevronLeft, Send, Lock, User } from 'lucide-react-native';
+import { ChevronLeft, Send, Lock, User, MoreVertical } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import ReportContentModal from '../../shared/components/ReportContentModal';
+import { filterMessageText } from '../../shared/utils/contentFilter';
 
 /** Клиент — синие пузыри; владелец — палитра как на OwnerChatScreen / остальных экранах владельца. */
 const BLUE = '#1E5DB8';
@@ -41,6 +45,8 @@ export default function ChatDetailScreen({ route, navigation }) {
     const [chat, setChat] = useState(null);
     const flatListRef = useRef(null);
     const [keyboardVisible, setKeyboardVisible] = useState(false);
+    const [reportVisible, setReportVisible] = useState(false);
+    const [reportTarget, setReportTarget] = useState({ contentType: 'user', contentId: null });
 
     const scrollToBottom = useCallback((animated = false) => {
         requestAnimationFrame(() => {
@@ -114,16 +120,96 @@ export default function ChatDetailScreen({ route, navigation }) {
         }
     };
 
+    const otherUserId =
+        currentUser?.role === 'owner'
+            ? chat?.user_id
+            : chat?.owner_id;
+
+    const openReport = (contentType, contentId = null) => {
+        if (!otherUserId) {
+            Alert.alert('Ошибка', 'Не удалось определить пользователя');
+            return;
+        }
+        setReportTarget({ contentType, contentId });
+        setReportVisible(true);
+    };
+
+    const blockUser = () => {
+        if (!otherUserId) return;
+        Alert.alert(
+            'Заблокировать пользователя?',
+            'Вы больше не увидите сообщения от этого пользователя. Жалоба будет отправлена модераторам.',
+            [
+                { text: 'Отмена', style: 'cancel' },
+                {
+                    text: 'Заблокировать',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await api.post(`/moderation/users/${otherUserId}/block`);
+                            Alert.alert('Готово', 'Пользователь заблокирован. Жалоба отправлена модераторам.');
+                            navigation.goBack();
+                        } catch (e) {
+                            Alert.alert('Ошибка', e.response?.data?.error || 'Не удалось заблокировать');
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    const showChatMenu = () => {
+        const lastOtherMessage = [...messages].reverse().find((m) => {
+            const isMe = m.sender === (currentUser?.role === 'owner' ? 'owner' : 'me');
+            return !isMe;
+        });
+        const options = [];
+        const handlers = [];
+        if (lastOtherMessage?.id) {
+            options.push('Пожаловаться на последнее сообщение');
+            handlers.push(() => openReport('message', lastOtherMessage.id));
+        }
+        options.push('Пожаловаться на пользователя', 'Заблокировать пользователя', 'Отмена');
+        handlers.push(
+            () => openReport('user', null),
+            blockUser,
+            () => {}
+        );
+        const cancelIndex = options.length - 1;
+        if (Platform.OS === 'ios') {
+            ActionSheetIOS.showActionSheetWithOptions(
+                { options, cancelButtonIndex: cancelIndex, destructiveButtonIndex: options.length - 2 },
+                (i) => { if (i >= 0 && i < handlers.length) handlers[i](); }
+            );
+        } else {
+            Alert.alert('Действия', undefined, [
+                ...options.slice(0, -1).map((label, i) => ({
+                    text: label,
+                    style: label.includes('Заблокировать') ? 'destructive' : 'default',
+                    onPress: handlers[i],
+                })),
+                { text: 'Отмена', style: 'cancel' },
+            ]);
+        }
+    };
+
     const sendMessage = async () => {
         const text = inputText.trim();
         if (!text) return;
+        const validation = filterMessageText(text);
+        if (!validation.ok) {
+            Alert.alert('Сообщение не отправлено', validation.error);
+            return;
+        }
         setInputText('');
         try {
             const res = await api.post(`/chats/${chatId}/messages`, { text });
             setMessages(prev => [...prev, res.data]);
             scrollToBottom(true);
         } catch (e) {
-            console.log('Send message error', e);
+            const msg = e.response?.data?.error || 'Не удалось отправить сообщение';
+            Alert.alert('Ошибка', msg);
+            setInputText(text);
         }
     };
 
@@ -161,12 +247,7 @@ export default function ChatDetailScreen({ route, navigation }) {
         const themBubbleStyle = isOwnerApp
             ? { backgroundColor: OWNER_BUBBLE_INCOMING }
             : styles.messageBubbleThem;
-        return (
-            <View style={[
-                styles.messageRow,
-                isMe ? styles.messageRowMe : styles.messageRowThem,
-                isLastInGroup ? styles.messageRowGroupEnd : styles.messageRowGroupMid,
-            ]}>
+        const bubble = (
                 <View style={[
                     styles.messageBubble,
                     isMe ? styles.messageBubbleMe : themBubbleStyle,
@@ -180,6 +261,24 @@ export default function ChatDetailScreen({ route, navigation }) {
                         <Text style={[styles.bubbleTime, isMe ? styles.bubbleTimeMe : styles.bubbleTimeThem]}>{timeStr}</Text>
                     </Text>
                 </View>
+        );
+        return (
+            <View style={[
+                styles.messageRow,
+                isMe ? styles.messageRowMe : styles.messageRowThem,
+                isLastInGroup ? styles.messageRowGroupEnd : styles.messageRowGroupMid,
+            ]}>
+                {!isMe ? (
+                    <TouchableOpacity
+                        activeOpacity={0.9}
+                        onLongPress={() => item.id && openReport('message', item.id)}
+                        delayLongPress={400}
+                    >
+                        {bubble}
+                    </TouchableOpacity>
+                ) : (
+                    bubble
+                )}
                 {!isMe && (
                     <View style={[styles.messageMeta, styles.messageMetaThem, isOwnerApp && styles.messageMetaThemOwner]}>
                         {!isOwnerApp && (
@@ -235,7 +334,9 @@ export default function ChatDetailScreen({ route, navigation }) {
                             <Text style={[styles.headerTitle, { color: headerTitleColor }]} numberOfLines={1}>
                                 {headerTitle}
                             </Text>
-                            <View style={styles.headerSpacer} />
+                            <TouchableOpacity style={styles.menuButton} onPress={showChatMenu} accessibilityLabel="Меню чата">
+                                <MoreVertical size={22} color={backIconColor} />
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </View>
@@ -248,10 +349,21 @@ export default function ChatDetailScreen({ route, navigation }) {
                         <Text style={styles.headerTitle} numberOfLines={1}>
                             {headerTitle}
                         </Text>
-                        <View style={styles.headerSpacer} />
+                        <TouchableOpacity style={styles.menuButton} onPress={showChatMenu} accessibilityLabel="Меню чата">
+                            <MoreVertical size={22} color={backIconColor} />
+                        </TouchableOpacity>
                     </View>
                 </View>
             )}
+
+            <ReportContentModal
+                visible={reportVisible}
+                onClose={() => setReportVisible(false)}
+                reportedUserId={otherUserId}
+                contentType={reportTarget.contentType}
+                contentId={reportTarget.contentId}
+                onSubmitted={() => Alert.alert('Спасибо', 'Жалоба отправлена. Мы рассмотрим её в течение 24 часов.')}
+            />
 
             {!loading && (
                 <View style={[styles.tripHeader, isOwnerApp && styles.tripHeaderOwner]}>
@@ -377,6 +489,7 @@ const styles = StyleSheet.create({
         color: theme.colors.gray900,
     },
     headerSpacer: { width: 40 },
+    menuButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
     headerWrapOwner: {
         overflow: 'hidden',
         paddingBottom: theme.spacing.md,
