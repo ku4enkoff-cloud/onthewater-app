@@ -33,6 +33,10 @@ export const SOCKET_URL = API_BASE;
 /** Android package приложения для владельцев (как в app.config.js). */
 export const OWNER_APP_ANDROID_PACKAGE = 'com.anonymous.onthewater.owner';
 
+/** App Store: OnTheWater — для владельцев (id6768568476). */
+export const OWNER_APP_IOS_APP_STORE_URL =
+    'https://apps.apple.com/app/id6768568476';
+
 /**
  * Внешняя ссылка на приложение для владельцев (магазин или сайт).
  * Задайте EXPO_PUBLIC_OWNER_APP_URL — единая ссылка для всех платформ,
@@ -46,9 +50,16 @@ export function getOwnerAppExternalUrl() {
     if (Platform.OS === 'android') {
         return `https://play.google.com/store/apps/details?id=${OWNER_APP_ANDROID_PACKAGE}`;
     }
-    const ios = typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_OWNER_IOS_APP_URL;
-    if (ios && String(ios).trim()) {
-        return String(ios).trim();
+    const iosEnv = typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_OWNER_IOS_APP_URL;
+    if (iosEnv && String(iosEnv).trim()) {
+        return String(iosEnv).trim();
+    }
+    const iosExtra = Constants.expoConfig?.extra?.ownerIosAppUrl;
+    if (iosExtra && String(iosExtra).trim()) {
+        return String(iosExtra).trim();
+    }
+    if (Platform.OS === 'ios') {
+        return OWNER_APP_IOS_APP_STORE_URL;
     }
     return 'https://onthewater.ru';
 }

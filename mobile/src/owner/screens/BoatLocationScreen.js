@@ -1,82 +1,35 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
     ScrollView, Platform, KeyboardAvoidingView, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, MapPin } from 'lucide-react-native';
-import { WebView } from 'react-native-webview';
 import { theme } from '../../shared/theme';
+import { isYamapNativeAvailable } from '../../shared/yamapNative';
+import { ensureYamapInitialized } from '../../shared/yamapInit';
+import { parseYandexGeocodeResult } from '../../shared/geo/parseYandexGeocode';
 
 let LinearGradient = null;
 try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
 
 const GRADIENT = ['#0A4D4D', '#0D5C5C', '#1A7A5A'];
 const TEAL = '#0D5C5C';
+const DEFAULT_CENTER = { lat: 55.751244, lon: 37.618423 };
+const MAP_MARKER_ICON = require('../../../assets/icon.png');
 
-const MAP_HTML = `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<style>
-  *{margin:0;padding:0}
-  html,body,#map{width:100%;height:100%}
-</style>
-<script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&apikey=none" type="text/javascript"></script>
-</head>
-<body>
-<div id="map"></div>
-<script>
-ymaps.ready(function(){
-  var map = new ymaps.Map('map',{center:[55.751244,37.618423],zoom:10,controls:['zoomControl']});
-  var marker = null;
-
-  function reverseGeocode(lat, lng) {
-    var url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&accept-language=ru';
-    fetch(url)
-      .then(function(r){ return r.json(); })
-      .then(function(data){
-        var a = data.address || {};
-        var country = a.country || '';
-        var state = a.state || '';
-        var city = a.city || a.town || a.village || '';
-        if(!city && state && state !== country) city = state;
-        var road = a.road || '';
-        var house = a.house_number || '';
-        var address = road;
-        if(house) address = address ? address + ', ' + house : house;
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type:'geocode', country:country, region:state, city:city, address:address
-        }));
-      })
-      .catch(function(err){
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type:'geocode', country:'', region:'', city:'', address:''
-        }));
-      });
-  }
-
-  map.events.add('click',function(e){
-    var coords = e.get('coords');
-    if(marker) map.geoObjects.remove(marker);
-    marker = new ymaps.Placemark(coords,{},{
-      preset:'islands#redDotIcon'
-    });
-    map.geoObjects.add(marker);
-
-    window.ReactNativeWebView.postMessage(JSON.stringify({
-      type:'coords', lat:coords[0], lng:coords[1]
-    }));
-
-    reverseGeocode(coords[0], coords[1]);
-  });
-});
-</script>
-</body>
-</html>
-`;
+const isMapAvailable = isYamapNativeAvailable;
+let YaMap = null;
+let Marker = null;
+let Search = null;
+if (isMapAvailable) {
+    try {
+        const yamap = require('react-native-yamap-plus');
+        YaMap = yamap.Yamap;
+        Marker = yamap.Marker;
+        Search = yamap.Search;
+    } catch (_) {}
+}
 
 export default function BoatLocationScreen({ navigation, route }) {
     const insets = useSafeAreaInsets();
@@ -93,24 +46,48 @@ export default function BoatLocationScreen({ navigation, route }) {
     const [yachtClub, setYachtClub] = useState(saved?.yachtClub || '');
     const [mapError, setMapError] = useState(route.params?.validationErrors?.map || '');
     const [mapReady, setMapReady] = useState(false);
+    const [geocodeLoading, setGeocodeLoading] = useState(false);
 
-    const webRef = useRef(null);
+    const geocodeSeqRef = useRef(0);
 
-    const onMessage = (event) => {
+    useEffect(() => {
+        if (!isMapAvailable || !YaMap) return;
+        let cancelled = false;
+        ensureYamapInitialized().then((ok) => {
+            if (!cancelled && ok) setMapReady(true);
+        });
+        return () => { cancelled = true; };
+    }, []);
+
+    const reverseGeocode = useCallback(async (pointLat, pointLng) => {
+        if (!Search?.geocodePoint) return;
+        const seq = ++geocodeSeqRef.current;
+        setGeocodeLoading(true);
         try {
-            const data = JSON.parse(event.nativeEvent.data);
-            if (data.type === 'coords') {
-                setLat(data.lat);
-                setLng(data.lng);
-                setMapError('');
-            } else if (data.type === 'geocode') {
-                setCountry(data.country || '');
-                setRegion(data.region || '');
-                setCity(data.city || '');
-                setAddress(data.address || '');
-            }
-        } catch (_) {}
-    };
+            const result = await Search.geocodePoint({ lat: pointLat, lon: pointLng });
+            if (seq !== geocodeSeqRef.current) return;
+            const parsed = parseYandexGeocodeResult(result);
+            setCountry(parsed.country);
+            setRegion(parsed.region);
+            setCity(parsed.city);
+            setAddress(parsed.address);
+        } catch (_) {
+            if (seq !== geocodeSeqRef.current) return;
+        } finally {
+            if (seq === geocodeSeqRef.current) setGeocodeLoading(false);
+        }
+    }, []);
+
+    const handleMapPress = useCallback((e) => {
+        const point = e?.nativeEvent;
+        const pointLat = point?.lat;
+        const pointLng = point?.lon ?? point?.lng;
+        if (pointLat == null || pointLng == null) return;
+        setLat(pointLat);
+        setLng(pointLng);
+        setMapError('');
+        reverseGeocode(pointLat, pointLng);
+    }, [reverseGeocode]);
 
     const handleNext = () => {
         if (lat == null || lng == null) {
@@ -132,9 +109,51 @@ export default function BoatLocationScreen({ navigation, route }) {
         });
     };
 
+    const initialRegion = {
+        lat: lat ?? DEFAULT_CENTER.lat,
+        lon: lng ?? DEFAULT_CENTER.lon,
+        zoom: lat != null ? 14 : 10,
+    };
+
+    const renderMap = () => {
+        if (!isMapAvailable || !YaMap) {
+            return (
+                <View style={s.mapPlaceholder}>
+                    <Text style={s.mapPlaceholderText}>
+                        Карта доступна в полной сборке приложения (не Expo Go). Укажите адрес в полях ниже или соберите dev/production build.
+                    </Text>
+                </View>
+            );
+        }
+        if (!mapReady) {
+            return (
+                <View style={s.mapLoader}>
+                    <ActivityIndicator size="large" color={TEAL} />
+                    <Text style={s.mapLoaderText}>Загрузка карты...</Text>
+                </View>
+            );
+        }
+        return (
+            <YaMap
+                style={s.map}
+                initialRegion={initialRegion}
+                onMapPress={handleMapPress}
+                onMapLoaded={() => setMapReady(true)}
+            >
+                {lat != null && lng != null && Marker ? (
+                    <Marker
+                        point={{ lat, lon: lng }}
+                        source={MAP_MARKER_ICON}
+                        scale={0.12}
+                        anchor={{ x: 0.5, y: 1 }}
+                    />
+                ) : null}
+            </YaMap>
+        );
+    };
+
     return (
         <View style={s.root}>
-            {/* Gradient header */}
             <View style={s.headerWrap}>
                 {LinearGradient ? (
                     <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFillObject} />
@@ -163,43 +182,31 @@ export default function BoatLocationScreen({ navigation, route }) {
                 style={{ flex: 1 }}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
+                {mapError ? <Text style={[s.fieldErrorText, s.mapErrorOutside]}>{mapError}</Text> : null}
+                <View style={[s.mapContainer, mapError && s.mapContainerError]}>
+                    {renderMap()}
+                    {geocodeLoading ? (
+                        <View style={s.geocodeBadge}>
+                            <ActivityIndicator size="small" color="#fff" />
+                            <Text style={s.geocodeBadgeText}>Адрес…</Text>
+                        </View>
+                    ) : null}
+                    {lat != null && lng != null && (
+                        <View style={s.coordsBadge}>
+                            <MapPin size={14} color="#fff" />
+                            <Text style={s.coordsText}>
+                                {lat.toFixed(5)}, {lng.toFixed(5)}
+                            </Text>
+                        </View>
+                    )}
+                </View>
+
                 <ScrollView
                     style={s.body}
                     contentContainerStyle={[s.bodyContent, { paddingBottom: 100 }]}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    {/* Map */}
-                    {mapError ? <Text style={s.fieldErrorText}>{mapError}</Text> : null}
-                    <View style={[s.mapContainer, mapError && s.mapContainerError]}>
-                        {!mapReady && (
-                            <View style={s.mapLoader}>
-                                <ActivityIndicator size="large" color={TEAL} />
-                                <Text style={s.mapLoaderText}>Загрузка карты...</Text>
-                            </View>
-                        )}
-                        <WebView
-                            ref={webRef}
-                            source={{ html: MAP_HTML }}
-                            style={[s.map, !mapReady && { opacity: 0 }]}
-                            onMessage={onMessage}
-                            onLoadEnd={() => setMapReady(true)}
-                            javaScriptEnabled
-                            domStorageEnabled
-                            scrollEnabled={false}
-                            nestedScrollEnabled={false}
-                        />
-                        {lat != null && lng != null && (
-                            <View style={s.coordsBadge}>
-                                <MapPin size={14} color="#fff" />
-                                <Text style={s.coordsText}>
-                                    {lat.toFixed(5)}, {lng.toFixed(5)}
-                                </Text>
-                            </View>
-                        )}
-                    </View>
-
-                    {/* Auto-filled fields */}
                     <View style={s.fieldWrap}>
                         <Text style={s.fieldLabel}>Страна</Text>
                         <TextInput
@@ -257,7 +264,6 @@ export default function BoatLocationScreen({ navigation, route }) {
                 </ScrollView>
             </KeyboardAvoidingView>
 
-            {/* Footer */}
             <View style={[s.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
                 <TouchableOpacity
                     style={s.nextBtn}
@@ -274,7 +280,6 @@ export default function BoatLocationScreen({ navigation, route }) {
 const s = StyleSheet.create({
     root: { flex: 1, backgroundColor: '#fff' },
 
-    /* Header */
     headerWrap: { overflow: 'hidden' },
     headerInner: { paddingHorizontal: 20, paddingBottom: 28 },
     backBtn: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
@@ -288,26 +293,61 @@ const s = StyleSheet.create({
         lineHeight: 20,
     },
 
-    /* Body */
     body: { flex: 1 },
-    bodyContent: { paddingHorizontal: 20, paddingTop: 20 },
+    bodyContent: { paddingHorizontal: 20, paddingTop: 16 },
 
-    /* Map */
-    fieldErrorText: { fontSize: 12, fontFamily: theme.fonts.medium, color: '#DC2626', marginBottom: 8 },
+    fieldErrorText: { fontSize: 12, fontFamily: theme.fonts.medium, color: '#DC2626' },
+    mapErrorOutside: { marginHorizontal: 20, marginTop: 12, marginBottom: 4 },
     mapContainerError: { borderWidth: 2, borderColor: '#DC2626' },
     mapContainer: {
-        height: 260, borderRadius: 14, overflow: 'hidden',
-        borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 20,
+        height: 260,
+        marginHorizontal: 20,
+        marginTop: 12,
+        borderRadius: 14,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
         backgroundColor: '#F3F4F6',
     },
-    map: { flex: 1 },
+    map: { width: '100%', height: 260 },
     mapLoader: {
         ...StyleSheet.absoluteFillObject,
-        justifyContent: 'center', alignItems: 'center',
-        backgroundColor: '#F3F4F6', zIndex: 2,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#F3F4F6',
     },
     mapLoaderText: {
         marginTop: 8, fontSize: 13, fontFamily: theme.fonts.regular, color: '#9CA3AF',
+    },
+    mapPlaceholder: {
+        flex: 1,
+        justifyContent: 'center',
+        padding: 16,
+        backgroundColor: '#F3F4F6',
+    },
+    mapPlaceholderText: {
+        fontSize: 13,
+        fontFamily: theme.fonts.regular,
+        color: '#6B7280',
+        textAlign: 'center',
+        lineHeight: 18,
+    },
+    geocodeBadge: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: 'rgba(13,92,92,0.85)',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+    },
+    geocodeBadgeText: {
+        fontSize: 12,
+        fontFamily: theme.fonts.medium,
+        color: '#fff',
     },
     coordsBadge: {
         position: 'absolute', bottom: 10, left: 10,
@@ -319,7 +359,6 @@ const s = StyleSheet.create({
         fontSize: 12, fontFamily: theme.fonts.medium, color: '#fff',
     },
 
-    /* Fields */
     fieldWrap: { marginBottom: 16 },
     fieldLabel: {
         fontSize: 14, fontFamily: theme.fonts.medium, color: '#374151',
@@ -332,7 +371,6 @@ const s = StyleSheet.create({
         backgroundColor: '#fff',
     },
 
-    /* Footer */
     footer: {
         paddingHorizontal: 20, paddingTop: 12,
         borderTopWidth: 1, borderTopColor: '#F3F4F6', backgroundColor: '#fff',
@@ -341,6 +379,5 @@ const s = StyleSheet.create({
         backgroundColor: TEAL, borderRadius: 12,
         paddingVertical: 16, alignItems: 'center',
     },
-    nextBtnDisabled: { opacity: 0.45 },
     nextBtnText: { fontSize: 16, fontFamily: theme.fonts.semiBold, color: '#fff' },
 });

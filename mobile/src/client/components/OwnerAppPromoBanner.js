@@ -30,7 +30,8 @@ export default function OwnerAppPromoBanner({ tabletCardStyle }) {
             <View style={styles.textCol}>
                 <Text style={styles.title}>Владеете катером?</Text>
                 <Text style={styles.desc}>
-                    Зарабатывайте, сдавая судно в аренду в приложении для владельцев. Узнать больше
+                    Зарабатывайте, сдавая судно в аренду в приложении для владельцев.{' '}
+                    <Text style={styles.link}>Узнать больше</Text>
                 </Text>
             </View>
         </Pressable>
@@ -77,5 +78,10 @@ const styles = StyleSheet.create({
         lineHeight: 20,
         fontFamily: theme.fonts.regular,
         color: theme.colors.gray700,
+    },
+    link: {
+        fontFamily: theme.fonts.semiBold,
+        color: theme.colors.waveDark,
+        textDecorationLine: 'underline',
     },
 });

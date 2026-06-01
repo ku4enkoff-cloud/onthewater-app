@@ -82,6 +82,8 @@ export default {
         : (process.env.EXPO_PUBLIC_APPMETRICA_API_KEY || ''),
       yandexMapkitApiKey: process.env.EXPO_PUBLIC_YANDEX_MAPKIT_API_KEY || '84448445-01d9-454b-8398-9adaaf19ad61',
       yandexGeosuggestApiKey: process.env.EXPO_PUBLIC_YANDEX_GEO_SUGGEST_API_KEY || '5cf2910a-9463-4be8-a6c9-81c7f5f0abef',
+      ownerIosAppUrl:
+        process.env.EXPO_PUBLIC_OWNER_IOS_APP_URL || 'https://apps.apple.com/app/id6768568476',
       // Для push на APK (не Expo Go) обязателен Expo projectId. Взять: https://expo.dev → проект → Project ID
       eas: {
         projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID || '1458b8bd-8918-409a-b2fa-75d6be05ccde', // Expo Project ID для push на APK
