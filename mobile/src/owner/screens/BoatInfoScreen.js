@@ -28,14 +28,16 @@ const isWaterSportOption = (name) => WATER_SPORTS_OPTIONS.includes(String(name |
 export default function BoatInfoScreen({ navigation, route }) {
     const insets = useSafeAreaInsets();
     const boatType = route.params?.boatType;
+    const saved = route.params?.boatInfo;
 
-    const [manufacturer, setManufacturer] = useState('');
-    const [model, setModel] = useState('');
-    const [year, setYear] = useState('');
+    const [manufacturer, setManufacturer] = useState(saved?.manufacturer || '');
+    const [model, setModel] = useState(saved?.model || '');
+    const [year, setYear] = useState(saved?.year || '');
     const [yearOpen, setYearOpen] = useState(false);
-    const [capacity, setCapacity] = useState('');
-    const [selectedAmenities, setSelectedAmenities] = useState([]);
-    const [waterSports, setWaterSports] = useState([]);
+    const [capacity, setCapacity] = useState(saved?.capacity ? String(saved.capacity) : '');
+    const [selectedAmenities, setSelectedAmenities] = useState(saved?.amenities || []);
+    const [waterSports, setWaterSports] = useState(saved?.waterSports || []);
+    const [fieldErrors, setFieldErrors] = useState(route.params?.validationErrors || {});
     const [amenitiesOptions, setAmenitiesOptions] = useState(AMENITIES_FALLBACK);
 
     useEffect(() => {
@@ -63,10 +65,26 @@ export default function BoatInfoScreen({ navigation, route }) {
         );
     };
 
-    const canContinue = manufacturer.trim() && model.trim() && year.trim() && capacity.trim();
+    const clearErr = (key) => setFieldErrors((prev) => {
+        if (!prev[key]) return prev;
+        const next = { ...prev };
+        delete next[key];
+        return next;
+    });
 
     const handleNext = () => {
-        if (!canContinue) return;
+        const errs = {};
+        if (!manufacturer.trim()) errs.manufacturer = 'Укажите производителя';
+        if (!model.trim()) errs.model = 'Укажите модель';
+        if (!year.trim()) errs.year = 'Выберите год выпуска';
+        if (!capacity.trim()) errs.capacity = 'Укажите вместимость';
+        else if (!Number.isFinite(Number(capacity)) || Number(capacity) < 1) {
+            errs.capacity = 'Вместимость должна быть не меньше 1';
+        }
+        if (Object.keys(errs).length > 0) {
+            setFieldErrors(errs);
+            return;
+        }
         navigation.navigate('BoatLocation', {
             boatType,
             boatInfo: {
@@ -123,31 +141,33 @@ export default function BoatInfoScreen({ navigation, route }) {
                     <View style={s.fieldWrap}>
                         <Text style={s.fieldLabel}>Производитель *</Text>
                         <TextInput
-                            style={s.input}
+                            style={[s.input, fieldErrors.manufacturer && s.inputError]}
                             placeholder="Например, Yamaha"
                             placeholderTextColor="#9CA3AF"
                             value={manufacturer}
-                            onChangeText={setManufacturer}
+                            onChangeText={(v) => { setManufacturer(v); clearErr('manufacturer'); }}
                         />
+                        {fieldErrors.manufacturer ? <Text style={s.fieldErrorText}>{fieldErrors.manufacturer}</Text> : null}
                     </View>
 
                     {/* Model */}
                     <View style={s.fieldWrap}>
                         <Text style={s.fieldLabel}>Модель *</Text>
                         <TextInput
-                            style={s.input}
+                            style={[s.input, fieldErrors.model && s.inputError]}
                             placeholder="Например, 242X E-Series"
                             placeholderTextColor="#9CA3AF"
                             value={model}
-                            onChangeText={setModel}
+                            onChangeText={(v) => { setModel(v); clearErr('model'); }}
                         />
+                        {fieldErrors.model ? <Text style={s.fieldErrorText}>{fieldErrors.model}</Text> : null}
                     </View>
 
                     {/* Year */}
                     <View style={[s.fieldWrap, { zIndex: 20 }]}>
                         <Text style={s.fieldLabel}>Год выпуска *</Text>
                         <TouchableOpacity
-                            style={s.selector}
+                            style={[s.selector, fieldErrors.year && s.inputError]}
                             onPress={() => setYearOpen(!yearOpen)}
                             activeOpacity={0.7}
                         >
@@ -190,20 +210,22 @@ export default function BoatInfoScreen({ navigation, route }) {
                                 </ScrollView>
                             </View>
                         )}
+                        {fieldErrors.year ? <Text style={s.fieldErrorText}>{fieldErrors.year}</Text> : null}
                     </View>
 
                     {/* Capacity */}
                     <View style={s.fieldWrap}>
                         <Text style={s.fieldLabel}>Вместимость (чел.) *</Text>
                         <TextInput
-                            style={s.input}
+                            style={[s.input, fieldErrors.capacity && s.inputError]}
                             placeholder="8"
                             placeholderTextColor="#9CA3AF"
                             value={capacity}
-                            onChangeText={setCapacity}
+                            onChangeText={(v) => { setCapacity(v); clearErr('capacity'); }}
                             keyboardType="number-pad"
                             maxLength={3}
                         />
+                        {fieldErrors.capacity ? <Text style={s.fieldErrorText}>{fieldErrors.capacity}</Text> : null}
                     </View>
 
                     {boatType && isTugboat(boatType.name) && (
@@ -263,9 +285,8 @@ export default function BoatInfoScreen({ navigation, route }) {
             {/* Footer */}
             <View style={[s.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
                 <TouchableOpacity
-                    style={[s.nextBtn, !canContinue && s.nextBtnDisabled]}
+                    style={s.nextBtn}
                     onPress={handleNext}
-                    disabled={!canContinue}
                     activeOpacity={0.85}
                 >
                     <Text style={s.nextBtnText}>Продолжить</Text>
@@ -307,6 +328,8 @@ const s = StyleSheet.create({
         fontSize: 16, fontFamily: theme.fonts.regular, color: '#1B365D',
         backgroundColor: '#fff',
     },
+    inputError: { borderColor: '#DC2626', borderWidth: 2, backgroundColor: '#FFFBFB' },
+    fieldErrorText: { fontSize: 12, fontFamily: theme.fonts.medium, color: '#DC2626', marginTop: 6 },
     /* Dropdown */
     selector: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

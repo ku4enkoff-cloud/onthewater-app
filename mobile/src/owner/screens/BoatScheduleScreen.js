@@ -73,25 +73,37 @@ export default function BoatScheduleScreen({ navigation, route }) {
     const boatType = route.params?.boatType;
     const boatInfo = route.params?.boatInfo;
     const boatLocation = route.params?.boatLocation;
+    const saved = route.params?.boatSchedule;
+    const initialErrors = route.params?.validationErrors || {};
 
-    const [workDates, setWorkDates] = useState(new Set());
+    const [workDates, setWorkDates] = useState(() => new Set(saved?.workDates || []));
     const [calendarMonth, setCalendarMonth] = useState(() => {
         const d = new Date();
         return new Date(d.getFullYear(), d.getMonth(), 1);
     });
 
-    const [weekdayStart, setWeekdayStart] = useState(DEFAULT_START);
-    const [weekdayEnd, setWeekdayEnd] = useState(DEFAULT_END);
-    const [weekendStart, setWeekendStart] = useState('09:00');
-    const [weekendEnd, setWeekendEnd] = useState('18:00');
+    const [weekdayStart, setWeekdayStart] = useState(saved?.weekdayHours?.start || DEFAULT_START);
+    const [weekdayEnd, setWeekdayEnd] = useState(saved?.weekdayHours?.end || DEFAULT_END);
+    const [weekendStart, setWeekendStart] = useState(saved?.weekendHours?.start || '09:00');
+    const [weekendEnd, setWeekendEnd] = useState(saved?.weekendHours?.end || '18:00');
 
-    const [minDuration, setMinDuration] = useState(60);
+    const [minDuration, setMinDuration] = useState(saved?.minDuration ?? 60);
     const [durationOpen, setDurationOpen] = useState(false);
 
-    const [pricePerHour, setPricePerHour] = useState('');
-    const [weekendPrice, setWeekendPrice] = useState('');
+    const [pricePerHour, setPricePerHour] = useState(saved?.pricePerMinDuration ? String(saved.pricePerMinDuration) : '');
+    const [weekendPrice, setWeekendPrice] = useState(saved?.weekendPrice ? String(saved.weekendPrice) : '');
 
-    const [priceTiers, setPriceTiers] = useState([]);
+    const [priceTiers, setPriceTiers] = useState(() => {
+        const tiers = saved?.priceTiers;
+        if (!Array.isArray(tiers) || tiers.length === 0) return [];
+        return tiers.map((t, i) => ({
+            id: tierIdCounter++,
+            duration: t.duration,
+            price: String(t.price || ''),
+            price_weekend: t.price_weekend != null ? String(t.price_weekend) : '',
+        }));
+    });
+    const [fieldErrors, setFieldErrors] = useState(initialErrors);
     const [tierDurationOpenId, setTierDurationOpenId] = useState(null);
 
     const [weekdayStartOpen, setWeekdayStartOpen] = useState(false);
@@ -107,6 +119,7 @@ export default function BoatScheduleScreen({ navigation, route }) {
             else next.add(key);
             return next;
         });
+        clearErr('workDates');
     };
 
     const selectAllInMonth = () => {
@@ -121,6 +134,7 @@ export default function BoatScheduleScreen({ navigation, route }) {
             keys.forEach((k) => next.add(k));
             return next;
         });
+        clearErr('workDates');
     };
 
     const clearAllDates = () => setWorkDates(new Set());
@@ -158,10 +172,24 @@ export default function BoatScheduleScreen({ navigation, route }) {
         const day = new Date(d).getDay();
         return day === 0 || day === 6;
     });
-    const canContinue = anyDaySelected && pricePerHour.trim();
+    const clearErr = (key) => setFieldErrors((prev) => {
+        if (!prev[key]) return prev;
+        const next = { ...prev };
+        delete next[key];
+        return next;
+    });
 
     const handleNext = () => {
-        if (!canContinue) return;
+        const errs = {};
+        if (workDates.size === 0) errs.workDates = 'Выберите хотя бы один рабочий день';
+        const price = Number(String(pricePerHour).replace(/\s/g, ''));
+        if (!pricePerHour.trim() || !Number.isFinite(price) || price <= 0) {
+            errs.pricePerHour = 'Укажите цену за минимальную длительность';
+        }
+        if (Object.keys(errs).length > 0) {
+            setFieldErrors(errs);
+            return;
+        }
         navigation.navigate('BoatMedia', {
             boatType,
             boatInfo,
@@ -262,7 +290,8 @@ export default function BoatScheduleScreen({ navigation, route }) {
                     {/* Working days - calendar */}
                     <Text style={s.sectionTitle}>Рабочие дни</Text>
                     <Text style={s.sectionHint}>Выберите даты, когда катер доступен для аренды.</Text>
-                    <View style={s.calendarWrap}>
+                    {fieldErrors.workDates ? <Text style={s.fieldErrorText}>{fieldErrors.workDates}</Text> : null}
+                    <View style={[s.calendarWrap, fieldErrors.workDates && s.calendarWrapError]}>
                         <View style={s.monthRow}>
                             <TouchableOpacity onPress={() => setCalendarMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))} style={s.arrowBtn}>
                                 <ChevronLeft size={24} color={TEAL} />
@@ -404,15 +433,16 @@ export default function BoatScheduleScreen({ navigation, route }) {
                         <Text style={s.sectionHint}>Цена за {durationLabel}</Text>
                         <View style={s.priceRow}>
                             <TextInput
-                                style={s.priceInput}
+                                style={[s.priceInput, fieldErrors.pricePerHour && s.inputError]}
                                 placeholder="5 000"
                                 placeholderTextColor="#9CA3AF"
                                 value={pricePerHour}
-                                onChangeText={setPricePerHour}
+                                onChangeText={(v) => { setPricePerHour(v); clearErr('pricePerHour'); }}
                                 keyboardType="number-pad"
                             />
                             <Text style={s.priceSuffix}>₽ / {durationLabel}</Text>
                         </View>
+                        {fieldErrors.pricePerHour ? <Text style={s.fieldErrorText}>{fieldErrors.pricePerHour}</Text> : null}
                     </View>
 
                     {/* Weekend price */}
@@ -521,9 +551,8 @@ export default function BoatScheduleScreen({ navigation, route }) {
 
             <View style={[s.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
                 <TouchableOpacity
-                    style={[s.nextBtn, !canContinue && s.nextBtnDisabled]}
+                    style={s.nextBtn}
                     onPress={handleNext}
-                    disabled={!canContinue}
                     activeOpacity={0.85}
                 >
                     <Text style={s.nextBtnText}>Продолжить</Text>
@@ -658,6 +687,9 @@ const s = StyleSheet.create({
         borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12,
         backgroundColor: '#fff', paddingHorizontal: 16, marginTop: 4,
     },
+    fieldErrorText: { fontSize: 12, fontFamily: theme.fonts.medium, color: '#DC2626', marginBottom: 8 },
+    calendarWrapError: { borderWidth: 2, borderColor: '#DC2626' },
+    inputError: { borderColor: '#DC2626', borderWidth: 2, backgroundColor: '#FFFBFB' },
     priceInput: {
         flex: 1, fontSize: 22, fontFamily: theme.fonts.semiBold, color: '#1B365D',
         paddingVertical: 14,

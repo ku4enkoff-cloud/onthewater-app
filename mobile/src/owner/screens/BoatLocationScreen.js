@@ -82,14 +82,16 @@ export default function BoatLocationScreen({ navigation, route }) {
     const insets = useSafeAreaInsets();
     const boatType = route.params?.boatType;
     const boatInfo = route.params?.boatInfo;
+    const saved = route.params?.boatLocation;
 
-    const [lat, setLat] = useState(null);
-    const [lng, setLng] = useState(null);
-    const [country, setCountry] = useState('');
-    const [region, setRegion] = useState('');
-    const [city, setCity] = useState('');
-    const [address, setAddress] = useState('');
-    const [yachtClub, setYachtClub] = useState('');
+    const [lat, setLat] = useState(saved?.lat ?? null);
+    const [lng, setLng] = useState(saved?.lng ?? null);
+    const [country, setCountry] = useState(saved?.country || '');
+    const [region, setRegion] = useState(saved?.region || '');
+    const [city, setCity] = useState(saved?.city || '');
+    const [address, setAddress] = useState(saved?.address || '');
+    const [yachtClub, setYachtClub] = useState(saved?.yachtClub || '');
+    const [mapError, setMapError] = useState(route.params?.validationErrors?.map || '');
     const [mapReady, setMapReady] = useState(false);
 
     const webRef = useRef(null);
@@ -100,6 +102,7 @@ export default function BoatLocationScreen({ navigation, route }) {
             if (data.type === 'coords') {
                 setLat(data.lat);
                 setLng(data.lng);
+                setMapError('');
             } else if (data.type === 'geocode') {
                 setCountry(data.country || '');
                 setRegion(data.region || '');
@@ -109,10 +112,11 @@ export default function BoatLocationScreen({ navigation, route }) {
         } catch (_) {}
     };
 
-    const canContinue = lat != null && lng != null;
-
     const handleNext = () => {
-        if (!canContinue) return;
+        if (lat == null || lng == null) {
+            setMapError('Нажмите на карту, чтобы указать место стоянки катера');
+            return;
+        }
         navigation.navigate('BoatSchedule', {
             boatType,
             boatInfo,
@@ -166,7 +170,8 @@ export default function BoatLocationScreen({ navigation, route }) {
                     keyboardShouldPersistTaps="handled"
                 >
                     {/* Map */}
-                    <View style={s.mapContainer}>
+                    {mapError ? <Text style={s.fieldErrorText}>{mapError}</Text> : null}
+                    <View style={[s.mapContainer, mapError && s.mapContainerError]}>
                         {!mapReady && (
                             <View style={s.mapLoader}>
                                 <ActivityIndicator size="large" color={TEAL} />
@@ -255,9 +260,8 @@ export default function BoatLocationScreen({ navigation, route }) {
             {/* Footer */}
             <View style={[s.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
                 <TouchableOpacity
-                    style={[s.nextBtn, !canContinue && s.nextBtnDisabled]}
+                    style={s.nextBtn}
                     onPress={handleNext}
-                    disabled={!canContinue}
                     activeOpacity={0.85}
                 >
                     <Text style={s.nextBtnText}>Продолжить</Text>
@@ -289,6 +293,8 @@ const s = StyleSheet.create({
     bodyContent: { paddingHorizontal: 20, paddingTop: 20 },
 
     /* Map */
+    fieldErrorText: { fontSize: 12, fontFamily: theme.fonts.medium, color: '#DC2626', marginBottom: 8 },
+    mapContainerError: { borderWidth: 2, borderColor: '#DC2626' },
     mapContainer: {
         height: 260, borderRadius: 14, overflow: 'hidden',
         borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 20,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
     ScrollView, Alert, Platform, KeyboardAvoidingView, ActivityIndicator,
@@ -9,6 +9,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 import { API_BASE } from '../../shared/infrastructure/config';
+import {
+    validateAddBoatDraft,
+    errorsForStep,
+    ADD_BOAT_STEP_LABELS,
+} from '../utils/validateAddBoatDraft';
 
 let LinearGradient = null;
 try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
@@ -33,22 +38,94 @@ export default function AddBoatScreen({ navigation, route }) {
     const [cancellationPolicy, setCancellationPolicy] = useState('');
     const [captainOption, setCaptainOption] = useState('none');
     const [loading, setLoading] = useState(false);
+    const [fieldErrors, setFieldErrors] = useState({});
+    const [otherStepErrors, setOtherStepErrors] = useState([]);
+    const scrollRef = useRef(null);
+    const fieldYRef = useRef({});
 
-    const canSubmit = title.trim() && description.trim();
+    const wizardParams = {
+        boatType,
+        boatInfo,
+        boatLocation,
+        boatSchedule,
+        boatMedia,
+    };
+
+    const clearFieldError = (field) => {
+        setFieldErrors((prev) => {
+            if (!prev[field]) return prev;
+            const next = { ...prev };
+            delete next[field];
+            return next;
+        });
+    };
+
+    const runValidation = useCallback(() => {
+        const { valid, errors } = validateAddBoatDraft({
+            ...wizardParams,
+            title,
+            description,
+        });
+        const onThisScreen = errorsForStep(errors, 'AddBoat');
+        const elsewhere = errors.filter((e) => e.step !== 'AddBoat');
+        setFieldErrors(onThisScreen);
+        setOtherStepErrors(elsewhere);
+        return { valid, onThisScreen, elsewhere };
+    }, [boatType, boatInfo, boatLocation, boatSchedule, boatMedia, title, description]);
+
+    const goToStep = (step) => {
+        const validationErrors = errorsForStep(
+            validateAddBoatDraft({ ...wizardParams, title, description }).errors,
+            step,
+        );
+        const payload = {
+            ...wizardParams,
+            title: title.trim(),
+            description: description.trim(),
+            paymentPolicy: paymentPolicy.trim(),
+            rules: rules.trim(),
+            cancellationPolicy: cancellationPolicy.trim(),
+            captainOption,
+            validationErrors,
+        };
+        switch (step) {
+            case 'BoatType':
+                navigation.navigate('BoatType', { boatType, validationErrors });
+                break;
+            case 'BoatInfo':
+                navigation.navigate('BoatInfo', payload);
+                break;
+            case 'BoatLocation':
+                navigation.navigate('BoatLocation', payload);
+                break;
+            case 'BoatSchedule':
+                navigation.navigate('BoatSchedule', payload);
+                break;
+            case 'BoatMedia':
+                navigation.navigate('BoatMedia', payload);
+                break;
+            default:
+                break;
+        }
+    };
 
     const handleSubmit = async () => {
-        if (!title.trim()) {
-            Alert.alert('Ошибка', 'Введите название объявления');
-            return;
-        }
-        if (!description.trim()) {
-            Alert.alert('Ошибка', 'Введите описание катера');
-            return;
-        }
-
-        const photos = boatMedia?.photos || [];
-        if (photos.length === 0) {
-            Alert.alert('Внимание', 'Нет фотографий катера');
+        const { valid, onThisScreen, elsewhere } = runValidation();
+        if (!valid) {
+            const firstField = Object.keys(onThisScreen)[0];
+            if (firstField && fieldYRef.current[firstField] != null) {
+                scrollRef.current?.scrollTo({ y: Math.max(0, fieldYRef.current[firstField] - 24), animated: true });
+            }
+            if (elsewhere.length > 0 && Object.keys(onThisScreen).length === 0) {
+                Alert.alert(
+                    'Заполните обязательные поля',
+                    elsewhere.map((e) => `• ${ADD_BOAT_STEP_LABELS[e.step] || e.step}: ${e.message}`).join('\n'),
+                    [
+                        { text: 'Отмена', style: 'cancel' },
+                        { text: 'Перейти', onPress: () => goToStep(elsewhere[0].step) },
+                    ],
+                );
+            }
             return;
         }
 
@@ -98,6 +175,7 @@ export default function AddBoatScreen({ navigation, route }) {
             }
 
             const isLocalUri = (p) => typeof p === 'string' && (p.startsWith('file://') || p.startsWith('content://'));
+            const photos = boatMedia?.photos || [];
             photos.filter(isLocalUri).forEach((uri, i) => {
                 payload.append('photos', { uri, type: 'image/jpeg', name: `photo_${i}.jpg` });
             });
@@ -152,7 +230,10 @@ export default function AddBoatScreen({ navigation, route }) {
                 if (error.code === 'ECONNABORTED' || error.name === 'AbortError') message = 'Превышено время ожидания. Проверьте интернет и попробуйте снова.';
                 else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network') || error.message?.includes('Failed to fetch')) {
                     message = `Нет соединения с сервером. Адрес: ${API_BASE}. Запустите бэкенд (backend) и проверьте настройку EXPO_PUBLIC_API_URL в mobile/.env для реального устройства.`;
-                } else message = 'Не удалось добавить катер';
+                } else message = 'Не удалось добавить катер. Проверьте обязательные поля на всех шагах.';
+            }
+            if (message.includes('обязательн') || message.includes('Не хватает')) {
+                runValidation();
             }
             Alert.alert('Ошибка', message);
         } finally {
@@ -183,47 +264,73 @@ export default function AddBoatScreen({ navigation, route }) {
 
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
                 <ScrollView
+                    ref={scrollRef}
                     style={s.body}
                     contentContainerStyle={[s.bodyContent, { paddingBottom: 120 }]}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
+                    {otherStepErrors.length > 0 ? (
+                        <View style={s.validationBox}>
+                            <Text style={s.validationTitle}>Не заполнены обязательные поля на других шагах:</Text>
+                            {otherStepErrors.map((e) => (
+                                <TouchableOpacity
+                                    key={`${e.step}-${e.field}`}
+                                    style={s.validationRow}
+                                    onPress={() => goToStep(e.step)}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text style={s.validationStep}>{ADD_BOAT_STEP_LABELS[e.step] || e.step}</Text>
+                                    <Text style={s.validationMessage}>{e.message}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    ) : null}
+
                     {/* Title */}
-                    <View style={s.fieldWrap}>
+                    <View
+                        style={s.fieldWrap}
+                        onLayout={(ev) => { fieldYRef.current.title = ev.nativeEvent.layout.y; }}
+                    >
                         <View style={s.fieldHeader}>
-                            <FileText size={18} color={TEAL} />
+                            <FileText size={18} color={fieldErrors.title ? '#DC2626' : TEAL} />
                             <Text style={s.fieldLabel}>Название объявления *</Text>
                         </View>
                         <TextInput
-                            style={s.input}
+                            style={[s.input, fieldErrors.title && s.inputError]}
                             placeholder="Например, «Быстрый катер для отдыха»"
                             placeholderTextColor="#9CA3AF"
                             value={title}
-                            onChangeText={setTitle}
+                            onChangeText={(v) => { setTitle(v); clearFieldError('title'); }}
                             maxLength={100}
                         />
+                        {fieldErrors.title ? <Text style={s.fieldErrorText}>{fieldErrors.title}</Text> : null}
                         <Text style={s.charCount}>{title.length}/100</Text>
                     </View>
 
                     {/* Description */}
-                    <View style={s.fieldWrap}>
+                    <View
+                        style={s.fieldWrap}
+                        onLayout={(ev) => { fieldYRef.current.description = ev.nativeEvent.layout.y; }}
+                    >
                         <View style={s.fieldHeader}>
-                            <AlignLeft size={18} color={TEAL} />
+                            <AlignLeft size={18} color={fieldErrors.description ? '#DC2626' : TEAL} />
                             <Text style={s.fieldLabel}>Описание катера *</Text>
                         </View>
                         <Text style={s.fieldHint}>
-                            Опишите особенности, оборудование, для какого отдыха подойдёт
+                            Опишите особенности, оборудование, для какого отдыха подойдёт (не менее 20 символов)
                         </Text>
                         <TextInput
-                            style={[s.input, s.textArea]}
+                            style={[s.input, s.textArea, fieldErrors.description && s.inputError]}
                             placeholder="Расскажите, чем ваш катер выделяется среди других..."
                             placeholderTextColor="#9CA3AF"
                             value={description}
-                            onChangeText={setDescription}
+                            onChangeText={(v) => { setDescription(v); clearFieldError('description'); }}
                             multiline
                             textAlignVertical="top"
                             maxLength={2000}
                         />
+                        {fieldErrors.description ? <Text style={s.fieldErrorText}>{fieldErrors.description}</Text> : null}
                         <Text style={s.charCount}>{description.length}/2000</Text>
                     </View>
 
@@ -333,9 +440,9 @@ export default function AddBoatScreen({ navigation, route }) {
             {/* Footer */}
             <View style={[s.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
                 <TouchableOpacity
-                    style={[s.submitBtn, (!canSubmit || loading) && s.submitBtnDisabled]}
+                    style={[s.submitBtn, loading && s.submitBtnDisabled]}
                     onPress={handleSubmit}
-                    disabled={!canSubmit || loading}
+                    disabled={loading}
                     activeOpacity={0.85}
                 >
                     {loading ? (
@@ -380,6 +487,47 @@ const s = StyleSheet.create({
     charCount: {
         fontSize: 12, fontFamily: theme.fonts.regular, color: '#9CA3AF',
         textAlign: 'right', marginTop: 4,
+    },
+    validationBox: {
+        backgroundColor: '#FEF2F2',
+        borderWidth: 1,
+        borderColor: '#FECACA',
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 20,
+    },
+    validationTitle: {
+        fontSize: 14,
+        fontFamily: theme.fonts.semiBold,
+        color: '#B91C1C',
+        marginBottom: 10,
+    },
+    validationRow: {
+        paddingVertical: 8,
+        borderTopWidth: 1,
+        borderTopColor: '#FECACA',
+    },
+    validationStep: {
+        fontSize: 13,
+        fontFamily: theme.fonts.semiBold,
+        color: '#1B365D',
+    },
+    validationMessage: {
+        fontSize: 13,
+        fontFamily: theme.fonts.regular,
+        color: '#DC2626',
+        marginTop: 2,
+    },
+    inputError: {
+        borderColor: '#DC2626',
+        borderWidth: 2,
+        backgroundColor: '#FFFBFB',
+    },
+    fieldErrorText: {
+        fontSize: 12,
+        fontFamily: theme.fonts.medium,
+        color: '#DC2626',
+        marginTop: 6,
     },
 
     captainOptions: { gap: 10 },

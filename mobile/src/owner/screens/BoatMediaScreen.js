@@ -23,8 +23,9 @@ export default function BoatMediaScreen({ navigation, route }) {
     const boatLocation = route.params?.boatLocation;
     const boatSchedule = route.params?.boatSchedule;
 
-    const [photos, setPhotos] = useState([]);
-    const [videos, setVideos] = useState([]);
+    const [photos, setPhotos] = useState(route.params?.boatMedia?.photos || []);
+    const [videos, setVideos] = useState(route.params?.boatMedia?.videos || []);
+    const [photosError, setPhotosError] = useState(route.params?.validationErrors?.photos || '');
 
     const pickPhotos = async () => {
         if (photos.length >= MAX_PHOTOS) {
@@ -50,6 +51,7 @@ export default function BoatMediaScreen({ navigation, route }) {
                 const remaining = MAX_PHOTOS - photos.length;
                 const newUris = result.assets.slice(0, remaining).map((a) => a.uri);
                 setPhotos((prev) => [...prev, ...newUris]);
+                setPhotosError('');
             }
         } catch (e) {
             const msg = e?.message || 'Не удалось выбрать фотографии';
@@ -89,18 +91,20 @@ export default function BoatMediaScreen({ navigation, route }) {
     };
 
     const removePhoto = (index) => {
-        setPhotos((prev) => prev.filter((_, i) => i !== index));
+        setPhotos((prev) => {
+            const next = prev.filter((_, i) => i !== index);
+            if (next.length > 0) setPhotosError('');
+            return next;
+        });
     };
 
     const removeVideo = (index) => {
         setVideos((prev) => prev.filter((_, i) => i !== index));
     };
 
-    const canContinue = photos.length > 0;
-
     const handleNext = () => {
-        if (!canContinue) {
-            Alert.alert('Внимание', 'Добавьте хотя бы одну фотографию');
+        if (photos.length === 0) {
+            setPhotosError('Добавьте хотя бы одну фотографию');
             return;
         }
         navigation.navigate('AddBoat', {
@@ -148,8 +152,9 @@ export default function BoatMediaScreen({ navigation, route }) {
                     <Text style={s.sectionHint}>
                         Минимум 1 фото. Рекомендуем загрузить фото экстерьера, интерьера и оборудования.
                     </Text>
+                    {photosError ? <Text style={s.fieldErrorText}>{photosError}</Text> : null}
 
-                    <View style={s.mediaGrid}>
+                    <View style={[s.mediaGrid, photosError && s.mediaGridError]}>
                         {photos.map((uri, index) => (
                             <View key={`photo-${index}`} style={s.mediaCard}>
                                 <Image source={{ uri }} style={s.mediaImage} />
@@ -216,9 +221,8 @@ export default function BoatMediaScreen({ navigation, route }) {
             {/* Footer */}
             <View style={[s.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
                 <TouchableOpacity
-                    style={[s.nextBtn, !canContinue && s.nextBtnDisabled]}
+                    style={s.nextBtn}
                     onPress={handleNext}
-                    disabled={!canContinue}
                     activeOpacity={0.85}
                 >
                     <Text style={s.nextBtnText}>Продолжить</Text>
@@ -275,6 +279,8 @@ const s = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center', backgroundColor: '#FAFAFA',
     },
     addCardText: { fontSize: 13, fontFamily: theme.fonts.medium, color: '#9CA3AF', textAlign: 'center', marginTop: 6 },
+    fieldErrorText: { fontSize: 12, fontFamily: theme.fonts.medium, color: '#DC2626', marginBottom: 8 },
+    mediaGridError: { borderWidth: 2, borderColor: '#DC2626', borderRadius: 12, padding: 4 },
 
     footer: {
         paddingHorizontal: 20, paddingTop: 12,

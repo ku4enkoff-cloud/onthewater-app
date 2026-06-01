@@ -30,11 +30,12 @@ const GAP = 12;
 const COLS = 3;
 const CARD_W = (SCREEN_W - GRID_PAD * 2 - GAP * (COLS - 1)) / COLS;
 
-export default function BoatTypeScreen({ navigation }) {
+export default function BoatTypeScreen({ navigation, route }) {
     const insets = useSafeAreaInsets();
     const [boatTypes, setBoatTypes] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [selected, setSelected] = useState(null);
+    const [selected, setSelected] = useState(route.params?.boatType || null);
+    const [typeError, setTypeError] = useState(route.params?.validationErrors?.type || '');
 
     useEffect(() => {
         api.get('/boat-types')
@@ -44,7 +45,10 @@ export default function BoatTypeScreen({ navigation }) {
     }, []);
 
     const handleNext = () => {
-        if (!selected) return;
+        if (!selected) {
+            setTypeError('Выберите тип судна');
+            return;
+        }
         const { Icon, ...serializable } = selected;
         navigation.navigate('BoatInfo', { boatType: serializable });
     };
@@ -93,6 +97,12 @@ export default function BoatTypeScreen({ navigation }) {
                         <Text style={s.loadingText}>Загрузка типов...</Text>
                     </View>
                 ) : (
+                <>
+                {typeError ? (
+                    <View style={s.errorBanner}>
+                        <Text style={s.errorBannerText}>{typeError}</Text>
+                    </View>
+                ) : null}
                 <View style={s.grid}>
                     {Array.from({ length: Math.ceil(typesWithIcons.length / COLS) }, (_, rowIndex) => (
                         <View key={rowIndex} style={s.gridRow}>
@@ -103,7 +113,7 @@ export default function BoatTypeScreen({ navigation }) {
                                     <TouchableOpacity
                                         key={type.id}
                                         style={[s.card, isActive && s.cardActive]}
-                                        onPress={() => setSelected(type)}
+                                        onPress={() => { setSelected(type); setTypeError(''); }}
                                         activeOpacity={0.7}
                                     >
                                         <View style={[s.iconCircle, isActive && s.iconCircleActive]}>
@@ -125,14 +135,14 @@ export default function BoatTypeScreen({ navigation }) {
                         </View>
                     ))}
                 </View>
+                </>
                 )}
             </ScrollView>
 
             <View style={[s.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
                 <TouchableOpacity
-                    style={[s.nextBtn, !selected && s.nextBtnDisabled]}
+                    style={s.nextBtn}
                     onPress={handleNext}
-                    disabled={!selected}
                     activeOpacity={0.85}
                 >
                     <Text style={s.nextBtnText}>Продолжить</Text>
@@ -162,6 +172,11 @@ const s = StyleSheet.create({
     bodyContent: { paddingHorizontal: GRID_PAD, paddingTop: 28, paddingBottom: 24 },
     loadingWrap: { paddingVertical: 48, alignItems: 'center', gap: 12 },
     loadingText: { fontSize: 14, fontFamily: theme.fonts.regular, color: '#6B7280' },
+    errorBanner: {
+        backgroundColor: '#FEF2F2', borderRadius: 10, padding: 12, marginBottom: 16,
+        borderWidth: 1, borderColor: '#FECACA',
+    },
+    errorBannerText: { fontSize: 13, fontFamily: theme.fonts.medium, color: '#DC2626' },
 
     grid: {
         flexDirection: 'column',
