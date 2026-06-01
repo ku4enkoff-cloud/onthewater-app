@@ -1044,7 +1044,7 @@ export default function BoatDetailPage() {
                 <h2 className="bd-blockBs__h">Видео</h2>
                 <span className="bd-blockBs__sub">{videos.length}</span>
               </div>
-              <div className={`bd-videoGrid${videos.length === 1 ? ' bd-videoGrid--single' : ''}`}>
+              <div className="bd-videoGrid">
                 {videos.map((src, i) => (
                   <figure key={src} className="bd-videoCard">
                     <video
