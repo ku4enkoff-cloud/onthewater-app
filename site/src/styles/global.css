@@ -4701,6 +4701,13 @@ a.lp-boatCard:hover .lp-boatImg {
 .bd-videoGrid {
   display: grid;
   gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  max-width: 640px;
+}
+
+.bd-videoGrid--single {
+  grid-template-columns: 1fr;
+  max-width: 400px;
 }
 
 .bd-videoCard {
@@ -4710,15 +4717,29 @@ a.lp-boatCard:hover .lp-boatImg {
 .bd-videoCard__player {
   display: block;
   width: 100%;
-  border-radius: 16px;
-  background: #000;
+  max-height: 280px;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #0f172a;
 }
 
 .bd-videoCard__caption {
   margin-top: 8px;
   color: #64748b;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .bd-videoGrid,
+  .bd-videoGrid--single {
+    max-width: 100%;
+  }
+
+  .bd-videoCard__player {
+    max-height: 220px;
+  }
 }
 
 @media (max-width: 960px) {
