@@ -11,6 +11,7 @@ import LegalDocumentPage from './pages/LegalDocumentPage.jsx'
 import SitemapPage from './pages/SitemapPage.jsx'
 import SiteFooter from './components/SiteFooter.jsx'
 import AndroidAppPrompt from './components/AndroidAppPrompt.jsx'
+import IosAppPrompt from './components/IosAppPrompt.jsx'
 import { startSiteGeolocation } from './lib/siteGeolocation.js'
 import { metrikaHit } from './lib/yandexMetrika.js'
 import { useAuth } from './context/AuthContext.jsx'
@@ -59,6 +60,7 @@ export default function App() {
       <ScrollToTopOnRouteChange />
       <YandexMetrikaSpa />
       <GeolocationOnAllowedRoutes />
+      <IosAppPrompt />
       <AndroidAppPrompt />
       <div className="app-outlet">
         <Routes>

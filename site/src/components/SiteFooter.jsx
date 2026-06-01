@@ -4,6 +4,7 @@ import { SITE_MAIN_URL } from '../config'
 import { LOCATION_OPTIONS } from '../boatSearchUtils.js'
 import googlePlayIcon from '../assets/icon-g-p.webp'
 import appleStoreIcon from '../assets/icon-a-s.webp'
+import { CLIENT_ANDROID_PLAY_URL, CLIENT_IOS_APP_STORE_URL } from '../constants/appStores'
 
 const MOBILE_FOOTER_MQ = '(max-width: 720px)'
 
@@ -179,11 +180,17 @@ export default function SiteFooter() {
                   </div>
                 </div>
                 <div className="sf-appCard__stores">
-                  <span className="sf-storeBadge sf-storeBadge--apple" aria-disabled="true">
-                    <img src={appleStoreIcon} alt="App Store (скоро)" className="sf-storeBadge__img" />
-                  </span>
                   <a
-                    href="https://play.google.com/store/apps/details?id=com.anonymous.onthewater"
+                    href={CLIENT_IOS_APP_STORE_URL}
+                    className="sf-storeBadge sf-storeBadge--apple"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Скачать приложение ONTHEWATER в App Store"
+                  >
+                    <img src={appleStoreIcon} alt="App Store" className="sf-storeBadge__img" />
+                  </a>
+                  <a
+                    href={CLIENT_ANDROID_PLAY_URL}
                     className="sf-storeBadge sf-storeBadge--google"
                     target="_blank"
                     rel="noopener noreferrer"

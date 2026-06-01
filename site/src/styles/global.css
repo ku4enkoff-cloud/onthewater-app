@@ -7194,6 +7194,7 @@ a.lp-boatCard:hover .lp-boatImg {
   box-sizing: border-box;
   border-radius: 12px;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .sf-storeBadge--google,
@@ -7212,6 +7213,7 @@ a.lp-boatCard:hover .lp-boatImg {
   object-fit: contain;
 }
 
+.sf-storeBadge--apple:hover,
 .sf-storeBadge--google:hover {
   opacity: 0.92;
 }
