@@ -6,6 +6,7 @@ import PopularBoats from '../components/PopularBoats.jsx'
 import HomeCategoriesSection from '../components/HomeCategoriesSection.jsx'
 import googlePlayIcon from '../assets/icon-g-p.webp'
 import appleStoreIcon from '../assets/icon-a-s.webp'
+import { OWNER_ANDROID_PLAY_URL, OWNER_IOS_APP_STORE_URL } from '../constants/appStores'
 import { useHomePageSeo } from '../seo/useHomePageSeo.js'
 import { fetchDestinations } from '../api/destinations.js'
 import { LOCATION_OPTIONS, readNearestCityFromStorage } from '../boatSearchUtils.js'
@@ -495,12 +496,18 @@ export default function HomePage() {
         <div className="lp-ctaInner">
           <h2 className="lp-ctaTitle">Владеете катером? Зарабатывайте</h2>
           <p className="lp-ctaSub">Сдавайте судно в аренду через ONTHEWATER.</p>
-          <div className="lp-ctaStores" aria-label="Скачать приложение ONTHEWATER">
-            <span className="lp-ctaStoreBadge lp-ctaStoreBadge--apple" aria-disabled="true">
-              <img src={appleStoreIcon} alt="App Store (скоро)" className="lp-ctaStoreBadge__img" />
-            </span>
+          <div className="lp-ctaStores" aria-label="Скачать приложение для владельцев ONTHEWATER">
             <a
-              href="https://play.google.com/store/apps/details?id=com.anonymous.onthewater.owner"
+              href={OWNER_IOS_APP_STORE_URL}
+              className="lp-ctaStoreBadge lp-ctaStoreBadge--apple"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Скачать приложение для владельцев в App Store"
+            >
+              <img src={appleStoreIcon} alt="App Store" className="lp-ctaStoreBadge__img" />
+            </a>
+            <a
+              href={OWNER_ANDROID_PLAY_URL}
               className="lp-ctaStoreBadge lp-ctaStoreBadge--google"
               target="_blank"
               rel="noopener noreferrer"

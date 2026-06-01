@@ -356,6 +356,7 @@
   object-fit: contain;
 }
 
+.auth-ownerStoreBadge--apple:hover,
 .auth-ownerStoreBadge--google:hover {
   opacity: 0.92;
 }
@@ -1131,11 +1132,7 @@ code {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.owner-page__store--apple {
-  opacity: 0.64;
-  cursor: not-allowed;
-}
-
+.owner-page__store--apple:hover,
 .owner-page__store--google:hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 20px rgba(0, 97, 193, 0.16);
@@ -1938,7 +1935,8 @@ a.lp-boatCard:hover .lp-boatImg {
   justify-content: center;
   text-decoration: none;
   border-radius: 12px;
-  transition: opacity 0.2s ease;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .lp-ctaStoreBadge__img {
@@ -1949,8 +1947,10 @@ a.lp-boatCard:hover .lp-boatImg {
   object-fit: contain;
 }
 
+.lp-ctaStoreBadge--apple:hover,
 .lp-ctaStoreBadge--google:hover {
   opacity: 0.92;
+  transform: translateY(-1px);
 }
 
 @media (max-width: 768px) {

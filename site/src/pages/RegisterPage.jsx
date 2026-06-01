@@ -4,6 +4,7 @@ import { registerAuth } from '../api/auth'
 import { useAuth } from '../context/AuthContext'
 import googlePlayIcon from '../assets/icon-g-p.webp'
 import appleStoreIcon from '../assets/icon-a-s.webp'
+import { OWNER_ANDROID_PLAY_URL, OWNER_IOS_APP_STORE_URL } from '../constants/appStores'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -192,11 +193,17 @@ export default function RegisterPage() {
             Для владельцев судов регистрация доступна в мобильном приложении для владельцев.
           </p>
           <div className="auth-ownerStores" aria-label="Скачать приложение для владельцев">
-            <span className="auth-ownerStoreBadge auth-ownerStoreBadge--apple" aria-disabled="true">
-              <img src={appleStoreIcon} alt="App Store (скоро)" className="auth-ownerStoreBadge__img" />
-            </span>
             <a
-              href="https://play.google.com/store/apps/details?id=com.anonymous.onthewater.owner"
+              href={OWNER_IOS_APP_STORE_URL}
+              className="auth-ownerStoreBadge auth-ownerStoreBadge--apple"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Скачать приложение для владельцев в App Store"
+            >
+              <img src={appleStoreIcon} alt="App Store" className="auth-ownerStoreBadge__img" />
+            </a>
+            <a
+              href={OWNER_ANDROID_PLAY_URL}
               className="auth-ownerStoreBadge auth-ownerStoreBadge--google"
               target="_blank"
               rel="noopener noreferrer"

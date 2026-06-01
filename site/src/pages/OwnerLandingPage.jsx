@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import googlePlayIcon from '../assets/icon-g-p.webp'
 import appleStoreIcon from '../assets/icon-a-s.webp'
+import { OWNER_ANDROID_PLAY_URL, OWNER_IOS_APP_STORE_URL } from '../constants/appStores'
 import { useAuth } from '../context/AuthContext'
 
 function MenuIcon() {
@@ -113,11 +114,17 @@ export default function OwnerLandingPage() {
             Чтобы размещать объявления о сдаче судна, скачайте мобильное приложение для владельцев ONTHEWATER.
           </p>
           <div className="owner-page__stores" aria-label="Скачать приложение для владельцев">
-            <span className="owner-page__store owner-page__store--apple" aria-disabled="true">
-              <img src={appleStoreIcon} alt="App Store (скоро)" className="owner-page__storeImg" />
-            </span>
             <a
-              href="https://play.google.com/store/apps/details?id=com.anonymous.onthewater.owner"
+              href={OWNER_IOS_APP_STORE_URL}
+              className="owner-page__store owner-page__store--apple"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Скачать приложение для владельцев в App Store"
+            >
+              <img src={appleStoreIcon} alt="App Store" className="owner-page__storeImg" />
+            </a>
+            <a
+              href={OWNER_ANDROID_PLAY_URL}
               className="owner-page__store owner-page__store--google"
               target="_blank"
               rel="noopener noreferrer"
