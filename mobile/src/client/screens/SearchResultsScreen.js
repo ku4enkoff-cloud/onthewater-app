@@ -43,13 +43,11 @@ const CITY_COORDS = {
 const DEFAULT_MAP_CENTER = { lat: 55.751244, lon: 37.618423 };
 
 const isMapAvailable = isYamapNativeAvailable;
-let YaMap = null;
 let Marker = null;
 let ClusteredYamap = null;
 if (isMapAvailable) {
     try {
         const yamap = require('react-native-yamap-plus');
-        YaMap = yamap.Yamap;
         Marker = yamap.Marker;
         ClusteredYamap = yamap.ClusteredYamap;
     } catch (_) {}
@@ -278,37 +276,6 @@ function buildClusteredMapMarkers(boats) {
     return markers;
 }
 
-/** При zoom >= порога — отдельные маркеры с ценой вместо нативных кластеров с числом. */
-const MAP_ZOOM_SHOW_PRICE_MARKERS = 13;
-
-function parseCameraZoom(pos) {
-    if (!pos) return null;
-    const raw = pos.zoom ?? pos.zoomLevel ?? pos.scale;
-    const z = Number(raw);
-    return Number.isFinite(z) ? z : null;
-}
-
-function parseCameraPoint(pos) {
-    if (!pos) return null;
-    const latRaw = pos?.point?.lat ?? pos?.lat ?? pos?.latitude;
-    const lonRaw = pos?.point?.lon ?? pos?.lon ?? pos?.longitude;
-    const lat = Number(latRaw);
-    const lon = Number(lonRaw);
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
-    return { lat, lon };
-}
-
-function applyCameraToLiveRef(liveRef, pos) {
-    const point = parseCameraPoint(pos);
-    const zoom = parseCameraZoom(pos);
-    const prev = liveRef.current;
-    liveRef.current = {
-        lat: point?.lat ?? prev.lat,
-        lon: point?.lon ?? prev.lon,
-        zoom: zoom ?? prev.zoom,
-    };
-}
-
 function getMapMarkerPriceLabel(boat) {
     if (!boat) return '';
     const prices = [];
@@ -350,15 +317,10 @@ export default function SearchResultsScreen({ route, navigation }) {
     const [mapLoading, setMapLoading] = useState(false);
     const [mapCenter, setMapCenter] = useState(DEFAULT_MAP_CENTER);
     const [mapZoom, setMapZoom] = useState(10);
-    const [mapCurrentZoom, setMapCurrentZoom] = useState(10);
-    /** После приближения по кластеру — YaMap с ценами; не откатываемся к ClusteredYamap до закрытия модалки. */
-    const [showPriceMarkers, setShowPriceMarkers] = useState(false);
     const [selectedMapBoat, setSelectedMapBoat] = useState(null);
     const userLocationRef = useRef(null);
     const mapRef = useRef(null);
-    const mapLiveCameraRef = useRef({ lat: DEFAULT_MAP_CENTER.lat, lon: DEFAULT_MAP_CENTER.lon, zoom: 10 });
     const mapPollRef = useRef(null);
-    const mapZoomPollRef = useRef(null);
     const lastMapCenterRef = useRef(null);
     const mapModalOpenRef = useRef(false);
     const [mapClosing, setMapClosing] = useState(false);
@@ -494,9 +456,6 @@ export default function SearchResultsScreen({ route, navigation }) {
         }
         setMapCenter(center);
         setMapZoom(zoom);
-        setMapCurrentZoom(zoom);
-        mapLiveCameraRef.current = { lat: center.lat, lon: center.lon, zoom };
-        setShowPriceMarkers(false);
         setMapBoats(boats);
         setSelectedMapBoat(null);
         mapModalOpenRef.current = true;
@@ -521,7 +480,6 @@ export default function SearchResultsScreen({ route, navigation }) {
             mapModalOpenRef.current = false;
             setMapViewReady(false);
             setMapInitFailed(false);
-            setShowPriceMarkers(false);
             return;
         }
         let cancelled = false;
@@ -541,56 +499,6 @@ export default function SearchResultsScreen({ route, navigation }) {
             if (timer) clearTimeout(timer);
         };
     }, [mapModalVisible]);
-
-    const maybeEnablePriceMarkers = useCallback((zoom) => {
-        if (zoom == null || zoom < MAP_ZOOM_SHOW_PRICE_MARKERS) return;
-        const enable = () => setShowPriceMarkers(true);
-        if (!mapRef.current?.getCameraPosition) {
-            enable();
-            return;
-        }
-        try {
-            mapRef.current.getCameraPosition((pos) => {
-                applyCameraToLiveRef(mapLiveCameraRef, pos);
-                enable();
-            });
-        } catch (_) {
-            enable();
-        }
-    }, []);
-
-    const syncZoomFromMapRef = useCallback(() => {
-        if (!mapModalOpenRef.current || !mapRef.current?.getCameraPosition) return;
-        try {
-            mapRef.current.getCameraPosition((pos) => {
-                applyCameraToLiveRef(mapLiveCameraRef, pos);
-                const zoom = parseCameraZoom(pos);
-                if (zoom != null) {
-                    setMapCurrentZoom(zoom);
-                    maybeEnablePriceMarkers(zoom);
-                }
-            });
-        } catch (_) {}
-    }, [maybeEnablePriceMarkers]);
-
-    const handleCameraPositionChange = useCallback((event) => {
-        const native = event?.nativeEvent ?? event;
-        applyCameraToLiveRef(mapLiveCameraRef, native);
-        const zoom = parseCameraZoom(native);
-        if (zoom != null) {
-            setMapCurrentZoom(zoom);
-            maybeEnablePriceMarkers(zoom);
-        }
-    }, [maybeEnablePriceMarkers]);
-
-    useEffect(() => {
-        if (!mapModalVisible || !mapViewReady) return undefined;
-        syncZoomFromMapRef();
-        mapZoomPollRef.current = setInterval(syncZoomFromMapRef, 400);
-        return () => {
-            if (mapZoomPollRef.current) clearInterval(mapZoomPollRef.current);
-        };
-    }, [mapModalVisible, mapViewReady, syncZoomFromMapRef, mapCurrentZoom]);
 
     useEffect(() => {
         if (!mapModalVisible || !mapViewReady || !ClusteredYamap || !mapRef.current) return;
@@ -615,17 +523,8 @@ export default function SearchResultsScreen({ route, navigation }) {
             try {
                 mapRef.current?.getCameraPosition?.((pos) => {
                     if (!mapModalOpenRef.current) return;
-                    applyCameraToLiveRef(mapLiveCameraRef, pos);
                     const lat = pos?.point?.lat ?? pos?.lat ?? pos?.latitude;
                     const lon = pos?.point?.lon ?? pos?.lon ?? pos?.longitude;
-                    const zoom = parseCameraZoom(pos);
-                    if (zoom != null) {
-                        setMapCurrentZoom(zoom);
-                        if (zoom >= MAP_ZOOM_SHOW_PRICE_MARKERS) {
-                            applyCameraToLiveRef(mapLiveCameraRef, pos);
-                            setShowPriceMarkers(true);
-                        }
-                    }
                     if (lat == null || lon == null) return;
                     const last = lastMapCenterRef.current;
                     const same = last && Math.abs(last.lat - lat) < 0.01 && Math.abs(last.lon - lon) < 0.01;
@@ -659,14 +558,6 @@ export default function SearchResultsScreen({ route, navigation }) {
         const ids = clusteredMarkersData.map((m) => m.data?.id).filter((id) => id != null);
         return `${ids.length}-${ids.join(',')}`;
     }, [clusteredMarkersData]);
-    const mapInitialRegion = useMemo(
-        () => ({
-            lat: mapLiveCameraRef.current.lat,
-            lon: mapLiveCameraRef.current.lon,
-            zoom: mapLiveCameraRef.current.zoom,
-        }),
-        [showPriceMarkers, mapClusterKey, mapCenter.lat, mapCenter.lon, mapZoom],
-    );
 
     const maxPassengers = useMemo(() => {
         const caps = allBoats.map((b) => Number(b.capacity) || 0).filter((c) => c > 0);
@@ -1213,43 +1104,19 @@ export default function SearchResultsScreen({ route, navigation }) {
                                         <ActivityIndicator size="large" color={NAVY} />
                                         <Text style={styles.mapPlaceholderText}>Загрузка карты...</Text>
                                     </View>
-                                ) : showPriceMarkers ? (
-                                    <YaMap
-                                        key={`map-price-${mapClusterKey}`}
-                                        ref={mapRef}
-                                        style={StyleSheet.absoluteFillObject}
-                                        initialRegion={mapInitialRegion}
-                                        onCameraPositionChange={handleCameraPositionChange}
-                                        onCameraPositionChangeEnd={handleCameraPositionChange}
-                                        onMapLoaded={syncZoomFromMapRef}
-                                    >
-                                        {clusteredMarkersData.map((info, index) => {
-                                            const boat = info.data;
-                                            const isSelected = selectedMapBoat?.id === boat?.id;
-                                            const price = getMapMarkerPriceLabel(boat);
-                                            return (
-                                                <Marker
-                                                    key={`map-unclustered-${boat?.id ?? index}`}
-                                                    point={info.point}
-                                                    anchor={{ x: 0.5, y: 1 }}
-                                                    onPress={() => boat && setSelectedMapBoat(isSelected ? null : boat)}
-                                                >
-                                                    <MapPriceBubble price={price} selected={isSelected} />
-                                                </Marker>
-                                            );
-                                        })}
-                                    </YaMap>
                                 ) : (
                                     <ClusteredYamap
                                         key={`map-cluster-${mapClusterKey}`}
                                         ref={mapRef}
                                         style={StyleSheet.absoluteFillObject}
-                                        initialRegion={mapInitialRegion}
+                                        initialRegion={{
+                                            lat: mapCenter.lat,
+                                            lon: mapCenter.lon,
+                                            zoom: mapZoom,
+                                        }}
                                         clusterColor={NAVY}
+                                        clusterTextColor="#fff"
                                         clusteredMarkers={clusteredMarkersData}
-                                        onCameraPositionChange={handleCameraPositionChange}
-                                        onCameraPositionChangeEnd={handleCameraPositionChange}
-                                        onMapLoaded={syncZoomFromMapRef}
                                         renderMarker={(info, index) => {
                                             const boat = info.data;
                                             const isSelected = selectedMapBoat?.id === boat?.id;
