@@ -346,7 +346,8 @@ function findNearbyMapBoats(tappedBoat, markers, tappedPoint) {
 
 /** Zoom для перехода к ценовым маркерам (только видимая область). */
 const MAP_ZOOM_ENTER_PRICE_MODE = 13;
-const MAP_ZOOM_EXIT_PRICE_MODE = 11;
+/** Ниже этого zoom — снова групповые маркеры с числом. */
+const MAP_ZOOM_EXIT_PRICE_MODE = 12;
 
 function parseCameraZoom(pos) {
     if (!pos) return null;
@@ -721,33 +722,78 @@ export default function SearchResultsScreen({ route, navigation }) {
         });
     }, [refreshPriceVisibleMarkers]);
 
-    const handleCameraPositionChange = useCallback((event) => {
-        const native = event?.nativeEvent ?? event;
-        applyCameraToLiveRef(mapLiveCameraRef, native);
+    const exitPriceMode = useCallback(() => {
+        if (mapViewModeRef.current !== 'price' || mapModeTransitionRef.current) return;
+        mapModeTransitionRef.current = true;
+        const finish = () => {
+            setPriceVisibleMarkers([]);
+            setSelectedMapBoats([]);
+            setMapViewMode('cluster');
+            mapModeTransitionRef.current = false;
+        };
+        if (!mapRef.current?.getCameraPosition) {
+            setMapLiveRegion({ ...mapLiveCameraRef.current });
+            finish();
+            return;
+        }
+        mapRef.current.getCameraPosition((pos) => {
+            applyCameraToLiveRef(mapLiveCameraRef, pos);
+            setMapLiveRegion({ ...mapLiveCameraRef.current });
+            finish();
+        });
     }, []);
 
-    const handleCameraPositionChangeEnd = useCallback(
-        (event) => {
-            const native = event?.nativeEvent ?? event;
-            applyCameraToLiveRef(mapLiveCameraRef, native);
-            const zoom = parseCameraZoom(native);
+    const syncMapModeForZoom = useCallback(
+        (zoom, duringGesture = false) => {
             if (zoom == null) return;
-
             if (mapViewModeRef.current === 'cluster' && zoom >= MAP_ZOOM_ENTER_PRICE_MODE) {
                 enterPriceMode();
                 return;
             }
             if (mapViewModeRef.current === 'price' && zoom <= MAP_ZOOM_EXIT_PRICE_MODE) {
-                setMapLiveRegion({ ...mapLiveCameraRef.current });
-                setMapViewMode('cluster');
+                exitPriceMode();
                 return;
             }
-            if (mapViewModeRef.current === 'price') {
+            if (mapViewModeRef.current === 'price' && !duringGesture) {
                 refreshPriceVisibleMarkers();
             }
         },
-        [enterPriceMode, refreshPriceVisibleMarkers],
+        [enterPriceMode, exitPriceMode, refreshPriceVisibleMarkers],
     );
+
+    const handleCameraPositionChange = useCallback(
+        (event) => {
+            const native = event?.nativeEvent ?? event;
+            applyCameraToLiveRef(mapLiveCameraRef, native);
+            syncMapModeForZoom(parseCameraZoom(native), true);
+        },
+        [syncMapModeForZoom],
+    );
+
+    const handleCameraPositionChangeEnd = useCallback(
+        (event) => {
+            const native = event?.nativeEvent ?? event;
+            applyCameraToLiveRef(mapLiveCameraRef, native);
+            syncMapModeForZoom(parseCameraZoom(native), false);
+        },
+        [syncMapModeForZoom],
+    );
+
+    useEffect(() => {
+        if (!mapModalVisible || !mapViewReady || mapViewMode !== 'price') return undefined;
+        const pollZoom = () => {
+            if (!mapModalOpenRef.current || mapViewModeRef.current !== 'price') return;
+            try {
+                mapRef.current?.getCameraPosition?.((pos) => {
+                    applyCameraToLiveRef(mapLiveCameraRef, pos);
+                    syncMapModeForZoom(parseCameraZoom(pos), false);
+                });
+            } catch (_) {}
+        };
+        pollZoom();
+        const id = setInterval(pollZoom, 400);
+        return () => clearInterval(id);
+    }, [mapModalVisible, mapViewReady, mapViewMode, syncMapModeForZoom]);
 
     const handleMapBoatPress = useCallback((boat, markerPoint) => {
         if (!boat) return;
@@ -1410,8 +1456,8 @@ export default function SearchResultsScreen({ route, navigation }) {
                                         ref={mapRef}
                                         style={StyleSheet.absoluteFillObject}
                                         initialRegion={mapInitialRegion}
-                                        clusterColor="#FFFFFF"
-                                        clusterTextColor={NAVY}
+                                        clusterColor={NAVY}
+                                        clusterTextColor="#FFFFFF"
                                         clusterTextSize={14}
                                         clusterTextYOffset={0}
                                         clusterSize={{ width: 44, height: 44 }}
