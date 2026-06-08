@@ -346,8 +346,8 @@ function findNearbyMapBoats(tappedBoat, markers, tappedPoint) {
 
 /** Zoom для перехода к ценовым маркерам (только видимая область). */
 const MAP_ZOOM_ENTER_PRICE_MODE = 13;
-/** Ниже этого zoom — снова групповые маркеры с числом. */
-const MAP_ZOOM_EXIT_PRICE_MODE = 12;
+/** Ниже этого zoom — снова групповые маркеры (гистерезис: вход 13, выход 11). */
+const MAP_ZOOM_EXIT_PRICE_MODE = 11;
 
 function parseCameraZoom(pos) {
     if (!pos) return null;
@@ -475,6 +475,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     const mapViewModeRef = useRef('cluster');
     const clusteredMarkersDataRef = useRef([]);
     const mapModeTransitionRef = useRef(false);
+    const [clusterMapEpoch, setClusterMapEpoch] = useState(0);
     const mapPollRef = useRef(null);
     const lastMapCenterRef = useRef(null);
     const mapModalOpenRef = useRef(false);
@@ -614,6 +615,7 @@ export default function SearchResultsScreen({ route, navigation }) {
         mapLiveCameraRef.current = { lat: center.lat, lon: center.lon, zoom };
         setMapLiveRegion(null);
         setMapViewMode('cluster');
+        setClusterMapEpoch((e) => e + 1);
         setPriceVisibleMarkers([]);
         setMapBoats(boats);
         setSelectedMapBoats([]);
@@ -728,6 +730,7 @@ export default function SearchResultsScreen({ route, navigation }) {
         const finish = () => {
             setPriceVisibleMarkers([]);
             setSelectedMapBoats([]);
+            setClusterMapEpoch((e) => e + 1);
             setMapViewMode('cluster');
             mapModeTransitionRef.current = false;
         };
@@ -744,37 +747,35 @@ export default function SearchResultsScreen({ route, navigation }) {
     }, []);
 
     const syncMapModeForZoom = useCallback(
-        (zoom, duringGesture = false) => {
+        (zoom, phase = 'move') => {
             if (zoom == null) return;
             if (mapViewModeRef.current === 'cluster' && zoom >= MAP_ZOOM_ENTER_PRICE_MODE) {
                 enterPriceMode();
                 return;
             }
-            if (mapViewModeRef.current === 'price' && zoom <= MAP_ZOOM_EXIT_PRICE_MODE) {
+            // Выход в кластеры — только после жеста (не во время pinch), иначе ломается группировка.
+            if (phase === 'end' && mapViewModeRef.current === 'price' && zoom <= MAP_ZOOM_EXIT_PRICE_MODE) {
                 exitPriceMode();
                 return;
             }
-            if (mapViewModeRef.current === 'price' && !duringGesture) {
+            if (mapViewModeRef.current === 'price' && phase === 'end') {
                 refreshPriceVisibleMarkers();
             }
         },
         [enterPriceMode, exitPriceMode, refreshPriceVisibleMarkers],
     );
 
-    const handleCameraPositionChange = useCallback(
-        (event) => {
-            const native = event?.nativeEvent ?? event;
-            applyCameraToLiveRef(mapLiveCameraRef, native);
-            syncMapModeForZoom(parseCameraZoom(native), true);
-        },
-        [syncMapModeForZoom],
-    );
+    const handleCameraPositionChange = useCallback((event) => {
+        const native = event?.nativeEvent ?? event;
+        applyCameraToLiveRef(mapLiveCameraRef, native);
+        syncMapModeForZoom(parseCameraZoom(native), 'move');
+    }, [syncMapModeForZoom]);
 
     const handleCameraPositionChangeEnd = useCallback(
         (event) => {
             const native = event?.nativeEvent ?? event;
             applyCameraToLiveRef(mapLiveCameraRef, native);
-            syncMapModeForZoom(parseCameraZoom(native), false);
+            syncMapModeForZoom(parseCameraZoom(native), 'end');
         },
         [syncMapModeForZoom],
     );
@@ -786,14 +787,17 @@ export default function SearchResultsScreen({ route, navigation }) {
             try {
                 mapRef.current?.getCameraPosition?.((pos) => {
                     applyCameraToLiveRef(mapLiveCameraRef, pos);
-                    syncMapModeForZoom(parseCameraZoom(pos), false);
+                    const zoom = parseCameraZoom(pos);
+                    if (zoom != null && zoom <= MAP_ZOOM_EXIT_PRICE_MODE) {
+                        exitPriceMode();
+                    }
                 });
             } catch (_) {}
         };
         pollZoom();
-        const id = setInterval(pollZoom, 400);
+        const id = setInterval(pollZoom, 500);
         return () => clearInterval(id);
-    }, [mapModalVisible, mapViewReady, mapViewMode, syncMapModeForZoom]);
+    }, [mapModalVisible, mapViewReady, mapViewMode, exitPriceMode]);
 
     const handleMapBoatPress = useCallback((boat, markerPoint) => {
         if (!boat) return;
@@ -1452,13 +1456,13 @@ export default function SearchResultsScreen({ route, navigation }) {
                                     </YaMap>
                                 ) : (
                                     <ClusteredYamap
-                                        key={`map-cluster-${mapClusterKey}`}
+                                        key={`map-cluster-${mapClusterKey}-e${clusterMapEpoch}`}
                                         ref={mapRef}
                                         style={StyleSheet.absoluteFillObject}
                                         initialRegion={mapInitialRegion}
-                                        clusterColor={NAVY}
-                                        clusterTextColor="#FFFFFF"
-                                        clusterTextSize={14}
+                                        clusterColor="#FFFFFF"
+                                        clusterTextColor={NAVY}
+                                        clusterTextSize={16}
                                         clusterTextYOffset={0}
                                         clusterSize={{ width: 44, height: 44 }}
                                         clusteredMarkers={clusteredMarkersData}
