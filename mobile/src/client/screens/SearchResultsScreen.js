@@ -13,7 +13,7 @@ import {
     useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Rect, Text as SvgText } from 'react-native-svg';
 import { ChevronLeft, ChevronDown, Heart, Zap, MapPin, Star, SlidersHorizontal, X } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
@@ -45,16 +45,45 @@ const DEFAULT_MAP_CENTER = { lat: 55.751244, lon: 37.618423 };
 const isMapAvailable = isYamapNativeAvailable;
 let YaMap = null;
 let Marker = null;
-let ClusteredYamap = null;
 if (isMapAvailable) {
     try {
         const yamap = require('react-native-yamap-plus');
         YaMap = yamap.Yamap;
         Marker = yamap.Marker;
-        ClusteredYamap = yamap.ClusteredYamap;
     } catch (_) {}
 }
 const USE_CUSTOM_PRICE_MARKERS = true;
+
+/** Кружок с числом катеров в локации (включая «1»). */
+function MapClusterBubble({ count, selected }) {
+    const size = 40;
+    const cx = size / 2;
+    const cy = size / 2;
+    const label = String(count);
+    return (
+        <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+            <Circle
+                cx={cx}
+                cy={cy}
+                r={17}
+                fill="#FFFFFF"
+                stroke={NAVY}
+                strokeWidth={selected ? 3 : 2}
+            />
+            <SvgText
+                x={cx}
+                y={cy + (label.length > 2 ? 4 : 5)}
+                fill={NAVY}
+                fontSize={label.length > 2 ? 12 : 14}
+                fontWeight="700"
+                fontFamily={theme.fonts.bold}
+                textAnchor="middle"
+            >
+                {label}
+            </SvgText>
+        </Svg>
+    );
+}
 
 function MapPriceBubble({ price, selected }) {
     const color = NAVY;
@@ -278,6 +307,39 @@ function buildClusteredMapMarkers(boats) {
     return markers;
 }
 
+/** Одна метка на локацию: count=1 тоже показываем кружок с «1». */
+function buildLocationClusterMarkers(boats) {
+    const seenIds = new Set();
+    const groups = new Map();
+
+    for (const b of boats) {
+        const lat = Number(b.lat);
+        const lon = Number(b.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+        const id = b.id != null ? String(b.id) : null;
+        if (id) {
+            if (seenIds.has(id)) continue;
+            seenIds.add(id);
+        }
+        const key = `${lat.toFixed(MAP_COORD_GROUP_DECIMALS)},${lon.toFixed(MAP_COORD_GROUP_DECIMALS)}`;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(b);
+    }
+
+    const clusters = [];
+    for (const [key, group] of groups.entries()) {
+        const latSum = group.reduce((s, b) => s + Number(b.lat), 0);
+        const lonSum = group.reduce((s, b) => s + Number(b.lng), 0);
+        clusters.push({
+            id: key,
+            point: { lat: latSum / group.length, lon: lonSum / group.length },
+            count: group.length,
+            boats: group,
+        });
+    }
+    return clusters;
+}
+
 const MAP_NEARBY_METERS = 180;
 const MAP_NEARBY_MARKER_METERS = 100;
 
@@ -348,6 +410,29 @@ function findNearbyMapBoats(tappedBoat, markers, tappedPoint) {
 const MAP_ZOOM_ENTER_PRICE_MODE = 13;
 /** Ниже этого zoom — снова групповые маркеры (гистерезис: вход 13, выход 11). */
 const MAP_ZOOM_EXIT_PRICE_MODE = 11;
+/** Минимальный сдвиг карты для подгрузки катеров по геолокации. */
+const MAP_PAN_MIN_DEG = 0.028;
+const MAP_GEO_FETCH_RADIUS_KM = 50;
+
+function deriveMapAreaLabel(boatList, fallback) {
+    if (!Array.isArray(boatList) || boatList.length === 0) return fallback;
+    const regionCounts = new Map();
+    for (const b of boatList) {
+        const r = String(b?.location_region || '').trim();
+        if (!r) continue;
+        regionCounts.set(r, (regionCounts.get(r) || 0) + 1);
+    }
+    if (!regionCounts.size) return fallback;
+    let top = '';
+    let max = 0;
+    for (const [r, n] of regionCounts) {
+        if (n > max) {
+            max = n;
+            top = r;
+        }
+    }
+    return top || fallback;
+}
 
 function parseCameraZoom(pos) {
     if (!pos) return null;
@@ -468,6 +553,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     const [mapViewMode, setMapViewMode] = useState('cluster');
     const [priceVisibleMarkers, setPriceVisibleMarkers] = useState([]);
     const [mapLiveRegion, setMapLiveRegion] = useState(null);
+    const [mapAreaLabel, setMapAreaLabel] = useState('');
     const [selectedMapBoats, setSelectedMapBoats] = useState([]);
     const userLocationRef = useRef(null);
     const mapRef = useRef(null);
@@ -479,6 +565,8 @@ export default function SearchResultsScreen({ route, navigation }) {
     const mapPollRef = useRef(null);
     const lastMapCenterRef = useRef(null);
     const mapModalOpenRef = useRef(false);
+    const mapUsesGeoSearchRef = useRef(false);
+    const mapOpenCenterRef = useRef(null);
     const [mapClosing, setMapClosing] = useState(false);
 
     const dateObj = dateISO ? new Date(dateISO) : new Date();
@@ -565,30 +653,42 @@ export default function SearchResultsScreen({ route, navigation }) {
         [allBoats, filters, priceRange.min, priceRange.max],
     );
 
-    const fetchBoatsForMap = useCallback(async (opts = {}) => {
-        const { lat, lng, cityFilter = null, regionFilter = null } = opts;
-        setMapLoading(true);
-        try {
-            let list = [];
-            if (regionFilter && isRegion(regionFilter)) {
-                const res = await api.get('/boats', { params: { region: regionFilter } });
-                list = Array.isArray(res.data) ? res.data : [];
-            } else if (cityFilter && String(cityFilter).trim()) {
-                const res = await api.get('/boats', { params: { city: cityFilter } });
-                list = Array.isArray(res.data) ? res.data : [];
-            } else if (lat != null && lng != null) {
-                const res = await api.get('/boats', { params: { lat, lng, radius: 50 } });
-                list = Array.isArray(res.data) ? res.data : [];
+    const fetchBoatsForMap = useCallback(
+        async (opts = {}) => {
+            const { lat, lng, cityFilter = null, regionFilter = null, fallbackLabel = '' } = opts;
+            setMapLoading(true);
+            try {
+                let list = [];
+                let usedGeo = false;
+                if (regionFilter && isRegion(regionFilter)) {
+                    const res = await api.get('/boats', { params: { region: regionFilter } });
+                    list = Array.isArray(res.data) ? res.data : [];
+                } else if (cityFilter && String(cityFilter).trim()) {
+                    const res = await api.get('/boats', { params: { city: cityFilter } });
+                    list = Array.isArray(res.data) ? res.data : [];
+                } else if (lat != null && lng != null) {
+                    const res = await api.get('/boats', {
+                        params: { lat, lng, radius: MAP_GEO_FETCH_RADIUS_KM },
+                    });
+                    list = Array.isArray(res.data) ? res.data : [];
+                    usedGeo = true;
+                }
+                if (mapModalOpenRef.current) {
+                    const filtered = dedupeBoatsById(applyBoatFilters(list, filters, priceRange));
+                    setMapBoats(filtered);
+                    if (usedGeo) {
+                        mapUsesGeoSearchRef.current = true;
+                        setMapAreaLabel(deriveMapAreaLabel(filtered, fallbackLabel || displayCity));
+                    }
+                }
+            } catch (_) {
+                if (mapModalOpenRef.current) setMapBoats([]);
+            } finally {
+                if (mapModalOpenRef.current) setMapLoading(false);
             }
-            if (mapModalOpenRef.current) {
-                setMapBoats(dedupeBoatsById(applyBoatFilters(list, filters, priceRange)));
-            }
-        } catch (_) {
-            if (mapModalOpenRef.current) setMapBoats([]);
-        } finally {
-            if (mapModalOpenRef.current) setMapLoading(false);
-        }
-    }, [filters, priceRange]);
+        },
+        [filters, priceRange, displayCity],
+    );
 
     const openMapModal = useCallback(() => {
         let center;
@@ -618,13 +718,16 @@ export default function SearchResultsScreen({ route, navigation }) {
         setClusterMapEpoch((e) => e + 1);
         setPriceVisibleMarkers([]);
         setMapBoats(boats);
+        setMapAreaLabel(displayCity);
         setSelectedMapBoats([]);
+        mapUsesGeoSearchRef.current = false;
+        mapOpenCenterRef.current = { lat: center.lat, lon: center.lon };
         mapModalOpenRef.current = true;
         setMapClosing(false);
         setMapModalVisible(true);
         setMapViewReady(false);
         lastMapCenterRef.current = { lat: center.lat, lon: center.lon };
-    }, [boats, cityName, useMyLocation]);
+    }, [boats, cityName, useMyLocation, displayCity]);
 
     const closeMapModal = useCallback(() => {
         mapModalOpenRef.current = false;
@@ -776,8 +879,20 @@ export default function SearchResultsScreen({ route, navigation }) {
             const native = event?.nativeEvent ?? event;
             applyCameraToLiveRef(mapLiveCameraRef, native);
             syncMapModeForZoom(parseCameraZoom(native), 'end');
+            const pt = parseCameraPoint(native);
+            if (pt) {
+                const last = lastMapCenterRef.current;
+                const moved =
+                    !last ||
+                    Math.abs(last.lat - pt.lat) >= MAP_PAN_MIN_DEG ||
+                    Math.abs(last.lon - pt.lon) >= MAP_PAN_MIN_DEG;
+                if (moved && shouldFetchMapByGeo(pt.lat, pt.lon)) {
+                    lastMapCenterRef.current = { lat: pt.lat, lon: pt.lon };
+                    fetchBoatsForMap({ lat: pt.lat, lng: pt.lon, fallbackLabel: displayCity });
+                }
+            }
         },
-        [syncMapModeForZoom],
+        [syncMapModeForZoom, fetchBoatsForMap, displayCity, shouldFetchMapByGeo],
     );
 
     useEffect(() => {
@@ -810,30 +925,42 @@ export default function SearchResultsScreen({ route, navigation }) {
         });
     }, []);
 
+    const shouldFetchMapByGeo = useCallback((lat, lon) => {
+        if (mapUsesGeoSearchRef.current) return true;
+        const open = mapOpenCenterRef.current;
+        if (!open) return true;
+        return (
+            Math.abs(lat - open.lat) >= MAP_PAN_MIN_DEG ||
+            Math.abs(lon - open.lon) >= MAP_PAN_MIN_DEG
+        );
+    }, []);
+
+    const handleLocationClusterPress = useCallback((cluster) => {
+        if (!cluster?.point || mapModeTransitionRef.current) return;
+        mapModeTransitionRef.current = true;
+        const zoom = MAP_ZOOM_ENTER_PRICE_MODE + 1;
+        const { point, boats: clusterBoats } = cluster;
+        mapLiveCameraRef.current = { lat: point.lat, lon: point.lon, zoom };
+        setMapLiveRegion({ lat: point.lat, lon: point.lon, zoom });
+        const markers = buildClusteredMapMarkers(clusterBoats || []);
+        setPriceVisibleMarkers(markers);
+        setSelectedMapBoats([]);
+        setMapViewMode('price');
+        mapModeTransitionRef.current = false;
+        try {
+            mapRef.current?.setCenter?.(point, zoom, 0, 0, 0.35);
+        } catch (_) {}
+    }, []);
+
     const isMapBoatSelected = useCallback(
         (boatId) => selectedMapBoats.some((b) => String(b.id) === String(boatId)),
         [selectedMapBoats],
     );
 
     useEffect(() => {
-        if (!mapModalVisible || !mapViewReady || !ClusteredYamap || !mapRef.current) return;
+        if (!mapModalVisible || !mapViewReady || !YaMap || !mapRef.current) return;
 
-        // Для поиска по городу/региону — те же катера, что в списке (без повторной загрузки без фильтров).
-        if (cityName && !useMyLocation) {
-            setMapBoats(boats);
-            return;
-        }
-
-        const doFetch = (opts) => {
-            lastMapCenterRef.current = opts.lat != null && opts.lng != null ? { lat: opts.lat, lon: opts.lng } : lastMapCenterRef.current;
-            fetchBoatsForMap(opts);
-        };
-        if (useMyLocation && userLocationRef.current) {
-            doFetch({ lat: userLocationRef.current.lat, lng: userLocationRef.current.lon });
-        } else {
-            doFetch({ lat: mapCenter.lat, lng: mapCenter.lon });
-        }
-        const poll = () => {
+        const pollCamera = (onMove) => {
             if (!mapModalOpenRef.current) return;
             try {
                 mapRef.current?.getCameraPosition?.((pos) => {
@@ -841,32 +968,71 @@ export default function SearchResultsScreen({ route, navigation }) {
                     const lat = pos?.point?.lat ?? pos?.lat ?? pos?.latitude;
                     const lon = pos?.point?.lon ?? pos?.lon ?? pos?.longitude;
                     if (lat == null || lon == null) return;
-                    const last = lastMapCenterRef.current;
-                    const same = last && Math.abs(last.lat - lat) < 0.01 && Math.abs(last.lon - lon) < 0.01;
-                    if (!same) {
-                        lastMapCenterRef.current = { lat, lon };
-                        fetchBoatsForMap({ lat, lng: lon });
-                    }
+                    onMove(lat, lon);
                 });
             } catch (_) {}
         };
-        poll();
-        mapPollRef.current = setInterval(poll, 5000);
+
+        const onMapMove = (lat, lon) => {
+            const last = lastMapCenterRef.current;
+            const same =
+                last &&
+                Math.abs(last.lat - lat) < MAP_PAN_MIN_DEG &&
+                Math.abs(last.lon - lon) < MAP_PAN_MIN_DEG;
+            if (same || !shouldFetchMapByGeo(lat, lon)) return;
+            lastMapCenterRef.current = { lat, lon };
+            fetchBoatsForMap({ lat, lng: lon, fallbackLabel: displayCity });
+        };
+
+        if (!mapUsesGeoSearchRef.current) {
+            if (useMyLocation && userLocationRef.current) {
+                onMapMove(userLocationRef.current.lat, userLocationRef.current.lon);
+            } else if (allRegions) {
+                onMapMove(mapCenter.lat, mapCenter.lon);
+            } else {
+                setMapBoats(boats);
+            }
+        }
+
+        pollCamera(onMapMove);
+        mapPollRef.current = setInterval(() => pollCamera(onMapMove), 4000);
         return () => {
             if (mapPollRef.current) clearInterval(mapPollRef.current);
         };
-    }, [mapModalVisible, mapViewReady, fetchBoatsForMap, cityName, useMyLocation, mapCenter, boats]);
+    }, [
+        mapModalVisible,
+        mapViewReady,
+        fetchBoatsForMap,
+        displayCity,
+        useMyLocation,
+        mapCenter,
+        boats,
+        allRegions,
+        shouldFetchMapByGeo,
+    ]);
 
     useEffect(() => {
         if (!mapModalVisible || mapClosing) return;
-        if (cityName && !useMyLocation) {
-            setMapBoats(boats);
+        if (mapUsesGeoSearchRef.current && lastMapCenterRef.current) {
+            fetchBoatsForMap({
+                lat: lastMapCenterRef.current.lat,
+                lng: lastMapCenterRef.current.lon,
+                fallbackLabel: displayCity,
+            });
+            return;
         }
-    }, [mapModalVisible, mapClosing, boats, cityName, useMyLocation]);
+        setMapBoats(boats);
+        setMapAreaLabel(displayCity);
+    }, [mapModalVisible, mapClosing, boats, filters, fetchBoatsForMap, displayCity]);
 
     const clusteredMarkersData = useMemo(() => {
         if (mapClosing) return [];
         return buildClusteredMapMarkers(mapBoats);
+    }, [mapBoats, mapClosing]);
+
+    const locationClusterMarkers = useMemo(() => {
+        if (mapClosing) return [];
+        return buildLocationClusterMarkers(mapBoats);
     }, [mapBoats, mapClosing]);
 
     const mapClusterKey = useMemo(() => {
@@ -1406,11 +1572,11 @@ export default function SearchResultsScreen({ route, navigation }) {
                                 <Text style={styles.mapModalCloseText}>✕</Text>
                             </TouchableOpacity>
                             <Text style={styles.mapModalTitle} numberOfLines={1}>
-                                {displayCity} — катера на карте
+                                {mapAreaLabel || displayCity} — катера на карте
                             </Text>
                             <View style={{ width: 36 }} />
                         </View>
-                        {!isMapAvailable || !ClusteredYamap || !Marker || !YaMap ? (
+                        {!isMapAvailable || !Marker || !YaMap ? (
                             <View style={styles.mapPlaceholder}>
                                 <Text style={styles.mapPlaceholderText}>
                                     Карта доступна в полной сборке приложения (expo run:android / expo run:ios)
@@ -1455,33 +1621,25 @@ export default function SearchResultsScreen({ route, navigation }) {
                                         })}
                                     </YaMap>
                                 ) : (
-                                    <ClusteredYamap
-                                        key={`map-cluster-${mapClusterKey}-e${clusterMapEpoch}`}
+                                    <YaMap
+                                        key={`map-loc-cluster-${mapClusterKey}-e${clusterMapEpoch}`}
                                         ref={mapRef}
                                         style={StyleSheet.absoluteFillObject}
                                         initialRegion={mapInitialRegion}
-                                        clusterColor="#FFFFFF"
-                                        clusterTextColor={NAVY}
-                                        clusterTextSize={16}
-                                        clusterTextYOffset={0}
-                                        clusterSize={{ width: 44, height: 44 }}
-                                        clusteredMarkers={clusteredMarkersData}
                                         onCameraPositionChange={handleCameraPositionChange}
                                         onCameraPositionChangeEnd={handleCameraPositionChangeEnd}
-                                        renderMarker={(info, index) => {
-                                            const boat = info.data;
-                                            return (
-                                                <Marker
-                                                    key={`map-dot-${boat?.id ?? index}`}
-                                                    point={info.point}
-                                                    scale={0.001}
-                                                    onPress={() => {
-                                                        if (boat) handleMapBoatPress(boat, info.point);
-                                                    }}
-                                                />
-                                            );
-                                        }}
-                                    />
+                                    >
+                                        {locationClusterMarkers.map((cluster) => (
+                                            <Marker
+                                                key={`map-loc-${cluster.id}`}
+                                                point={cluster.point}
+                                                anchor={{ x: 0.5, y: 0.5 }}
+                                                onPress={() => handleLocationClusterPress(cluster)}
+                                            >
+                                                <MapClusterBubble count={cluster.count} />
+                                            </Marker>
+                                        ))}
+                                    </YaMap>
                                 )}
                                 {mapLoading && (
                                     <View style={styles.mapLoadingOverlay}>
