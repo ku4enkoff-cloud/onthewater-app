@@ -307,10 +307,16 @@ function buildClusteredMapMarkers(boats) {
     return markers;
 }
 
-/** Одна метка на локацию: count=1 тоже показываем кружок с «1». */
-function buildLocationClusterMarkers(boats) {
+/** Радиус группировки (м) зависит от zoom: на общем плане — шире, при приближении — точнее. */
+function mapClusterRadiusMeters(zoom) {
+    const z = Number.isFinite(Number(zoom)) ? Number(zoom) : 10;
+    return Math.min(40000, Math.max(500, 900000 / 2 ** z));
+}
+
+/** Группируем близкие катера в один кружок; count=1 тоже показываем. */
+function buildLocationClusterMarkers(boats, zoom = 10) {
     const seenIds = new Set();
-    const groups = new Map();
+    const items = [];
 
     for (const b of boats) {
         const lat = Number(b.lat);
@@ -321,17 +327,48 @@ function buildLocationClusterMarkers(boats) {
             if (seenIds.has(id)) continue;
             seenIds.add(id);
         }
-        const key = `${lat.toFixed(MAP_COORD_GROUP_DECIMALS)},${lon.toFixed(MAP_COORD_GROUP_DECIMALS)}`;
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key).push(b);
+        items.push({ boat: b, lat, lon });
+    }
+    if (items.length === 0) return [];
+
+    const radiusM = mapClusterRadiusMeters(zoom);
+    const parent = items.map((_, i) => i);
+    const find = (i) => {
+        let root = i;
+        while (parent[root] !== root) {
+            parent[root] = parent[parent[root]];
+            root = parent[root];
+        }
+        return root;
+    };
+    const union = (a, b) => {
+        const ra = find(a);
+        const rb = find(b);
+        if (ra !== rb) parent[rb] = ra;
+    };
+
+    for (let i = 0; i < items.length; i++) {
+        for (let j = i + 1; j < items.length; j++) {
+            if (distanceMeters(items[i].lat, items[i].lon, items[j].lat, items[j].lon) <= radiusM) {
+                union(i, j);
+            }
+        }
+    }
+
+    const groups = new Map();
+    for (let i = 0; i < items.length; i++) {
+        const root = find(i);
+        if (!groups.has(root)) groups.set(root, []);
+        groups.get(root).push(items[i].boat);
     }
 
     const clusters = [];
-    for (const [key, group] of groups.entries()) {
+    let idx = 0;
+    for (const group of groups.values()) {
         const latSum = group.reduce((s, b) => s + Number(b.lat), 0);
         const lonSum = group.reduce((s, b) => s + Number(b.lng), 0);
         clusters.push({
-            id: key,
+            id: `c-${idx++}`,
             point: { lat: latSum / group.length, lon: lonSum / group.length },
             count: group.length,
             boats: group,
@@ -550,6 +587,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     const [mapLoading, setMapLoading] = useState(false);
     const [mapCenter, setMapCenter] = useState(DEFAULT_MAP_CENTER);
     const [mapZoom, setMapZoom] = useState(10);
+    const [mapClusterZoom, setMapClusterZoom] = useState(10);
     const [mapViewMode, setMapViewMode] = useState('cluster');
     const [priceVisibleMarkers, setPriceVisibleMarkers] = useState([]);
     const [mapLiveRegion, setMapLiveRegion] = useState(null);
@@ -562,7 +600,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     const clusteredMarkersDataRef = useRef([]);
     const mapModeTransitionRef = useRef(false);
     const [clusterMapEpoch, setClusterMapEpoch] = useState(0);
-    const mapPollRef = useRef(null);
+    const mapGeoFetchTimerRef = useRef(null);
     const lastMapCenterRef = useRef(null);
     const mapModalOpenRef = useRef(false);
     const mapUsesGeoSearchRef = useRef(false);
@@ -712,6 +750,7 @@ export default function SearchResultsScreen({ route, navigation }) {
         }
         setMapCenter(center);
         setMapZoom(zoom);
+        setMapClusterZoom(zoom);
         mapLiveCameraRef.current = { lat: center.lat, lon: center.lon, zoom };
         setMapLiveRegion(null);
         setMapViewMode('cluster');
@@ -731,6 +770,10 @@ export default function SearchResultsScreen({ route, navigation }) {
 
     const closeMapModal = useCallback(() => {
         mapModalOpenRef.current = false;
+        if (mapGeoFetchTimerRef.current) {
+            clearTimeout(mapGeoFetchTimerRef.current);
+            mapGeoFetchTimerRef.current = null;
+        }
         setMapClosing(true);
         // Сначала очищаем маркеры, даём нативу обработать удаление, затем закрываем — снижает риск "Failed to remove MapObject"
         setTimeout(() => {
@@ -874,11 +917,27 @@ export default function SearchResultsScreen({ route, navigation }) {
         syncMapModeForZoom(parseCameraZoom(native), 'move');
     }, [syncMapModeForZoom]);
 
+    const scheduleMapGeoFetch = useCallback(
+        (lat, lon) => {
+            if (mapGeoFetchTimerRef.current) clearTimeout(mapGeoFetchTimerRef.current);
+            mapGeoFetchTimerRef.current = setTimeout(() => {
+                mapGeoFetchTimerRef.current = null;
+                if (!mapModalOpenRef.current) return;
+                fetchBoatsForMap({ lat, lng: lon, fallbackLabel: displayCity });
+            }, 450);
+        },
+        [fetchBoatsForMap, displayCity],
+    );
+
     const handleCameraPositionChangeEnd = useCallback(
         (event) => {
             const native = event?.nativeEvent ?? event;
             applyCameraToLiveRef(mapLiveCameraRef, native);
-            syncMapModeForZoom(parseCameraZoom(native), 'end');
+            const zoom = parseCameraZoom(native);
+            syncMapModeForZoom(zoom, 'end');
+            if (mapViewModeRef.current === 'cluster' && zoom != null) {
+                setMapClusterZoom(zoom);
+            }
             const pt = parseCameraPoint(native);
             if (pt) {
                 const last = lastMapCenterRef.current;
@@ -888,11 +947,11 @@ export default function SearchResultsScreen({ route, navigation }) {
                     Math.abs(last.lon - pt.lon) >= MAP_PAN_MIN_DEG;
                 if (moved && shouldFetchMapByGeo(pt.lat, pt.lon)) {
                     lastMapCenterRef.current = { lat: pt.lat, lon: pt.lon };
-                    fetchBoatsForMap({ lat: pt.lat, lng: pt.lon, fallbackLabel: displayCity });
+                    scheduleMapGeoFetch(pt.lat, pt.lon);
                 }
             }
         },
-        [syncMapModeForZoom, fetchBoatsForMap, displayCity, shouldFetchMapByGeo],
+        [syncMapModeForZoom, displayCity, shouldFetchMapByGeo, scheduleMapGeoFetch],
     );
 
     useEffect(() => {
@@ -958,60 +1017,6 @@ export default function SearchResultsScreen({ route, navigation }) {
     );
 
     useEffect(() => {
-        if (!mapModalVisible || !mapViewReady || !YaMap || !mapRef.current) return;
-
-        const pollCamera = (onMove) => {
-            if (!mapModalOpenRef.current) return;
-            try {
-                mapRef.current?.getCameraPosition?.((pos) => {
-                    if (!mapModalOpenRef.current) return;
-                    const lat = pos?.point?.lat ?? pos?.lat ?? pos?.latitude;
-                    const lon = pos?.point?.lon ?? pos?.lon ?? pos?.longitude;
-                    if (lat == null || lon == null) return;
-                    onMove(lat, lon);
-                });
-            } catch (_) {}
-        };
-
-        const onMapMove = (lat, lon) => {
-            const last = lastMapCenterRef.current;
-            const same =
-                last &&
-                Math.abs(last.lat - lat) < MAP_PAN_MIN_DEG &&
-                Math.abs(last.lon - lon) < MAP_PAN_MIN_DEG;
-            if (same || !shouldFetchMapByGeo(lat, lon)) return;
-            lastMapCenterRef.current = { lat, lon };
-            fetchBoatsForMap({ lat, lng: lon, fallbackLabel: displayCity });
-        };
-
-        if (!mapUsesGeoSearchRef.current) {
-            if (useMyLocation && userLocationRef.current) {
-                onMapMove(userLocationRef.current.lat, userLocationRef.current.lon);
-            } else if (allRegions) {
-                onMapMove(mapCenter.lat, mapCenter.lon);
-            } else {
-                setMapBoats(boats);
-            }
-        }
-
-        pollCamera(onMapMove);
-        mapPollRef.current = setInterval(() => pollCamera(onMapMove), 4000);
-        return () => {
-            if (mapPollRef.current) clearInterval(mapPollRef.current);
-        };
-    }, [
-        mapModalVisible,
-        mapViewReady,
-        fetchBoatsForMap,
-        displayCity,
-        useMyLocation,
-        mapCenter,
-        boats,
-        allRegions,
-        shouldFetchMapByGeo,
-    ]);
-
-    useEffect(() => {
         if (!mapModalVisible || mapClosing) return;
         if (mapUsesGeoSearchRef.current && lastMapCenterRef.current) {
             fetchBoatsForMap({
@@ -1032,13 +1037,8 @@ export default function SearchResultsScreen({ route, navigation }) {
 
     const locationClusterMarkers = useMemo(() => {
         if (mapClosing) return [];
-        return buildLocationClusterMarkers(mapBoats);
-    }, [mapBoats, mapClosing]);
-
-    const mapClusterKey = useMemo(() => {
-        const ids = clusteredMarkersData.map((m) => m.data?.id).filter((id) => id != null);
-        return `${ids.length}-${ids.join(',')}`;
-    }, [clusteredMarkersData]);
+        return buildLocationClusterMarkers(mapBoats, mapClusterZoom);
+    }, [mapBoats, mapClosing, mapClusterZoom]);
 
     useEffect(() => {
         clusteredMarkersDataRef.current = clusteredMarkersData;
@@ -1597,7 +1597,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                                     </View>
                                 ) : mapViewMode === 'price' ? (
                                     <YaMap
-                                        key={`map-price-${mapClusterKey}`}
+                                        key={`map-price-e${clusterMapEpoch}`}
                                         ref={mapRef}
                                         style={StyleSheet.absoluteFillObject}
                                         initialRegion={mapInitialRegion}
@@ -1622,7 +1622,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                                     </YaMap>
                                 ) : (
                                     <YaMap
-                                        key={`map-loc-cluster-${mapClusterKey}-e${clusterMapEpoch}`}
+                                        key={`map-loc-cluster-e${clusterMapEpoch}`}
                                         ref={mapRef}
                                         style={StyleSheet.absoluteFillObject}
                                         initialRegion={mapInitialRegion}
