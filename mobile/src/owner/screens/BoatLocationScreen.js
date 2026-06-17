@@ -9,14 +9,14 @@ import { theme } from '../../shared/theme';
 import { isYamapNativeAvailable } from '../../shared/yamapNative';
 import { ensureYamapInitialized } from '../../shared/yamapInit';
 import { parseYandexGeocodeResult } from '../../shared/geo/parseYandexGeocode';
+import OwnerBoatLocationMap from '../../shared/components/OwnerBoatLocationMap';
 
 let LinearGradient = null;
 try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
 
 const GRADIENT = ['#0A4D4D', '#0D5C5C', '#1A7A5A'];
 const TEAL = '#0D5C5C';
-const DEFAULT_CENTER = { lat: 55.751244, lon: 37.618423 };
-const MAP_MARKER_ICON = require('../../../assets/icon.png');
+const GEOCODE_DEBOUNCE_MS = 400;
 
 const isMapAvailable = isYamapNativeAvailable;
 let YaMap = null;
@@ -49,6 +49,11 @@ export default function BoatLocationScreen({ navigation, route }) {
     const [geocodeLoading, setGeocodeLoading] = useState(false);
 
     const geocodeSeqRef = useRef(0);
+    const geocodeTimerRef = useRef(null);
+    const savedCoordsRef = useRef({
+        lat: saved?.lat ?? null,
+        lng: saved?.lng ?? null,
+    });
 
     useEffect(() => {
         if (!isMapAvailable || !YaMap) return;
@@ -56,26 +61,33 @@ export default function BoatLocationScreen({ navigation, route }) {
         ensureYamapInitialized().then((ok) => {
             if (!cancelled && ok) setMapReady(true);
         });
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+            if (geocodeTimerRef.current) clearTimeout(geocodeTimerRef.current);
+        };
     }, []);
 
-    const reverseGeocode = useCallback(async (pointLat, pointLng) => {
+    const reverseGeocode = useCallback((pointLat, pointLng) => {
         if (!Search?.geocodePoint) return;
-        const seq = ++geocodeSeqRef.current;
-        setGeocodeLoading(true);
-        try {
-            const result = await Search.geocodePoint({ lat: pointLat, lon: pointLng });
-            if (seq !== geocodeSeqRef.current) return;
-            const parsed = parseYandexGeocodeResult(result);
-            setCountry(parsed.country);
-            setRegion(parsed.region);
-            setCity(parsed.city);
-            setAddress(parsed.address);
-        } catch (_) {
-            if (seq !== geocodeSeqRef.current) return;
-        } finally {
-            if (seq === geocodeSeqRef.current) setGeocodeLoading(false);
-        }
+        if (geocodeTimerRef.current) clearTimeout(geocodeTimerRef.current);
+        geocodeTimerRef.current = setTimeout(async () => {
+            geocodeTimerRef.current = null;
+            const seq = ++geocodeSeqRef.current;
+            setGeocodeLoading(true);
+            try {
+                const result = await Search.geocodePoint({ lat: pointLat, lon: pointLng });
+                if (seq !== geocodeSeqRef.current) return;
+                const parsed = parseYandexGeocodeResult(result);
+                setCountry(parsed.country);
+                setRegion(parsed.region);
+                setCity(parsed.city);
+                setAddress(parsed.address);
+            } catch (_) {
+                if (seq !== geocodeSeqRef.current) return;
+            } finally {
+                if (seq === geocodeSeqRef.current) setGeocodeLoading(false);
+            }
+        }, GEOCODE_DEBOUNCE_MS);
     }, []);
 
     const handleMapPress = useCallback((e) => {
@@ -109,49 +121,6 @@ export default function BoatLocationScreen({ navigation, route }) {
         });
     };
 
-    const initialRegion = {
-        lat: lat ?? DEFAULT_CENTER.lat,
-        lon: lng ?? DEFAULT_CENTER.lon,
-        zoom: lat != null ? 14 : 10,
-    };
-
-    const renderMap = () => {
-        if (!isMapAvailable || !YaMap) {
-            return (
-                <View style={s.mapPlaceholder}>
-                    <Text style={s.mapPlaceholderText}>
-                        Карта доступна в полной сборке приложения (не Expo Go). Укажите адрес в полях ниже или соберите dev/production build.
-                    </Text>
-                </View>
-            );
-        }
-        if (!mapReady) {
-            return (
-                <View style={s.mapLoader}>
-                    <ActivityIndicator size="large" color={TEAL} />
-                    <Text style={s.mapLoaderText}>Загрузка карты...</Text>
-                </View>
-            );
-        }
-        return (
-            <YaMap
-                style={s.map}
-                initialRegion={initialRegion}
-                onMapPress={handleMapPress}
-                onMapLoaded={() => setMapReady(true)}
-            >
-                {lat != null && lng != null && Marker ? (
-                    <Marker
-                        point={{ lat, lon: lng }}
-                        source={MAP_MARKER_ICON}
-                        scale={0.12}
-                        anchor={{ x: 0.5, y: 1 }}
-                    />
-                ) : null}
-            </YaMap>
-        );
-    };
-
     return (
         <View style={s.root}>
             <View style={s.headerWrap}>
@@ -183,16 +152,37 @@ export default function BoatLocationScreen({ navigation, route }) {
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
                 {mapError ? <Text style={[s.fieldErrorText, s.mapErrorOutside]}>{mapError}</Text> : null}
-                <View style={[s.mapContainer, mapError && s.mapContainerError]}>
-                    {renderMap()}
+                <View style={[s.mapContainer, mapError && s.mapContainerError]} collapsable={false}>
+                    {!isMapAvailable || !YaMap ? (
+                        <View style={s.mapPlaceholder}>
+                            <Text style={s.mapPlaceholderText}>
+                                Карта доступна в полной сборке приложения (не Expo Go). Укажите адрес в полях ниже или соберите dev/production build.
+                            </Text>
+                        </View>
+                    ) : !mapReady ? (
+                        <View style={s.mapLoader}>
+                            <ActivityIndicator size="large" color={TEAL} />
+                            <Text style={s.mapLoaderText}>Загрузка карты...</Text>
+                        </View>
+                    ) : (
+                        <OwnerBoatLocationMap
+                            YaMap={YaMap}
+                            Marker={Marker}
+                            initialLat={savedCoordsRef.current.lat}
+                            initialLng={savedCoordsRef.current.lng}
+                            markerLat={lat}
+                            markerLng={lng}
+                            onMapPress={handleMapPress}
+                        />
+                    )}
                     {geocodeLoading ? (
-                        <View style={s.geocodeBadge}>
+                        <View style={s.geocodeBadge} pointerEvents="none">
                             <ActivityIndicator size="small" color="#fff" />
                             <Text style={s.geocodeBadgeText}>Адрес…</Text>
                         </View>
                     ) : null}
                     {lat != null && lng != null && (
-                        <View style={s.coordsBadge}>
+                        <View style={s.coordsBadge} pointerEvents="none">
                             <MapPin size={14} color="#fff" />
                             <Text style={s.coordsText}>
                                 {lat.toFixed(5)}, {lng.toFixed(5)}
@@ -206,6 +196,7 @@ export default function BoatLocationScreen({ navigation, route }) {
                     contentContainerStyle={[s.bodyContent, { paddingBottom: 100 }]}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
+                    nestedScrollEnabled
                 >
                     <View style={s.fieldWrap}>
                         <Text style={s.fieldLabel}>Страна</Text>
@@ -309,7 +300,6 @@ const s = StyleSheet.create({
         borderColor: '#E5E7EB',
         backgroundColor: '#F3F4F6',
     },
-    map: { width: '100%', height: 260 },
     mapLoader: {
         ...StyleSheet.absoluteFillObject,
         justifyContent: 'center',
