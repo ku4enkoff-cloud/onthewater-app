@@ -443,13 +443,101 @@ function findNearbyMapBoats(tappedBoat, markers, tappedPoint) {
     return boats.length ? boats : [tappedBoat];
 }
 
-/** Zoom для перехода к ценовым маркерам (только видимая область). */
+/** Zoom для перехода к ценовым маркерам при ручном pinch (не при тапе по кластеру). */
 const MAP_ZOOM_ENTER_PRICE_MODE = 13;
 /** Ниже этого zoom — снова групповые маркеры (гистерезис: вход 13, выход 11). */
 const MAP_ZOOM_EXIT_PRICE_MODE = 11;
-/** Минимальный сдвиг карты для подгрузки катеров по геолокации. */
+/** Первый тап по кластеру: показать все метки области, без сильного приближения. */
+const MAP_ZOOM_CLUSTER_OPEN_MIN = 10;
+const MAP_ZOOM_CLUSTER_OPEN_MAX = 12;
+/** Повторный тап по выбранной ценовой метке — детальный вид. */
+const MAP_ZOOM_MARKER_CLOSE = 15;
+/** Минимальный сдвиг карты для повторной подгрузки. */
 const MAP_PAN_MIN_DEG = 0.028;
 const MAP_GEO_FETCH_RADIUS_KM = 50;
+const MAP_GEO_FETCH_RADIUS_MAX_KM = 250;
+const MAP_GEO_FETCH_RADIUS_MIN_KM = 8;
+
+function radiusKmForZoom(zoom) {
+    const z = Number.isFinite(Number(zoom)) ? Number(zoom) : 10;
+    return Math.min(MAP_GEO_FETCH_RADIUS_MAX_KM, Math.max(MAP_GEO_FETCH_RADIUS_MIN_KM, 400 / 2 ** (z - 6)));
+}
+
+function radiusKmForBounds(bounds) {
+    if (!bounds) return MAP_GEO_FETCH_RADIUS_KM;
+    const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+    const centerLon = (bounds.minLon + bounds.maxLon) / 2;
+    const corners = [
+        [bounds.minLat, bounds.minLon],
+        [bounds.minLat, bounds.maxLon],
+        [bounds.maxLat, bounds.minLon],
+        [bounds.maxLat, bounds.maxLon],
+    ];
+    const maxM = Math.max(
+        ...corners.map(([lat, lon]) => distanceMeters(centerLat, centerLon, lat, lon)),
+    );
+    return Math.min(
+        MAP_GEO_FETCH_RADIUS_MAX_KM,
+        Math.max(MAP_GEO_FETCH_RADIUS_MIN_KM, (maxM / 1000) * 1.12),
+    );
+}
+
+function filterBoatsInBounds(boats, bounds) {
+    if (!bounds || !Array.isArray(boats)) return boats || [];
+    return boats.filter((b) => {
+        const lat = Number(b.lat);
+        const lon = Number(b.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
+        return (
+            lat >= bounds.minLat &&
+            lat <= bounds.maxLat &&
+            lon >= bounds.minLon &&
+            lon <= bounds.maxLon
+        );
+    });
+}
+
+/** Центр и zoom, чтобы все катера кластера были видны на экране. */
+function computeFitCameraForBoats(boats) {
+    const coords = (boats || [])
+        .map((b) => ({ lat: Number(b.lat), lon: Number(b.lng) }))
+        .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lon));
+    if (!coords.length) return null;
+
+    if (coords.length === 1) {
+        return {
+            lat: coords[0].lat,
+            lon: coords[0].lon,
+            zoom: Math.min(MAP_ZOOM_CLUSTER_OPEN_MAX, MAP_ZOOM_CLUSTER_OPEN_MIN + 1),
+        };
+    }
+
+    const lats = coords.map((p) => p.lat);
+    const lons = coords.map((p) => p.lon);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLon = Math.min(...lons);
+    const maxLon = Math.max(...lons);
+    const centerLat = (minLat + maxLat) / 2;
+    const centerLon = (minLon + maxLon) / 2;
+
+    const latSpan = Math.max(0.003, maxLat - minLat);
+    const lonSpan = Math.max(0.003, maxLon - minLon);
+    const span = Math.max(latSpan, lonSpan) * 1.5;
+
+    let zoom = MAP_ZOOM_CLUSTER_OPEN_MAX;
+    if (span > 0.2) zoom = 9;
+    else if (span > 0.1) zoom = 10;
+    else if (span > 0.05) zoom = 11;
+    else if (span > 0.02) zoom = 12;
+    else zoom = MAP_ZOOM_CLUSTER_OPEN_MAX;
+
+    return {
+        lat: centerLat,
+        lon: centerLon,
+        zoom: Math.min(MAP_ZOOM_CLUSTER_OPEN_MAX, Math.max(MAP_ZOOM_CLUSTER_OPEN_MIN, zoom)),
+    };
+}
 
 function deriveMapAreaLabel(boatList, fallback) {
     if (!Array.isArray(boatList) || boatList.length === 0) return fallback;
@@ -598,13 +686,14 @@ export default function SearchResultsScreen({ route, navigation }) {
     const mapLiveCameraRef = useRef({ lat: DEFAULT_MAP_CENTER.lat, lon: DEFAULT_MAP_CENTER.lon, zoom: 10 });
     const mapViewModeRef = useRef('cluster');
     const clusteredMarkersDataRef = useRef([]);
+    const priceVisibleMarkersRef = useRef([]);
     const mapModeTransitionRef = useRef(false);
+    const priceMarkerTapRef = useRef({ boatId: null });
     const [clusterMapEpoch, setClusterMapEpoch] = useState(0);
     const mapGeoFetchTimerRef = useRef(null);
-    const lastMapCenterRef = useRef(null);
+    const lastViewportFetchRef = useRef(null);
     const mapModalOpenRef = useRef(false);
     const mapUsesGeoSearchRef = useRef(false);
-    const mapOpenCenterRef = useRef(null);
     const [mapClosing, setMapClosing] = useState(false);
 
     const dateObj = dateISO ? new Date(dateISO) : new Date();
@@ -693,31 +782,29 @@ export default function SearchResultsScreen({ route, navigation }) {
 
     const fetchBoatsForMap = useCallback(
         async (opts = {}) => {
-            const { lat, lng, cityFilter = null, regionFilter = null, fallbackLabel = '' } = opts;
+            const {
+                lat,
+                lng,
+                radius = MAP_GEO_FETCH_RADIUS_KM,
+                bounds = null,
+                fallbackLabel = '',
+            } = opts;
+            if (lat == null || lng == null) return;
             setMapLoading(true);
             try {
-                let list = [];
-                let usedGeo = false;
-                if (regionFilter && isRegion(regionFilter)) {
-                    const res = await api.get('/boats', { params: { region: regionFilter } });
-                    list = Array.isArray(res.data) ? res.data : [];
-                } else if (cityFilter && String(cityFilter).trim()) {
-                    const res = await api.get('/boats', { params: { city: cityFilter } });
-                    list = Array.isArray(res.data) ? res.data : [];
-                } else if (lat != null && lng != null) {
-                    const res = await api.get('/boats', {
-                        params: { lat, lng, radius: MAP_GEO_FETCH_RADIUS_KM },
-                    });
-                    list = Array.isArray(res.data) ? res.data : [];
-                    usedGeo = true;
+                const res = await api.get('/boats', {
+                    params: { lat, lng, radius },
+                });
+                let list = Array.isArray(res.data) ? res.data : [];
+                let filtered = dedupeBoatsById(applyBoatFilters(list, filters, priceRange));
+                if (bounds) {
+                    filtered = filterBoatsInBounds(filtered, bounds);
                 }
                 if (mapModalOpenRef.current) {
-                    const filtered = dedupeBoatsById(applyBoatFilters(list, filters, priceRange));
                     setMapBoats(filtered);
-                    if (usedGeo) {
-                        mapUsesGeoSearchRef.current = true;
-                        setMapAreaLabel(deriveMapAreaLabel(filtered, fallbackLabel || displayCity));
-                    }
+                    mapUsesGeoSearchRef.current = true;
+                    setMapAreaLabel(deriveMapAreaLabel(filtered, fallbackLabel || displayCity));
+                    lastViewportFetchRef.current = { lat, lng, radiusKm: radius, bounds };
                 }
             } catch (_) {
                 if (mapModalOpenRef.current) setMapBoats([]);
@@ -727,6 +814,56 @@ export default function SearchResultsScreen({ route, navigation }) {
         },
         [filters, priceRange, displayCity],
     );
+
+    const fetchBoatsForMapViewport = useCallback(() => {
+        if (!mapModalOpenRef.current) return;
+
+        const runFetch = (lat, lng, radiusKm, bounds) => {
+            const last = lastViewportFetchRef.current;
+            const moved =
+                !last ||
+                Math.abs(last.lat - lat) >= MAP_PAN_MIN_DEG ||
+                Math.abs(last.lng - lng) >= MAP_PAN_MIN_DEG;
+            const zoomChanged =
+                !last ||
+                Math.abs((last.radiusKm || 0) - radiusKm) / Math.max(last.radiusKm || 1, 1) > 0.12;
+            if (!moved && !zoomChanged) return;
+
+            fetchBoatsForMap({
+                lat,
+                lng,
+                radius: radiusKm,
+                bounds,
+                fallbackLabel: displayCity,
+            });
+        };
+
+        if (!mapRef.current?.getVisibleRegion) {
+            const cam = mapLiveCameraRef.current;
+            const radiusKm = radiusKmForZoom(cam.zoom);
+            runFetch(cam.lat, cam.lon, radiusKm, null);
+            return;
+        }
+
+        try {
+            mapRef.current.getVisibleRegion((region) => {
+                if (!mapModalOpenRef.current) return;
+                const bounds = visibleRegionBounds(region);
+                if (!bounds) {
+                    const cam = mapLiveCameraRef.current;
+                    runFetch(cam.lat, cam.lon, radiusKmForZoom(cam.zoom), null);
+                    return;
+                }
+                const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+                const centerLon = (bounds.minLon + bounds.maxLon) / 2;
+                const radiusKm = radiusKmForBounds(bounds);
+                runFetch(centerLat, centerLon, radiusKm, bounds);
+            });
+        } catch (_) {
+            const cam = mapLiveCameraRef.current;
+            runFetch(cam.lat, cam.lon, radiusKmForZoom(cam.zoom), null);
+        }
+    }, [fetchBoatsForMap, displayCity]);
 
     const openMapModal = useCallback(() => {
         let center;
@@ -756,16 +893,15 @@ export default function SearchResultsScreen({ route, navigation }) {
         setMapViewMode('cluster');
         setClusterMapEpoch((e) => e + 1);
         setPriceVisibleMarkers([]);
-        setMapBoats(boats);
+        setMapBoats([]);
         setMapAreaLabel(displayCity);
         setSelectedMapBoats([]);
-        mapUsesGeoSearchRef.current = false;
-        mapOpenCenterRef.current = { lat: center.lat, lon: center.lon };
+        mapUsesGeoSearchRef.current = true;
+        lastViewportFetchRef.current = null;
         mapModalOpenRef.current = true;
         setMapClosing(false);
         setMapModalVisible(true);
         setMapViewReady(false);
-        lastMapCenterRef.current = { lat: center.lat, lon: center.lon };
     }, [boats, cityName, useMyLocation, displayCity]);
 
     const closeMapModal = useCallback(() => {
@@ -809,6 +945,15 @@ export default function SearchResultsScreen({ route, navigation }) {
             if (timer) clearTimeout(timer);
         };
     }, [mapModalVisible]);
+
+    useEffect(() => {
+        if (!mapModalVisible || !mapViewReady || mapClosing) return undefined;
+        const timer = setTimeout(() => {
+            lastViewportFetchRef.current = null;
+            fetchBoatsForMapViewport();
+        }, 350);
+        return () => clearTimeout(timer);
+    }, [mapModalVisible, mapViewReady, mapClosing, clusterMapEpoch, fetchBoatsForMapViewport]);
 
     useEffect(() => {
         mapViewModeRef.current = mapViewMode;
@@ -917,17 +1062,14 @@ export default function SearchResultsScreen({ route, navigation }) {
         syncMapModeForZoom(parseCameraZoom(native), 'move');
     }, [syncMapModeForZoom]);
 
-    const scheduleMapGeoFetch = useCallback(
-        (lat, lon) => {
-            if (mapGeoFetchTimerRef.current) clearTimeout(mapGeoFetchTimerRef.current);
-            mapGeoFetchTimerRef.current = setTimeout(() => {
-                mapGeoFetchTimerRef.current = null;
-                if (!mapModalOpenRef.current) return;
-                fetchBoatsForMap({ lat, lng: lon, fallbackLabel: displayCity });
-            }, 450);
-        },
-        [fetchBoatsForMap, displayCity],
-    );
+    const scheduleMapViewportFetch = useCallback(() => {
+        if (mapModeTransitionRef.current) return;
+        if (mapGeoFetchTimerRef.current) clearTimeout(mapGeoFetchTimerRef.current);
+        mapGeoFetchTimerRef.current = setTimeout(() => {
+            mapGeoFetchTimerRef.current = null;
+            fetchBoatsForMapViewport();
+        }, 450);
+    }, [fetchBoatsForMapViewport]);
 
     const handleCameraPositionChangeEnd = useCallback(
         (event) => {
@@ -938,20 +1080,9 @@ export default function SearchResultsScreen({ route, navigation }) {
             if (mapViewModeRef.current === 'cluster' && zoom != null) {
                 setMapClusterZoom(zoom);
             }
-            const pt = parseCameraPoint(native);
-            if (pt) {
-                const last = lastMapCenterRef.current;
-                const moved =
-                    !last ||
-                    Math.abs(last.lat - pt.lat) >= MAP_PAN_MIN_DEG ||
-                    Math.abs(last.lon - pt.lon) >= MAP_PAN_MIN_DEG;
-                if (moved && shouldFetchMapByGeo(pt.lat, pt.lon)) {
-                    lastMapCenterRef.current = { lat: pt.lat, lon: pt.lon };
-                    scheduleMapGeoFetch(pt.lat, pt.lon);
-                }
-            }
+            scheduleMapViewportFetch();
         },
-        [syncMapModeForZoom, displayCity, shouldFetchMapByGeo, scheduleMapGeoFetch],
+        [syncMapModeForZoom, scheduleMapViewportFetch],
     );
 
     useEffect(() => {
@@ -973,62 +1104,89 @@ export default function SearchResultsScreen({ route, navigation }) {
         return () => clearInterval(id);
     }, [mapModalVisible, mapViewReady, mapViewMode, exitPriceMode]);
 
-    const handleMapBoatPress = useCallback((boat, markerPoint) => {
-        if (!boat) return;
-        const nearby = findNearbyMapBoats(boat, clusteredMarkersDataRef.current, markerPoint);
-        setSelectedMapBoats((prev) => {
-            const nearbyIds = nearby.map((b) => String(b.id)).sort().join(',');
-            const prevIds = prev.map((b) => String(b.id)).sort().join(',');
-            if (nearbyIds === prevIds) return [];
-            return nearby;
-        });
-    }, []);
-
-    const shouldFetchMapByGeo = useCallback((lat, lon) => {
-        if (mapUsesGeoSearchRef.current) return true;
-        const open = mapOpenCenterRef.current;
-        if (!open) return true;
-        return (
-            Math.abs(lat - open.lat) >= MAP_PAN_MIN_DEG ||
-            Math.abs(lon - open.lon) >= MAP_PAN_MIN_DEG
-        );
-    }, []);
-
-    const handleLocationClusterPress = useCallback((cluster) => {
-        if (!cluster?.point || mapModeTransitionRef.current) return;
+    const zoomMapToPoint = useCallback((point, zoom) => {
+        if (!point || !Number.isFinite(point.lat) || !Number.isFinite(point.lon)) return;
         mapModeTransitionRef.current = true;
-        const zoom = MAP_ZOOM_ENTER_PRICE_MODE + 1;
-        const { point, boats: clusterBoats } = cluster;
         mapLiveCameraRef.current = { lat: point.lat, lon: point.lon, zoom };
         setMapLiveRegion({ lat: point.lat, lon: point.lon, zoom });
-        const markers = buildClusteredMapMarkers(clusterBoats || []);
-        setPriceVisibleMarkers(markers);
-        setSelectedMapBoats([]);
-        setMapViewMode('price');
-        mapModeTransitionRef.current = false;
+        setMapClusterZoom(zoom);
         try {
             mapRef.current?.setCenter?.(point, zoom, 0, 0, 0.35);
         } catch (_) {}
+        setTimeout(() => {
+            mapModeTransitionRef.current = false;
+        }, 500);
+    }, []);
+
+    const handleMapBoatPress = useCallback((boat, markerPoint) => {
+        if (!boat) return;
+        const nearby = findNearbyMapBoats(
+            boat,
+            mapViewModeRef.current === 'price' && priceVisibleMarkersRef.current.length
+                ? priceVisibleMarkersRef.current
+                : clusteredMarkersDataRef.current,
+            markerPoint,
+        );
+        const boatId = String(boat.id);
+        const nearbyIds = nearby.map((b) => String(b.id)).sort().join(',');
+
+        setSelectedMapBoats((prev) => {
+            const prevIds = prev.map((b) => String(b.id)).sort().join(',');
+            const isSameSelection = prevIds === nearbyIds && prevIds.length > 0;
+            const isSingleBoat = nearby.length === 1;
+
+            if (
+                isSameSelection &&
+                isSingleBoat &&
+                priceMarkerTapRef.current.boatId === boatId
+            ) {
+                const pt = markerPoint ?? { lat: Number(boat.lat), lon: Number(boat.lng) };
+                zoomMapToPoint(pt, MAP_ZOOM_MARKER_CLOSE);
+                return prev;
+            }
+
+            priceMarkerTapRef.current = { boatId };
+            if (isSameSelection) return [];
+            return nearby;
+        });
+    }, [zoomMapToPoint]);
+
+    useEffect(() => {
+        if (!mapModalVisible || mapClosing) return;
+        lastViewportFetchRef.current = null;
+        fetchBoatsForMapViewport();
+    }, [mapModalVisible, mapClosing, filters, fetchBoatsForMapViewport]);
+
+    const handleLocationClusterPress = useCallback((cluster) => {
+        if (!cluster?.point || mapModeTransitionRef.current) return;
+        const { boats: clusterBoats } = cluster;
+        const markers = buildClusteredMapMarkers(clusterBoats || []);
+        const fit = computeFitCameraForBoats(clusterBoats || []);
+        const point = fit
+            ? { lat: fit.lat, lon: fit.lon }
+            : cluster.point;
+        const zoom = fit?.zoom ?? MAP_ZOOM_CLUSTER_OPEN_MAX;
+
+        mapModeTransitionRef.current = true;
+        priceMarkerTapRef.current = { boatId: null };
+        mapLiveCameraRef.current = { lat: point.lat, lon: point.lon, zoom };
+        setMapLiveRegion({ lat: point.lat, lon: point.lon, zoom });
+        setMapClusterZoom(zoom);
+        setPriceVisibleMarkers(markers);
+        setSelectedMapBoats([]);
+        setMapViewMode('price');
+        try {
+            mapRef.current?.setCenter?.(point, zoom, 0, 0, 0.35);
+        } catch (_) {}
+        setTimeout(() => {
+            mapModeTransitionRef.current = false;
+        }, 500);
     }, []);
 
     const isMapBoatSelected = useCallback(
         (boatId) => selectedMapBoats.some((b) => String(b.id) === String(boatId)),
         [selectedMapBoats],
     );
-
-    useEffect(() => {
-        if (!mapModalVisible || mapClosing) return;
-        if (mapUsesGeoSearchRef.current && lastMapCenterRef.current) {
-            fetchBoatsForMap({
-                lat: lastMapCenterRef.current.lat,
-                lng: lastMapCenterRef.current.lon,
-                fallbackLabel: displayCity,
-            });
-            return;
-        }
-        setMapBoats(boats);
-        setMapAreaLabel(displayCity);
-    }, [mapModalVisible, mapClosing, boats, filters, fetchBoatsForMap, displayCity]);
 
     const clusteredMarkersData = useMemo(() => {
         if (mapClosing) return [];
@@ -1043,6 +1201,10 @@ export default function SearchResultsScreen({ route, navigation }) {
     useEffect(() => {
         clusteredMarkersDataRef.current = clusteredMarkersData;
     }, [clusteredMarkersData]);
+
+    useEffect(() => {
+        priceVisibleMarkersRef.current = priceVisibleMarkers;
+    }, [priceVisibleMarkers]);
 
     const mapInitialRegion = mapLiveRegion ?? {
         lat: mapCenter.lat,
