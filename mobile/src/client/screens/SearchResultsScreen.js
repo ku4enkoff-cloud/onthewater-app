@@ -688,6 +688,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     const clusteredMarkersDataRef = useRef([]);
     const priceVisibleMarkersRef = useRef([]);
     const mapModeTransitionRef = useRef(false);
+    const mapPriceClusterLockRef = useRef(false);
     const priceMarkerTapRef = useRef({ boatId: null });
     const [clusterMapEpoch, setClusterMapEpoch] = useState(0);
     const mapGeoFetchTimerRef = useRef(null);
@@ -891,6 +892,7 @@ export default function SearchResultsScreen({ route, navigation }) {
         mapLiveCameraRef.current = { lat: center.lat, lon: center.lon, zoom };
         setMapLiveRegion(null);
         setMapViewMode('cluster');
+        mapPriceClusterLockRef.current = false;
         setClusterMapEpoch((e) => e + 1);
         setPriceVisibleMarkers([]);
         setMapBoats([]);
@@ -953,7 +955,7 @@ export default function SearchResultsScreen({ route, navigation }) {
             fetchBoatsForMapViewport();
         }, 350);
         return () => clearTimeout(timer);
-    }, [mapModalVisible, mapViewReady, mapClosing, clusterMapEpoch, fetchBoatsForMapViewport]);
+    }, [mapModalVisible, mapViewReady, mapClosing, fetchBoatsForMapViewport]);
 
     useEffect(() => {
         mapViewModeRef.current = mapViewMode;
@@ -1018,10 +1020,10 @@ export default function SearchResultsScreen({ route, navigation }) {
     const exitPriceMode = useCallback(() => {
         if (mapViewModeRef.current !== 'price' || mapModeTransitionRef.current) return;
         mapModeTransitionRef.current = true;
+        mapPriceClusterLockRef.current = false;
         const finish = () => {
             setPriceVisibleMarkers([]);
             setSelectedMapBoats([]);
-            setClusterMapEpoch((e) => e + 1);
             setMapViewMode('cluster');
             mapModeTransitionRef.current = false;
         };
@@ -1041,15 +1043,21 @@ export default function SearchResultsScreen({ route, navigation }) {
         (zoom, phase = 'move') => {
             if (zoom == null) return;
             if (mapViewModeRef.current === 'cluster' && zoom >= MAP_ZOOM_ENTER_PRICE_MODE) {
+                mapPriceClusterLockRef.current = false;
                 enterPriceMode();
                 return;
             }
-            // Выход в кластеры — только после жеста (не во время pinch), иначе ломается группировка.
-            if (phase === 'end' && mapViewModeRef.current === 'price' && zoom <= MAP_ZOOM_EXIT_PRICE_MODE) {
-                exitPriceMode();
-                return;
-            }
-            if (mapViewModeRef.current === 'price' && phase === 'end') {
+            if (phase === 'end' && mapViewModeRef.current === 'price') {
+                if (mapPriceClusterLockRef.current) {
+                    if (zoom < MAP_ZOOM_CLUSTER_OPEN_MIN) {
+                        exitPriceMode();
+                    }
+                    return;
+                }
+                if (zoom <= MAP_ZOOM_EXIT_PRICE_MODE) {
+                    exitPriceMode();
+                    return;
+                }
                 refreshPriceVisibleMarkers();
             }
         },
@@ -1064,6 +1072,7 @@ export default function SearchResultsScreen({ route, navigation }) {
 
     const scheduleMapViewportFetch = useCallback(() => {
         if (mapModeTransitionRef.current) return;
+        if (mapViewModeRef.current === 'price') return;
         if (mapGeoFetchTimerRef.current) clearTimeout(mapGeoFetchTimerRef.current);
         mapGeoFetchTimerRef.current = setTimeout(() => {
             mapGeoFetchTimerRef.current = null;
@@ -1085,25 +1094,6 @@ export default function SearchResultsScreen({ route, navigation }) {
         [syncMapModeForZoom, scheduleMapViewportFetch],
     );
 
-    useEffect(() => {
-        if (!mapModalVisible || !mapViewReady || mapViewMode !== 'price') return undefined;
-        const pollZoom = () => {
-            if (!mapModalOpenRef.current || mapViewModeRef.current !== 'price') return;
-            try {
-                mapRef.current?.getCameraPosition?.((pos) => {
-                    applyCameraToLiveRef(mapLiveCameraRef, pos);
-                    const zoom = parseCameraZoom(pos);
-                    if (zoom != null && zoom <= MAP_ZOOM_EXIT_PRICE_MODE) {
-                        exitPriceMode();
-                    }
-                });
-            } catch (_) {}
-        };
-        pollZoom();
-        const id = setInterval(pollZoom, 500);
-        return () => clearInterval(id);
-    }, [mapModalVisible, mapViewReady, mapViewMode, exitPriceMode]);
-
     const zoomMapToPoint = useCallback((point, zoom) => {
         if (!point || !Number.isFinite(point.lat) || !Number.isFinite(point.lon)) return;
         mapModeTransitionRef.current = true;
@@ -1115,7 +1105,7 @@ export default function SearchResultsScreen({ route, navigation }) {
         } catch (_) {}
         setTimeout(() => {
             mapModeTransitionRef.current = false;
-        }, 500);
+        }, 900);
     }, []);
 
     const handleMapBoatPress = useCallback((boat, markerPoint) => {
@@ -1153,6 +1143,7 @@ export default function SearchResultsScreen({ route, navigation }) {
 
     useEffect(() => {
         if (!mapModalVisible || mapClosing) return;
+        if (mapViewModeRef.current === 'price') return;
         lastViewportFetchRef.current = null;
         fetchBoatsForMapViewport();
     }, [mapModalVisible, mapClosing, filters, fetchBoatsForMapViewport]);
@@ -1168,6 +1159,7 @@ export default function SearchResultsScreen({ route, navigation }) {
         const zoom = fit?.zoom ?? MAP_ZOOM_CLUSTER_OPEN_MAX;
 
         mapModeTransitionRef.current = true;
+        mapPriceClusterLockRef.current = true;
         priceMarkerTapRef.current = { boatId: null };
         mapLiveCameraRef.current = { lat: point.lat, lon: point.lon, zoom };
         setMapLiveRegion({ lat: point.lat, lon: point.lon, zoom });
@@ -1180,8 +1172,20 @@ export default function SearchResultsScreen({ route, navigation }) {
         } catch (_) {}
         setTimeout(() => {
             mapModeTransitionRef.current = false;
-        }, 500);
+        }, 900);
     }, []);
+
+    const dismissMapBoatSheet = useCallback(() => {
+        setSelectedMapBoats((prev) => {
+            if (prev.length === 0) return prev;
+            priceMarkerTapRef.current = { boatId: null };
+            return [];
+        });
+    }, []);
+
+    const handleMapBackgroundPress = useCallback(() => {
+        dismissMapBoatSheet();
+    }, [dismissMapBoatSheet]);
 
     const isMapBoatSelected = useCallback(
         (boatId) => selectedMapBoats.some((b) => String(b.id) === String(boatId)),
@@ -1763,6 +1767,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                                         ref={mapRef}
                                         style={StyleSheet.absoluteFillObject}
                                         initialRegion={mapInitialRegion}
+                                        onMapPress={handleMapBackgroundPress}
                                         onCameraPositionChange={handleCameraPositionChange}
                                         onCameraPositionChangeEnd={handleCameraPositionChangeEnd}
                                     >
@@ -1788,6 +1793,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                                         ref={mapRef}
                                         style={StyleSheet.absoluteFillObject}
                                         initialRegion={mapInitialRegion}
+                                        onMapPress={handleMapBackgroundPress}
                                         onCameraPositionChange={handleCameraPositionChange}
                                         onCameraPositionChangeEnd={handleCameraPositionChangeEnd}
                                     >
