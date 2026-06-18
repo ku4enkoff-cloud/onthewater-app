@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useContext } from 'react';
+import React, { useState, useEffect, useCallback, useContext, useRef, memo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
     View,
@@ -10,7 +10,6 @@ import {
     Dimensions,
     ScrollView,
     RefreshControl,
-    AppState,
     useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -116,18 +115,103 @@ const getMinDurationPrice = (boat) => {
     return tierPrice > 0 ? tierPrice : base;
 };
 
-function DestinationImage({ uri, style, refreshKey: _ }) {
-    const [failed, setFailed] = React.useState(false);
-    const src = !uri ? null : uri;
-    React.useEffect(() => setFailed(false), [uri]);
-    const displayUri = failed || !src ? PLACEHOLDER_IMG + encodeURIComponent('Фото') : src;
+function StableRemoteImage({ uri, style, resizeMode = 'cover' }) {
+    const [failed, setFailed] = useState(false);
+    const displayUri = !uri || failed ? `${PLACEHOLDER_IMG}${encodeURIComponent('Фото')}` : uri;
     return (
         <Image
             source={{ uri: displayUri }}
             style={style}
+            resizeMode={resizeMode}
+            fadeDuration={0}
             onError={() => setFailed(true)}
         />
     );
+}
+
+const SearchBoatCard = memo(function SearchBoatCard({
+    item,
+    cardWidth,
+    horizontal,
+    favorite,
+    onPress,
+    onToggleFavorite,
+}) {
+    const instantBook = item.instant_booking !== false;
+    const formatPrice = (n) => (n != null ? Number(n).toLocaleString('ru-RU') : '0');
+    const minDurationLabel = (boat) => {
+        const mins = boat.schedule_min_duration != null ? Number(boat.schedule_min_duration) : 60;
+        if (mins < 60) return `${mins} мин`;
+        const h = Math.floor(mins / 60);
+        const m = mins % 60;
+        if (m === 0) return `${h} ч`;
+        return `${h} ч ${m} мин`;
+    };
+
+    return (
+        <TouchableOpacity
+            style={[styles.card, horizontal && { width: cardWidth, marginRight: 16, marginBottom: 0 }]}
+            onPress={onPress}
+            activeOpacity={0.95}
+        >
+            <View style={styles.cardImageWrap}>
+                <StableRemoteImage
+                    uri={resolvePhotoUri(item.photos?.[0]) || 'https://placehold.co/400x300'}
+                    style={styles.cardImage}
+                />
+                <View style={styles.cardBadges}>
+                    {instantBook && (
+                        <View style={styles.instantBadge}>
+                            <Zap size={12} color="#fff" />
+                            <Text style={styles.instantBadgeText}>Мгновенно</Text>
+                        </View>
+                    )}
+                </View>
+                <TouchableOpacity
+                    style={styles.heartButton}
+                    onPress={(e) => {
+                        e.stopPropagation();
+                        onToggleFavorite(item);
+                    }}
+                >
+                    <Heart
+                        size={20}
+                        color={favorite ? '#ef4444' : theme.colors.gray400}
+                        fill={favorite ? '#ef4444' : 'transparent'}
+                    />
+                </TouchableOpacity>
+                <View style={styles.imagePriceBadge}>
+                    <Text style={styles.imagePriceMain}>
+                        от {formatPrice(getMinDurationPrice(item))} ₽
+                    </Text>
+                    <Text style={styles.imagePriceUnit}>/{minDurationLabel(item)}</Text>
+                </View>
+            </View>
+            <View style={styles.cardInfo}>
+                <Text style={styles.cardTitle} numberOfLines={1}>{item.title || 'Катер'}</Text>
+                <View style={styles.cardMetaRow}>
+                    <MapPin size={12} color={theme.colors.gray500} />
+                    <Text style={styles.cardLocation} numberOfLines={1}>
+                        {formatCardLocation(item)}
+                    </Text>
+                </View>
+                <View style={styles.cardMetaRow2}>
+                    <View style={styles.cardMetaItem}>
+                        <Clock size={12} color={theme.colors.gray500} />
+                        <Text style={styles.cardMetaText}>{getBookingPeriodLabel(item)}</Text>
+                    </View>
+                    <View style={styles.cardMetaItem}>
+                        <Users size={12} color={theme.colors.gray500} />
+                        <Text style={styles.cardMetaText}>до {item.capacity ?? '—'}</Text>
+                    </View>
+                </View>
+            </View>
+        </TouchableOpacity>
+    );
+});
+
+function DestinationImage({ uri, style }) {
+    return <StableRemoteImage uri={uri} style={style} resizeMode="cover" />;
 }
 
 export default function SearchScreen({ navigation }) {
@@ -147,283 +231,194 @@ export default function SearchScreen({ navigation }) {
         : viewportWidth * 0.78;
     const { toggleFavorite, isFavorite } = useContext(FavoritesContext);
     const [boats, setBoats] = useState([]);
-    const [boatCategories, setBoatCategories] = useState([]);
-    const [destinations, setDestinations] = useState([]);
+    const [boatCategories, setBoatCategories] = useState(FALLBACK_CATEGORIES);
+    const [destinations, setDestinations] = useState(FALLBACK_DESTINATIONS);
     const [refreshing, setRefreshing] = useState(false);
-    const refreshKey = 0; // оставлено для совместимости (не меняем — без моргания картинок)
     const [locationModalVisible, setLocationModalVisible] = useState(false);
+    const homeLoadedRef = useRef(false);
+    const skipNextFocusFetchRef = useRef(true);
 
-    const fetchBoatCategories = useCallback(async () => {
-        try {
-            const res = await api.get('/boat-types');
-            const items = (res.data || []).map((t) => ({
+    const loadHomeData = useCallback(async () => {
+        const [boatsRes, categoriesRes, destinationsRes] = await Promise.allSettled([
+            api.get('/boats', { params: { popular: 1, limit: 20 } }),
+            api.get('/boat-types'),
+            api.get('/destinations'),
+        ]);
+
+        if (boatsRes.status === 'fulfilled') {
+            setBoats(Array.isArray(boatsRes.value.data) ? boatsRes.value.data : []);
+        } else {
+            console.log('Search Error:', boatsRes.reason);
+        }
+
+        if (categoriesRes.status === 'fulfilled') {
+            const items = (categoriesRes.value.data || []).map((t) => ({
                 id: String(t.id),
                 name: t.name || '—',
                 image: resolvePhotoUri(t.image) || 'https://placehold.co/400x300?text=',
             }));
-            setBoatCategories(items);
-        } catch (e) {
-            console.log('Boat types load error:', e);
+            if (items.length > 0) setBoatCategories(items);
+        } else {
+            console.log('Boat types load error:', categoriesRes.reason);
         }
-    }, []);
 
-    const fetchDestinations = useCallback(async () => {
-        try {
-            const res = await api.get('/destinations');
-            const items = (res.data || []).map((d) => ({
+        if (destinationsRes.status === 'fulfilled') {
+            const items = (destinationsRes.value.data || []).map((d) => ({
                 id: String(d.id),
                 name: d.name || '—',
                 image: resolvePhotoUri(d.image) || 'https://placehold.co/400x300?text=',
             }));
-            setDestinations(items);
-        } catch (e) {
-            console.log('Destinations load error:', e);
+            if (items.length > 0) setDestinations(items);
+        } else {
+            console.log('Destinations load error:', destinationsRes.reason);
         }
-    }, []);
 
-    const fetchBoats = useCallback(async () => {
-        try {
-            const res = await api.get('/boats', { params: { popular: 1, limit: 20 } });
-            setBoats(res.data);
-        } catch (e) {
-            console.log('Search Error:', e);
-        }
+        homeLoadedRef.current = true;
     }, []);
 
     useEffect(() => {
-        fetchBoats();
-        fetchBoatCategories();
-        fetchDestinations();
-    }, [fetchBoats, fetchBoatCategories, fetchDestinations]);
+        loadHomeData();
+    }, [loadHomeData]);
 
     useFocusEffect(
         useCallback(() => {
-            fetchBoats();
-            fetchBoatCategories();
-            fetchDestinations();
-        }, [fetchBoats, fetchBoatCategories, fetchDestinations])
-    );
-
-    useEffect(() => {
-        const sub = AppState.addEventListener('change', (state) => {
-            if (state === 'active') {
-                fetchBoats();
-                fetchBoatCategories();
-                fetchDestinations();
+            if (skipNextFocusFetchRef.current) {
+                skipNextFocusFetchRef.current = false;
+                return undefined;
             }
-        });
-        return () => sub.remove();
-    }, [fetchBoats, fetchBoatCategories, fetchDestinations]);
+            if (!homeLoadedRef.current) return undefined;
+            loadHomeData();
+            return undefined;
+        }, [loadHomeData]),
+    );
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await Promise.all([fetchBoats(), fetchBoatCategories(), fetchDestinations()]);
+        await loadHomeData();
         setRefreshing(false);
-    }, [fetchBoats, fetchBoatCategories, fetchDestinations]);
+    }, [loadHomeData]);
 
-    const formatPrice = (n) => (n != null ? Number(n).toLocaleString('ru-RU') : '0');
-        const minDurationLabel = (item) => {
-            const mins = item.schedule_min_duration != null ? Number(item.schedule_min_duration) : 60;
-            if (mins < 60) return `${mins} мин`;
-            const h = Math.floor(mins / 60);
-            const m = mins % 60;
-            if (m === 0) return `${h} ч`;
-            return `${h} ч ${m} мин`;
-        };
+    const renderBoatCard = useCallback(({ item }) => (
+        <SearchBoatCard
+            item={item}
+            cardWidth={boatCardWidth}
+            horizontal
+            favorite={isFavorite(item.id)}
+            onPress={() => navigation.navigate('BoatDetail', { boatId: item.id })}
+            onToggleFavorite={toggleFavorite}
+        />
+    ), [boatCardWidth, isFavorite, navigation, toggleFavorite]);
 
-    const renderBoatCard = ({ item }, horizontal = false) => {
-        const favorite = isFavorite(item.id);
-        const instantBook = item.instant_booking !== false;
+    const boatKeyExtractor = useCallback((item) => String(item.id), []);
 
-        return (
-            <TouchableOpacity
-                style={[styles.card, horizontal && { width: boatCardWidth, marginRight: 16, marginBottom: 0 }]}
-                onPress={() => navigation.navigate('BoatDetail', { boatId: item.id })}
-                activeOpacity={0.95}
-            >
-                <View style={styles.cardImageWrap}>
-                    <Image
-                        source={{ uri: resolvePhotoUri(item.photos?.[0]) || 'https://placehold.co/400x300' }}
-                        style={styles.cardImage}
-                    />
-                    <View style={styles.cardBadges}>
-                        {instantBook && (
-                            <View style={styles.instantBadge}>
-                                <Zap size={12} color="#fff" />
-                                <Text style={styles.instantBadgeText}>Мгновенно</Text>
-                            </View>
-                        )}
-                    </View>
-                    <TouchableOpacity
-                        style={styles.heartButton}
-                        onPress={(e) => { e.stopPropagation(); toggleFavorite(item); }}
-                    >
-                        <Heart
-                            size={20}
-                            color={favorite ? '#ef4444' : theme.colors.gray400}
-                            fill={favorite ? '#ef4444' : 'transparent'}
-                        />
-                    </TouchableOpacity>
-                    <View style={styles.imagePriceBadge}>
-                        <Text style={styles.imagePriceMain}>
-                            от {formatPrice(getMinDurationPrice(item))} ₽
-                        </Text>
-                        <Text style={styles.imagePriceUnit}>/{minDurationLabel(item)}</Text>
-                    </View>
-                </View>
-                <View style={styles.cardInfo}>
-                    <Text style={styles.cardTitle} numberOfLines={1}>{item.title || 'Катер'}</Text>
-                    <View style={styles.cardMetaRow}>
-                        <MapPin size={12} color={theme.colors.gray500} />
-                        <Text style={styles.cardLocation} numberOfLines={1}>
-                            {formatCardLocation(item)}
-                        </Text>
-                    </View>
-                    <View style={styles.cardMetaRow2}>
-                        <View style={styles.cardMetaItem}>
-                            <Clock size={12} color={theme.colors.gray500} />
-                            <Text style={styles.cardMetaText}>{getBookingPeriodLabel(item)}</Text>
-                        </View>
-                        <View style={styles.cardMetaItem}>
-                            <Users size={12} color={theme.colors.gray500} />
-                            <Text style={styles.cardMetaText}>до {item.capacity ?? '—'}</Text>
-                        </View>
-                    </View>
-                </View>
-            </TouchableOpacity>
-        );
-    };
-
-    const ListHeader = () => (
-        <>
-            {/* Hero: full-width image with text overlay (Boatsetter style) */}
-            <View style={[styles.heroWrap, { paddingTop: insets.top }]}>
-                <Image
-                    source={HERO_IMAGE}
-                    style={styles.heroImage}
-                    resizeMode="cover"
-                />
-                <LinearGradient
-                    colors={['rgba(251,248,243,0.85)', 'rgba(251,248,243,0.5)', 'transparent']}
-                    style={styles.heroGradient}
-                    pointerEvents="none"
-                />
-                <View style={[styles.heroContent, { top: insets.top + 12 }]}>
-                    <Text style={styles.heroTitle}>Бронируй, плыви, отдыхай</Text>
-                    <Text style={styles.heroSubtitle}>
-                        Аренда катеров, прогулки с капитаном{'\n'}и незабываемые впечатления на воде.
-                    </Text>
-                </View>
-                <View style={[styles.searchBarWrap, { top: insets.top + 118 }]}>
-                    <TouchableOpacity
-                        style={styles.searchBar}
-                        onPress={() => setLocationModalVisible(true)}
-                        activeOpacity={0.9}
-                    >
-                        <Search size={20} color={NAVY} />
-                        <Text style={styles.searchPlaceholder}>
-                            Куда хотите отправиться?
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            {/* Recommended boats header */}
-            <Text style={styles.sectionTitle}>Популярные катера</Text>
-        </>
-    );
-
-    const BoatsSection = () => (
-        <View style={styles.boatsSection}>
-            <FlatList
-                data={boats}
-                horizontal
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={(args) => renderBoatCard(args, true)}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.boatsListContent}
-                ListEmptyComponent={
-                    <View style={styles.emptyHint}>
-                        <Text style={styles.emptyText}>Запустите бэкенд и обновите список</Text>
-                    </View>
-                }
-            />
-        </View>
-    );
-
-    const ListFooter = () => (
-        <View>
-            {/* Top destinations */}
-            <Text style={styles.sectionTitle}>Популярные направления</Text>
-            <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.destList}
-            >
-                {(destinations.length ? destinations : FALLBACK_DESTINATIONS).map((d, i) => (
-                    <TouchableOpacity
-                        key={`dest-${d.id}-${i}`}
-                        style={styles.destCard}
-                        onPress={() =>
-                            navigation.navigate('SearchResults', {
-                                cityName: d.name,
-                                useMyLocation: false,
-                                dateISO: new Date().toISOString(),
-                            })
-                        }
-                        activeOpacity={0.9}
-                    >
-                        <DestinationImage uri={d.image} style={styles.destImage} refreshKey={refreshKey} />
-                        <Text style={styles.destName}>{d.name}</Text>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
-
-            {/* Top boating categories */}
-            <Text style={styles.sectionTitle}>Категории катеров</Text>
-            <View style={[styles.catGrid, { gap: categoryGap }]}>
-                {(boatCategories.length ? boatCategories : FALLBACK_CATEGORIES).map((c, i) => (
-                    <TouchableOpacity
-                        key={`cat-${c.id}-${i}`}
-                        style={[styles.catCard, { width: categoryCardWidth }]}
-                        activeOpacity={0.9}
-                        onPress={() => {
-                            navigation.navigate('SearchResults', {
-                                cityName: null,
-                                useMyLocation: false,
-                                dateISO: new Date().toISOString(),
-                                boatTypeId: c.id,
-                                boatTypeName: c.name,
-                                allRegions: true,
-                            });
-                        }}
-                    >
-                        <Image source={{ uri: c.image }} style={styles.catImage} />
-                        <Text style={styles.catName}>{c.name}</Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
-        </View>
-    );
-
-    const listContent = (
-        <ScrollView
-            style={styles.list}
-            contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 24 }]}
-            showsVerticalScrollIndicator={false}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        >
-            <ListHeader />
-            <BoatsSection />
-            <ListFooter />
-        </ScrollView>
-    );
-
-    // Главный экран — hero, катера, направления, категории (без карты; карта в CityMapScreen)
     return (
         <View style={styles.container}>
             <StatusBar style="dark" />
-            {listContent}
+            <ScrollView
+                style={styles.list}
+                contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 24 }]}
+                showsVerticalScrollIndicator={false}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+            >
+                <View style={[styles.heroWrap, { paddingTop: insets.top }]}>
+                    <Image
+                        source={HERO_IMAGE}
+                        style={styles.heroImage}
+                        resizeMode="cover"
+                        fadeDuration={0}
+                    />
+                    <LinearGradient
+                        colors={['rgba(251,248,243,0.85)', 'rgba(251,248,243,0.5)', 'transparent']}
+                        style={styles.heroGradient}
+                        pointerEvents="none"
+                    />
+                    <View style={[styles.heroContent, { top: insets.top + 12 }]}>
+                        <Text style={styles.heroTitle}>Бронируй, плыви, отдыхай</Text>
+                        <Text style={styles.heroSubtitle}>
+                            Аренда катеров, прогулки с капитаном{'\n'}и незабываемые впечатления на воде.
+                        </Text>
+                    </View>
+                    <View style={[styles.searchBarWrap, { top: insets.top + 118 }]}>
+                        <TouchableOpacity
+                            style={styles.searchBar}
+                            onPress={() => setLocationModalVisible(true)}
+                            activeOpacity={0.9}
+                        >
+                            <Search size={20} color={NAVY} />
+                            <Text style={styles.searchPlaceholder}>
+                                Куда хотите отправиться?
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                <Text style={styles.sectionTitle}>Популярные катера</Text>
+
+                <View style={styles.boatsSection}>
+                    <FlatList
+                        data={boats}
+                        horizontal
+                        keyExtractor={boatKeyExtractor}
+                        renderItem={renderBoatCard}
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.boatsListContent}
+                        ListEmptyComponent={
+                            <View style={styles.emptyHint}>
+                                <Text style={styles.emptyText}>Запустите бэкенд и обновите список</Text>
+                            </View>
+                        }
+                    />
+                </View>
+
+                <Text style={styles.sectionTitle}>Популярные направления</Text>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.destList}
+                >
+                    {destinations.map((d) => (
+                        <TouchableOpacity
+                            key={`dest-${d.id}`}
+                            style={styles.destCard}
+                            onPress={() =>
+                                navigation.navigate('SearchResults', {
+                                    cityName: d.name,
+                                    useMyLocation: false,
+                                    dateISO: new Date().toISOString(),
+                                })
+                            }
+                            activeOpacity={0.9}
+                        >
+                            <DestinationImage uri={d.image} style={styles.destImage} />
+                            <Text style={styles.destName}>{d.name}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+
+                <Text style={styles.sectionTitle}>Категории катеров</Text>
+                <View style={[styles.catGrid, { gap: categoryGap }]}>
+                    {boatCategories.map((c) => (
+                        <TouchableOpacity
+                            key={`cat-${c.id}`}
+                            style={[styles.catCard, { width: categoryCardWidth }]}
+                            activeOpacity={0.9}
+                            onPress={() => {
+                                navigation.navigate('SearchResults', {
+                                    cityName: null,
+                                    useMyLocation: false,
+                                    dateISO: new Date().toISOString(),
+                                    boatTypeId: c.id,
+                                    boatTypeName: c.name,
+                                    allRegions: true,
+                                });
+                            }}
+                        >
+                            <StableRemoteImage uri={c.image} style={styles.catImage} />
+                            <Text style={styles.catName}>{c.name}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </ScrollView>
             <LocationPickerModal
                 visible={locationModalVisible}
                 onClose={() => setLocationModalVisible(false)}
