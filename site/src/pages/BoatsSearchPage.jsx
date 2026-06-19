@@ -26,6 +26,7 @@ import FiltersModal from '../components/search/FiltersModal.jsx'
 import YandexBoatsMap from '../components/search/YandexBoatsMap.jsx'
 import BookingCalendarModal, { formatBookingDateDots } from '../components/booking/BookingCalendarModal.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
+import { useBoatsSearchPageSeo } from '../seo/useBoatsSearchPageSeo.js'
 
 function readInitialLocationKey() {
   try {
@@ -282,6 +283,8 @@ export default function BoatsSearchPage() {
     () => filterBoatsList(boatsOnDate, filters, priceRange),
     [boatsOnDate, filters, priceRange],
   )
+
+  useBoatsSearchPageSeo({ locationKey, boatCount: boats.length, loading })
   const durationOptions = useMemo(() => computeDurationOptions(boatsOnDate), [boatsOnDate])
   const maxPassengers = useMemo(() => computeMaxPassengers(boatsOnDate), [boatsOnDate])
   const boatTypesFromList = useMemo(() => computeBoatTypesFromList(boatsOnDate), [boatsOnDate])
@@ -607,7 +610,7 @@ export default function BoatsSearchPage() {
               className={`bs-cat${typeSelected(t) ? ' bs-cat--on' : ''}`}
               onClick={() => toggleType(t)}
             >
-              <img src={t.image} alt="" className="bs-cat__img" />
+              <img src={t.image} alt={t.name} className="bs-cat__img" />
               <span className="bs-cat__label">{t.name}</span>
             </button>
           ))}
@@ -867,7 +870,7 @@ export default function BoatsSearchPage() {
                           </span>
                           {c.photoUrl ? (
                             <span className="bs-mapPickBtn__thumb">
-                              <img src={c.photoUrl} alt="" loading="lazy" />
+                              <img src={c.photoUrl} alt={c.title} loading="lazy" />
                             </span>
                           ) : null}
                         </button>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { cancelBooking, fetchMyBookings } from '../api/bookings'
 import { changePassword, deleteMyAccount, updateProfile } from '../api/auth'
+import { useNoIndexSeo } from '../seo/useNoIndexSeo.js'
 
 const STATUS_LABELS = {
   pending: 'На рассмотрении',
@@ -52,6 +53,7 @@ function formatBookingMooringAddress(booking) {
 }
 
 export default function AccountPage() {
+  useNoIndexSeo('Личный кабинет | ONTHEWATER')
   const { user, token, logout, setCurrentUser } = useAuth()
   const [activeMenu, setActiveMenu] = useState('bookings')
   const [profileForm, setProfileForm] = useState({ first_name: '', last_name: '', phone: '' })

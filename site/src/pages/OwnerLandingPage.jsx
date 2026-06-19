@@ -4,6 +4,7 @@ import googlePlayIcon from '../assets/icon-g-p.webp'
 import appleStoreIcon from '../assets/icon-a-s.webp'
 import { OWNER_ANDROID_PLAY_URL, OWNER_IOS_APP_STORE_URL } from '../constants/appStores'
 import { useAuth } from '../context/AuthContext'
+import { useOwnerLandingSeo } from '../seo/useOwnerLandingSeo.js'
 
 function MenuIcon() {
   return (
@@ -23,6 +24,7 @@ function CloseIcon() {
 
 export default function OwnerLandingPage() {
   const { user, logout } = useAuth()
+  useOwnerLandingSeo()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const closeMobileNav = () => setMobileNavOpen(false)
 

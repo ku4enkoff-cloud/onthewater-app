@@ -3,6 +3,18 @@ export const DEFAULT_DOCUMENT_TITLE = 'ONTHEWATER — аренда катеро�
 export const DEFAULT_META_DESCRIPTION =
   'ONTHEWATER — поиск и бронирование катеров и яхт в России. Подберите судно с капитаном или без, сравните цены и оформите выход на воду через приложение.'
 
+/** Обрезка meta description до ~160 символов по границе слова. */
+export function truncateMeta(text, maxLen = 160) {
+  const s = String(text || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (s.length <= maxLen) return s
+  const cut = s.slice(0, maxLen - 1)
+  const lastSpace = cut.lastIndexOf(' ')
+  const trimmed = lastSpace > maxLen * 0.6 ? cut.slice(0, lastSpace) : cut
+  return `${trimmed.trim()}…`
+}
+
 function setMetaName(name, content) {
   if (content == null || content === '') return () => {}
   let el = document.querySelector(`meta[name="${name}"]`)
@@ -85,6 +97,17 @@ function setJsonLd(id, data) {
  * Применяет title, description, canonical, Open Graph, Twitter и JSON-LD.
  * Возвращает функцию отката (восстановление предыдущего title и удаление добавленных тегов).
  */
+export function buildJsonLd(id, data) {
+  if (data == null) return () => {}
+  const payload =
+    data['@context'] != null ? data : { '@context': 'https://schema.org', ...data }
+  return setJsonLd(id, payload)
+}
+
+export function applyHomeJsonLd(id, graph) {
+  return buildJsonLd(id, { '@context': 'https://schema.org', '@graph': graph })
+}
+
 export function applyDocumentSeo({
   title,
   description,
@@ -96,6 +119,7 @@ export function applyDocumentSeo({
   ogSiteName = 'ONTHEWATER',
   twitterCard = 'summary_large_image',
   keywords,
+  robots,
 }) {
   const revertFns = []
   const prevTitle = document.title
@@ -104,6 +128,7 @@ export function applyDocumentSeo({
 
   if (description) revertFns.push(setMetaName('description', description))
   if (keywords) revertFns.push(setMetaName('keywords', keywords))
+  if (robots) revertFns.push(setMetaName('robots', robots))
 
   if (canonicalUrl) revertFns.push(setLinkRel('canonical', canonicalUrl))
 
@@ -126,8 +151,4 @@ export function applyDocumentSeo({
     document.title = prevTitle
     for (let i = revertFns.length - 1; i >= 0; i -= 1) revertFns[i]()
   }
-}
-
-export function applyHomeJsonLd(id, graph) {
-  return setJsonLd(id, { '@context': 'https://schema.org', '@graph': graph })
 }

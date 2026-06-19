@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { registerAuth } from '../api/auth'
 import { useAuth } from '../context/AuthContext'
+import { useNoIndexSeo } from '../seo/useNoIndexSeo.js'
 import googlePlayIcon from '../assets/icon-g-p.webp'
 import appleStoreIcon from '../assets/icon-a-s.webp'
 import { OWNER_ANDROID_PLAY_URL, OWNER_IOS_APP_STORE_URL } from '../constants/appStores'
@@ -29,6 +30,7 @@ function getPhoneDigits(phone) {
 }
 
 export default function RegisterPage() {
+  useNoIndexSeo('Регистрация | ONTHEWATER')
   const { user } = useAuth()
   const navigate = useNavigate()
   const [form, setForm] = useState({

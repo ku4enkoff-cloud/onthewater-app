@@ -110,7 +110,7 @@ export default function DestinationsSection() {
                       className="lp-destCard"
                     >
                       <div className="lp-destCardImgWrap">
-                        <img src={img} alt="" className="lp-destCardImg" loading="lazy" />
+                        <img src={img} alt={`Аренда катеров в ${name}`} className="lp-destCardImg" loading="lazy" />
                       </div>
                       <span className="lp-destCardName">{name}</span>
                     </Link>

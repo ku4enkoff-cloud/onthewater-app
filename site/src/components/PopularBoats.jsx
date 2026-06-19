@@ -82,7 +82,7 @@ export default function PopularBoats() {
               return (
                 <Link key={String(id)} to={boatDetailPath(boat)} className="lp-boatCard">
                   <div className="lp-boatImgWrap">
-                    <img src={img} alt="" className="lp-boatImg" loading="lazy" />
+                    <img src={img} alt={`${title}, ${loc}`} className="lp-boatImg" loading="lazy" />
                   </div>
                   <div className="lp-boatBody">
                     <h3 className="lp-boatTitle">{title}</h3>

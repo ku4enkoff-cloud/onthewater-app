@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useNoIndexSeo } from '../seo/useNoIndexSeo.js'
 
 export default function LoginPage() {
+  useNoIndexSeo('Вход | ONTHEWATER')
   const { user, login } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()

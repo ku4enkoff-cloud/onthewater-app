@@ -30,6 +30,7 @@ import BoatHeroSpecStrip from '../components/boat/BoatHeroSpecStrip.jsx'
 import BoatResultCard from '../components/search/BoatResultCard.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { createBooking } from '../api/bookings'
+import { useBoatDetailPageSeo } from '../seo/useBoatDetailPageSeo.js'
 
 const PLACEHOLDER = 'https://placehold.co/1200x750/e8eef4/64748b?text=%D0%9A%D0%B0%D1%82%D0%B5%D1%80'
 const DESC_PREVIEW = 480
@@ -253,6 +254,8 @@ export default function BoatDetailPage() {
   })
   const [similarBoats, setSimilarBoats] = useState([])
   const galleryTouchRef = useRef({ x: 0, y: 0 })
+
+  useBoatDetailPageSeo(boat)
 
   useEffect(() => {
     if (!resolvedId) return
@@ -856,7 +859,7 @@ export default function BoatDetailPage() {
           >
             <img
               src={photos[photoIndex]}
-              alt=""
+              alt={`${title}, фото ${photoIndex + 1}`}
               className="bd-galleryBleed__img"
               loading="eager"
               decoding="async"
@@ -929,7 +932,7 @@ export default function BoatDetailPage() {
             >
               <img
                 src={photos[(photoIndex + 1) % photos.length]}
-                alt=""
+                alt={`${title}, фото ${((photoIndex + 1) % photos.length) + 1}`}
                 className="bd-galleryBleed__img"
                 loading="lazy"
                 decoding="async"
@@ -998,7 +1001,7 @@ export default function BoatDetailPage() {
                   aria-label={`Фото ${i + 1}`}
                   aria-selected={i === photoIndex}
                 >
-                  <img src={src} alt="" />
+                  <img src={src} alt={`${title}, миниатюра ${i + 1}`} />
                 </button>
               ))}
             </div>
@@ -1208,7 +1211,7 @@ export default function BoatDetailPage() {
             <div className="bd-ownerStrip bd-ownerStrip--underH2">
               <div className="bd-ownerStrip__row">
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="" className="bd-ownerStrip__avatar" />
+                  <img src={avatarUrl} alt={boat.owner_name || 'Владелец'} className="bd-ownerStrip__avatar" />
                 ) : (
                   <div className="bd-ownerStrip__avatar bd-ownerStrip__avatar--ph" aria-hidden>
                     {ownerInitial}
@@ -1393,7 +1396,7 @@ export default function BoatDetailPage() {
                   </>
                 ) : null}
                 <div className="bd-galleryLightbox__stage">
-                  <img src={photos[photoIndex]} alt="" className="bd-galleryLightbox__img" decoding="async" />
+                  <img src={photos[photoIndex]} alt={`${title}, фото ${photoIndex + 1}`} className="bd-galleryLightbox__img" decoding="async" />
                 </div>
                 {photos.length > 1 ? (
                   <div className="bd-galleryLightbox__counter" aria-live="polite">

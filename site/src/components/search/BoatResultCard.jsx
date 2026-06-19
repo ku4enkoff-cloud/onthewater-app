@@ -45,7 +45,7 @@ export default function BoatResultCard({ boat, filters, selected, onHover, onLea
     >
       <Link to={boatDetailPath(boat)} className="bs-card__link">
         <div className="bs-card__imageWrap">
-          <img src={img} alt="" className="bs-card__image" loading="lazy" />
+          <img src={img} alt={`${boat.title || 'Катер'}, ${formatCardLocationCaps(boat)}`} className="bs-card__image" loading="lazy" />
           {instantBook ? (
             <div className="bs-card__badge bs-card__badge--instant">
               <span className="bs-card__zap" aria-hidden>
