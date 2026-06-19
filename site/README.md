@@ -35,6 +35,15 @@ npm run build:no-prerender
 npm run build
 ```
 
+**Пререндер на Ubuntu-сервере** требует библиотеки Chrome (ошибка `libatk-1.0.so.0` и т.п.):
+
+```bash
+sudo bash scripts/install-chrome-deps.sh
+npm run build
+```
+
+Или без пререндера на сервере: `npm run build:no-prerender` (sitemap и клиентский SEO в бандле останутся; статический HTML для ботов — соберите на ПК и залейте `dist/`).
+
 Скрипт сборки:
 
 1. **`scripts/generate-sitemap.mjs`** — `public/sitemap.xml` и список маршрутов для пререндера (нужен доступ к API).

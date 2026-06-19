@@ -80,6 +80,32 @@ function normalizePrerenderHtml(html, localOrigin, publicOrigin) {
   return html.split(localOrigin).join(publicOrigin)
 }
 
+function printChromeDepsHint() {
+  console.warn('')
+  console.warn('Prerender skipped: Chrome (Puppeteer) не запустился на этом сервере.')
+  console.warn('Варианты:')
+  console.warn('  1) Один раз установить библиотеки Chrome:')
+  console.warn('     sudo bash scripts/install-chrome-deps.sh')
+  console.warn('     npm run build')
+  console.warn('  2) Сборка без пререндера (sitemap + SPA всё равно соберутся):')
+  console.warn('     npm run build:no-prerender')
+  console.warn('  3) npm run build на ПК (Windows/macOS) и залить dist/ на сервер.')
+  console.warn('')
+}
+
+async function launchBrowser(puppeteer) {
+  try {
+    return await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+    })
+  } catch (err) {
+    console.warn(String(err?.message || err))
+    printChromeDepsHint()
+    return null
+  }
+}
+
 async function loadRoutes(env) {
   if (existsSync(routesFile)) {
     try {
@@ -134,10 +160,11 @@ async function main() {
   const localOrigin = `http://127.0.0.1:${port}`
   const server = await startStaticServer(port, spaIndexPath, sirv)
 
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  })
+  const browser = await launchBrowser(puppeteer)
+  if (!browser) {
+    await new Promise((resolve) => server.close(resolve))
+    return
+  }
 
   try {
     for (const route of routes) {
