@@ -307,16 +307,17 @@ function buildClusteredMapMarkers(boats) {
     return markers;
 }
 
-/** Радиус группировки (м) зависит от zoom: на общем плане — шире, при приближении — точнее. */
-function mapClusterRadiusMeters(zoom) {
+/** Размер ячейки сетки (градусы) — ~64px на тайле карты при данном zoom. */
+function mapClusterCellSizeDeg(zoom) {
     const z = Number.isFinite(Number(zoom)) ? Number(zoom) : 10;
-    return Math.min(40000, Math.max(500, 900000 / 2 ** z));
+    return Math.max(0.0025, 360 / 2 ** (z + 2));
 }
 
-/** Группируем близкие катера в один кружок; count=1 тоже показываем. */
+/** Группируем катера по сетке карты; count в кружке = число катеров в ячейке. */
 function buildLocationClusterMarkers(boats, zoom = 10) {
     const seenIds = new Set();
-    const items = [];
+    const cellSize = mapClusterCellSizeDeg(zoom);
+    const groups = new Map();
 
     for (const b of boats) {
         const lat = Number(b.lat);
@@ -327,40 +328,14 @@ function buildLocationClusterMarkers(boats, zoom = 10) {
             if (seenIds.has(id)) continue;
             seenIds.add(id);
         }
-        items.push({ boat: b, lat, lon });
+        const cosLat = Math.cos((lat * Math.PI) / 180) || 1;
+        const gx = Math.floor(lat / cellSize);
+        const gy = Math.floor(lon / (cellSize / cosLat));
+        const key = `${gx},${gy}`;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(b);
     }
-    if (items.length === 0) return [];
-
-    const radiusM = mapClusterRadiusMeters(zoom);
-    const parent = items.map((_, i) => i);
-    const find = (i) => {
-        let root = i;
-        while (parent[root] !== root) {
-            parent[root] = parent[parent[root]];
-            root = parent[root];
-        }
-        return root;
-    };
-    const union = (a, b) => {
-        const ra = find(a);
-        const rb = find(b);
-        if (ra !== rb) parent[rb] = ra;
-    };
-
-    for (let i = 0; i < items.length; i++) {
-        for (let j = i + 1; j < items.length; j++) {
-            if (distanceMeters(items[i].lat, items[i].lon, items[j].lat, items[j].lon) <= radiusM) {
-                union(i, j);
-            }
-        }
-    }
-
-    const groups = new Map();
-    for (let i = 0; i < items.length; i++) {
-        const root = find(i);
-        if (!groups.has(root)) groups.set(root, []);
-        groups.get(root).push(items[i].boat);
-    }
+    if (groups.size === 0) return [];
 
     const clusters = [];
     let idx = 0;
@@ -450,8 +425,6 @@ const MAP_ZOOM_EXIT_PRICE_MODE = 11;
 /** Первый тап по кластеру: показать все метки области, без сильного приближения. */
 const MAP_ZOOM_CLUSTER_OPEN_MIN = 10;
 const MAP_ZOOM_CLUSTER_OPEN_MAX = 12;
-/** Повторный тап по выбранной ценовой метке — детальный вид. */
-const MAP_ZOOM_MARKER_CLOSE = 15;
 /** Минимальный сдвиг карты для повторной подгрузки. */
 const MAP_PAN_MIN_DEG = 0.028;
 const MAP_GEO_FETCH_RADIUS_KM = 50;
@@ -689,6 +662,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     const priceVisibleMarkersRef = useRef([]);
     const mapModeTransitionRef = useRef(false);
     const mapPriceClusterLockRef = useRef(false);
+    const markerPressTsRef = useRef(0);
     const priceMarkerTapRef = useRef({ boatId: null });
     const [clusterMapEpoch, setClusterMapEpoch] = useState(0);
     const mapGeoFetchTimerRef = useRef(null);
@@ -1088,58 +1062,46 @@ export default function SearchResultsScreen({ route, navigation }) {
             syncMapModeForZoom(zoom, 'end');
             if (mapViewModeRef.current === 'cluster' && zoom != null) {
                 setMapClusterZoom(zoom);
+            } else if (mapViewModeRef.current === 'price' && zoom != null) {
+                setMapClusterZoom(zoom);
             }
             scheduleMapViewportFetch();
         },
         [syncMapModeForZoom, scheduleMapViewportFetch],
     );
 
-    const zoomMapToPoint = useCallback((point, zoom) => {
-        if (!point || !Number.isFinite(point.lat) || !Number.isFinite(point.lon)) return;
-        mapModeTransitionRef.current = true;
-        mapLiveCameraRef.current = { lat: point.lat, lon: point.lon, zoom };
-        setMapLiveRegion({ lat: point.lat, lon: point.lon, zoom });
-        setMapClusterZoom(zoom);
-        try {
-            mapRef.current?.setCenter?.(point, zoom, 0, 0, 0.35);
-        } catch (_) {}
-        setTimeout(() => {
-            mapModeTransitionRef.current = false;
-        }, 900);
-    }, []);
-
     const handleMapBoatPress = useCallback((boat, markerPoint) => {
         if (!boat) return;
-        const nearby = findNearbyMapBoats(
-            boat,
+        markerPressTsRef.current = Date.now();
+
+        const markers =
             mapViewModeRef.current === 'price' && priceVisibleMarkersRef.current.length
                 ? priceVisibleMarkersRef.current
-                : clusteredMarkersDataRef.current,
-            markerPoint,
-        );
+                : clusteredMarkersDataRef.current;
+        const nearby = findNearbyMapBoats(boat, markers, markerPoint);
+
+        if (nearby.length === 1) {
+            priceMarkerTapRef.current = { boatId: String(boat.id) };
+            setSelectedMapBoats(nearby);
+            return;
+        }
+
         const boatId = String(boat.id);
         const nearbyIds = nearby.map((b) => String(b.id)).sort().join(',');
 
         setSelectedMapBoats((prev) => {
             const prevIds = prev.map((b) => String(b.id)).sort().join(',');
             const isSameSelection = prevIds === nearbyIds && prevIds.length > 0;
-            const isSingleBoat = nearby.length === 1;
 
-            if (
-                isSameSelection &&
-                isSingleBoat &&
-                priceMarkerTapRef.current.boatId === boatId
-            ) {
-                const pt = markerPoint ?? { lat: Number(boat.lat), lon: Number(boat.lng) };
-                zoomMapToPoint(pt, MAP_ZOOM_MARKER_CLOSE);
-                return prev;
+            if (isSameSelection) {
+                priceMarkerTapRef.current = { boatId: null };
+                return [];
             }
 
             priceMarkerTapRef.current = { boatId };
-            if (isSameSelection) return [];
             return nearby;
         });
-    }, [zoomMapToPoint]);
+    }, []);
 
     useEffect(() => {
         if (!mapModalVisible || mapClosing) return;
@@ -1184,6 +1146,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     }, []);
 
     const handleMapBackgroundPress = useCallback(() => {
+        if (Date.now() - markerPressTsRef.current < 450) return;
         dismissMapBoatSheet();
     }, [dismissMapBoatSheet]);
 
@@ -1780,6 +1743,7 @@ export default function SearchResultsScreen({ route, navigation }) {
                                                     key={`map-price-${boat?.id ?? index}`}
                                                     point={info.point}
                                                     anchor={{ x: 0.5, y: 1 }}
+                                                    zIndex={isSelected ? 2 : 1}
                                                     onPress={() => boat && handleMapBoatPress(boat, info.point)}
                                                 >
                                                     <MapPriceBubble price={price} selected={isSelected} />
