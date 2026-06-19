@@ -13,6 +13,24 @@ npm run dev
 
 ## Сборка и SEO
 
+На **сервере** перед первой сборкой или после `git pull`:
+
+```bash
+cd /opt/onthewater-app/site
+npm install          # нужны devDependencies (vite, puppeteer)
+npm run build
+```
+
+Если ставите только production-зависимости (`npm ci --omit=dev`), используйте:
+
+```bash
+npm run build:no-prerender
+```
+
+Сборка завершится без ошибки; пререндер для краулеров можно сделать на своём ПК (`npm run build`) и залить готовый `dist/`.
+
+Полная сборка с пререндером:
+
 ```bash
 npm run build
 ```

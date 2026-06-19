@@ -2,8 +2,6 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import http from 'node:http'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import puppeteer from 'puppeteer'
-import sirv from 'sirv'
 import {
   fetchBoatsForSeo,
   getApiBase,
@@ -23,6 +21,25 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+async function loadPrerenderDeps() {
+  try {
+    const [puppeteerMod, sirvMod] = await Promise.all([import('puppeteer'), import('sirv')])
+    return {
+      puppeteer: puppeteerMod.default,
+      sirv: sirvMod.default,
+    }
+  } catch (err) {
+    const missing = String(err?.message || err)
+    if (missing.includes('puppeteer') || missing.includes('sirv')) {
+      console.warn('Prerender skipped: devDependencies not installed (puppeteer/sirv).')
+      console.warn('  Full SEO HTML: npm install && npm run build')
+      console.warn('  Or on server:    npm run build:no-prerender  (SPA only, no static HTML for bots)')
+      return null
+    }
+    throw err
+  }
+}
+
 function routeToOutPath(route) {
   if (route === '/') return join(distDir, 'index.html')
   const clean = route.replace(/^\//, '').replace(/\?.*$/, '')
@@ -38,7 +55,7 @@ function waitSelectorForRoute(route) {
   return '#root .app-outlet'
 }
 
-function startStaticServer(port, spaIndexPath) {
+function startStaticServer(port, spaIndexPath, sirv) {
   return new Promise((resolve, reject) => {
     const serve = sirv(distDir, { dev: false })
     const server = http.createServer((req, res) => {
@@ -90,6 +107,11 @@ async function main() {
     return
   }
 
+  const deps = await loadPrerenderDeps()
+  if (!deps) return
+
+  const { puppeteer, sirv } = deps
+
   if (!existsSync(distDir)) {
     console.error('dist/ not found — run vite build first')
     process.exit(1)
@@ -110,7 +132,7 @@ async function main() {
   const port = Number(env.PRERENDER_PORT) || 4173
   const publicOrigin = getSiteOrigin(env)
   const localOrigin = `http://127.0.0.1:${port}`
-  const server = await startStaticServer(port, spaIndexPath)
+  const server = await startStaticServer(port, spaIndexPath, sirv)
 
   const browser = await puppeteer.launch({
     headless: true,
