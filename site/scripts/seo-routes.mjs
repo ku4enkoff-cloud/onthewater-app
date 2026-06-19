@@ -96,8 +96,8 @@ export function getSitemapEntries(origin, boats, lastmod) {
 }
 
 export function getPrerenderRoutes(boats) {
-  // /boats не пререндерим в dist/boats/index.html — иначе ломается SPA для /boats/:slug
-  const staticRoutes = ['/', '/owners', '/privacy', '/terms', '/sitemap']
+  // /boats → dist/boats/index.html обязателен: иначе nginx видит пустую папку boats/ и отдаёт 403
+  const staticRoutes = ['/', '/boats', '/owners', '/privacy', '/terms', '/sitemap']
   const boatRoutes = boats
     .map((boat) => {
       const seg = boatUrlSegment(boat)

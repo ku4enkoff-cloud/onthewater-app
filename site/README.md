@@ -48,7 +48,7 @@ npm run build
 
 1. **`scripts/generate-sitemap.mjs`** — `public/sitemap.xml` и список маршрутов для пререндера (нужен доступ к API).
 2. **`vite build`** — бандл в `dist/`.
-3. **`scripts/prerender.mjs`** — Puppeteer сохраняет HTML для главной, лендинга владельцев, юридических страниц и карточек катеров (страница `/boats` не пререндерится в `dist/boats/index.html`, чтобы не ломать вложенные URL катеров).
+3. **`scripts/prerender.mjs`** — Puppeteer сохраняет HTML для главной, **поиска `/boats`** (`dist/boats/index.html` — без него nginx отдаёт 403), лендинга владельцев, юридических страниц и карточек катеров.
 
 Переменные окружения (см. `.env.example`):
 
@@ -66,12 +66,20 @@ npm run build
 Корень сайта — содержимое `dist/`. Для SPA и пререндеренных путей:
 
 ```nginx
+# Обязательно для /boats (папка dist/boats/ без index.html → 403)
+location = /boats {
+    try_files /boats/index.html /index.html;
+}
+location = /boats/ {
+    try_files /boats/index.html /index.html;
+}
+
 location / {
     try_files $uri $uri/ /index.html;
 }
 ```
 
-Так `dist/boats/42-slug/index.html` отдаётся напрямую краулерам, остальные маршруты — через `index.html`.
+Так `dist/boats/index.html` (поиск) и `dist/boats/42-slug/index.html` (карточка) отдаются краулерам; `/boats` не отдаёт 403.
 
 Убедитесь, что доступны:
 

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import http from 'node:http'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -48,6 +48,7 @@ function routeToOutPath(route) {
 
 function waitSelectorForRoute(route) {
   if (route === '/') return '.lp-heroTitle'
+  if (route === '/boats') return '.bs-page'
   if (route.startsWith('/boats/')) return '.bd-heroBs__title'
   if (route === '/owners') return '.owner-page__title'
   if (route === '/privacy' || route === '/terms') return 'main'
@@ -110,8 +111,7 @@ async function loadRoutes(env) {
   if (existsSync(routesFile)) {
     try {
       const parsed = JSON.parse(readFileSync(routesFile, 'utf8'))
-      const filtered = parsed.filter((route) => route !== '/boats')
-      if (filtered.length > 0) return filtered
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
     } catch {
       /* fall through */
     }
@@ -147,11 +147,6 @@ async function main() {
   if (!existsSync(spaIndexPath)) {
     console.error('dist/index.html not found — run vite build first')
     process.exit(1)
-  }
-
-  const boatsIndex = join(distDir, 'boats', 'index.html')
-  if (existsSync(boatsIndex)) {
-    rmSync(boatsIndex, { force: true })
   }
 
   const routes = await loadRoutes(env)
