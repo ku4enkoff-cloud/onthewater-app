@@ -13,7 +13,7 @@ import {
     useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Rect, Text as SvgText } from 'react-native-svg';
 import { ChevronLeft, ChevronDown, Heart, Zap, MapPin, Star, SlidersHorizontal, X } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
@@ -31,6 +31,15 @@ import { isYamapNativeAvailable } from '../../shared/yamapNative';
 import { ensureYamapInitialized } from '../../shared/yamapInit';
 
 const NAVY = '#1B365D';
+const MAP_CLUSTER_MARKER_ICON = require('../../../assets/map-cluster-marker.png');
+const MAP_CLUSTER_MAP_PROPS = {
+    clusterIcon: MAP_CLUSTER_MARKER_ICON,
+    clusterColor: NAVY,
+    clusterTextColor: NAVY,
+    clusterSize: { width: 44, height: 44 },
+    clusterTextSize: 16,
+    clusterTextYOffset: 1,
+};
 
 const CITY_COORDS = {
     'Москва': { lat: 55.751244, lon: 37.618423 },
@@ -43,80 +52,94 @@ const CITY_COORDS = {
 const DEFAULT_MAP_CENTER = { lat: 55.751244, lon: 37.618423 };
 
 const isMapAvailable = isYamapNativeAvailable;
-let YaMap = null;
 let Marker = null;
+let ClusteredYamap = null;
 if (isMapAvailable) {
     try {
         const yamap = require('react-native-yamap-plus');
-        YaMap = yamap.Yamap;
         Marker = yamap.Marker;
+        ClusteredYamap = yamap.ClusteredYamap;
     } catch (_) {}
 }
-const USE_CUSTOM_PRICE_MARKERS = true;
 
-/** Кружок с числом катеров в локации (включая «1»). */
-function MapClusterBubble({ count, selected }) {
-    const size = 40;
-    const cx = size / 2;
-    const cy = size / 2;
-    const label = String(count);
-    return (
-        <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-            <Circle
-                cx={cx}
-                cy={cy}
-                r={17}
-                fill="#FFFFFF"
-                stroke={NAVY}
-                strokeWidth={selected ? 3 : 2}
-            />
-            <SvgText
-                x={cx}
-                y={cy + (label.length > 2 ? 4 : 5)}
-                fill={NAVY}
-                fontSize={label.length > 2 ? 12 : 14}
-                fontWeight="700"
-                fontFamily={theme.fonts.bold}
-                textAnchor="middle"
-            >
-                {label}
-            </SvgText>
-        </Svg>
-    );
-}
+const MAP_PRICE_BUBBLE_W = 88;
+const MAP_PRICE_BUBBLE_H = 32;
 
-function MapPriceBubble({ price, selected }) {
-    const color = NAVY;
-    const w = 88;
-    const h = 32;
+const MapPriceBubble = React.memo(function MapPriceBubble({ price, selected }) {
+    const w = MAP_PRICE_BUBBLE_W;
+    const h = MAP_PRICE_BUBBLE_H;
     const radius = 8;
     return (
-        <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-            <Rect
-                x={1}
-                y={1}
-                width={w - 2}
-                height={h - 2}
-                rx={radius}
-                ry={radius}
-                fill={color}
-                stroke="rgba(255,255,255,0.5)"
-                strokeWidth={1.5}
-            />
-            <SvgText
-                x={w / 2}
-                y={h / 2 + 5}
-                fill="#fff"
-                fontSize={14}
-                fontWeight="700"
-                fontFamily={theme.fonts.bold}
-                textAnchor="middle"
-            >
-                {price}
-            </SvgText>
-        </Svg>
+        <View style={mapMarkerStyles.priceBubbleWrap} collapsable={false}>
+            <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+                <Rect
+                    x={1}
+                    y={1}
+                    width={w - 2}
+                    height={h - 2}
+                    rx={radius}
+                    ry={radius}
+                    fill={NAVY}
+                    stroke={selected ? '#fff' : 'rgba(255,255,255,0.5)'}
+                    strokeWidth={selected ? 2.5 : 1.5}
+                />
+                <SvgText
+                    x={w / 2}
+                    y={h / 2 + 5}
+                    fill="#fff"
+                    fontSize={13}
+                    fontWeight="700"
+                    fontFamily={theme.fonts.bold}
+                    textAnchor="middle"
+                >
+                    {price}
+                </SvgText>
+            </Svg>
+        </View>
     );
-}
+});
+
+const mapMarkerStyles = StyleSheet.create({
+    priceBubbleWrap: {
+        width: MAP_PRICE_BUBBLE_W,
+        height: MAP_PRICE_BUBBLE_H,
+        overflow: 'hidden',
+    },
+    clusterBubbleWrap: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        borderWidth: 5,
+        borderColor: NAVY,
+        backgroundColor: '#fff',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+    },
+    clusterBubbleWrapSelected: {
+        borderWidth: 6,
+    },
+    clusterBubbleText: {
+        color: NAVY,
+        fontSize: 15,
+        fontFamily: theme.fonts.bold,
+    },
+});
+
+const MapClusterBubble = React.memo(function MapClusterBubble({ count, selected }) {
+    const label = String(count);
+    return (
+        <View
+            style={[
+                mapMarkerStyles.clusterBubbleWrap,
+                selected && mapMarkerStyles.clusterBubbleWrapSelected,
+            ]}
+            collapsable={false}
+        >
+            <Text style={mapMarkerStyles.clusterBubbleText}>{label}</Text>
+        </View>
+    );
+});
 
 const DEFAULT_FILTERS = {
     priceLow: 0,
@@ -258,14 +281,10 @@ function dedupeBoatsById(list) {
     });
 }
 
-/** Одинаковые lat/lng дают один кластер с завышенным числом; слегка разводим точки. */
-const MAP_COORD_GROUP_DECIMALS = 4;
-const MAP_SPREAD_RADIUS_DEG = 0.00008;
-
-function buildClusteredMapMarkers(boats) {
+/** Точки катеров для ClusteredYamap (нативная кластеризация MapKit). */
+function boatsToClusteredMarkers(boats) {
     const seenIds = new Set();
-    const groups = new Map();
-
+    const markers = [];
     for (const b of boats) {
         const lat = Number(b.lat);
         const lon = Number(b.lng);
@@ -275,85 +294,26 @@ function buildClusteredMapMarkers(boats) {
             if (seenIds.has(id)) continue;
             seenIds.add(id);
         }
-        const key = `${lat.toFixed(MAP_COORD_GROUP_DECIMALS)},${lon.toFixed(MAP_COORD_GROUP_DECIMALS)}`;
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key).push(b);
-    }
-
-    const markers = [];
-    for (const group of groups.values()) {
-        if (group.length === 1) {
-            const boat = group[0];
-            markers.push({
-                point: { lat: Number(boat.lat), lon: Number(boat.lng) },
-                data: boat,
-            });
-            continue;
-        }
-        const baseLat = Number(group[0].lat);
-        const baseLon = Number(group[0].lng);
-        const cosLat = Math.cos((baseLat * Math.PI) / 180) || 1;
-        group.forEach((boat, i) => {
-            const angle = (2 * Math.PI * i) / group.length;
-            markers.push({
-                point: {
-                    lat: baseLat + MAP_SPREAD_RADIUS_DEG * Math.cos(angle),
-                    lon: baseLon + (MAP_SPREAD_RADIUS_DEG * Math.sin(angle)) / cosLat,
-                },
-                data: boat,
-            });
+        markers.push({
+            point: { lat, lon },
+            data: b,
         });
     }
     return markers;
 }
 
-/** Размер ячейки сетки (градусы) — ~64px на тайле карты при данном zoom. */
-function mapClusterCellSizeDeg(zoom) {
-    const z = Number.isFinite(Number(zoom)) ? Number(zoom) : 10;
-    return Math.max(0.0025, 360 / 2 ** (z + 2));
-}
-
-/** Группируем катера по сетке карты; count в кружке = число катеров в ячейке. */
-function buildLocationClusterMarkers(boats, zoom = 10) {
-    const seenIds = new Set();
-    const cellSize = mapClusterCellSizeDeg(zoom);
-    const groups = new Map();
-
-    for (const b of boats) {
-        const lat = Number(b.lat);
-        const lon = Number(b.lng);
-        if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
-        const id = b.id != null ? String(b.id) : null;
-        if (id) {
-            if (seenIds.has(id)) continue;
-            seenIds.add(id);
-        }
-        const cosLat = Math.cos((lat * Math.PI) / 180) || 1;
-        const gx = Math.floor(lat / cellSize);
-        const gy = Math.floor(lon / (cellSize / cosLat));
-        const key = `${gx},${gy}`;
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key).push(b);
-    }
-    if (groups.size === 0) return [];
-
-    const clusters = [];
-    let idx = 0;
-    for (const group of groups.values()) {
-        const latSum = group.reduce((s, b) => s + Number(b.lat), 0);
-        const lonSum = group.reduce((s, b) => s + Number(b.lng), 0);
-        clusters.push({
-            id: `c-${idx++}`,
-            point: { lat: latSum / group.length, lon: lonSum / group.length },
-            count: group.length,
-            boats: group,
-        });
-    }
-    return clusters;
-}
-
+const MAP_COORD_GROUP_DECIMALS = 4;
 const MAP_NEARBY_METERS = 180;
 const MAP_NEARBY_MARKER_METERS = 100;
+/** Zoom, с которого показываем ценовые маркеры вместо невидимых точек кластера. */
+const MAP_ZOOM_ENTER_PRICE_MODE = 13;
+/** Ниже — снова только кластеры (гистерезис, без дёрганья на границе zoom). */
+const MAP_ZOOM_EXIT_PRICE_MODE = 11;
+/** Лимит ценовых маркеров в кадре — защита от лагов при большом zoom. */
+const MAP_PRICE_MARKER_LIMIT = 48;
+/** Пауза перед подгрузкой катеров после остановки карты. */
+const MAP_VIEWPORT_FETCH_MS = 900;
+const MAP_AREA_LABEL_FALLBACK = 'На карте';
 
 function distanceMeters(lat1, lon1, lat2, lon2) {
     const R = 6371000;
@@ -418,15 +378,83 @@ function findNearbyMapBoats(tappedBoat, markers, tappedPoint) {
     return boats.length ? boats : [tappedBoat];
 }
 
-/** Zoom для перехода к ценовым маркерам при ручном pinch (не при тапе по кластеру). */
-const MAP_ZOOM_ENTER_PRICE_MODE = 13;
-/** Ниже этого zoom — снова групповые маркеры (гистерезис: вход 13, выход 11). */
-const MAP_ZOOM_EXIT_PRICE_MODE = 11;
-/** Первый тап по кластеру: показать все метки области, без сильного приближения. */
-const MAP_ZOOM_CLUSTER_OPEN_MIN = 10;
-const MAP_ZOOM_CLUSTER_OPEN_MAX = 12;
+/** Близкие катера — одна точка на карте (кластер или группа цен). */
+function groupMapMarkersByProximity(markers, radiusMeters = MAP_NEARBY_MARKER_METERS) {
+    if (!Array.isArray(markers) || markers.length < 2) return markers;
+
+    const groups = [];
+    const used = new Set();
+
+    for (let i = 0; i < markers.length; i++) {
+        if (used.has(i)) continue;
+        const base = markers[i];
+        const members = [base];
+        used.add(i);
+
+        for (let j = i + 1; j < markers.length; j++) {
+            if (used.has(j)) continue;
+            const other = markers[j];
+            const blat = Number(base.point?.lat);
+            const blon = Number(base.point?.lon);
+            const olat = Number(other.point?.lat);
+            const olon = Number(other.point?.lon);
+            if (!Number.isFinite(blat) || !Number.isFinite(blon) || !Number.isFinite(olat) || !Number.isFinite(olon)) {
+                continue;
+            }
+            const near =
+                distanceMeters(blat, blon, olat, olon) <= radiusMeters ||
+                sameCoordGroup(base.data, other.data);
+            if (near) {
+                members.push(other);
+                used.add(j);
+            }
+        }
+
+        if (members.length === 1) {
+            groups.push(base);
+            continue;
+        }
+
+        const latSum = members.reduce((s, m) => s + Number(m.point.lat), 0);
+        const lonSum = members.reduce((s, m) => s + Number(m.point.lon), 0);
+        groups.push({
+            point: { lat: latSum / members.length, lon: lonSum / members.length },
+            data: {
+                _mapGroup: true,
+                boats: members.map((m) => m.data).filter(Boolean),
+            },
+        });
+    }
+
+    return groups;
+}
+
+function expandGroupedMarkers(markers) {
+    if (!Array.isArray(markers)) return [];
+    const flat = [];
+    for (const m of markers) {
+        if (m?.data?._mapGroup && Array.isArray(m.data.boats)) {
+            for (const b of m.data.boats) {
+                if (b) flat.push({ point: m.point, data: b });
+            }
+        } else if (m?.data) {
+            flat.push(m);
+        }
+    }
+    return flat;
+}
+
+function groupedMarkerKey(boats, fallback = 'x') {
+    if (!Array.isArray(boats) || !boats.length) return fallback;
+    const ids = boats
+        .map((b) => (b?.id != null ? String(b.id) : ''))
+        .filter(Boolean)
+        .sort();
+    return ids.length ? ids.join('_') : fallback;
+}
+
 /** Минимальный сдвиг карты для повторной подгрузки. */
-const MAP_PAN_MIN_DEG = 0.028;
+const MAP_PAN_MIN_DEG = 0.02;
 const MAP_GEO_FETCH_RADIUS_KM = 50;
 const MAP_GEO_FETCH_RADIUS_MAX_KM = 250;
 const MAP_GEO_FETCH_RADIUS_MIN_KM = 8;
@@ -470,46 +498,65 @@ function filterBoatsInBounds(boats, bounds) {
     });
 }
 
-/** Центр и zoom, чтобы все катера кластера были видны на экране. */
-function computeFitCameraForBoats(boats) {
-    const coords = (boats || [])
-        .map((b) => ({ lat: Number(b.lat), lon: Number(b.lng) }))
-        .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lon));
-    if (!coords.length) return null;
+function filterMarkersInBounds(markers, bounds) {
+    if (!bounds || !Array.isArray(markers)) return markers || [];
+    return markers.filter(({ point }) => {
+        const lat = Number(point?.lat);
+        const lon = Number(point?.lon);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
+        return (
+            lat >= bounds.minLat &&
+            lat <= bounds.maxLat &&
+            lon >= bounds.minLon &&
+            lon <= bounds.maxLon
+        );
+    });
+}
 
-    if (coords.length === 1) {
-        return {
-            lat: coords[0].lat,
-            lon: coords[0].lon,
-            zoom: Math.min(MAP_ZOOM_CLUSTER_OPEN_MAX, MAP_ZOOM_CLUSTER_OPEN_MIN + 1),
-        };
-    }
-
-    const lats = coords.map((p) => p.lat);
-    const lons = coords.map((p) => p.lon);
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-    const minLon = Math.min(...lons);
-    const maxLon = Math.max(...lons);
-    const centerLat = (minLat + maxLat) / 2;
-    const centerLon = (minLon + maxLon) / 2;
-
-    const latSpan = Math.max(0.003, maxLat - minLat);
-    const lonSpan = Math.max(0.003, maxLon - minLon);
-    const span = Math.max(latSpan, lonSpan) * 1.5;
-
-    let zoom = MAP_ZOOM_CLUSTER_OPEN_MAX;
-    if (span > 0.2) zoom = 9;
-    else if (span > 0.1) zoom = 10;
-    else if (span > 0.05) zoom = 11;
-    else if (span > 0.02) zoom = 12;
-    else zoom = MAP_ZOOM_CLUSTER_OPEN_MAX;
-
+function expandBounds(bounds, padDeg = 0.06) {
+    if (!bounds) return null;
     return {
-        lat: centerLat,
-        lon: centerLon,
-        zoom: Math.min(MAP_ZOOM_CLUSTER_OPEN_MAX, Math.max(MAP_ZOOM_CLUSTER_OPEN_MIN, zoom)),
+        minLat: bounds.minLat - padDeg,
+        maxLat: bounds.maxLat + padDeg,
+        minLon: bounds.minLon - padDeg,
+        maxLon: bounds.maxLon + padDeg,
     };
+}
+
+function boatIdsSignature(boats) {
+    if (!Array.isArray(boats) || !boats.length) return '';
+    return boats
+        .map((b) => String(b?.id ?? ''))
+        .filter(Boolean)
+        .sort()
+        .join(',');
+}
+
+/** Добавляем новые катера, старые убираем только если далеко за пределами экрана. */
+function mergeMapBoatResults(prev, incoming, bounds) {
+    const byId = new Map();
+    for (const b of prev || []) {
+        if (b?.id != null) byId.set(String(b.id), b);
+    }
+    for (const b of incoming || []) {
+        if (b?.id != null) byId.set(String(b.id), b);
+    }
+    let merged = [...byId.values()];
+    const loose = expandBounds(bounds);
+    if (loose) {
+        merged = merged.filter((b) => {
+            const lat = Number(b.lat);
+            const lon = Number(b.lng);
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
+            return (
+                lat >= loose.minLat &&
+                lat <= loose.maxLat &&
+                lon >= loose.minLon &&
+                lon <= loose.maxLon
+            );
+        });
+    }
+    return merged;
 }
 
 function deriveMapAreaLabel(boatList, fallback) {
@@ -560,6 +607,22 @@ function applyCameraToLiveRef(liveRef, pos) {
     };
 }
 
+function approximateBoundsFromCamera(cam) {
+    const lat = Number(cam?.lat);
+    const lon = Number(cam?.lon);
+    const zoom = Number(cam?.zoom) || 10;
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+    const cosLat = Math.cos((lat * Math.PI) / 180) || 1;
+    const latSpan = Math.max(0.012, 0.42 / 2 ** Math.max(0, zoom - 9));
+    const lonSpan = latSpan / cosLat;
+    return {
+        minLat: lat - latSpan,
+        maxLat: lat + latSpan,
+        minLon: lon - lonSpan,
+        maxLon: lon + lonSpan,
+    };
+}
+
 function visibleRegionBounds(region) {
     if (!region) return null;
     const corners = [region.topLeft, region.topRight, region.bottomLeft, region.bottomRight].filter(Boolean);
@@ -574,37 +637,6 @@ function visibleRegionBounds(region) {
         minLon: Math.min(...lons) - pad,
         maxLon: Math.max(...lons) + pad,
     };
-}
-
-function filterMarkersInVisibleRegion(markers, region) {
-    const bounds = visibleRegionBounds(region);
-    if (!bounds) return markers;
-    return markers.filter(({ point }) => {
-        const lat = Number(point?.lat);
-        const lon = Number(point?.lon);
-        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
-        return (
-            lat >= bounds.minLat &&
-            lat <= bounds.maxLat &&
-            lon >= bounds.minLon &&
-            lon <= bounds.maxLon
-        );
-    });
-}
-
-function filterMarkersNearCamera(markers, camera, zoom) {
-    const point = parseCameraPoint(camera) ?? camera;
-    const lat = Number(point?.lat);
-    const lon = Number(point?.lon);
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return markers;
-    const z = Number(zoom) || MAP_ZOOM_ENTER_PRICE_MODE;
-    const radiusDeg = 0.35 / Math.pow(2, Math.max(0, z - 10));
-    return markers.filter(({ point: p }) => {
-        const plat = Number(p?.lat);
-        const plon = Number(p?.lon);
-        if (!Number.isFinite(plat) || !Number.isFinite(plon)) return false;
-        return Math.abs(plat - lat) <= radiusDeg && Math.abs(plon - lon) <= radiusDeg;
-    });
 }
 
 function getMapMarkerPriceLabel(boat) {
@@ -648,20 +680,20 @@ export default function SearchResultsScreen({ route, navigation }) {
     const [mapLoading, setMapLoading] = useState(false);
     const [mapCenter, setMapCenter] = useState(DEFAULT_MAP_CENTER);
     const [mapZoom, setMapZoom] = useState(10);
-    const [mapClusterZoom, setMapClusterZoom] = useState(10);
-    const [mapViewMode, setMapViewMode] = useState('cluster');
-    const [priceVisibleMarkers, setPriceVisibleMarkers] = useState([]);
-    const [mapLiveRegion, setMapLiveRegion] = useState(null);
+    const [mapPriceMode, setMapPriceMode] = useState(false);
     const [mapAreaLabel, setMapAreaLabel] = useState('');
     const [selectedMapBoats, setSelectedMapBoats] = useState([]);
+    const [markerVisualEpoch, setMarkerVisualEpoch] = useState(0);
     const userLocationRef = useRef(null);
     const mapRef = useRef(null);
     const mapLiveCameraRef = useRef({ lat: DEFAULT_MAP_CENTER.lat, lon: DEFAULT_MAP_CENTER.lon, zoom: 10 });
-    const mapViewModeRef = useRef('cluster');
+    const mapPriceModeRef = useRef(false);
+    const mapMarkerZoomRef = useRef(10);
+    const mapViewportBoundsRef = useRef(null);
     const clusteredMarkersDataRef = useRef([]);
-    const priceVisibleMarkersRef = useRef([]);
-    const mapModeTransitionRef = useRef(false);
-    const mapPriceClusterLockRef = useRef(false);
+    const mapBoatsCountRef = useRef(0);
+    const mapFetchSeqRef = useRef(0);
+    const selectedMapBoatsRef = useRef([]);
     const markerPressTsRef = useRef(0);
     const priceMarkerTapRef = useRef({ boatId: null });
     const [clusterMapEpoch, setClusterMapEpoch] = useState(0);
@@ -760,35 +792,81 @@ export default function SearchResultsScreen({ route, navigation }) {
             const {
                 lat,
                 lng,
-                radius = MAP_GEO_FETCH_RADIUS_KM,
-                bounds = null,
-                fallbackLabel = '',
+                radius,
+                bounds: boundsIn,
+                showLoader,
             } = opts;
             if (lat == null || lng == null) return;
-            setMapLoading(true);
+            const shouldShowLoader = showLoader ?? mapBoatsCountRef.current === 0;
+            if (shouldShowLoader) setMapLoading(true);
+            const bounds =
+                boundsIn ??
+                approximateBoundsFromCamera({
+                    lat,
+                    lng,
+                    zoom: mapMarkerZoomRef.current,
+                });
+            const radiusKm =
+                radius ??
+                (bounds ? radiusKmForBounds(bounds) : MAP_GEO_FETCH_RADIUS_KM);
+            const fetchRadius = Math.min(
+                MAP_GEO_FETCH_RADIUS_MAX_KM,
+                Math.max(MAP_GEO_FETCH_RADIUS_MIN_KM, radiusKm * 1.2),
+            );
+            const fetchSeq = ++mapFetchSeqRef.current;
             try {
                 const res = await api.get('/boats', {
-                    params: { lat, lng, radius },
+                    params: { lat, lng, radius: fetchRadius },
                 });
+                if (fetchSeq !== mapFetchSeqRef.current || !mapModalOpenRef.current) return;
                 let list = Array.isArray(res.data) ? res.data : [];
                 let filtered = dedupeBoatsById(applyBoatFilters(list, filters, priceRange));
                 if (bounds) {
                     filtered = filterBoatsInBounds(filtered, bounds);
                 }
-                if (mapModalOpenRef.current) {
-                    setMapBoats(filtered);
-                    mapUsesGeoSearchRef.current = true;
-                    setMapAreaLabel(deriveMapAreaLabel(filtered, fallbackLabel || displayCity));
-                    lastViewportFetchRef.current = { lat, lng, radiusKm: radius, bounds };
-                }
+                setMapBoats((prev) => {
+                    const merged = mergeMapBoatResults(prev, filtered, bounds);
+                    if (boatIdsSignature(prev) === boatIdsSignature(merged)) return prev;
+                    return merged;
+                });
+                mapUsesGeoSearchRef.current = true;
+                setMapAreaLabel((prev) => {
+                    const next = deriveMapAreaLabel(filtered, MAP_AREA_LABEL_FALLBACK);
+                    return next === prev ? prev : next;
+                });
+                lastViewportFetchRef.current = { lat, lng, radiusKm: fetchRadius, bounds };
             } catch (_) {
-                if (mapModalOpenRef.current) setMapBoats([]);
+                if (fetchSeq !== mapFetchSeqRef.current || !mapModalOpenRef.current) return;
+                setMapBoats((prev) => (prev.length ? prev : []));
             } finally {
-                if (mapModalOpenRef.current) setMapLoading(false);
+                if (mapModalOpenRef.current && shouldShowLoader) setMapLoading(false);
             }
         },
-        [filters, priceRange, displayCity],
+        [filters, priceRange],
     );
+
+    const resolveMapViewportBounds = useCallback((onResolved) => {
+        const finish = (bounds) => {
+            const resolved =
+                bounds ?? approximateBoundsFromCamera(mapLiveCameraRef.current);
+            if (resolved) mapViewportBoundsRef.current = resolved;
+            onResolved?.(resolved);
+        };
+
+        if (!mapRef.current?.getVisibleRegion) {
+            finish(approximateBoundsFromCamera(mapLiveCameraRef.current));
+            return;
+        }
+
+        try {
+            mapRef.current.getVisibleRegion((region) => {
+                if (!mapModalOpenRef.current) return;
+                finish(visibleRegionBounds(region));
+            });
+        } catch (_) {
+            finish(approximateBoundsFromCamera(mapLiveCameraRef.current));
+        }
+    }, []);
 
     const fetchBoatsForMapViewport = useCallback(() => {
         if (!mapModalOpenRef.current) return;
@@ -804,41 +882,22 @@ export default function SearchResultsScreen({ route, navigation }) {
                 Math.abs((last.radiusKm || 0) - radiusKm) / Math.max(last.radiusKm || 1, 1) > 0.12;
             if (!moved && !zoomChanged) return;
 
-            fetchBoatsForMap({
-                lat,
-                lng,
-                radius: radiusKm,
-                bounds,
-                fallbackLabel: displayCity,
-            });
+            fetchBoatsForMap({ lat, lng, radius: radiusKm, bounds });
         };
 
-        if (!mapRef.current?.getVisibleRegion) {
+        resolveMapViewportBounds((bounds) => {
+            if (!mapModalOpenRef.current) return;
             const cam = mapLiveCameraRef.current;
-            const radiusKm = radiusKmForZoom(cam.zoom);
-            runFetch(cam.lat, cam.lon, radiusKm, null);
-            return;
-        }
-
-        try {
-            mapRef.current.getVisibleRegion((region) => {
-                if (!mapModalOpenRef.current) return;
-                const bounds = visibleRegionBounds(region);
-                if (!bounds) {
-                    const cam = mapLiveCameraRef.current;
-                    runFetch(cam.lat, cam.lon, radiusKmForZoom(cam.zoom), null);
-                    return;
-                }
-                const centerLat = (bounds.minLat + bounds.maxLat) / 2;
-                const centerLon = (bounds.minLon + bounds.maxLon) / 2;
-                const radiusKm = radiusKmForBounds(bounds);
-                runFetch(centerLat, centerLon, radiusKm, bounds);
-            });
-        } catch (_) {
-            const cam = mapLiveCameraRef.current;
-            runFetch(cam.lat, cam.lon, radiusKmForZoom(cam.zoom), null);
-        }
-    }, [fetchBoatsForMap, displayCity]);
+            if (!bounds) {
+                runFetch(cam.lat, cam.lon, radiusKmForZoom(cam.zoom), null);
+                return;
+            }
+            const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+            const centerLon = (bounds.minLon + bounds.maxLon) / 2;
+            const radiusKm = radiusKmForBounds(bounds);
+            runFetch(centerLat, centerLon, radiusKm, bounds);
+        });
+    }, [fetchBoatsForMap, resolveMapViewportBounds]);
 
     const openMapModal = useCallback(() => {
         let center;
@@ -862,15 +921,15 @@ export default function SearchResultsScreen({ route, navigation }) {
         }
         setMapCenter(center);
         setMapZoom(zoom);
-        setMapClusterZoom(zoom);
+        mapMarkerZoomRef.current = zoom;
+        mapPriceModeRef.current = false;
+        setMapPriceMode(false);
+        mapViewportBoundsRef.current = approximateBoundsFromCamera({ lat: center.lat, lon: center.lon, zoom });
+        mapFetchSeqRef.current += 1;
         mapLiveCameraRef.current = { lat: center.lat, lon: center.lon, zoom };
-        setMapLiveRegion(null);
-        setMapViewMode('cluster');
-        mapPriceClusterLockRef.current = false;
         setClusterMapEpoch((e) => e + 1);
-        setPriceVisibleMarkers([]);
         setMapBoats([]);
-        setMapAreaLabel(displayCity);
+        setMapAreaLabel(MAP_AREA_LABEL_FALLBACK);
         setSelectedMapBoats([]);
         mapUsesGeoSearchRef.current = true;
         lastViewportFetchRef.current = null;
@@ -878,7 +937,7 @@ export default function SearchResultsScreen({ route, navigation }) {
         setMapClosing(false);
         setMapModalVisible(true);
         setMapViewReady(false);
-    }, [boats, cityName, useMyLocation, displayCity]);
+    }, [boats, cityName, useMyLocation]);
 
     const closeMapModal = useCallback(() => {
         mapModalOpenRef.current = false;
@@ -899,9 +958,6 @@ export default function SearchResultsScreen({ route, navigation }) {
             mapModalOpenRef.current = false;
             setMapViewReady(false);
             setMapInitFailed(false);
-            setMapViewMode('cluster');
-            setPriceVisibleMarkers([]);
-            setMapLiveRegion(null);
             return;
         }
         let cancelled = false;
@@ -931,127 +987,25 @@ export default function SearchResultsScreen({ route, navigation }) {
         return () => clearTimeout(timer);
     }, [mapModalVisible, mapViewReady, mapClosing, fetchBoatsForMapViewport]);
 
-    useEffect(() => {
-        mapViewModeRef.current = mapViewMode;
-    }, [mapViewMode]);
-
-    const refreshPriceVisibleMarkers = useCallback((onDone) => {
-        const allMarkers = clusteredMarkersDataRef.current;
-        if (!allMarkers.length) {
-            setPriceVisibleMarkers([]);
-            onDone?.();
-            return;
-        }
-        const finish = (next) => {
-            setPriceVisibleMarkers(next.length > 0 ? next : allMarkers);
-            onDone?.();
-        };
-        if (!mapRef.current?.getVisibleRegion) {
-            mapRef.current?.getCameraPosition?.((pos) => {
-                applyCameraToLiveRef(mapLiveCameraRef, pos);
-                finish(filterMarkersNearCamera(allMarkers, pos, parseCameraZoom(pos)));
-            });
-            return;
-        }
-        try {
-            mapRef.current.getVisibleRegion((region) => {
-                const filtered = filterMarkersInVisibleRegion(allMarkers, region);
-                if (filtered.length > 0) {
-                    finish(filtered);
-                    return;
-                }
-                mapRef.current?.getCameraPosition?.((pos) => {
-                    applyCameraToLiveRef(mapLiveCameraRef, pos);
-                    finish(filterMarkersNearCamera(allMarkers, pos, parseCameraZoom(pos)));
-                });
-            });
-        } catch (_) {
-            finish(allMarkers);
-        }
+    const syncMapPriceMode = useCallback((zoom) => {
+        if (zoom == null) return;
+        mapMarkerZoomRef.current = zoom;
+        const prev = mapPriceModeRef.current;
+        let next = prev;
+        if (!prev && zoom >= MAP_ZOOM_ENTER_PRICE_MODE) next = true;
+        else if (prev && zoom <= MAP_ZOOM_EXIT_PRICE_MODE) next = false;
+        if (next === prev) return;
+        mapPriceModeRef.current = next;
+        setMapPriceMode(next);
+        setMarkerVisualEpoch((e) => e + 1);
     }, []);
-
-    const enterPriceMode = useCallback(() => {
-        if (mapModeTransitionRef.current || mapViewModeRef.current === 'price') return;
-        mapModeTransitionRef.current = true;
-        const finish = () => {
-            refreshPriceVisibleMarkers(() => {
-                setMapViewMode('price');
-                mapModeTransitionRef.current = false;
-            });
-        };
-        if (!mapRef.current?.getCameraPosition) {
-            setMapLiveRegion({ ...mapLiveCameraRef.current });
-            finish();
-            return;
-        }
-        mapRef.current.getCameraPosition((pos) => {
-            applyCameraToLiveRef(mapLiveCameraRef, pos);
-            setMapLiveRegion({ ...mapLiveCameraRef.current });
-            finish();
-        });
-    }, [refreshPriceVisibleMarkers]);
-
-    const exitPriceMode = useCallback(() => {
-        if (mapViewModeRef.current !== 'price' || mapModeTransitionRef.current) return;
-        mapModeTransitionRef.current = true;
-        mapPriceClusterLockRef.current = false;
-        const finish = () => {
-            setPriceVisibleMarkers([]);
-            setSelectedMapBoats([]);
-            setMapViewMode('cluster');
-            mapModeTransitionRef.current = false;
-        };
-        if (!mapRef.current?.getCameraPosition) {
-            setMapLiveRegion({ ...mapLiveCameraRef.current });
-            finish();
-            return;
-        }
-        mapRef.current.getCameraPosition((pos) => {
-            applyCameraToLiveRef(mapLiveCameraRef, pos);
-            setMapLiveRegion({ ...mapLiveCameraRef.current });
-            finish();
-        });
-    }, []);
-
-    const syncMapModeForZoom = useCallback(
-        (zoom, phase = 'move') => {
-            if (zoom == null) return;
-            if (mapViewModeRef.current === 'cluster' && zoom >= MAP_ZOOM_ENTER_PRICE_MODE) {
-                mapPriceClusterLockRef.current = false;
-                enterPriceMode();
-                return;
-            }
-            if (phase === 'end' && mapViewModeRef.current === 'price') {
-                if (mapPriceClusterLockRef.current) {
-                    if (zoom < MAP_ZOOM_CLUSTER_OPEN_MIN) {
-                        exitPriceMode();
-                    }
-                    return;
-                }
-                if (zoom <= MAP_ZOOM_EXIT_PRICE_MODE) {
-                    exitPriceMode();
-                    return;
-                }
-                refreshPriceVisibleMarkers();
-            }
-        },
-        [enterPriceMode, exitPriceMode, refreshPriceVisibleMarkers],
-    );
-
-    const handleCameraPositionChange = useCallback((event) => {
-        const native = event?.nativeEvent ?? event;
-        applyCameraToLiveRef(mapLiveCameraRef, native);
-        syncMapModeForZoom(parseCameraZoom(native), 'move');
-    }, [syncMapModeForZoom]);
 
     const scheduleMapViewportFetch = useCallback(() => {
-        if (mapModeTransitionRef.current) return;
-        if (mapViewModeRef.current === 'price') return;
         if (mapGeoFetchTimerRef.current) clearTimeout(mapGeoFetchTimerRef.current);
         mapGeoFetchTimerRef.current = setTimeout(() => {
             mapGeoFetchTimerRef.current = null;
             fetchBoatsForMapViewport();
-        }, 450);
+        }, MAP_VIEWPORT_FETCH_MS);
     }, [fetchBoatsForMapViewport]);
 
     const handleCameraPositionChangeEnd = useCallback(
@@ -1059,26 +1013,26 @@ export default function SearchResultsScreen({ route, navigation }) {
             const native = event?.nativeEvent ?? event;
             applyCameraToLiveRef(mapLiveCameraRef, native);
             const zoom = parseCameraZoom(native);
-            syncMapModeForZoom(zoom, 'end');
-            if (mapViewModeRef.current === 'cluster' && zoom != null) {
-                setMapClusterZoom(zoom);
-            } else if (mapViewModeRef.current === 'price' && zoom != null) {
-                setMapClusterZoom(zoom);
-            }
+            syncMapPriceMode(zoom);
             scheduleMapViewportFetch();
         },
-        [syncMapModeForZoom, scheduleMapViewportFetch],
+        [syncMapPriceMode, scheduleMapViewportFetch],
     );
+
+    useEffect(() => {
+        selectedMapBoatsRef.current = selectedMapBoats;
+        setMarkerVisualEpoch((e) => e + 1);
+    }, [selectedMapBoats]);
+
+    useEffect(() => {
+        mapPriceModeRef.current = mapPriceMode;
+    }, [mapPriceMode]);
 
     const handleMapBoatPress = useCallback((boat, markerPoint) => {
         if (!boat) return;
         markerPressTsRef.current = Date.now();
 
-        const markers =
-            mapViewModeRef.current === 'price' && priceVisibleMarkersRef.current.length
-                ? priceVisibleMarkersRef.current
-                : clusteredMarkersDataRef.current;
-        const nearby = findNearbyMapBoats(boat, markers, markerPoint);
+        const nearby = findNearbyMapBoats(boat, clusteredMarkersDataRef.current, markerPoint);
 
         if (nearby.length === 1) {
             priceMarkerTapRef.current = { boatId: String(boat.id) };
@@ -1105,37 +1059,9 @@ export default function SearchResultsScreen({ route, navigation }) {
 
     useEffect(() => {
         if (!mapModalVisible || mapClosing) return;
-        if (mapViewModeRef.current === 'price') return;
         lastViewportFetchRef.current = null;
         fetchBoatsForMapViewport();
     }, [mapModalVisible, mapClosing, filters, fetchBoatsForMapViewport]);
-
-    const handleLocationClusterPress = useCallback((cluster) => {
-        if (!cluster?.point || mapModeTransitionRef.current) return;
-        const { boats: clusterBoats } = cluster;
-        const markers = buildClusteredMapMarkers(clusterBoats || []);
-        const fit = computeFitCameraForBoats(clusterBoats || []);
-        const point = fit
-            ? { lat: fit.lat, lon: fit.lon }
-            : cluster.point;
-        const zoom = fit?.zoom ?? MAP_ZOOM_CLUSTER_OPEN_MAX;
-
-        mapModeTransitionRef.current = true;
-        mapPriceClusterLockRef.current = true;
-        priceMarkerTapRef.current = { boatId: null };
-        mapLiveCameraRef.current = { lat: point.lat, lon: point.lon, zoom };
-        setMapLiveRegion({ lat: point.lat, lon: point.lon, zoom });
-        setMapClusterZoom(zoom);
-        setPriceVisibleMarkers(markers);
-        setSelectedMapBoats([]);
-        setMapViewMode('price');
-        try {
-            mapRef.current?.setCenter?.(point, zoom, 0, 0, 0.35);
-        } catch (_) {}
-        setTimeout(() => {
-            mapModeTransitionRef.current = false;
-        }, 900);
-    }, []);
 
     const dismissMapBoatSheet = useCallback(() => {
         setSelectedMapBoats((prev) => {
@@ -1150,30 +1076,145 @@ export default function SearchResultsScreen({ route, navigation }) {
         dismissMapBoatSheet();
     }, [dismissMapBoatSheet]);
 
-    const isMapBoatSelected = useCallback(
-        (boatId) => selectedMapBoats.some((b) => String(b.id) === String(boatId)),
-        [selectedMapBoats],
+    const focusMapCluster = useCallback((point) => {
+        const lat = Number(point?.lat);
+        const lon = Number(point?.lon);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+
+        const zoom = Math.max(
+            MAP_ZOOM_ENTER_PRICE_MODE,
+            Math.floor(mapMarkerZoomRef.current || 10) + 2,
+        );
+        mapMarkerZoomRef.current = zoom;
+        mapLiveCameraRef.current = { lat, lon, zoom };
+        mapPriceModeRef.current = true;
+        setMapPriceMode(true);
+        setMarkerVisualEpoch((e) => e + 1);
+        priceMarkerTapRef.current = { boatId: null };
+        setSelectedMapBoats([]);
+
+        try {
+            mapRef.current?.setCenter?.({ lat, lon }, zoom, 0, 0, 0.4);
+        } catch (_) {}
+
+        setTimeout(() => {
+            if (!mapModalOpenRef.current) return;
+            lastViewportFetchRef.current = null;
+            fetchBoatsForMapViewport();
+        }, 520);
+    }, [fetchBoatsForMapViewport]);
+
+    const handleMapGroupPress = useCallback((boats, markerPoint) => {
+        if (!boats?.length) return;
+        markerPressTsRef.current = Date.now();
+
+        if (!mapPriceModeRef.current) {
+            focusMapCluster(markerPoint);
+            return;
+        }
+
+        if (boats.length === 1) {
+            handleMapBoatPress(boats[0], markerPoint);
+            return;
+        }
+        priceMarkerTapRef.current = { boatId: null };
+        setSelectedMapBoats(boats);
+    }, [focusMapCluster, handleMapBoatPress]);
+
+    const renderMapMarker = useCallback(
+        (info, index) => {
+            const point = info?.point;
+            if (!point) return null;
+
+            const groupBoats = info.data?._mapGroup ? info.data.boats : null;
+            const boat = groupBoats ? groupBoats[0] : info?.data;
+            if (!boat) return null;
+
+            const showPrice = mapPriceModeRef.current;
+            const boatsForPress = groupBoats ?? [boat];
+            const clusterCount = boatsForPress.length;
+            const stableGroupKey = groupedMarkerKey(boatsForPress, `idx-${index}`);
+            const selection = selectedMapBoatsRef.current;
+            const isBoatSelected = (boatId) =>
+                selection.some((b) => String(b.id) === String(boatId));
+            const isGroupSelected = (boats) => {
+                if (!boats?.length) return false;
+                const ids = boats.map((b) => String(b.id)).sort().join(',');
+                const selIds = selection.map((b) => String(b.id)).sort().join(',');
+                return ids.length > 0 && ids === selIds;
+            };
+
+            if (!showPrice) {
+                const selected =
+                    clusterCount > 1
+                        ? isGroupSelected(boatsForPress)
+                        : isBoatSelected(boat.id);
+                return (
+                    <Marker
+                        key={`map-clu-${groupBoats ? stableGroupKey : boat.id ?? index}`}
+                        point={point}
+                        anchor={{ x: 0.5, y: 0.5 }}
+                        zIndex={selected ? 2 : 1}
+                        onPress={() => handleMapGroupPress(boatsForPress, point)}
+                    >
+                        <MapClusterBubble count={clusterCount} selected={selected} />
+                    </Marker>
+                );
+            }
+
+            if (groupBoats && groupBoats.length > 1) {
+                const selected = isGroupSelected(groupBoats);
+                return (
+                    <Marker
+                        key={`map-grp-${stableGroupKey}`}
+                        point={point}
+                        anchor={{ x: 0.5, y: 0.5 }}
+                        zIndex={selected ? 2 : 1}
+                        onPress={() => handleMapGroupPress(groupBoats, point)}
+                    >
+                        <MapClusterBubble count={groupBoats.length} selected={selected} />
+                    </Marker>
+                );
+            }
+
+            const isSelected = isBoatSelected(boat.id);
+            const price = getMapMarkerPriceLabel(boat);
+            return (
+                <Marker
+                    key={`map-price-${boat.id ?? index}`}
+                    point={point}
+                    anchor={{ x: 0.5, y: 1 }}
+                    zIndex={isSelected ? 2 : 1}
+                    onPress={() => handleMapBoatPress(boat, point)}
+                >
+                    <MapPriceBubble price={price} selected={isSelected} />
+                </Marker>
+            );
+        },
+        [markerVisualEpoch, handleMapBoatPress, handleMapGroupPress],
     );
 
     const clusteredMarkersData = useMemo(() => {
         if (mapClosing) return [];
-        return buildClusteredMapMarkers(mapBoats);
-    }, [mapBoats, mapClosing]);
-
-    const locationClusterMarkers = useMemo(() => {
-        if (mapClosing) return [];
-        return buildLocationClusterMarkers(mapBoats, mapClusterZoom);
-    }, [mapBoats, mapClosing, mapClusterZoom]);
+        let markers = boatsToClusteredMarkers(mapBoats);
+        if (!mapPriceMode) {
+            markers = groupMapMarkersByProximity(markers);
+        }
+        if (mapPriceMode && markers.length > MAP_PRICE_MARKER_LIMIT) {
+            markers = markers.slice(0, MAP_PRICE_MARKER_LIMIT);
+        }
+        return markers;
+    }, [mapBoats, mapClosing, mapPriceMode]);
 
     useEffect(() => {
-        clusteredMarkersDataRef.current = clusteredMarkersData;
+        clusteredMarkersDataRef.current = expandGroupedMarkers(clusteredMarkersData);
     }, [clusteredMarkersData]);
 
     useEffect(() => {
-        priceVisibleMarkersRef.current = priceVisibleMarkers;
-    }, [priceVisibleMarkers]);
+        mapBoatsCountRef.current = mapBoats.length;
+    }, [mapBoats.length]);
 
-    const mapInitialRegion = mapLiveRegion ?? {
+    const mapInitialRegion = {
         lat: mapCenter.lat,
         lon: mapCenter.lon,
         zoom: mapZoom,
@@ -1701,11 +1742,11 @@ export default function SearchResultsScreen({ route, navigation }) {
                                 <Text style={styles.mapModalCloseText}>✕</Text>
                             </TouchableOpacity>
                             <Text style={styles.mapModalTitle} numberOfLines={1}>
-                                {mapAreaLabel || displayCity} — катера на карте
+                                {mapAreaLabel} — катера на карте
                             </Text>
                             <View style={{ width: 36 }} />
                         </View>
-                        {!isMapAvailable || !Marker || !YaMap ? (
+                        {!isMapAvailable || !Marker || !ClusteredYamap ? (
                             <View style={styles.mapPlaceholder}>
                                 <Text style={styles.mapPlaceholderText}>
                                     Карта доступна в полной сборке приложения (expo run:android / expo run:ios)
@@ -1724,54 +1765,18 @@ export default function SearchResultsScreen({ route, navigation }) {
                                         <ActivityIndicator size="large" color={NAVY} />
                                         <Text style={styles.mapPlaceholderText}>Загрузка карты...</Text>
                                     </View>
-                                ) : mapViewMode === 'price' ? (
-                                    <YaMap
-                                        key={`map-price-e${clusterMapEpoch}`}
-                                        ref={mapRef}
-                                        style={StyleSheet.absoluteFillObject}
-                                        initialRegion={mapInitialRegion}
-                                        onMapPress={handleMapBackgroundPress}
-                                        onCameraPositionChange={handleCameraPositionChange}
-                                        onCameraPositionChangeEnd={handleCameraPositionChangeEnd}
-                                    >
-                                        {priceVisibleMarkers.map((info, index) => {
-                                            const boat = info.data;
-                                            const isSelected = isMapBoatSelected(boat?.id);
-                                            const price = getMapMarkerPriceLabel(boat);
-                                            return (
-                                                <Marker
-                                                    key={`map-price-${boat?.id ?? index}`}
-                                                    point={info.point}
-                                                    anchor={{ x: 0.5, y: 1 }}
-                                                    zIndex={isSelected ? 2 : 1}
-                                                    onPress={() => boat && handleMapBoatPress(boat, info.point)}
-                                                >
-                                                    <MapPriceBubble price={price} selected={isSelected} />
-                                                </Marker>
-                                            );
-                                        })}
-                                    </YaMap>
                                 ) : (
-                                    <YaMap
-                                        key={`map-loc-cluster-e${clusterMapEpoch}`}
+                                    <ClusteredYamap
+                                        key={`map-clustered-e${clusterMapEpoch}`}
                                         ref={mapRef}
                                         style={StyleSheet.absoluteFillObject}
                                         initialRegion={mapInitialRegion}
+                                        clusteredMarkers={clusteredMarkersData}
+                                        renderMarker={renderMapMarker}
+                                        {...MAP_CLUSTER_MAP_PROPS}
                                         onMapPress={handleMapBackgroundPress}
-                                        onCameraPositionChange={handleCameraPositionChange}
                                         onCameraPositionChangeEnd={handleCameraPositionChangeEnd}
-                                    >
-                                        {locationClusterMarkers.map((cluster) => (
-                                            <Marker
-                                                key={`map-loc-${cluster.id}`}
-                                                point={cluster.point}
-                                                anchor={{ x: 0.5, y: 0.5 }}
-                                                onPress={() => handleLocationClusterPress(cluster)}
-                                            >
-                                                <MapClusterBubble count={cluster.count} />
-                                            </Marker>
-                                        ))}
-                                    </YaMap>
+                                    />
                                 )}
                                 {mapLoading && (
                                     <View style={styles.mapLoadingOverlay}>
