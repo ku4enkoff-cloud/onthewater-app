@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
-    View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Image, RefreshControl, Alert, ActivityIndicator, Platform,
+    View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, RefreshControl, Alert, ActivityIndicator, Platform,
 } from 'react-native';
 import AppModal from '../../shared/components/AppModal';
 import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -10,6 +10,7 @@ import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 import { getPhotoUrl } from '../../shared/infrastructure/config';
 import { MessageCircle, User, Archive, Trash2, X, ArchiveRestore } from 'lucide-react-native';
+import AppImage from '../../shared/components/AppImage';
 
 let LinearGradient;
 try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
@@ -159,7 +160,7 @@ export default function OwnerChatScreen({ navigation }) {
             >
                 <View style={styles.avatarContainer}>
                     {avatarSrc ? (
-                        <Image source={{ uri: avatarSrc }} style={styles.avatar} />
+                        <AppImage uri={avatarSrc} style={styles.avatar} />
                     ) : (
                         <View style={styles.avatarPlaceholder}>
                             <User size={24} color={theme.colors.textMuted} />
@@ -337,7 +338,7 @@ export default function OwnerChatScreen({ navigation }) {
                                             >
                                                 <View style={styles.avatarContainer}>
                                                     {avatarSrc ? (
-                                                        <Image source={{ uri: avatarSrc }} style={styles.avatar} />
+                                                        <AppImage uri={avatarSrc} style={styles.avatar} />
                                                     ) : (
                                                         <View style={styles.avatarPlaceholder}>
                                                             <User size={24} color={theme.colors.textMuted} />

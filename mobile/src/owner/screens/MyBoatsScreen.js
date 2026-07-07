@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import {
-    View, Text, StyleSheet, FlatList, Image,
+    View, Text, StyleSheet, FlatList,
     TouchableOpacity, RefreshControl, Platform,
     useWindowDimensions,
 } from 'react-native';
@@ -9,7 +9,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Plus, Pencil, MapPin, Ship, Anchor } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
-import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
+import { API_BASE, getPhotoUrl, getListPhotoUrl } from '../../shared/infrastructure/config';
+import AppImage from '../../shared/components/AppImage';
 
 let LinearGradient = null;
 try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
@@ -17,7 +18,7 @@ try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (
 const GRADIENT = ['#0A4D4D', '#0D5C5C', '#1A7A5A'];
 const TEAL = '#0D5C5C';
 
-const photoUrl = (src) => getPhotoUrl(src) || 'https://placehold.co/400x300/png';
+const photoUrl = (src) => getListPhotoUrl(src) || 'https://placehold.co/400x300/png';
 
 const DURATION_LABELS = {
     30: '30 мин', 60: '1 час', 120: '2 часа', 180: '3 часа', 240: '4 часа', 300: '5 часов',
@@ -68,7 +69,7 @@ export default function MyBoatsScreen({ navigation }) {
             onPress={() => navigation.navigate('BoatDetail', { boatId: item.id })}
             activeOpacity={0.85}
         >
-            <Image source={{ uri: photoUrl(item.photos?.[0]) }} style={s.cardImage} />
+            <AppImage uri={photoUrl(item.photos?.[0])} style={s.cardImage} recyclingKey={String(item.id)} />
             <View style={s.statusBadge}>
                 <Text style={s.statusText}>
                     {item.status === 'moderation' ? 'На модерации' : item.status === 'active' ? 'Активно' : item.status || 'Активно'}

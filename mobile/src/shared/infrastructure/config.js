@@ -76,6 +76,27 @@ export function getPhotoUrl(src) {
     return API_BASE + (s.startsWith('/') ? s : '/' + s);
 }
 
+/** Превью для наших uploads: /uploads/{uuid}.webp → /uploads/{uuid}-thumb.webp */
+export function getThumbUrl(src) {
+    if (!src || typeof src !== 'string') return null;
+    const s = src.trim();
+    if (!s || s.startsWith('file://')) return null;
+    const uploadsMatch = s.match(/(\/uploads\/[^?#]+?)(\.webp)(\?.*)?$/i);
+    if (!uploadsMatch) return null;
+    const basePath = uploadsMatch[1];
+    if (basePath.endsWith('-thumb')) return null;
+    const thumbPath = `${basePath}-thumb${uploadsMatch[2]}`;
+    if (/^https?:\/\//i.test(s)) {
+        return s.replace(uploadsMatch[0], thumbPath);
+    }
+    return getPhotoUrl(thumbPath);
+}
+
+/** URL для карточек в списках: превью, если есть, иначе полное фото. */
+export function getListPhotoUrl(src) {
+    return getThumbUrl(src) || getPhotoUrl(src);
+}
+
 if (__DEV__) {
     console.log('[API] Base URL:', API_BASE);
 }

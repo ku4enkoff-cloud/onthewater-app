@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import AppImage from '../../../shared/components/AppImage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../../theme';
 import { api } from '../../../infrastructure/api';
-import { getPhotoUrl } from '../../../shared/infrastructure/config';
-
-const resolvePhotoUri = (src) => getPhotoUrl(src);
+import { getListPhotoUrl } from '../../../shared/infrastructure/config';
 
 export default function SearchScreen({ navigation }) {
     const insets = useSafeAreaInsets();
@@ -29,9 +28,10 @@ export default function SearchScreen({ navigation }) {
             style={styles.card}
             onPress={() => navigation.navigate('BoatDetail', { boatId: item.id })}
         >
-            <Image
-                source={{ uri: resolvePhotoUri(item.photos?.[0]) || 'https://placehold.co/400x300/png' }}
+            <AppImage
+                uri={getListPhotoUrl(item.photos?.[0]) || 'https://placehold.co/400x300/png'}
                 style={styles.cardImage}
+                recyclingKey={String(item.id)}
             />
             <View style={styles.cardInfo}>
                 <View style={styles.cardHeader}>

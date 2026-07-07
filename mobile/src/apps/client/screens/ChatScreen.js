@@ -6,13 +6,13 @@ import {
     FlatList,
     TouchableOpacity,
     TextInput,
-    Image,
     ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../../theme';
 import { api } from '../../../infrastructure/api';
 import { MessageCircle, User, Search } from 'lucide-react-native';
+import AppImage from '../../../shared/components/AppImage';
 
 export default function ChatScreen({ navigation }) {
     const insets = useSafeAreaInsets();
@@ -62,7 +62,7 @@ export default function ChatScreen({ navigation }) {
             >
                 <View style={styles.avatarContainer}>
                     {item.owner_avatar ? (
-                        <Image source={{ uri: item.owner_avatar }} style={styles.avatar} />
+                        <AppImage uri={item.owner_avatar} style={styles.avatar} />
                     ) : (
                         <View style={styles.avatarPlaceholder}>
                             <User size={24} color={theme.colors.textMuted} />

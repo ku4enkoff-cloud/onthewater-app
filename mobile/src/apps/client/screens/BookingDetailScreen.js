@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ActivityIndicator, Alert, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Linking } from 'react-native';
+import AppImage from '../../../shared/components/AppImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../../../theme';
 import { api } from '../../../infrastructure/api';
-import { getPhotoUrl } from '../../../shared/infrastructure/config';
+import { getListPhotoUrl } from '../../../shared/infrastructure/config';
 import { Calendar, Clock, MapPin, ArrowLeft, CalendarPlus } from 'lucide-react-native';
-
-const resolvePhotoUri = (src) => getPhotoUrl(src);
 
 export default function BookingDetailScreen({ route, navigation }) {
     const { bookingId } = route.params || {};
@@ -168,8 +167,8 @@ export default function BookingDetailScreen({ route, navigation }) {
             </View>
 
             <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-                <Image
-                    source={{ uri: resolvePhotoUri(booking.boat_photo || booking.boat_image) || 'https://placehold.co/400x300/png' }}
+                <AppImage
+                    uri={getListPhotoUrl(booking.boat_photo || booking.boat_image) || 'https://placehold.co/400x300/png'}
                     style={styles.heroImage}
                 />
                 <View style={styles.content}>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Image, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
+import AppImage from '../../../shared/components/AppImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../../../theme';
@@ -283,7 +284,7 @@ export default function AddBoatScreen({ navigation }) {
                         <View style={styles.photosGrid}>
                             {formData.photos.map((photo, index) => (
                                 <View key={index} style={styles.photoContainer}>
-                                    <Image source={{ uri: photo }} style={styles.photo} />
+                                    <AppImage uri={photo} style={styles.photo} />
                                     <TouchableOpacity
                                         style={styles.removeButton}
                                         onPress={() => removeImage(index)}

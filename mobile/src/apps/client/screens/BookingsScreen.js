@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
+import AppImage from '../../../shared/components/AppImage';
 import { theme } from '../../../theme';
 import { api } from '../../../infrastructure/api';
-import { getPhotoUrl } from '../../../shared/infrastructure/config';
+import { getListPhotoUrl } from '../../../shared/infrastructure/config';
 import { Calendar, Clock, MapPin } from 'lucide-react-native';
-
-const resolvePhotoUri = (src) => getPhotoUrl(src) || 'https://placehold.co/400x200';
 
 export default function BookingsScreen({ navigation }) {
     const [bookings, setBookings] = useState([]);
@@ -98,13 +97,13 @@ export default function BookingsScreen({ navigation }) {
     const renderBookingCard = ({ item }) => {
         const start = startAt(item);
         const end = endAt(item);
-        const photoUri = resolvePhotoUri(item.boat_photo || item.boat_image);
+        const photoUri = getListPhotoUrl(item.boat_photo || item.boat_image) || 'https://placehold.co/400x200';
         return (
         <TouchableOpacity
             style={styles.card}
             onPress={() => navigation.navigate('BookingDetail', { bookingId: item.id })}
         >
-            <Image source={{ uri: photoUri }} style={styles.cardImage} />
+            <AppImage uri={photoUri} style={styles.cardImage} recyclingKey={String(item.id)} />
             <View style={styles.cardContent}>
                 <View style={styles.cardHeader}>
                     <Text style={theme.typography.h3} numberOfLines={1}>{item.boat_title}</Text>

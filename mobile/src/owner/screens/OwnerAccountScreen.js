@@ -1,6 +1,6 @@
 import React, { useContext, useState, useCallback } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, ActivityIndicator,
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -11,6 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthContext } from '../../shared/context/AuthContext';
 import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
 import { theme } from '../../shared/theme';
+import AppImage from '../../shared/components/AppImage';
 
 let LinearGradient;
 try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
@@ -120,8 +121,8 @@ export default function OwnerAccountScreen({ navigation }) {
                                 activeOpacity={0.8}
                             >
                                 {user?.avatar ? (
-                                    <Image
-                                        source={{ uri: getPhotoUrl(user.avatar) || user.avatar }}
+                                    <AppImage
+                                        uri={getPhotoUrl(user.avatar) || user.avatar}
                                         style={s.avatarImage}
                                     />
                                 ) : (

@@ -6,7 +6,6 @@ import {
     StyleSheet,
     ScrollView,
     RefreshControl,
-    Image,
     TouchableOpacity,
     ActivityIndicator,
     Modal,
@@ -24,9 +23,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
-import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
+import { API_BASE, getPhotoUrl, getListPhotoUrl } from '../../shared/infrastructure/config';
 import { AuthContext } from '../../shared/context/AuthContext';
 import { FavoritesContext } from '../../shared/context/FavoritesContext';
+import AppImage from '../../shared/components/AppImage';
 import {
     ChevronLeft,
     ChevronRight,
@@ -675,20 +675,29 @@ export default function BoatDetailScreen({ route, navigation }) {
             >
                 {/* ============ HERO PHOTO ============ */}
                 <View style={[styles.gallery, { marginTop: insets.top }]}>
-                    <ScrollView
+                    <FlatList
                         horizontal
+                        data={photos}
+                        keyExtractor={(uri, i) => `${uri}-${i}`}
                         pagingEnabled={!isTablet}
                         snapToInterval={isTablet ? gallerySnap : undefined}
                         decelerationRate={isTablet ? 'fast' : 'normal'}
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={isTablet ? styles.galleryScrollContentTablet : undefined}
-                        onMomentumScrollEnd={(e) =>
-                            setPhotoIndex(Math.round(e.nativeEvent.contentOffset.x / (isTablet ? gallerySnap : width)))
-                        }
-                    >
-                        {photos.map((uri, i) => (
+                        initialNumToRender={1}
+                        maxToRenderPerBatch={2}
+                        windowSize={3}
+                        removeClippedSubviews
+                        getItemLayout={(_, index) => {
+                            const slideWidth = isTablet ? gallerySnap : width;
+                            return { length: slideWidth, offset: slideWidth * index, index };
+                        }}
+                        onMomentumScrollEnd={(e) => {
+                            const slideWidth = isTablet ? gallerySnap : width;
+                            setPhotoIndex(Math.round(e.nativeEvent.contentOffset.x / slideWidth));
+                        }}
+                        renderItem={({ item: uri, index: i }) => (
                             <TouchableOpacity
-                                key={i}
                                 activeOpacity={1}
                                 onPress={() => {
                                     setPhotoIndex(i);
@@ -704,14 +713,15 @@ export default function BoatDetailScreen({ route, navigation }) {
                                     },
                                 ]}
                             >
-                                <Image
-                                    source={{ uri }}
+                                <AppImage
+                                    uri={uri}
                                     style={[styles.heroImage, isTablet && { width: heroCardWidth, height: 440 }]}
                                     resizeMode="cover"
+                                    recyclingKey={uri}
                                 />
                             </TouchableOpacity>
-                        ))}
-                    </ScrollView>
+                        )}
+                    />
                     <LinearGradient
                         colors={['rgba(0,0,0,0.35)', 'transparent', 'transparent']}
                         style={StyleSheet.absoluteFill}
@@ -802,10 +812,11 @@ export default function BoatDetailScreen({ route, navigation }) {
                             }
                             renderItem={({ item: uri }) => (
                                 <View style={[fsGalleryStyles.slide, { width: viewportWidth, height: gallerySlideHeight }]}>
-                                    <Image
-                                        source={{ uri }}
+                                    <AppImage
+                                        uri={uri}
                                         style={[fsGalleryStyles.fullImage, { width: viewportWidth, height: gallerySlideHeight }]}
                                         resizeMode="contain"
+                                        recyclingKey={uri}
                                     />
                                 </View>
                             )}
@@ -1181,10 +1192,8 @@ export default function BoatDetailScreen({ route, navigation }) {
                                 onPress={() => setMapModalVisible(true)}
                                 activeOpacity={1}
                             >
-                                <Image
-                                    source={{
-                                        uri: `https://static-maps.yandex.ru/1.x/?ll=${mapLon},${mapLat}&size=${Math.min(650, Math.max(280, Math.round(viewportWidth - 40)))},180&z=13&l=map&pt=${mapLon},${mapLat}`,
-                                    }}
+                                <AppImage
+                                    uri={`https://static-maps.yandex.ru/1.x/?ll=${mapLon},${mapLat}&size=${Math.min(650, Math.max(280, Math.round(viewportWidth - 40)))},180&z=13&l=map&pt=${mapLon},${mapLat}`}
                                     style={styles.staticMap}
                                     resizeMode="cover"
                                 />
@@ -1255,10 +1264,8 @@ export default function BoatDetailScreen({ route, navigation }) {
                                             <ActivityIndicator size="large" color={NAVY} />
                                         </View>
                                     ) : (
-                                        <Image
-                                            source={{
-                                                uri: `https://static-maps.yandex.ru/1.x/?ll=${mapLon},${mapLat}&size=${Math.min(650, Math.max(320, Math.round(viewportWidth - 80)))},${Math.min(450, Math.max(220, Math.round((viewportHeight - insets.top - insets.bottom) * 0.5)))}&z=14&l=map&pt=${mapLon},${mapLat}`,
-                                            }}
+                                        <AppImage
+                                            uri={`https://static-maps.yandex.ru/1.x/?ll=${mapLon},${mapLat}&size=${Math.min(650, Math.max(320, Math.round(viewportWidth - 80)))},${Math.min(450, Math.max(220, Math.round((viewportHeight - insets.top - insets.bottom) * 0.5)))}&z=14&l=map&pt=${mapLon},${mapLat}`}
                                             style={styles.mapModalImage}
                                             resizeMode="cover"
                                         />
@@ -1299,8 +1306,8 @@ export default function BoatDetailScreen({ route, navigation }) {
                                 </View>
                                 <View style={styles.crewAvatar}>
                                     {boat.owner_avatar ? (
-                                        <Image
-                                            source={{ uri: getPhotoUrl(boat.owner_avatar) || boat.owner_avatar }}
+                                        <AppImage
+                                            uri={getPhotoUrl(boat.owner_avatar) || boat.owner_avatar}
                                             style={styles.crewAvatarImage}
                                         />
                                     ) : (
@@ -1369,9 +1376,10 @@ export default function BoatDetailScreen({ route, navigation }) {
                                         activeOpacity={0.9}
                                     >
                                         <View style={styles.similarImageWrap}>
-                                            <Image
-                                                source={{ uri: resolvePhotoUri(sb.photos?.[0]) }}
+                                            <AppImage
+                                                uri={getListPhotoUrl(sb.photos?.[0])}
                                                 style={styles.similarImage}
+                                                recyclingKey={String(sb.id)}
                                             />
                                             <TouchableOpacity
                                                 style={styles.similarHeart}

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
-import { getPhotoUrl } from '../../config'
-import { firstPhotoUrl } from '../../boatUtils'
+import { getPhotoUrl, getThumbUrl } from '../../config'
+import { firstPhotoThumbUrl } from '../../boatUtils'
 import { boatDetailPath } from '../../boatUrl'
 import { getEffectiveMinDurationMinutes } from '../../boatUtils'
 import {
@@ -27,7 +27,7 @@ function photoCount(boat) {
 }
 
 export default function BoatResultCard({ boat, filters, selected, onHover, onLeave }) {
-  const img = firstPhotoUrl(boat, getPhotoUrl) || PLACEHOLDER
+  const img = firstPhotoThumbUrl(boat, getPhotoUrl, getThumbUrl) || PLACEHOLDER
   const nPhotos = photoCount(boat)
   const instantBook = boat.instant_booking !== false
   const hasTopOwner = Number(boat.rating) >= 4.8 && !instantBook

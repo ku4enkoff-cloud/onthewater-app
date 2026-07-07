@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
-    View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Image, RefreshControl,
+    View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../../theme';
 import { api } from '../../../infrastructure/api';
 import { getPhotoUrl } from '../../../infrastructure/config';
 import { MessageCircle, User } from 'lucide-react-native';
+import AppImage from '../../../shared/components/AppImage';
 
 let LinearGradient;
 try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
@@ -68,7 +69,7 @@ export default function OwnerChatScreen({ navigation }) {
             >
                 <View style={styles.avatarContainer}>
                     {avatarSrc ? (
-                        <Image source={{ uri: avatarSrc }} style={styles.avatar} />
+                        <AppImage uri={avatarSrc} style={styles.avatar} />
                     ) : (
                         <View style={styles.avatarPlaceholder}>
                             <User size={24} color={theme.colors.textMuted} />

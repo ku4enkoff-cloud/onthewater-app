@@ -10,7 +10,6 @@ import {
     Keyboard,
     Platform,
     ActivityIndicator,
-    Image,
     InteractionManager,
     Alert,
     ActionSheetIOS,
@@ -25,6 +24,7 @@ import { ChevronLeft, Send, Lock, User, MoreVertical } from 'lucide-react-native
 import { LinearGradient } from 'expo-linear-gradient';
 import ReportContentModal from '../../shared/components/ReportContentModal';
 import { filterMessageText } from '../../shared/utils/contentFilter';
+import AppImage from '../../shared/components/AppImage';
 
 /** Клиент — синие пузыри; владелец — палитра как на OwnerChatScreen / остальных экранах владельца. */
 const BLUE = '#1E5DB8';
@@ -284,7 +284,7 @@ export default function ChatDetailScreen({ route, navigation }) {
                             <View style={styles.avatarSmallWrap}>
                                 {isOwnerSender ? (
                                     ownerAvatar ? (
-                                        <Image source={{ uri: ownerAvatar }} style={styles.avatarSmall} />
+                                        <AppImage uri={ownerAvatar} style={styles.avatarSmall} />
                                     ) : (
                                         <View style={styles.avatarSmallPlaceholder}>
                                             <User size={12} color={theme.colors.gray500} />
@@ -292,7 +292,7 @@ export default function ChatDetailScreen({ route, navigation }) {
                                     )
                                 ) : (
                                     clientAvatar ? (
-                                        <Image source={{ uri: clientAvatar }} style={styles.avatarSmall} />
+                                        <AppImage uri={clientAvatar} style={styles.avatarSmall} />
                                     ) : (
                                         <View style={styles.avatarSmallPlaceholder}>
                                             <User size={12} color={theme.colors.gray500} />

@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, RefreshControl, Linking, Alert, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Linking, Alert, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
-import { getPhotoUrl } from '../../shared/infrastructure/config';
+import { getListPhotoUrl } from '../../shared/infrastructure/config';
 import { AuthContext } from '../../shared/context/AuthContext';
 import UnauthorizedCard from '../../shared/components/UnauthorizedCard';
+import AppImage from '../../shared/components/AppImage';
 import { Calendar, Clock, MapPin } from 'lucide-react-native';
-
-const resolvePhotoUri = (src) => getPhotoUrl(src) || 'https://placehold.co/400x200';
 
 export default function BookingsScreen({ navigation }) {
     const insets = useSafeAreaInsets();
@@ -97,14 +96,14 @@ export default function BookingsScreen({ navigation }) {
         const start = startAt(item);
         const end = endAt(item);
         const photoSrc = item.boat_photo || item.boat_image;
-        const photoUri = resolvePhotoUri(typeof photoSrc === 'string' ? photoSrc : (photoSrc?.location || photoSrc?.url)) || 'https://placehold.co/400x200?text=Фото';
+        const photoUri = getListPhotoUrl(typeof photoSrc === 'string' ? photoSrc : (photoSrc?.location || photoSrc?.url)) || 'https://placehold.co/400x200?text=Фото';
         return (
         <TouchableOpacity
             style={[styles.card, columns > 1 && { width: cardWidth }]}
             onPress={() => navigation.navigate('BookingDetail', { bookingId: item.id })}
             activeOpacity={0.8}
         >
-            <Image source={{ uri: photoUri }} style={styles.cardImage} />
+            <AppImage uri={photoUri} style={styles.cardImage} recyclingKey={String(item.id)} />
             <View style={styles.cardContent}>
                 <View style={styles.cardHeader}>
                     <Text style={styles.cardTitle} numberOfLines={1}>{item.boat_title}</Text>

@@ -4,7 +4,6 @@ import {
     Text,
     StyleSheet,
     FlatList,
-    Image,
     TouchableOpacity,
     ScrollView,
     Modal,
@@ -17,10 +16,10 @@ import Svg, { Rect, Text as SvgText } from 'react-native-svg';
 import { ChevronLeft, ChevronDown, Heart, Zap, MapPin, Star, SlidersHorizontal, X } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
-import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
+import { API_BASE, getPhotoUrl, getListPhotoUrl } from '../../shared/infrastructure/config';
 import { FavoritesContext } from '../../shared/context/FavoritesContext';
 
-const resolvePhotoUri = (src) => getPhotoUrl(src) || 'https://placehold.co/400x300';
+const resolveListPhotoUri = (src) => getListPhotoUrl(src) || 'https://placehold.co/400x300';
 import FiltersModal from '../components/FiltersModal';
 import PriceFilterModal from '../components/PriceFilterModal';
 import PassengersFilterModal from '../components/PassengersFilterModal';
@@ -29,6 +28,7 @@ import BoatTypeFilterModal from '../components/BoatTypeFilterModal';
 import LocationDateModal from '../components/LocationDateModal';
 import { isYamapNativeAvailable } from '../../shared/yamapNative';
 import { ensureYamapInitialized } from '../../shared/yamapInit';
+import AppImage from '../../shared/components/AppImage';
 
 const NAVY = '#1B365D';
 const MAP_CLUSTER_MARKER_ICON = require('../../../assets/map-cluster-marker.png');
@@ -1323,9 +1323,10 @@ export default function SearchResultsScreen({ route, navigation }) {
                 activeOpacity={0.95}
             >
                 <View style={styles.cardImageWrap}>
-                    <Image
-                        source={{ uri: resolvePhotoUri(item.photos?.[0]) }}
+                    <AppImage
+                        uri={resolveListPhotoUri(item.photos?.[0])}
                         style={styles.cardImage}
+                        recyclingKey={String(item.id)}
                     />
                     {instantBook && (
                         <View style={styles.instantBadge}>
@@ -1827,9 +1828,10 @@ export default function SearchResultsScreen({ route, navigation }) {
                                                     }}
                                                     activeOpacity={0.92}
                                                 >
-                                                    <Image
-                                                        source={{ uri: resolvePhotoUri(boat.photos?.[0]) }}
+                                                    <AppImage
+                                                        uri={resolveListPhotoUri(boat.photos?.[0])}
                                                         style={styles.mapBoatSheetImage}
+                                                        recyclingKey={String(boat.id)}
                                                     />
                                                     <View style={styles.mapBoatSheetInfo}>
                                                         <Text style={styles.mapBoatSheetTitle} numberOfLines={1}>

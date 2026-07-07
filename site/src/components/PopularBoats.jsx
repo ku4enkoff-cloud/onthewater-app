@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchPopularBoats } from '../api/boats'
-import { API_BASE, getPhotoUrl } from '../config'
+import { API_BASE, getPhotoUrl, getThumbUrl } from '../config'
 import { boatDetailPath } from '../boatUrl'
 import {
-  firstPhotoUrl,
+  firstPhotoThumbUrl,
   formatCardLocation,
   formatPriceRu,
   getMinDurationPrice,
@@ -75,7 +75,7 @@ export default function PopularBoats() {
             {boats.map((boat) => {
               const id = boat.id
               const title = boat.title || boat.type_name || 'Катер'
-              const img = firstPhotoUrl(boat, getPhotoUrl) || PLACEHOLDER
+              const img = firstPhotoThumbUrl(boat, getPhotoUrl, getThumbUrl) || PLACEHOLDER
               const price = getMinDurationPrice(boat)
               const unit = minDurationLabelForBoat(boat)
               const loc = formatCardLocation(boat)

@@ -32,3 +32,23 @@ export function getPhotoUrl(src) {
   if (/^https?:\/\//i.test(s)) return s
   return `${API_BASE}${s.startsWith('/') ? s : `/${s}`}`
 }
+
+/** Превью: /uploads/{uuid}.webp → /uploads/{uuid}-thumb.webp */
+export function getThumbUrl(src) {
+  if (!src || typeof src !== 'string') return null
+  const s = src.trim()
+  if (!s) return null
+  const m = s.match(/(\/uploads\/[^?#]+?)(\.webp)(\?.*)?$/i)
+  if (!m) return null
+  if (m[1].endsWith('-thumb')) return null
+  const thumbPath = `${m[1]}-thumb${m[2]}`
+  if (/^https?:\/\//i.test(s)) {
+    return s.replace(m[0], thumbPath)
+  }
+  return getPhotoUrl(thumbPath)
+}
+
+/** Для карточек в списках */
+export function getListPhotoUrl(src) {
+  return getThumbUrl(src) || getPhotoUrl(src)
+}

@@ -1,5 +1,6 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import AppImage from '../../../shared/components/AppImage';
 import { AuthContext } from '../../../context/AuthContext';
 import { theme } from '../../../theme';
 import { User, Settings, Heart, HelpCircle, LogOut } from 'lucide-react-native';
@@ -60,7 +61,7 @@ export default function ProfileScreen() {
             <View style={styles.header}>
                 <View style={styles.avatarContainer}>
                     {user?.avatar ? (
-                        <Image source={{ uri: user.avatar }} style={styles.avatar} />
+                        <AppImage uri={user.avatar} style={styles.avatar} />
                     ) : (
                         <View style={styles.avatarPlaceholder}>
                             <User size={60} color={theme.colors.textMuted} />

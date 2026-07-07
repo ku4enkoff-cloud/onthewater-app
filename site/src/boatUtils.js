@@ -126,6 +126,16 @@ export function firstPhotoUrl(boat, getPhotoUrlFn) {
   return null
 }
 
+/** Первое фото — превью для списков (fallback на полное). */
+export function firstPhotoThumbUrl(boat, getPhotoUrlFn, getThumbUrlFn) {
+  const photos = parsePhotos(boat)
+  const first = photos[0]
+  if (first == null) return null
+  const raw = typeof first === 'string' ? first : first?.url
+  if (!raw) return null
+  return (getThumbUrlFn && getThumbUrlFn(raw)) || getPhotoUrlFn(raw)
+}
+
 /** Все URL фото катера для галереи. */
 export function allPhotoUrls(boat, getPhotoUrlFn) {
   const urls = []

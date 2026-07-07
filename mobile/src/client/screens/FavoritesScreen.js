@@ -1,14 +1,13 @@
 import React, { useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Heart, Zap, MapPin, Star, Clock, Users, Trash2 } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
-import { getPhotoUrl } from '../../shared/infrastructure/config';
+import { getListPhotoUrl } from '../../shared/infrastructure/config';
 import { FavoritesContext } from '../../shared/context/FavoritesContext';
 import { AuthContext } from '../../shared/context/AuthContext';
 import UnauthorizedCard from '../../shared/components/UnauthorizedCard';
-
-const resolvePhotoUri = (src) => getPhotoUrl(src);
+import AppImage from '../../shared/components/AppImage';
 
 const formatCardLocation = (item) => {
     const city = String(item?.location_city || item?.location_name || '').trim();
@@ -92,11 +91,10 @@ export default function FavoritesScreen({ navigation }) {
                 activeOpacity={0.9}
             >
                 <View style={styles.cardImageWrap}>
-                    <Image
-                        source={{
-                            uri: resolvePhotoUri(item.photos?.[0]) || 'https://placehold.co/400x300',
-                        }}
+                    <AppImage
+                        uri={getListPhotoUrl(item.photos?.[0]) || 'https://placehold.co/400x300'}
                         style={styles.cardImage}
+                        recyclingKey={String(item.id)}
                     />
                     {instantBook && (
                         <View style={styles.instantBadge}>

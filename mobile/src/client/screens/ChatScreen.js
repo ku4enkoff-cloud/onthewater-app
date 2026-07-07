@@ -6,7 +6,6 @@ import {
     StyleSheet,
     FlatList,
     TouchableOpacity,
-    Image,
     ActivityIndicator,
     RefreshControl,
 } from 'react-native';
@@ -18,6 +17,7 @@ import { api } from '../../shared/infrastructure/api';
 import { getPhotoUrl } from '../../shared/infrastructure/config';
 import { AuthContext } from '../../shared/context/AuthContext';
 import UnauthorizedCard from '../../shared/components/UnauthorizedCard';
+import AppImage from '../../shared/components/AppImage';
 import { MessageCircle, User, Archive, ChevronRight, X, ArchiveRestore, Trash2 } from 'lucide-react-native';
 const BLUE_PRIMARY = '#1E5DB8';
 
@@ -158,7 +158,7 @@ export default function ChatScreen({ navigation }) {
             >
                 <View style={styles.avatarContainer}>
                     {ownerAvatarUri ? (
-                        <Image source={{ uri: ownerAvatarUri }} style={styles.avatar} />
+                        <AppImage uri={ownerAvatarUri} style={styles.avatar} />
                     ) : (
                         <View style={styles.avatarPlaceholder}>
                             <User size={24} color={theme.colors.gray400} />

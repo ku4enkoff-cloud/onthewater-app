@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    Image, Alert, Platform,
+    Alert, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { ChevronLeft, Camera, Film, X, ImageIcon } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
+import AppImage from '../../shared/components/AppImage';
 
 let LinearGradient = null;
 try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
@@ -157,7 +158,7 @@ export default function BoatMediaScreen({ navigation, route }) {
                     <View style={[s.mediaGrid, photosError && s.mediaGridError]}>
                         {photos.map((uri, index) => (
                             <View key={`photo-${index}`} style={s.mediaCard}>
-                                <Image source={{ uri }} style={s.mediaImage} />
+                                <AppImage uri={uri} style={s.mediaImage} />
                                 {index === 0 && (
                                     <View style={s.mainBadge}>
                                         <Text style={s.mainBadgeText}>Главное</Text>

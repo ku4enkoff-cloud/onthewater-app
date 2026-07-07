@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
+import AppImage from '../../../shared/components/AppImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, Calendar, DollarSign, TrendingUp, MoreVertical } from 'lucide-react-native';
 import { theme } from '../../../theme';
 import { api } from '../../../infrastructure/api';
-import { API_BASE } from '../../../infrastructure/config';
+import { getListPhotoUrl } from '../../../shared/infrastructure/config';
 
 export default function MyBoatsScreen({ navigation }) {
     const [boats, setBoats] = useState([]);
@@ -62,18 +63,14 @@ export default function MyBoatsScreen({ navigation }) {
         return statuses[status] || status;
     };
 
-    const photoUri = (p) => {
-        if (!p) return 'https://placehold.co/400x300/png';
-        if (p.startsWith('http')) return p;
-        return API_BASE + p;
-    };
+    const photoUri = (p) => getListPhotoUrl(p) || 'https://placehold.co/400x300/png';
 
     const renderBoat = ({ item }) => (
         <TouchableOpacity 
             style={styles.card}
             onPress={() => navigation.navigate('EditBoat', { boatId: item.id })}
         >
-            <Image source={{ uri: photoUri(item.photos?.[0]) }} style={styles.cardImage} />
+            <AppImage uri={photoUri(item.photos?.[0])} style={styles.cardImage} recyclingKey={String(item.id)} />
             <View style={styles.cardContent}>
                 <View style={styles.cardHeader}>
                     <View style={styles.titleContainer}>

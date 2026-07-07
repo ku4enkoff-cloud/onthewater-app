@@ -4,7 +4,6 @@ import {
     Text,
     StyleSheet,
     ScrollView,
-    Image,
     TouchableOpacity,
     ActivityIndicator,
     Modal,
@@ -20,6 +19,7 @@ import { theme } from '../../../theme';
 import { api } from '../../../infrastructure/api';
 import { AuthContext } from '../../../context/AuthContext';
 import { getPhotoUrl } from '../../../shared/infrastructure/config';
+import AppImage from '../../../shared/components/AppImage';
 import { WebView } from 'react-native-webview';
 import {
     ChevronLeft,
@@ -204,7 +204,7 @@ export default function BoatDetailScreen({ route, navigation }) {
                         onMomentumScrollEnd={(e) => setPhotoIndex(Math.round(e.nativeEvent.contentOffset.x / width))}
                     >
                         {photoUrls.map((uri, i) => (
-                            <Image key={i} source={{ uri }} style={styles.heroImage} resizeMode="cover" />
+                            <AppImage key={i} uri={uri} style={styles.heroImage} resizeMode="cover" recyclingKey={uri} />
                         ))}
                     </ScrollView>
                     {/* Навигация поверх изображения: назад, поделиться, избранное */}

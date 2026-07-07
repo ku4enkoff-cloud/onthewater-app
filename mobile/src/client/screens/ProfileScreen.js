@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Pressable, Image, ScrollView, Alert, FlatList, TextInput, ActivityIndicator, Switch, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, ScrollView, Alert, FlatList, TextInput, ActivityIndicator, Switch, useWindowDimensions } from 'react-native';
 import AppModal from '../../shared/components/AppModal';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +14,7 @@ import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
 import { theme } from '../../shared/theme';
 import { User, Heart, HelpCircle, LogOut, ChevronRight, Calendar, Star, Bell, X, Pencil, Trash2, Lock, Clock3, CheckCircle2, XCircle } from 'lucide-react-native';
 import OwnerAppPromoBanner from '../components/OwnerAppPromoBanner';
+import AppImage from '../../shared/components/AppImage';
 
 function getReviewStatusMeta(status) {
     const s = String(status || '').toLowerCase();
@@ -315,7 +316,7 @@ export default function ProfileScreen({ navigation }) {
                 <View style={styles.profileRow}>
                     <Pressable onPress={handlePickAvatar} disabled={uploadingAvatar} style={({ pressed }) => [styles.avatarTouch, pressed && styles.avatarTouchPressed]} android_ripple={null}>
                         {user?.avatar ? (
-                            <Image source={{ uri: getPhotoUrl(user.avatar) || user.avatar }} style={styles.avatar} />
+                            <AppImage uri={getPhotoUrl(user.avatar) || user.avatar} style={styles.avatar} />
                         ) : (
                             <View style={styles.avatarPlaceholder}>
                                 {uploadingAvatar ? <ActivityIndicator size="small" color={theme.colors.gray500} /> : <User size={40} color={theme.colors.gray500} />}

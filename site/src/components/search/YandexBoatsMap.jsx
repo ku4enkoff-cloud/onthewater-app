@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { loadYandexMaps } from '../../lib/yandexMaps'
-import { getPhotoUrl } from '../../config'
-import { firstPhotoUrl, getEffectiveMinDurationMinutes } from '../../boatUtils'
+import { getPhotoUrl, getThumbUrl } from '../../config'
+import { firstPhotoThumbUrl, getEffectiveMinDurationMinutes } from '../../boatUtils'
 import {
   formatDurationChipLabel,
   formatDurationListLabel,
@@ -41,7 +41,7 @@ function buildPickCandidate(boat, durationFilter) {
     title: boat.title || 'Катер',
     priceLine: `от ${n.toLocaleString('ru-RU')} ₽ / ${formatDurationChipLabel(activeDuration)}`,
     minTimeLine: `минимум ${formatDurationListLabel(minDur)}`,
-    photoUrl: firstPhotoUrl(boat, getPhotoUrl) || PICK_THUMB_PLACEHOLDER,
+    photoUrl: firstPhotoThumbUrl(boat, getPhotoUrl, getThumbUrl) || PICK_THUMB_PLACEHOLDER,
   }
 }
 

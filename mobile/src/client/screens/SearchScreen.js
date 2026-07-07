@@ -5,7 +5,6 @@ import {
     Text,
     StyleSheet,
     FlatList,
-    Image,
     TouchableOpacity,
     Dimensions,
     ScrollView,
@@ -18,9 +17,10 @@ import { Search, Heart, MapPin, Clock, Users, Zap } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
-import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
+import { API_BASE, getPhotoUrl, getListPhotoUrl } from '../../shared/infrastructure/config';
 import { FavoritesContext } from '../../shared/context/FavoritesContext';
 import LocationPickerModal from '../components/LocationPickerModal';
+import AppImage from '../../shared/components/AppImage';
 
 const resolvePhotoUri = (src) => getPhotoUrl(src);
 
@@ -54,8 +54,6 @@ const CAT_CARD_W = IS_TABLET
 const BOAT_CARD_W = IS_TABLET
     ? Math.min(420, Math.max(320, width * 0.36))
     : width * 0.78;
-
-const PLACEHOLDER_IMG = 'https://placehold.co/400x300/e2e8f0/64748b?text=';
 
 const formatCardLocation = (item) => {
     const city = String(item?.location_city || item?.locationCity || '').trim();
@@ -115,20 +113,6 @@ const getMinDurationPrice = (boat) => {
     return tierPrice > 0 ? tierPrice : base;
 };
 
-function StableRemoteImage({ uri, style, resizeMode = 'cover' }) {
-    const [failed, setFailed] = useState(false);
-    const displayUri = !uri || failed ? `${PLACEHOLDER_IMG}${encodeURIComponent('Фото')}` : uri;
-    return (
-        <Image
-            source={{ uri: displayUri }}
-            style={style}
-            resizeMode={resizeMode}
-            fadeDuration={0}
-            onError={() => setFailed(true)}
-        />
-    );
-}
-
 const SearchBoatCard = memo(function SearchBoatCard({
     item,
     cardWidth,
@@ -155,9 +139,10 @@ const SearchBoatCard = memo(function SearchBoatCard({
             activeOpacity={0.95}
         >
             <View style={styles.cardImageWrap}>
-                <StableRemoteImage
-                    uri={resolvePhotoUri(item.photos?.[0]) || 'https://placehold.co/400x300'}
+                <AppImage
+                    uri={getListPhotoUrl(item.photos?.[0]) || 'https://placehold.co/400x300'}
                     style={styles.cardImage}
+                    recyclingKey={String(item.id)}
                 />
                 <View style={styles.cardBadges}>
                     {instantBook && (
@@ -211,7 +196,7 @@ const SearchBoatCard = memo(function SearchBoatCard({
 });
 
 function DestinationImage({ uri, style }) {
-    return <StableRemoteImage uri={uri} style={style} resizeMode="cover" />;
+    return <AppImage uri={uri} style={style} resizeMode="cover" />;
 }
 
 export default function SearchScreen({ navigation }) {
@@ -321,11 +306,10 @@ export default function SearchScreen({ navigation }) {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
             >
                 <View style={[styles.heroWrap, { paddingTop: insets.top }]}>
-                    <Image
+                    <AppImage
                         source={HERO_IMAGE}
                         style={styles.heroImage}
                         resizeMode="cover"
-                        fadeDuration={0}
                     />
                     <LinearGradient
                         colors={['rgba(251,248,243,0.85)', 'rgba(251,248,243,0.5)', 'transparent']}
@@ -413,7 +397,7 @@ export default function SearchScreen({ navigation }) {
                                 });
                             }}
                         >
-                            <StableRemoteImage uri={c.image} style={styles.catImage} />
+                            <AppImage uri={c.image} style={styles.catImage} />
                             <Text style={styles.catName}>{c.name}</Text>
                         </TouchableOpacity>
                     ))}

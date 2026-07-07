@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Image,
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -11,6 +11,7 @@ import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 import { getPhotoUrl } from '../../shared/infrastructure/config';
 import { AuthContext } from '../../shared/context/AuthContext';
+import AppImage from '../../shared/components/AppImage';
 
 let LinearGradient;
 try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
@@ -101,8 +102,8 @@ export default function OwnerDashboardScreen({ navigation }) {
                         {/* Avatar + name */}
                         <View style={s.profileRow}>
                             {user?.avatar ? (
-                                <Image
-                                    source={{ uri: getPhotoUrl(user.avatar) || user.avatar }}
+                                <AppImage
+                                    uri={getPhotoUrl(user.avatar) || user.avatar}
                                     style={s.avatarImage}
                                 />
                             ) : (

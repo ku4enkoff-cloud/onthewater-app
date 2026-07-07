@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity,
-    ScrollView, Alert, Image, ActivityIndicator, Platform, KeyboardAvoidingView, Modal,
+    ScrollView, Alert, ActivityIndicator, Platform, KeyboardAvoidingView, Modal,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 import { API_BASE, getPhotoUrl } from '../../shared/infrastructure/config';
+import AppImage from '../../shared/components/AppImage';
 
 let LinearGradient = null;
 try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch (_) {}
@@ -1118,7 +1119,7 @@ export default function EditBoatScreen({ route, navigation }) {
                     <View style={s.mediaGrid}>
                         {photos.map((uri, index) => (
                             <View key={`p-${index}`} style={s.mediaCard}>
-                                <Image source={{ uri: photoUrl(uri) }} style={s.mediaImage} />
+                                <AppImage uri={photoUrl(uri)} style={s.mediaImage} />
                                 {index === 0 && (
                                     <View style={s.mainBadge}><Text style={s.mainBadgeText}>Главное</Text></View>
                                 )}

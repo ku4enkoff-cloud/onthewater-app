@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
-import { View, Text, Image, StyleSheet, Pressable, Linking } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Linking } from 'react-native';
+import AppImage from '../../shared/components/AppImage';
 import { getOwnerAppExternalUrl } from '../../shared/infrastructure/config';
 import { theme } from '../../shared/theme';
 
@@ -26,7 +27,7 @@ export default function OwnerAppPromoBanner({ tabletCardStyle }) {
             accessibilityRole="link"
             accessibilityLabel="Приложение для владельцев катеров, узнать больше"
         >
-            <Image source={ownerAppIcon} style={styles.icon} resizeMode="cover" />
+            <AppImage source={ownerAppIcon} style={styles.icon} resizeMode="cover" />
             <View style={styles.textCol}>
                 <Text style={styles.title}>Владеете катером?</Text>
                 <Text style={styles.desc}>
