@@ -1,4 +1,4 @@
-package com.anonymous.onthewater
+package com.anonymous.onthewater.owner
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build
