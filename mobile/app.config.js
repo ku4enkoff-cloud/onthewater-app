@@ -69,10 +69,13 @@ export default {
       },
       package: isOwner ? 'com.anonymous.onthewater.owner' : 'com.anonymous.onthewater',
       versionCode: getAndroidVersionCode(),
-      // Отключение edge-to-edge (официальное поле Expo SDK 54 — `edgeToEdgeEnabled`; `enableEdgeToEdge` не подхватывается prebuild).
-      // Снижает предупреждения Play об устаревших Window API на Android 15. На Android 16+ edge-to-edge станет обязательным.
-      edgeToEdgeEnabled: false,
+      // Android 16 (API 36): edge-to-edge обязателен на устройствах с Android 16; включаем явно и для 15-.
+      edgeToEdgeEnabled: true,
       ...(hasGoogleServices && { googleServicesFile }),
+    },
+    // Контраст системной навигации при edge-to-edge (SDK 54).
+    androidNavigationBar: {
+      enforceContrast: true,
     },
     config: {
       googleMaps: { apiKey: 'YOUR_YANDEX_MAPS_OR_GOOGLE_MAPS_API_KEY_HERE' },
@@ -111,11 +114,11 @@ export default {
           android: {
             minSdkVersion: 26,
             usesCleartextTraffic: true,
-            // Target Android 15 (API 35) — требуется Google Play с 31.08.2025 и для поддержки страниц памяти 16 КБ.
+            // Target Android 16 (API 36) — требование Google Play с 31.08.2026.
             // NDK r28+ задаётся в android/gradle.properties (android.ndkVersion) и android/build.gradle — не только compileSdk.
-            compileSdkVersion: 35,
-            targetSdkVersion: 35,
-            buildToolsVersion: '35.0.0',
+            compileSdkVersion: 36,
+            targetSdkVersion: 36,
+            buildToolsVersion: '36.0.0',
             // R8: минификация + obfuscation → нужен mapping.txt для Google Play (деобфускация стеков).
             enableMinifyInReleaseBuilds: true,
             // Правила вне android/ — иначе prebuild --clean затрёт правки в proguard-rules.pro
