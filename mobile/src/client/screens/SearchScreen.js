@@ -45,12 +45,8 @@ const FALLBACK_CATEGORIES = [
 ];
 
 const DEST_CARD_W = 170;
+const CAT_CARD_W = 170;
 const IS_TABLET = width >= 768;
-const CAT_COLUMNS = IS_TABLET ? 3 : 2;
-const CAT_GAP = 16;
-const CAT_CARD_W = IS_TABLET
-    ? (width - 48 - CAT_GAP * (CAT_COLUMNS - 1)) / CAT_COLUMNS
-    : (width - 48 - 16) / 2;
 const BOAT_CARD_W = IS_TABLET
     ? Math.min(420, Math.max(320, width * 0.36))
     : width * 0.78;
@@ -204,11 +200,6 @@ export default function SearchScreen({ navigation }) {
     const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
     const isLargeViewport = viewportWidth >= 600;
     const isTabletPortrait = isLargeViewport && viewportHeight >= viewportWidth;
-    const categoryGap = 16;
-    const categoryColumns = isLargeViewport ? (isTabletPortrait ? 2 : 3) : 2;
-    const categoryCardWidth = Math.floor(
-        (viewportWidth - theme.spacing.lg * 2 - categoryGap * (categoryColumns - 1)) / categoryColumns
-    );
     const boatCardWidth = isLargeViewport
         ? (isTabletPortrait
             ? Math.min(320, Math.max(240, viewportWidth * 0.42))
@@ -380,11 +371,15 @@ export default function SearchScreen({ navigation }) {
                 </ScrollView>
 
                 <Text style={styles.sectionTitle}>Категории катеров</Text>
-                <View style={[styles.catGrid, { gap: categoryGap }]}>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.catList}
+                >
                     {boatCategories.map((c) => (
                         <TouchableOpacity
                             key={`cat-${c.id}`}
-                            style={[styles.catCard, { width: categoryCardWidth }]}
+                            style={styles.catCard}
                             activeOpacity={0.9}
                             onPress={() => {
                                 navigation.navigate('SearchResults', {
@@ -398,10 +393,10 @@ export default function SearchScreen({ navigation }) {
                             }}
                         >
                             <AppImage uri={c.image} style={styles.catImage} />
-                            <Text style={styles.catName}>{c.name}</Text>
+                            <Text style={styles.catName} numberOfLines={2}>{c.name}</Text>
                         </TouchableOpacity>
                     ))}
-                </View>
+                </ScrollView>
             </ScrollView>
             <LocationPickerModal
                 visible={locationModalVisible}
@@ -522,30 +517,27 @@ const styles = StyleSheet.create({
         color: NAVY,
         marginTop: 8,
     },
-    /* ---- Category grid (2 columns) ---- */
-    catGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: CAT_GAP,
-        marginBottom: theme.spacing.md,
+    /* ---- Category cards (horizontal row, same layout as destinations) ---- */
+    catList: {
+        paddingRight: theme.spacing.lg,
+        paddingBottom: theme.spacing.md,
     },
     catCard: {
         width: CAT_CARD_W,
-        borderRadius: 16,
-        overflow: 'hidden',
-        backgroundColor: '#fff',
+        marginRight: 16,
     },
     catImage: {
-        width: '100%',
-        height: IS_TABLET ? 128 : 110,
+        width: CAT_CARD_W,
+        height: 130,
+        borderRadius: 16,
         resizeMode: 'cover',
+        backgroundColor: theme.colors.gray100,
     },
     catName: {
-        fontSize: IS_TABLET ? 15 : 14,
+        fontSize: 14,
         fontFamily: theme.fonts.semiBold,
         color: NAVY,
-        paddingVertical: 10,
-        paddingHorizontal: 12,
+        marginTop: 8,
     },
     /* ---- Content ---- */
     listContent: {
