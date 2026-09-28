@@ -627,7 +627,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     const cardWidth = isTablet
         ? Math.floor((width - listSidePadding * 2 - gridGap * (tabletColumns - 1)) / tabletColumns)
         : null;
-    const { cityName, dateISO, useMyLocation, boatTypeId, boatTypeName, allRegions } = route.params || {};
+    const { cityName, dateISO, useMyLocation, boatTypeId, boatTypeName, allRegions, openMap } = route.params || {};
     const { toggleFavorite, isFavorite } = useContext(FavoritesContext);
     const [allBoats, setAllBoats] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -665,6 +665,7 @@ export default function SearchResultsScreen({ route, navigation }) {
     const lastViewportFetchRef = useRef(null);
     const mapModalOpenRef = useRef(false);
     const mapUsesGeoSearchRef = useRef(false);
+    const openMapOnEnterRef = useRef(Boolean(openMap));
     const [mapClosing, setMapClosing] = useState(false);
 
     const dateObj = dateISO ? new Date(dateISO) : new Date();
@@ -902,6 +903,15 @@ export default function SearchResultsScreen({ route, navigation }) {
         setMapModalVisible(true);
         setMapViewReady(false);
     }, [boats, cityName, useMyLocation]);
+
+    useEffect(() => {
+        if (!openMapOnEnterRef.current || loading || mapModalVisible || mapClosing) return;
+        openMapOnEnterRef.current = false;
+        const timer = setTimeout(() => {
+            openMapModal();
+        }, 350);
+        return () => clearTimeout(timer);
+    }, [loading, mapModalVisible, mapClosing, openMapModal]);
 
     const closeMapModal = useCallback(() => {
         mapModalOpenRef.current = false;

@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { Search, Heart, MapPin, Clock, Users, Zap } from 'lucide-react-native';
+import { Heart, MapPin, Clock, Users, Zap } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
@@ -308,20 +308,35 @@ export default function SearchScreen({ navigation }) {
                         pointerEvents="none"
                     />
                     <View style={[styles.heroContent, { top: insets.top + 12 }]}>
-                        <Text style={styles.heroTitle}>Бронируй, плыви, отдыхай</Text>
+                        <Text style={styles.heroTitle}>Бронируй, катай, отдыхай</Text>
                         <Text style={styles.heroSubtitle}>
-                            Аренда катеров, прогулки с капитаном{'\n'}и незабываемые впечатления на воде.
+                            аренда катеров, прогулки с капитаном{'\n'}и незабываемые впечатления на воде
                         </Text>
                     </View>
-                    <View style={[styles.searchBarWrap, { top: insets.top + 118 }]}>
+                    <View style={[styles.heroCtaWrap, { top: insets.top + 118 }]}>
                         <TouchableOpacity
-                            style={styles.searchBar}
-                            onPress={() => setLocationModalVisible(true)}
+                            style={styles.nearbyButton}
+                            onPress={() =>
+                                navigation.navigate('SearchResults', {
+                                    useMyLocation: true,
+                                    cityName: null,
+                                    dateISO: new Date().toISOString(),
+                                    openMap: true,
+                                })
+                            }
                             activeOpacity={0.9}
                         >
-                            <Search size={20} color={NAVY} />
-                            <Text style={styles.searchPlaceholder}>
-                                Куда хотите отправиться?
+                            <MapPin size={18} color="#fff" />
+                            <Text style={styles.nearbyButtonText}>Катера поблизости</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.regionLink}
+                            onPress={() => setLocationModalVisible(true)}
+                            activeOpacity={0.7}
+                            hitSlop={{ top: 8, bottom: 8, left: 12, right: 12 }}
+                        >
+                            <Text style={styles.regionLinkText}>
+                                Найти катер в другом регионе →
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -459,33 +474,46 @@ const styles = StyleSheet.create({
         color: NAVY,
         lineHeight: 22,
     },
-    searchBarWrap: {
+    heroCtaWrap: {
         position: 'absolute',
         left: theme.spacing.lg,
         right: theme.spacing.lg,
         zIndex: 1,
-    },
-    searchBar: {
-        flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#fff',
-        width: '100%',
         maxWidth: 760,
         alignSelf: 'center',
+        width: '100%',
+    },
+    nearbyButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: NAVY,
+        width: '100%',
         paddingVertical: 16,
         paddingHorizontal: 20,
         borderRadius: 999,
-        gap: 12,
+        gap: 10,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
+        shadowOpacity: 0.12,
         shadowRadius: 12,
         elevation: 6,
     },
-    searchPlaceholder: {
-        fontSize: 15,
-        fontFamily: theme.fonts.regular,
-        color: theme.colors.gray400,
+    nearbyButtonText: {
+        fontSize: 16,
+        fontFamily: theme.fonts.semiBold,
+        color: '#fff',
+    },
+    regionLink: {
+        marginTop: 14,
+        paddingVertical: 4,
+    },
+    regionLinkText: {
+        fontSize: 14,
+        fontFamily: theme.fonts.medium,
+        color: NAVY,
+        textAlign: 'center',
     },
     /* ---- Sections ---- */
     sectionTitle: {
