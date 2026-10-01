@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Anchor, Heart, Calendar, MessageSquare, User } from 'lucide-react-native';
+import { Home, Heart, Calendar, MessageSquare, User } from 'lucide-react-native';
 import { theme } from '../../shared/theme';
 import { api } from '../../shared/infrastructure/api';
 import SearchScreen from '../screens/SearchScreen';
@@ -57,7 +57,7 @@ export default function ClientTabs() {
                 },
                 tabBarIcon: ({ color, focused }) => {
                     let Icon;
-                    if (route.name === 'Search') Icon = Anchor;
+                    if (route.name === 'Search') Icon = Home;
                     else if (route.name === 'Favorites') Icon = Heart;
                     else if (route.name === 'Bookings') Icon = Calendar;
                     else if (route.name === 'Chat') Icon = MessageSquare;
