@@ -28,13 +28,31 @@ import BoatResultCard from '../components/search/BoatResultCard.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { createBooking } from '../api/bookings'
 import { useBoatDetailPageSeo } from '../seo/useBoatDetailPageSeo.js'
+import { useNoIndexSeo } from '../seo/useNoIndexSeo.js'
+import { useFavorites } from '../context/FavoritesContext.jsx'
+import { useIsMobileApp } from '../hooks/useIsMobileApp.js'
+import { createChat } from '../api/chats.js'
 import '../styles/boat-detail-c06.css'
 
 const PLACEHOLDER = 'https://placehold.co/1200x750/e8eef4/64748b?text=%D0%9A%D0%B0%D1%82%D0%B5%D1%80'
+
+function BoatNotFoundView() {
+  useNoIndexSeo('Катер не найден | ONTHEWATER')
+  return (
+    <div className="bd-page">
+      <div className="bd-error">
+        <h1>Катер не найден</h1>
+        <p>Катер не найден или снят с публикации.</p>
+        <p>
+          <Link to="/boats">Вернуться к поиску</Link>
+        </p>
+      </div>
+    </div>
+  )
+}
 const DESC_PREVIEW = 480
 const AMENITIES_PREVIEW = 15
 const BOOKING_TIERS_PREVIEW = 4
-const FAVORITES_STORAGE_KEY = 'boatrent_site_favorites'
 
 function todayISO() {
   const d = new Date()
@@ -92,6 +110,8 @@ function normalizeReviewAuthorName(name) {
 export default function BoatDetailPage() {
   /** В App.jsx параметр называется :boatId (значение вида "12" или "12-nazvanie-katera"). */
   const { user, token } = useAuth()
+  const { isFavorite, toggleFavorite: toggleFavBoat } = useFavorites()
+  const isMobileApp = useIsMobileApp()
   const { boatId: routeSegment, boatSlug: routeSlugAlt } = useParams()
   const routeSegmentResolved = (routeSlugAlt ?? routeSegment ?? '').trim()
   const navigate = useNavigate()
@@ -104,7 +124,7 @@ export default function BoatDetailPage() {
   const [descOpen, setDescOpen] = useState(false)
   const [bookDate, setBookDate] = useState(todayISO)
   const [bookDuration, setBookDuration] = useState('')
-  const [favorite, setFavorite] = useState(false)
+  const [chatBusy, setChatBusy] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
   const [bookStartTime, setBookStartTime] = useState('')
   const [bookGuests, setBookGuests] = useState(1)
@@ -131,32 +151,31 @@ export default function BoatDetailPage() {
 
   useBoatDetailPageSeo(boat)
 
-  useEffect(() => {
-    if (!resolvedId) return
-    try {
-      const list = JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY) || '[]')
-      const ids = Array.isArray(list) ? list.map(Number) : []
-      setFavorite(ids.includes(Number(resolvedId)))
-    } catch {
-      setFavorite(false)
-    }
-  }, [resolvedId])
+  const favorite = resolvedId != null && isFavorite(resolvedId)
 
   const toggleFavorite = useCallback(() => {
-    if (!resolvedId) return
-    const id = Number(resolvedId)
-    try {
-      const raw = localStorage.getItem(FAVORITES_STORAGE_KEY)
-      const parsed = JSON.parse(raw || '[]')
-      const list = Array.isArray(parsed) ? parsed.map(Number) : []
-      const idx = list.indexOf(id)
-      const next = idx >= 0 ? list.filter((x) => x !== id) : [...list, id]
-      localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(next))
-      setFavorite(idx < 0)
-    } catch {
-      /* ignore */
+    if (!boat && !resolvedId) return
+    toggleFavBoat(boat || { id: resolvedId })
+  }, [boat, resolvedId, toggleFavBoat])
+
+  const handleMessageOwner = useCallback(async () => {
+    if (!user || !token) {
+      setAuthPromptOpen(true)
+      return
     }
-  }, [resolvedId])
+    if (!resolvedId || chatBusy) return
+    setChatBusy(true)
+    try {
+      const chat = await createChat(token, resolvedId)
+      const id = chat?.id || chat?.chat_id
+      if (id) navigate(`/chats/${id}`)
+      else navigate('/chats')
+    } catch (e) {
+      window.alert(e?.message || 'Не удалось открыть чат')
+    } finally {
+      setChatBusy(false)
+    }
+  }, [user, token, resolvedId, chatBusy, navigate])
 
   const handleShare = useCallback(async () => {
     if (!boat) return
@@ -556,16 +575,7 @@ export default function BoatDetailPage() {
   }
 
   if (error === 'notfound' || !boat) {
-    return (
-      <div className="bd-page">
-        <div className="bd-error">
-          <p>Катер не найден или снят с публикации.</p>
-          <p>
-            <Link to="/boats">Вернуться к поиску</Link>
-          </p>
-        </div>
-      </div>
-    )
+    return <BoatNotFoundView />
   }
 
   if (error) {
@@ -1097,6 +1107,16 @@ export default function BoatDetailPage() {
           <strong>{formatPriceRu(selectedTierPrice)} ₽</strong>
           <span>{minDurationLabel({ schedule_min_duration: Number(bookDuration) || getEffectiveMinDurationMinutes(boat) })}</span>
         </div>
+        {isMobileApp ? (
+          <button
+            type="button"
+            className="bd-mobileBookBar__cta bd-mobileBookBar__cta--ghost"
+            disabled={chatBusy}
+            onClick={handleMessageOwner}
+          >
+            {chatBusy ? '…' : 'Написать'}
+          </button>
+        ) : null}
         <button type="button" className="bd-mobileBookBar__cta" onClick={() => setMobileBookingOpen(true)}>
           Забронировать
         </button>

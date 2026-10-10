@@ -1187,3 +1187,13 @@
 .bd-page--c06 .bd-mobileBookBar__cta {
   background: #0a0a0a;
 }
+
+.bd-page--c06 .bd-mobileBookBar__cta--ghost {
+  background: #fff;
+  color: #1b365d;
+  border: 1.5px solid #1b365d;
+}
+
+.bd-page--c06 .bd-mobileBookBar {
+  gap: 8px;
+}

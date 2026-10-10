@@ -81,6 +81,8 @@ location / {
 
 Так `dist/boats/index.html` (поиск) и `dist/boats/42-slug/index.html` (карточка) отдаются краулерам; `/boats` не отдаёт 403.
 
+> **HTTP 404:** при `try_files … /index.html` неизвестные URL всегда отдают **200**. Чтобы Вебмастер видел настоящий 404, нужны правки nginx (см. историю `nginx-onthewater.ru.conf`) или другой фронт-сервер. В React остаётся страница «не найдена» + `noindex` — это soft-404, не замена статуса.
+
 Убедитесь, что доступны:
 
 - `/robots.txt`
@@ -93,4 +95,4 @@ location / {
 
 - `src/seo/documentSeo.js` — общие meta-теги и JSON-LD
 - Хуки: `useHomePageSeo`, `useBoatsSearchPageSeo`, `useBoatDetailPageSeo`, `useOwnerLandingSeo`, `useNoIndexSeo`
-- `/login`, `/register`, `/account` — `noindex`
+- `/login`, `/register`, `/account`, 404 и «катер не найден» — `noindex`

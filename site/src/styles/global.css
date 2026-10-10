@@ -1,4 +1,4 @@
-/* Monolithic global stylesheet for site/src */
+﻿/* Monolithic global stylesheet for site/src */
 
 @font-face {
   font-family: 'Segoe UI Local';
@@ -6819,6 +6819,13 @@ a.lp-boatCard:hover .lp-boatImg {
   text-align: center;
   font-size: 16px;
   color: #64748b;
+}
+
+.bd-error h1 {
+  margin: 0 0 12px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
 }
 
 .bd-error a {

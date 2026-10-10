@@ -79,3 +79,88 @@ export async function deleteMyAccount(token) {
   if (!res.ok) throw new Error(data?.error || 'Не удалось удалить аккаунт')
   return data
 }
+
+export async function fetchMyReviews(token) {
+  const res = await fetch(authUrl('/auth/reviews'), {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: 'omit',
+  })
+  if (!res.ok) return []
+  const data = await res.json()
+  return Array.isArray(data) ? data : []
+}
+
+export async function fetchMyReviewsCount(token) {
+  const res = await fetch(authUrl('/auth/reviews-count'), {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: 'omit',
+  })
+  if (!res.ok) return 0
+  const data = await res.json().catch(() => ({}))
+  return Number(data?.count ?? data ?? 0) || 0
+}
+
+export async function updateMyReview(token, reviewId, payload) {
+  const res = await fetch(authUrl(`/auth/reviews/${encodeURIComponent(reviewId)}`), {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    credentials: 'omit',
+    body: JSON.stringify(payload),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data?.error || 'Не удалось обновить отзыв')
+  return data
+}
+
+export async function deleteMyReview(token, reviewId) {
+  const res = await fetch(authUrl(`/auth/reviews/${encodeURIComponent(reviewId)}`), {
+    method: 'DELETE',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: 'omit',
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data?.error || 'Не удалось удалить отзыв')
+  }
+}
+
+export async function fetchNotificationSettings(token) {
+  const res = await fetch(authUrl('/auth/notification-settings'), {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: 'omit',
+  })
+  if (!res.ok) throw new Error('Не удалось загрузить настройки')
+  return res.json()
+}
+
+export async function updateNotificationSettings(token, payload) {
+  const res = await fetch(authUrl('/auth/notification-settings'), {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    credentials: 'omit',
+    body: JSON.stringify(payload),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data?.error || 'Не удалось сохранить настройки')
+  return data
+}
+
+export async function uploadAvatar(token, file) {
+  const form = new FormData()
+  form.append('avatar', file)
+  const res = await fetch(authUrl('/auth/avatar'), {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: 'omit',
+    body: form,
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data?.error || 'Не удалось загрузить фото')
+  return data
+}

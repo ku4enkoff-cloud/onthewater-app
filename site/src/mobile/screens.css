@@ -1,0 +1,642 @@
+/* Home */
+.mapp-home {
+  background: var(--mapp-bg-warm);
+}
+
+.mapp-hero {
+  position: relative;
+  min-height: 400px;
+  padding: calc(16px + var(--mapp-safe-top)) 20px 28px;
+  overflow: hidden;
+  color: var(--mapp-navy);
+}
+
+.mapp-hero__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mapp-hero__gradTop,
+.mapp-hero__gradBottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+
+.mapp-hero__gradTop {
+  top: 0;
+  height: 55%;
+  background: linear-gradient(
+    180deg,
+    rgba(251, 248, 243, 0.9) 0%,
+    rgba(251, 248, 243, 0.5) 35%,
+    rgba(251, 248, 243, 0.1) 65%,
+    transparent 100%
+  );
+}
+
+.mapp-hero__gradBottom {
+  bottom: 0;
+  height: 55%;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(251, 248, 243, 0.25) 20%,
+    rgba(251, 248, 243, 0.62) 45%,
+    rgba(251, 248, 243, 0.9) 75%,
+    var(--mapp-bg-warm) 100%
+  );
+}
+
+.mapp-hero__inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 360px;
+  gap: 20px;
+}
+
+.mapp-hero__title {
+  margin: 0 0 8px;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--mapp-navy);
+}
+
+.mapp-hero__sub {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--mapp-gray700);
+  white-space: pre-line;
+}
+
+.mapp-hero__cta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.mapp-hero__nearby {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--mapp-navy);
+  color: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mapp-hero__region {
+  border: 0;
+  background: transparent;
+  color: var(--mapp-navy);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.mapp-sectionTitle {
+  margin: 8px 0 12px;
+  padding: 0 16px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--mapp-navy);
+}
+
+.mapp-hscroll {
+  display: flex;
+  gap: 12px;
+  padding: 0 16px 8px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.mapp-hscroll::-webkit-scrollbar {
+  display: none;
+}
+
+.mapp-destCard,
+.mapp-catCard {
+  flex: 0 0 170px;
+  scroll-snap-align: start;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.mapp-destCard img,
+.mapp-catCard img {
+  display: block;
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  border-radius: var(--mapp-radius-lg);
+  background: var(--mapp-surface);
+}
+
+.mapp-destCard span,
+.mapp-catCard span {
+  display: block;
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mapp-navy);
+}
+
+.mapp-boatCard {
+  flex: 0 0 min(78vw, 300px);
+  scroll-snap-align: start;
+  background: #fff;
+  border-radius: var(--mapp-radius-xl);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.mapp-boatCard--h {
+  flex: 0 0 min(78vw, 300px);
+}
+
+.mapp-boatCard:not(.mapp-boatCard--h) {
+  flex: none;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.mapp-boatCard__media {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 10;
+  background: var(--mapp-surface);
+}
+
+.mapp-boatCard__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mapp-boatCard__heart {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.mapp-boatCard__body {
+  display: block;
+  padding: 12px 14px 14px;
+}
+
+.mapp-boatCard__title {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--mapp-navy);
+  line-height: 1.25;
+}
+
+.mapp-boatCard__loc {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--mapp-muted);
+}
+
+.mapp-boatCard__price {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--mapp-navy);
+}
+
+/* Location modal */
+.mapp-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(15, 35, 65, 0.45);
+}
+
+.mapp-modal__sheet {
+  width: 100%;
+  max-height: 85dvh;
+  overflow: auto;
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  padding: 16px 16px calc(20px + var(--mapp-safe-bottom));
+}
+
+.mapp-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.mapp-modal__head h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.mapp-modal__close {
+  border: 0;
+  background: var(--mapp-surface);
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.mapp-locList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mapp-locList button {
+  text-align: left;
+  padding: 14px 12px;
+  border: 1px solid var(--mapp-border);
+  border-radius: 12px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--mapp-navy);
+  cursor: pointer;
+}
+
+/* List screens */
+.mapp-list {
+  padding: 12px 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mapp-bookingCard,
+.mapp-chatRow {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: #fff;
+  border-radius: var(--mapp-radius-lg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 0;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  color: inherit;
+}
+
+.mapp-bookingCard img,
+.mapp-chatRow__avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: var(--mapp-surface);
+  flex-shrink: 0;
+}
+
+.mapp-chatRow__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mapp-gray400);
+}
+
+.mapp-bookingCard__body,
+.mapp-chatRow__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.mapp-bookingCard__title,
+.mapp-chatRow__title {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--mapp-navy);
+}
+
+.mapp-bookingCard__meta,
+.mapp-chatRow__preview {
+  margin: 0;
+  font-size: 13px;
+  color: var(--mapp-muted);
+  line-height: 1.35;
+}
+
+.mapp-status {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mapp-chatRow__unread {
+  margin-left: auto;
+  align-self: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--mapp-blue);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+}
+
+/* Chat detail */
+.mapp-chatDetail {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: #f3f4f6;
+}
+
+.mapp-chatDetail__msgs {
+  flex: 1;
+  overflow: auto;
+  padding: 12px 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mapp-bubble {
+  max-width: 82%;
+  padding: 10px 12px;
+  border-radius: 16px;
+  font-size: 15px;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.mapp-bubble--me {
+  align-self: flex-end;
+  background: var(--mapp-bubble);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.mapp-bubble--them {
+  align-self: flex-start;
+  background: #e5e7eb;
+  color: var(--mapp-gray700);
+  border-bottom-left-radius: 4px;
+}
+
+.mapp-chatDetail__composer {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px calc(10px + var(--mapp-safe-bottom));
+  background: #fff;
+  border-top: 1px solid var(--mapp-border);
+}
+
+.mapp-chatDetail__composer input {
+  flex: 1;
+  min-height: 44px;
+  border: 1px solid var(--mapp-border);
+  border-radius: 22px;
+  padding: 0 14px;
+  font-family: inherit;
+  font-size: 15px;
+}
+
+.mapp-chatDetail__composer button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--mapp-blue);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* Profile */
+.mapp-profile {
+  padding-bottom: 24px;
+}
+
+.mapp-profile__hero {
+  padding: calc(20px + var(--mapp-safe-top)) 20px 20px;
+  background: #fff;
+  border-bottom: 1px solid var(--mapp-gray100);
+}
+
+.mapp-profile__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.mapp-profile__avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 36px;
+  object-fit: cover;
+  background: var(--mapp-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mapp-gray400);
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.mapp-profile__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mapp-profile__name {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.mapp-profile__meta {
+  margin: 0;
+  font-size: 13px;
+  color: var(--mapp-muted);
+}
+
+.mapp-profile__stats {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.mapp-profile__stat {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--mapp-surface);
+  text-align: center;
+}
+
+.mapp-profile__stat strong {
+  display: block;
+  font-size: 18px;
+  color: var(--mapp-navy);
+}
+
+.mapp-profile__stat span {
+  font-size: 12px;
+  color: var(--mapp-muted);
+}
+
+.mapp-menu {
+  margin: 12px 16px;
+  background: #fff;
+  border-radius: var(--mapp-radius-xl);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.mapp-menu button,
+.mapp-menu a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px;
+  border: 0;
+  border-bottom: 1px solid var(--mapp-gray100);
+  background: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--mapp-navy);
+  cursor: pointer;
+  text-align: left;
+}
+
+.mapp-menu button:last-child,
+.mapp-menu a:last-child {
+  border-bottom: 0;
+}
+
+.mapp-menu__chev {
+  margin-left: auto;
+  color: var(--mapp-gray400);
+}
+
+.mapp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0 0;
+}
+
+.mapp-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mapp-muted);
+}
+
+.mapp-form input {
+  min-height: 44px;
+  border: 1px solid var(--mapp-border);
+  border-radius: 12px;
+  padding: 0 12px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--mapp-navy);
+}
+
+.mapp-switchRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--mapp-gray100);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--mapp-navy);
+}
+
+.mapp-reviewItem {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--mapp-gray100);
+}
+
+.mapp-reviewItem h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.mapp-reviewItem p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--mapp-muted);
+}
+
+/* Mobile overlays for existing search/detail inside shell */
+.mapp .bs-page,
+.mapp .bd-page {
+  font-family: 'Jost', system-ui, sans-serif;
+}
+
+.mapp-detailActions {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+}
+
+.mapp-detailActions .mapp-btn {
+  flex: 1;
+}

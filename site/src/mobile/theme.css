@@ -1,0 +1,219 @@
+/* Токены как mobile/src/shared/theme.js — только внутри .mapp */
+.mapp {
+  --mapp-navy: #1b365d;
+  --mapp-navy-light: #2a4a7f;
+  --mapp-dark: #0f2341;
+  --mapp-bg: #ffffff;
+  --mapp-bg-warm: #fbf8f3;
+  --mapp-surface: #f7f4ef;
+  --mapp-gray100: #f3f4f6;
+  --mapp-gray200: #e8e5e0;
+  --mapp-gray400: #9ca3af;
+  --mapp-gray500: #6b7280;
+  --mapp-gray700: #374151;
+  --mapp-text: #1b365d;
+  --mapp-muted: #6b7280;
+  --mapp-border: #e5e7eb;
+  --mapp-success: #10b981;
+  --mapp-error: #ef4444;
+  --mapp-star: #fbbf24;
+  --mapp-blue: #1e5db8;
+  --mapp-bubble: #2b74d8;
+  --mapp-radius-md: 12px;
+  --mapp-radius-lg: 16px;
+  --mapp-radius-xl: 20px;
+  --mapp-tab-h: 64px;
+  --mapp-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --mapp-safe-top: env(safe-area-inset-top, 0px);
+
+  font-family: 'Jost', system-ui, sans-serif;
+  color: var(--mapp-text);
+  background: var(--mapp-bg-warm);
+  min-height: 100dvh;
+  box-sizing: border-box;
+}
+
+.mapp *,
+.mapp *::before,
+.mapp *::after {
+  box-sizing: border-box;
+}
+
+.mapp a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.mapp-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--mapp-bg-warm);
+}
+
+.mapp-shell__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(var(--mapp-tab-h) + var(--mapp-safe-bottom) + 8px);
+}
+
+.mapp-shell__body--noTabs {
+  padding-bottom: calc(12px + var(--mapp-safe-bottom));
+}
+
+/* Bottom tabs */
+.mapp-tabs {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  height: calc(var(--mapp-tab-h) + var(--mapp-safe-bottom));
+  padding: 8px 4px calc(8px + var(--mapp-safe-bottom));
+  background: #fff;
+  border-top: 1px solid var(--mapp-gray100);
+}
+
+.mapp-tabs__btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 48px;
+  border: 0;
+  background: transparent;
+  color: var(--mapp-gray400);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mapp-tabs__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  color: inherit;
+}
+
+.mapp-tabs__btn.is-active .mapp-tabs__icon {
+  background: var(--mapp-navy);
+  color: #fff;
+}
+
+.mapp-tabs__badge {
+  position: absolute;
+  top: 2px;
+  right: 6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--mapp-blue);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* Shared screen chrome */
+.mapp-screen {
+  min-height: 100%;
+  background: var(--mapp-bg-warm);
+}
+
+.mapp-screen__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: calc(12px + var(--mapp-safe-top)) 16px 12px;
+  background: #fff;
+  border-bottom: 1px solid var(--mapp-gray100);
+}
+
+.mapp-screen__title {
+  margin: 0;
+  flex: 1;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--mapp-navy);
+}
+
+.mapp-screen__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--mapp-surface);
+  color: var(--mapp-navy);
+  cursor: pointer;
+}
+
+.mapp-empty {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--mapp-muted);
+  font-size: 15px;
+}
+
+.mapp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--mapp-navy);
+  color: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mapp-btn--ghost {
+  background: transparent;
+  color: var(--mapp-navy);
+  border: 1px solid var(--mapp-border);
+}
+
+.mapp-unauthorized {
+  margin: 40px 20px;
+  padding: 28px 20px;
+  border-radius: var(--mapp-radius-xl);
+  background: #fff;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.mapp-unauthorized h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  color: var(--mapp-navy);
+}
+
+.mapp-unauthorized p {
+  margin: 0 0 20px;
+  color: var(--mapp-muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.mapp-unauthorized__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

@@ -76,8 +76,16 @@ function readInitialLocationKey() {
     const params = new URLSearchParams(window.location.search)
     const c = params.get('city')?.trim()
     if (c) return c
-    // Как в приложении: переход по категории — все регионы
-    if (params.get('typeId')?.trim() || params.get('typeName')?.trim()) return '__all'
+    // Как в приложении: переход по категории / «все регионы» / поблизости
+    if (
+      params.get('typeId')?.trim() ||
+      params.get('type')?.trim() ||
+      params.get('typeName')?.trim() ||
+      params.get('all') === '1' ||
+      params.get('near') === '1'
+    ) {
+      return '__all'
+    }
   } catch {
     /* ignore */
   }
@@ -173,8 +181,9 @@ export default function BoatsSearchPage() {
   const cityFromUrl = searchParams.get('city')?.trim() || ''
   const dateFromUrl = searchParams.get('date')?.trim() || ''
   const guestsFromUrl = Number(searchParams.get('guests'))
-  const typeIdFromUrl = searchParams.get('typeId')?.trim() || ''
+  const typeIdFromUrl = searchParams.get('typeId')?.trim() || searchParams.get('type')?.trim() || ''
   const typeNameFromUrl = searchParams.get('typeName')?.trim() || ''
+  const openMapFromUrl = searchParams.get('map') === '1' || searchParams.get('near') === '1'
 
   const [locationKey, setLocationKey] = useState(readInitialLocationKey)
   const [dateStr, setDateStr] = useState(() => {
@@ -193,6 +202,10 @@ export default function BoatsSearchPage() {
     boatTypeName: typeNameFromUrl || null,
   }))
   const [mapVisible, setMapVisible] = useState(true)
+
+  useEffect(() => {
+    if (openMapFromUrl) setMapVisible(true)
+  }, [openMapFromUrl])
   const [mapBounds, setMapBounds] = useState(null)
   const [selectedBoatId, setSelectedBoatId] = useState(null)
   const [mapPickCandidates, setMapPickCandidates] = useState(null)
