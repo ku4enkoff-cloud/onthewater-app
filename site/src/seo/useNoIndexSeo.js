@@ -8,7 +8,8 @@ import { applyDocumentSeo } from './documentSeo'
 export function useNoIndexSeo(title) {
   useEffect(() => {
     return applyDocumentSeo({
-      title,
+      title: title || 'ONTHEWATER',
+      description: 'Служебная страница ONTHEWATER — не для индексации.',
       robots: 'noindex, nofollow',
     })
   }, [title])

@@ -16,6 +16,8 @@ export function useOwnerLandingSeo() {
       title,
       description,
       canonicalUrl: `${origin}/owners`,
+      ogImage: `${origin}/og-default.webp`,
+      ogImageAlt: 'ONTHEWATER для владельцев катеров',
       keywords: 'сдать катер в аренду, размещение катера, аренда яхты владельцу, ONTHEWATER',
     })
   }, [])

@@ -15,10 +15,11 @@ const PLACEHOLDER = 'https://placehold.co/600x380/e8eef4/64748b?text=%D0%9A%D0%B
 const GRID_LIMIT = 4
 const FETCH_LIMIT = 20
 
-export default function PopularBoats() {
+export default function PopularBoats({ variant = 'default' }) {
   const [boats, setBoats] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const isPrecision = variant === 'precision'
 
   useEffect(() => {
     let cancelled = false
@@ -42,6 +43,67 @@ export default function PopularBoats() {
     }
   }, [])
 
+  if (isPrecision) {
+    return (
+      <section className="pm-section" id="boats">
+        <div className="pm-container">
+          <div className="pm-sectionHead">
+            <h2 className="pm-sectionTitle">Популярные катера</h2>
+            <Link to="/boats" className="pm-viewAll">
+              Смотреть все →
+            </Link>
+          </div>
+
+          {import.meta.env.DEV && !API_BASE ? (
+            <p className="pm-hint">Локально: запросы идут через Vite proxy на бэкенд (:3000).</p>
+          ) : null}
+
+          {error ? <p className="pm-error">Не удалось загрузить катера. Попробуйте позже.</p> : null}
+
+          {loading ? (
+            <div className="pm-boatsGrid" aria-busy="true">
+              {Array.from({ length: GRID_LIMIT }).map((_, i) => (
+                <div key={i} className="pm-boatCard--skeleton" />
+              ))}
+            </div>
+          ) : boats.length === 0 && !error ? (
+            <p className="pm-empty">Пока нет доступных катеров — загляните позже.</p>
+          ) : (
+            <div className="pm-boatsGrid">
+              {boats.map((boat) => {
+                const id = boat.id
+                const title = boat.title || boat.type_name || 'Катер'
+                const img = firstPhotoThumbUrl(boat, getPhotoUrl, getThumbUrl) || PLACEHOLDER
+                const price = getMinDurationPrice(boat)
+                const unit = minDurationLabelForBoat(boat)
+                const loc = formatCardLocation(boat)
+                return (
+                  <Link key={String(id)} to={boatDetailPath(boat)} className="pm-boatCard">
+                    <div className="pm-boatCard__imgWrap">
+                      <img src={img} alt={`${title}, ${loc}`} className="pm-boatCard__img" loading="lazy" />
+                    </div>
+                    <div className="pm-boatCard__body">
+                      <h3 className="pm-boatCard__title">{title}</h3>
+                      <p className="pm-boatCard__loc">{loc}</p>
+                      <div className="pm-boatCard__foot">
+                        <p className="pm-boatCard__price">
+                          от {formatPriceRu(price)} ₽ / {unit}
+                        </p>
+                        <span className="pm-boatCard__arrow" aria-hidden>
+                          →
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className="lp-section lp-featured" id="boats">
       <div className="lp-container">
@@ -49,9 +111,9 @@ export default function PopularBoats() {
           <div>
             <h2 className="lp-sectionTitle">Популярные катера</h2>
           </div>
-            <Link to="/boats" className="lp-viewMore">
-              Смотреть все <span aria-hidden>→</span>
-            </Link>
+          <Link to="/boats" className="lp-viewMore">
+            Смотреть все <span aria-hidden>→</span>
+          </Link>
         </div>
 
         {import.meta.env.DEV && !API_BASE ? (

@@ -47,12 +47,12 @@ function routeToOutPath(route) {
 }
 
 function waitSelectorForRoute(route) {
-  if (route === '/') return '.lp-heroTitle'
+  if (route === '/') return '.lp-heroTitle, .pm-hero'
   if (route === '/boats') return '.bs-page'
-  if (route.startsWith('/boats/')) return '.bd-heroBs__title'
-  if (route === '/owners') return '.owner-page__title'
+  if (route.startsWith('/boats/')) return '.bd-c06Hero__title, .bd-heroBs__title, h1'
+  if (route === '/owners') return '.owner-page__title, h1'
   if (route === '/privacy' || route === '/terms') return 'main'
-  if (route === '/sitemap') return '.sitemap-page__nav'
+  if (route === '/sitemap') return '.sitemap-page__nav, h1'
   return '#root .app-outlet'
 }
 
@@ -186,6 +186,19 @@ async function main() {
           console.warn(`  timeout waiting for ${selector}`)
         }
         await page.waitForSelector('#root .app-outlet', { timeout: 5000 }).catch(() => {})
+        if (route.startsWith('/boats/')) {
+          try {
+            await page.waitForFunction(
+              () => {
+                const h1 = document.querySelector('h1.bd-c06Hero__title, h1.bd-heroBs__title, h1')
+                return Boolean(h1 && h1.textContent && h1.textContent.trim().length > 2)
+              },
+              { timeout: 20000 },
+            )
+          } catch {
+            console.warn('  timeout waiting for boat H1 text')
+          }
+        }
         await sleep(800)
 
         const hasContent = await page.evaluate(

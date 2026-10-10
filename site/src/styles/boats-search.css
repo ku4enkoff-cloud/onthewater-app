@@ -1,0 +1,725 @@
+/* /boats — map-first overlay matching concept 02 render */
+
+.app-outlet--boatsMap {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.bs-page--mapFirst {
+  --bs-ink: #0a0a0a;
+  --bs-muted: #6b7280;
+  --bs-line: #e5e7eb;
+  --bs-navy: #1b365d;
+  --bs-navy-soft: rgba(27, 54, 93, 0.1);
+  --bs-bg: #ffffff;
+  --bs-radius: 18px;
+  --bs-radius-sm: 12px;
+  --bs-sans: 'Montserrat', 'Segoe UI Local', system-ui, sans-serif;
+  /* для pm-cityPanel / pm-cal с главной */
+  --pm-ink: #0a0a0a;
+  --pm-muted: #6b7280;
+  --pm-navy: #1b365d;
+  --pm-sans: 'Montserrat', 'Segoe UI Local', system-ui, sans-serif;
+
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: var(--bs-sans);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--bs-ink);
+  background: #eef1f4;
+}
+
+.bs-page--mapFirst .bs-stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Full-bleed map */
+.bs-page--mapFirst .bs-mapCol {
+  position: absolute;
+  inset: 0;
+  flex: none;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  z-index: 1;
+}
+
+.bs-page--mapFirst .bs-mapWrap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.bs-page--mapFirst .bs-mapShell,
+.bs-page--mapFirst .bs-map {
+  width: 100%;
+  height: 100%;
+}
+
+.bs-page--mapFirst .pm-mapPreview--anchored {
+  max-width: min(320px, calc(100vw - 48px));
+}
+
+/* Floating search + filters — centered pill stack */
+.bs-page--mapFirst .bs-floatChrome {
+  position: absolute;
+  z-index: 20;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(920px, calc(100% - 48px));
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.bs-page--mapFirst .bs-floatChrome > * {
+  pointer-events: auto;
+}
+
+.bs-page--mapFirst .bs-searchBar {
+  position: relative;
+  flex: none;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 16px 44px rgba(10, 10, 10, 0.14);
+  overflow: visible;
+  align-items: stretch;
+  min-height: 68px;
+  z-index: 40;
+}
+
+.bs-page--mapFirst .bs-searchBar__field {
+  position: relative;
+  gap: 12px;
+  padding: 10px 18px;
+  align-items: center;
+}
+
+.bs-page--mapFirst .bs-searchBar__icon {
+  flex-shrink: 0;
+  color: #374151;
+}
+
+.bs-page--mapFirst .bs-searchBar__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  text-align: left;
+}
+
+.bs-page--mapFirst .bs-searchBar__primary {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--bs-ink);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bs-page--mapFirst .bs-searchBar__secondary {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--bs-muted);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: none;
+}
+
+.bs-page--mapFirst .bs-searchBar__field--date:hover,
+.bs-page--mapFirst .bs-searchBar__field--guests:hover,
+.bs-page--mapFirst .bs-searchBar__field--location:hover,
+.bs-page--mapFirst .bs-searchBar__field--date.is-open,
+.bs-page--mapFirst .bs-searchBar__field--location.is-open {
+  background: #f8fafc;
+}
+
+.bs-page--mapFirst .bs-searchBar__field--guests,
+.bs-page--mapFirst .bs-searchBar__field--location,
+.bs-page--mapFirst .bs-searchBar__field--date {
+  flex: 1;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.bs-page--mapFirst .bs-searchBar__field--location {
+  flex: 1.15;
+  border-radius: 999px 0 0 999px;
+}
+
+.bs-page--mapFirst .bs-searchBar__field--date {
+  flex: 1.05;
+}
+
+/* Выпадающие город / календарь — как на главной */
+.bs-page--mapFirst .bs-searchBar__cityPanel.pm-cityPanel {
+  top: calc(100% + 10px);
+  left: 0;
+  width: min(360px, calc(100vw - 48px));
+}
+
+.bs-page--mapFirst .bs-searchBar__calWrap.pm-calWrap {
+  top: calc(100% + 10px);
+  right: auto;
+  left: 22%;
+  transform: none;
+  width: min(320px, calc(100vw - 48px));
+}
+
+@media (max-width: 720px) {
+  .bs-page--mapFirst .bs-searchBar__calWrap.pm-calWrap {
+    left: 0;
+    width: min(320px, calc(100vw - 32px));
+  }
+}
+
+.bs-page--mapFirst .bs-searchBar__cityPanel .pm-cityPanel__item.is-selected {
+  background: #008be8;
+}
+
+.bs-page--mapFirst .bs-searchBar__cityPanel .pm-cityPanel__item.is-selected .pm-cityPanel__name,
+.bs-page--mapFirst .bs-searchBar__cityPanel .pm-cityPanel__item.is-selected .pm-cityPanel__region,
+.bs-page--mapFirst .bs-searchBar__cityPanel .pm-cityPanel__item.is-selected .pm-cityPanel__check {
+  color: #fff;
+}
+
+.bs-page--mapFirst .bs-searchBar__cityPanel .pm-cityPanel__item.is-selected .pm-cityPanel__pin {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+.bs-page--mapFirst .bs-searchBar__divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 16px 0;
+  flex-shrink: 0;
+  background: #e5e7eb;
+}
+
+.bs-page--mapFirst .bs-searchBar__find {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  align-self: center;
+  margin: 10px 10px 10px 4px;
+  padding: 0 22px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 999px;
+  background: #0a0a0a;
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.bs-page--mapFirst .bs-searchBar__find:hover {
+  background: #1b365d;
+}
+
+/* Filter chips as independent floating pills — по центру относительно поиска */
+.bs-page--mapFirst .bs-floatFilters {
+  width: 100%;
+  max-width: 100%;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0;
+  overflow: hidden;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.bs-page--mapFirst .bs-filtersRow__chips {
+  padding: 0;
+  margin: 0 auto;
+  gap: 5px;
+  scrollbar-width: none;
+  background: transparent;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
+  justify-content: center;
+  width: max-content;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.bs-page--mapFirst .bs-filtersRow__chips::-webkit-scrollbar {
+  display: none;
+  height: 0;
+}
+
+.bs-page--mapFirst .bs-chip,
+.bs-page--mapFirst .bs-quickChip {
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: var(--bs-ink);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  box-shadow: 0 3px 10px rgba(10, 10, 10, 0.07);
+  padding: 7px 10px;
+  gap: 4px;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+.bs-page--mapFirst .bs-quickChip svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.bs-page--mapFirst .bs-chip:hover,
+.bs-page--mapFirst .bs-quickChip:hover {
+  border-color: var(--bs-navy);
+  background: #fff;
+  color: var(--bs-navy);
+}
+
+.bs-page--mapFirst .bs-chip--active,
+.bs-page--mapFirst .bs-quickChip--on {
+  border-color: #0a0a0a;
+  background: #0a0a0a;
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(10, 10, 10, 0.18);
+}
+
+.bs-page--mapFirst .bs-chip--active:hover,
+.bs-page--mapFirst .bs-quickChip--on:hover {
+  border-color: #0a0a0a;
+  background: #0a0a0a;
+  color: #fff;
+}
+
+.bs-page--mapFirst .bs-quickChip--value {
+  border-color: #0a0a0a;
+  background: #fff;
+  color: var(--bs-ink);
+  box-shadow: 0 4px 14px rgba(10, 10, 10, 0.08);
+  padding: 0;
+  overflow: hidden;
+}
+
+.bs-page--mapFirst .bs-quickChip__main {
+  color: var(--bs-ink);
+  font-size: 13px;
+  padding: 10px 8px 10px 14px;
+}
+
+.bs-page--mapFirst .bs-quickChip__clear {
+  color: var(--bs-muted);
+  padding: 0 12px;
+}
+
+.bs-page--mapFirst .bs-quickChip__chev {
+  color: var(--bs-muted);
+}
+
+.bs-page--mapFirst .bs-quickChip--on .bs-quickChip__chev,
+.bs-page--mapFirst .bs-quickChip--on svg,
+.bs-page--mapFirst .bs-quickChip--on:hover svg {
+  color: #fff;
+}
+
+.bs-page--mapFirst .bs-quickChip:hover:not(.bs-quickChip--on) svg {
+  color: var(--bs-navy);
+}
+
+.bs-page--mapFirst .bs-floatPanel {
+  position: absolute;
+  z-index: 15;
+  top: 168px;
+  left: 56px; /* место под zoomControl Яндекс.Карт слева */
+  bottom: 24px;
+  /* 280 → 400: сужается на узких десктопах, карта остаётся видимой */
+  width: min(400px, max(280px, 32vw), calc(100% - 80px));
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.98);
+  border: 0;
+  border-radius: 22px;
+  box-shadow: 0 22px 60px rgba(10, 10, 10, 0.16);
+}
+
+.bs-page--mapFirst .bs-listCol__head {
+  padding: 18px 18px 0;
+  background: transparent;
+}
+
+.bs-page--mapFirst .bs-resultsHead {
+  margin-bottom: 12px;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 10px;
+}
+
+.bs-page--mapFirst .bs-resultsTitle {
+  font-family: var(--bs-sans);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--bs-ink);
+  line-height: 1.3;
+}
+
+.bs-page--mapFirst .bs-resultsHead__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.bs-page--mapFirst .bs-resultsFiltersBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 7px 12px;
+  border: 1px solid var(--bs-line, #e5e7eb);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--bs-ink, #1a1a1a);
+  font: 650 12px/1 var(--bs-sans, inherit);
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.bs-page--mapFirst .bs-resultsFiltersBtn:hover {
+  border-color: #c9cdd4;
+  background: #f7f8fa;
+  color: var(--bs-ink, #1a1a1a);
+}
+
+.bs-page--mapFirst .bs-resultsFiltersBtn--active {
+  border-color: #0a0a0a;
+  background: #0a0a0a;
+  color: #fff;
+}
+
+.bs-page--mapFirst .bs-resultsFiltersBtn--active:hover {
+  border-color: #0a0a0a;
+  background: #0a0a0a;
+  color: #fff;
+}
+
+.bs-page--mapFirst .bs-resultsFiltersBtn__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--bs-ink, #1a1a1a);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.bs-page--mapFirst .bs-resultsFiltersBtn--active .bs-resultsFiltersBtn__count {
+  background: #fff;
+  color: var(--bs-ink, #1a1a1a);
+}
+
+.bs-page--mapFirst .bs-listCol__scroll {
+  padding: 0 12px 14px;
+}
+
+.bs-page--mapFirst .bs-grid {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+/* Horizontal compact cards — matching render 02 */
+.bs-page--mapFirst .bs-card--row {
+  border: 0;
+  border-radius: 14px;
+  box-shadow: none;
+  background: transparent;
+  overflow: hidden;
+}
+
+.bs-page--mapFirst .bs-card--row:hover {
+  background: #f6f7f9;
+  box-shadow: none;
+  transform: none;
+}
+
+.bs-page--mapFirst .bs-card--row.bs-card--selected {
+  background: var(--bs-navy-soft);
+  box-shadow: none;
+}
+
+.bs-page--mapFirst .bs-card--row .bs-card__link {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+}
+
+.bs-page--mapFirst .bs-card--row .bs-card__imageWrap {
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #e8eef4;
+}
+
+.bs-page--mapFirst .bs-card--row .bs-card__body {
+  padding: 0 4px 0 0;
+  min-width: 0;
+}
+
+.bs-page--mapFirst .bs-card__rowTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.bs-page--mapFirst .bs-card--row .bs-card__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--bs-ink);
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bs-page--mapFirst .bs-card__rowPrice {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.bs-page--mapFirst .bs-card__rowPrice .bs-card__priceMain {
+  display: inline;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--bs-ink);
+}
+
+.bs-page--mapFirst .bs-card__rowPrice .bs-card__priceUnit {
+  display: inline;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bs-muted);
+}
+
+.bs-page--mapFirst .bs-card__rowMeta {
+  margin: 4px 0 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--bs-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bs-page--mapFirst .bs-card--row .bs-card__ratingLine {
+  justify-content: flex-start;
+  align-items: baseline;
+  font-size: 12px;
+  gap: 3px;
+}
+
+.bs-page--mapFirst .bs-card--row .bs-card__star {
+  color: #f59e0b;
+  font-size: 12px;
+}
+
+.bs-page--mapFirst .bs-card--row .bs-card__ratingNum {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.bs-page--mapFirst .bs-card--row .bs-card__reviews {
+  font-size: 12px;
+}
+
+.bs-page--mapFirst .bs-loading {
+  color: var(--bs-muted);
+  padding: 28px 12px;
+  font-size: 14px;
+}
+
+.bs-page--mapFirst .bs-viewSeg {
+  border: 1px solid var(--bs-line);
+  border-radius: 999px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.bs-page--mapFirst .bs-viewSeg__btn {
+  border: 0;
+  background: transparent;
+  color: var(--bs-muted);
+  font-weight: 700;
+  font-size: 12px;
+  padding: 7px 12px;
+}
+
+.bs-page--mapFirst .bs-viewSeg__btn--active {
+  background: var(--bs-ink);
+  color: #fff;
+}
+
+.bs-page--mapFirst .bs-mapPickCard {
+  border-radius: 18px;
+  border-color: var(--bs-line);
+  box-shadow: 0 16px 48px rgba(10, 10, 10, 0.18);
+}
+
+.bs-page--mapFirst .bs-mapPickTitle {
+  color: var(--bs-ink);
+}
+
+.bs-page--mapFirst .bs-mapPickBtn {
+  border-radius: 12px;
+}
+
+.bs-page--mapFirst .bs-mapPickBtn__price {
+  color: var(--bs-navy);
+}
+
+.bs-page--mapFirst .bs-mapPickBtn:hover {
+  background: var(--bs-navy-soft);
+  border-color: var(--bs-navy);
+}
+
+@media (min-width: 1025px) {
+  .bs-page--mapFirst .bs-viewSeg--mobileOnly {
+    display: none;
+  }
+
+  .bs-page--mapFirst.bs-page--listOnly .bs-mapCol {
+    display: block;
+  }
+
+  .bs-page--mapFirst .bs-searchBar__divider--desktop {
+    display: block;
+  }
+}
+
+@media (max-width: 1024px) {
+  .bs-page--mapFirst .bs-floatChrome {
+    top: 12px;
+    width: calc(100% - 24px);
+    gap: 10px;
+  }
+
+  .bs-page--mapFirst .bs-searchBar {
+    min-height: 50px;
+  }
+
+  .bs-page--mapFirst .bs-searchBar__field--guests,
+  .bs-page--mapFirst .bs-searchBar__divider--desktop {
+    display: none;
+  }
+
+  .bs-page--mapFirst .bs-searchBar__find span {
+    display: none;
+  }
+
+  .bs-page--mapFirst .bs-searchBar__find {
+    padding: 0;
+    min-width: 44px;
+    width: 44px;
+    margin-right: 4px;
+  }
+
+  .bs-page--mapFirst .bs-floatPanel {
+    top: auto;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    width: auto;
+    max-height: min(46vh, 400px);
+    border-radius: 20px;
+  }
+
+  .bs-page--mapFirst.bs-page--listOnly .bs-mapCol {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .bs-page--mapFirst.bs-page--listOnly .bs-floatPanel {
+    top: 118px;
+    max-height: none;
+    bottom: 12px;
+  }
+
+}
+
+@media (max-width: 640px) {
+  .bs-page--mapFirst .bs-searchBar__dateText,
+  .bs-page--mapFirst .bs-searchBar__select {
+    font-size: 13px;
+  }
+
+  .bs-page--mapFirst .bs-floatPanel {
+    max-height: min(42vh, 340px);
+  }
+
+  .bs-page--mapFirst.bs-page--listOnly .bs-floatPanel {
+    top: 108px;
+  }
+
+  .bs-page--mapFirst .bs-card--row .bs-card__link {
+    grid-template-columns: 76px 1fr;
+    gap: 10px;
+    padding: 8px;
+  }
+}

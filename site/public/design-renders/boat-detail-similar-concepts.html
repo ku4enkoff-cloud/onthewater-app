@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ONTHEWATER — 5 концептов блока «Похожие катера»</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #0a0a0a;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --navy: #1b365d;
+      --soft: #f3f4f6;
+      --sans: 'Montserrat', system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background: #eef0f3;
+      color: var(--ink);
+    }
+    .pageHead {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(255,255,255,.94);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+      padding: 18px 28px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: baseline;
+    }
+    .pageHead h1 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .pageHead p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .toc {
+      width: min(1200px, 100% - 32px);
+      margin: 20px auto 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .toc a {
+      text-decoration: none;
+      color: var(--navy);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 999px;
+    }
+    .toc a:hover { border-color: var(--navy); }
+    .wrap {
+      width: min(1200px, 100% - 32px);
+      margin: 24px auto 80px;
+      display: grid;
+      gap: 36px;
+    }
+    .concept {
+      background: #fff;
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+    .concept__meta {
+      padding: 22px 24px 18px;
+      border-bottom: 1px solid var(--line);
+      background: #fafafa;
+      display: grid;
+      gap: 8px;
+    }
+    .concept__num {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--navy);
+    }
+    .concept__meta h2 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 750;
+      letter-spacing: -.02em;
+    }
+    .concept__meta p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+      max-width: 72ch;
+    }
+    .stage {
+      padding: 28px 24px 32px;
+      background: #fff;
+    }
+
+    /* shared mock data helpers */
+    .ph {
+      background:
+        linear-gradient(135deg, #cbd5e1 0%, #94a3b8 45%, #64748b 100%);
+      background-size: cover;
+      background-position: center;
+    }
+    .ph-1 { background-image: linear-gradient(160deg, rgba(15,23,42,.15), rgba(15,23,42,.35)), url('https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?w=800&q=80'); }
+    .ph-2 { background-image: linear-gradient(160deg, rgba(15,23,42,.15), rgba(15,23,42,.35)), url('https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&q=80'); }
+    .ph-3 { background-image: linear-gradient(160deg, rgba(15,23,42,.15), rgba(15,23,42,.35)), url('https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800&q=80'); }
+    .ph-4 { background-image: linear-gradient(160deg, rgba(15,23,42,.15), rgba(15,23,42,.35)), url('https://images.unsplash.com/photo-1569263979104-865ab7cd8d13?w=800&q=80'); }
+
+    /* ========== 01 Editorial strip ========== */
+    .s01 .head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .s01 h3 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 750;
+      letter-spacing: -.03em;
+    }
+    .s01 .more {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--navy);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+    }
+    .s01 .more:hover { border-bottom-color: var(--navy); }
+    .s01 .rail {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(240px, 280px);
+      gap: 20px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scrollbar-width: thin;
+    }
+    .s01 .card {
+      border-top: 2px solid var(--ink);
+      padding-top: 14px;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .s01 .img {
+      aspect-ratio: 4/3;
+      margin-bottom: 12px;
+    }
+    .s01 .loc {
+      font-size: 11px;
+      font-weight: 650;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .s01 .title {
+      margin: 0 0 8px;
+      font-size: 16px;
+      font-weight: 750;
+      letter-spacing: -.02em;
+    }
+    .s01 .price {
+      font-size: 15px;
+      font-weight: 800;
+    }
+    .s01 .price span {
+      font-weight: 600;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .s01 .meta {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    /* ========== 02 Filmstrip ========== */
+    .s02 .headRow {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      margin-bottom: 14px;
+    }
+    .s02 h3 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--navy);
+    }
+    .s02 .count {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .s02 .rail {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(260px, 300px);
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      scrollbar-width: thin;
+    }
+    .s02 .card {
+      position: relative;
+      aspect-ratio: 3/4;
+      overflow: hidden;
+      text-decoration: none;
+      color: #fff;
+      display: block;
+    }
+    .s02 .img {
+      position: absolute;
+      inset: 0;
+    }
+    .s02 .shade {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 40%, rgba(10,10,10,.85) 100%);
+    }
+    .s02 .body {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 14px;
+    }
+    .s02 .title {
+      margin: 0 0 6px;
+      font-size: 17px;
+      font-weight: 750;
+      letter-spacing: -.02em;
+    }
+    .s02 .price {
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .s02 .meta {
+      margin-top: 4px;
+      font-size: 11px;
+      opacity: .8;
+      font-weight: 500;
+    }
+
+    /* ========== 03 Compact rows ========== */
+    .s03 h3 {
+      margin: 0 0 16px;
+      font-size: 22px;
+      font-weight: 750;
+      letter-spacing: -.02em;
+    }
+    .s03 .list {
+      display: grid;
+      gap: 0;
+      border-top: 1px solid var(--line);
+    }
+    .s03 .row {
+      display: grid;
+      grid-template-columns: 112px minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+      text-decoration: none;
+      color: inherit;
+    }
+    .s03 .img {
+      aspect-ratio: 4/3;
+      width: 112px;
+    }
+    .s03 .loc {
+      font-size: 11px;
+      font-weight: 650;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .s03 .title {
+      margin: 0 0 4px;
+      font-size: 15px;
+      font-weight: 750;
+    }
+    .s03 .meta {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .s03 .price {
+      text-align: right;
+      font-size: 16px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .s03 .price span {
+      display: block;
+      margin-top: 2px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    @media (max-width: 640px) {
+      .s03 .row {
+        grid-template-columns: 88px minmax(0, 1fr);
+      }
+      .s03 .img { width: 88px; }
+      .s03 .price {
+        grid-column: 2;
+        text-align: left;
+        margin-top: 4px;
+      }
+    }
+
+    /* ========== 04 Magazine mosaic ========== */
+    .s04 .head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 18px;
+    }
+    .s04 h3 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 750;
+      letter-spacing: -.02em;
+    }
+    .s04 .mosaic {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 14px;
+    }
+    .s04 .feat {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .s04 .feat .img {
+      aspect-ratio: 16/11;
+      margin-bottom: 12px;
+    }
+    .s04 .feat .title {
+      margin: 0 0 6px;
+      font-size: 22px;
+      font-weight: 750;
+      letter-spacing: -.02em;
+    }
+    .s04 .feat .price {
+      font-size: 15px;
+      font-weight: 800;
+    }
+    .s04 .feat .meta {
+      margin-top: 6px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .s04 .stack {
+      display: grid;
+      gap: 12px;
+    }
+    .s04 .mini {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr);
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .s04 .mini:last-child { border-bottom: 0; padding-bottom: 0; }
+    .s04 .mini .img { aspect-ratio: 4/3; }
+    .s04 .mini .title {
+      margin: 0 0 4px;
+      font-size: 14px;
+      font-weight: 750;
+    }
+    .s04 .mini .price {
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .s04 .mini .meta {
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    @media (max-width: 800px) {
+      .s04 .mosaic { grid-template-columns: 1fr; }
+    }
+
+    /* ========== 05 Dock rail ========== */
+    .s05 .frame {
+      border: 1px solid var(--ink);
+      padding: 20px 20px 16px;
+    }
+    .s05 .head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .s05 h3 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .s05 .navHint {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .s05 .rail {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(220px, 250px);
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: thin;
+    }
+    .s05 .card {
+      border: 1px solid var(--line);
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+      background: #fff;
+    }
+    .s05 .img {
+      aspect-ratio: 16/10;
+      position: relative;
+    }
+    .s05 .idx {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: var(--ink);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      padding: 4px 7px;
+    }
+    .s05 .body {
+      padding: 12px 12px 0;
+      flex: 1;
+    }
+    .s05 .title {
+      margin: 0 0 6px;
+      font-size: 14px;
+      font-weight: 750;
+      letter-spacing: -.01em;
+    }
+    .s05 .meta {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    .s05 .bar {
+      margin-top: 12px;
+      background: var(--navy);
+      color: #fff;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 750;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .s05 .bar span {
+      font-size: 11px;
+      font-weight: 600;
+      opacity: .8;
+    }
+  </style>
+</head>
+<body>
+  <header class="pageHead">
+    <h1>ONTHEWATER · Similar boats</h1>
+    <p>5 концептов блока «Похожие катера» · скажи номер для внедрения</p>
+  </header>
+
+  <nav class="toc" aria-label="Концепты">
+    <a href="#s01">01 Editorial strip</a>
+    <a href="#s02">02 Filmstrip</a>
+    <a href="#s03">03 Compact rows</a>
+    <a href="#s04">04 Magazine mosaic</a>
+    <a href="#s05">05 Dock rail</a>
+  </nav>
+
+  <main class="wrap">
+
+    <article class="concept s01" id="s01">
+      <div class="concept__meta">
+        <div class="concept__num">Концепт 01</div>
+        <h2>Editorial strip</h2>
+        <p>Горизонтальная лента с «журнальной» верхней линией. Цена — типографика под фото, без pill-бейджей на картинке.</p>
+      </div>
+      <div class="stage">
+        <div class="head">
+          <h3>Похожие катера</h3>
+          <a class="more" href="#">Смотреть все</a>
+        </div>
+        <div class="rail">
+          <a class="card" href="#">
+            <div class="img ph ph-1"></div>
+            <div class="loc">Троицкое</div>
+            <h4 class="title">Axis A20 EasyWake</h4>
+            <div class="price">от 6 000 ₽ <span>/ 30 мин</span></div>
+            <div class="meta">★ 0 · до 8 гостей · С капитаном</div>
+          </a>
+          <a class="card" href="#">
+            <div class="img ph ph-2"></div>
+            <div class="loc">Грибки</div>
+            <h4 class="title">Axis T23 EasyWake</h4>
+            <div class="price">от 7 000 ₽ <span>/ 30 мин</span></div>
+            <div class="meta">★ 0 · до 10 гостей · С капитаном</div>
+          </a>
+          <a class="card" href="#">
+            <div class="img ph ph-3"></div>
+            <div class="loc">Троицкое</div>
+            <h4 class="title">Centurion Air Warrior</h4>
+            <div class="price">от 6 000 ₽ <span>/ 30 мин</span></div>
+            <div class="meta">★ 0 · до 6 гостей · С капитаном</div>
+          </a>
+          <a class="card" href="#">
+            <div class="img ph ph-4"></div>
+            <div class="loc">Красногорск</div>
+            <h4 class="title">Axis T23 Wakedivision</h4>
+            <div class="price">от 7 000 ₽ <span>/ 30 мин</span></div>
+            <div class="meta">★ 0 · до 12 гостей · С капитаном</div>
+          </a>
+        </div>
+      </div>
+    </article>
+
+    <article class="concept s02" id="s02">
+      <div class="concept__meta">
+        <div class="concept__num">Концепт 02</div>
+        <h2>Filmstrip</h2>
+        <p>Вертикальные кадры с фото на весь блок. Название и цена поверх затемнения — эмоция и скорость выбора.</p>
+      </div>
+      <div class="stage">
+        <div class="headRow">
+          <h3>Похожие катера</h3>
+          <span class="count">8 вариантов</span>
+        </div>
+        <div class="rail">
+          <a class="card" href="#">
+            <div class="img ph ph-1"></div>
+            <div class="shade"></div>
+            <div class="body">
+              <h4 class="title">Axis A20 EasyWake</h4>
+              <div class="price">от 6 000 ₽ / 30 мин</div>
+              <div class="meta">Троицкое · до 8 гостей</div>
+            </div>
+          </a>
+          <a class="card" href="#">
+            <div class="img ph ph-2"></div>
+            <div class="shade"></div>
+            <div class="body">
+              <h4 class="title">Axis T23 EasyWake</h4>
+              <div class="price">от 7 000 ₽ / 30 мин</div>
+              <div class="meta">Грибки · до 10 гостей</div>
+            </div>
+          </a>
+          <a class="card" href="#">
+            <div class="img ph ph-3"></div>
+            <div class="shade"></div>
+            <div class="body">
+              <h4 class="title">Centurion Air Warrior</h4>
+              <div class="price">от 6 000 ₽ / 30 мин</div>
+              <div class="meta">Троицкое · до 6 гостей</div>
+            </div>
+          </a>
+          <a class="card" href="#">
+            <div class="img ph ph-4"></div>
+            <div class="shade"></div>
+            <div class="body">
+              <h4 class="title">Axis T23 Wakedivision</h4>
+              <div class="price">от 7 000 ₽ / 30 мин</div>
+              <div class="meta">Красногорск · до 12 гостей</div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </article>
+
+    <article class="concept s03" id="s03">
+      <div class="concept__meta">
+        <div class="concept__num">Концепт 03</div>
+        <h2>Compact rows</h2>
+        <p>Не карусель, а список строк: миниатюра, название, цена справа. Быстрое сканирование без горизонтального скролла.</p>
+      </div>
+      <div class="stage">
+        <h3>Похожие катера</h3>
+        <div class="list">
+          <a class="row" href="#">
+            <div class="img ph ph-1"></div>
+            <div>
+              <div class="loc">Троицкое, Московская область</div>
+              <h4 class="title">Axis A20 EasyWake</h4>
+              <div class="meta">30 мин – 2 ч · до 8 гостей · С капитаном</div>
+            </div>
+            <div class="price">от 6 000 ₽<span>/ 30 мин</span></div>
+          </a>
+          <a class="row" href="#">
+            <div class="img ph ph-2"></div>
+            <div>
+              <div class="loc">Грибки, Московская область</div>
+              <h4 class="title">Axis T23 EasyWake</h4>
+              <div class="meta">30 мин – 2 ч · до 10 гостей · С капитаном</div>
+            </div>
+            <div class="price">от 7 000 ₽<span>/ 30 мин</span></div>
+          </a>
+          <a class="row" href="#">
+            <div class="img ph ph-3"></div>
+            <div>
+              <div class="loc">Троицкое, Московская область</div>
+              <h4 class="title">Centurion Air Warrior</h4>
+              <div class="meta">30 мин – 2 ч · до 6 гостей · С капитаном</div>
+            </div>
+            <div class="price">от 6 000 ₽<span>/ 30 мин</span></div>
+          </a>
+          <a class="row" href="#">
+            <div class="img ph ph-4"></div>
+            <div>
+              <div class="loc">Красногорск, Московская область</div>
+              <h4 class="title">Axis T23 Wakedivision</h4>
+              <div class="meta">30 мин – 4 ч · до 12 гостей · С капитаном</div>
+            </div>
+            <div class="price">от 7 000 ₽<span>/ 30 мин</span></div>
+          </a>
+        </div>
+      </div>
+    </article>
+
+    <article class="concept s04" id="s04">
+      <div class="concept__meta">
+        <div class="concept__num">Концепт 04</div>
+        <h2>Magazine mosaic</h2>
+        <p>Один крупный «герой» слева и стопка компактных карточек справа — иерархия внимания без бесконечной ленты.</p>
+      </div>
+      <div class="stage">
+        <div class="head">
+          <h3>Похожие катера</h3>
+        </div>
+        <div class="mosaic">
+          <a class="feat" href="#">
+            <div class="img ph ph-1"></div>
+            <h4 class="title">Axis A20 EasyWake</h4>
+            <div class="price">от 6 000 ₽ / 30 мин</div>
+            <div class="meta">Троицкое · ★ 0 · до 8 гостей · С капитаном</div>
+          </a>
+          <div class="stack">
+            <a class="mini" href="#">
+              <div class="img ph ph-2"></div>
+              <div>
+                <h4 class="title">Axis T23 EasyWake</h4>
+                <div class="price">от 7 000 ₽ / 30 мин</div>
+                <div class="meta">Грибки · до 10 гостей</div>
+              </div>
+            </a>
+            <a class="mini" href="#">
+              <div class="img ph ph-3"></div>
+              <div>
+                <h4 class="title">Centurion Air Warrior</h4>
+                <div class="price">от 6 000 ₽ / 30 мин</div>
+                <div class="meta">Троицкое · до 6 гостей</div>
+              </div>
+            </a>
+            <a class="mini" href="#">
+              <div class="img ph ph-4"></div>
+              <div>
+                <h4 class="title">Axis T23 Wakedivision</h4>
+                <div class="price">от 7 000 ₽ / 30 мин</div>
+                <div class="meta">Красногорск · до 12 гостей</div>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="concept s05" id="s05">
+      <div class="concept__meta">
+        <div class="concept__num">Концепт 05</div>
+        <h2>Dock rail</h2>
+        <p>Жёсткая рамка «дока», нумерация карточек и navy-полоса цены снизу — плотный, сервисный вид без pill-бейджей.</p>
+      </div>
+      <div class="stage">
+        <div class="frame">
+          <div class="head">
+            <h3>Похожие катера</h3>
+            <span class="navHint">Листайте →</span>
+          </div>
+          <div class="rail">
+            <a class="card" href="#">
+              <div class="img ph ph-1"><span class="idx">01</span></div>
+              <div class="body">
+                <h4 class="title">Axis A20 EasyWake</h4>
+                <div class="meta">Троицкое · до 8 гостей · С капитаном</div>
+              </div>
+              <div class="bar"><b>от 6 000 ₽</b><span>/ 30 мин</span></div>
+            </a>
+            <a class="card" href="#">
+              <div class="img ph ph-2"><span class="idx">02</span></div>
+              <div class="body">
+                <h4 class="title">Axis T23 EasyWake</h4>
+                <div class="meta">Грибки · до 10 гостей · С капитаном</div>
+              </div>
+              <div class="bar"><b>от 7 000 ₽</b><span>/ 30 мин</span></div>
+            </a>
+            <a class="card" href="#">
+              <div class="img ph ph-3"><span class="idx">03</span></div>
+              <div class="body">
+                <h4 class="title">Centurion Air Warrior</h4>
+                <div class="meta">Троицкое · до 6 гостей · С капитаном</div>
+              </div>
+              <div class="bar"><b>от 6 000 ₽</b><span>/ 30 мин</span></div>
+            </a>
+            <a class="card" href="#">
+              <div class="img ph ph-4"><span class="idx">04</span></div>
+              <div class="body">
+                <h4 class="title">Axis T23 Wakedivision</h4>
+                <div class="meta">Красногорск · до 12 гостей · С капитаном</div>
+              </div>
+              <div class="bar"><b>от 7 000 ₽</b><span>/ 30 мин</span></div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </article>
+
+  </main>
+</body>
+</html>

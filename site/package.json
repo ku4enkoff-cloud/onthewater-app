@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/generate-sitemap.mjs && vite build && node scripts/prerender.mjs",
-    "build:no-prerender": "node scripts/generate-sitemap.mjs && vite build",
+    "build": "node scripts/generate-sitemap.mjs && vite build && node scripts/inject-static-seo.mjs && node scripts/prerender.mjs",
+    "build:no-prerender": "node scripts/generate-sitemap.mjs && vite build && node scripts/inject-static-seo.mjs",
+    "seo:inject": "node scripts/inject-static-seo.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },

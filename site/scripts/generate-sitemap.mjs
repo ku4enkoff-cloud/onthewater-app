@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   fetchBoatsForSeo,
+  fetchSeoCities,
   getApiBase,
   getPrerenderRoutes,
   getSiteOrigin,
@@ -23,21 +24,46 @@ function escapeXml(value) {
 }
 
 function buildSitemapXml(entries) {
+  const hasImages = entries.some((e) => Array.isArray(e.images) && e.images.length > 0)
   const urls = entries
-    .map(
-      (e) => `  <url>
+    .map((e) => {
+      const imagesXml = (e.images || [])
+        .map(
+          (img) => `    <image:image>
+      <image:loc>${escapeXml(img.loc)}</image:loc>${
+            img.title ? `\n      <image:title>${escapeXml(img.title)}</image:title>` : ''
+          }
+    </image:image>`,
+        )
+        .join('\n')
+      return `  <url>
     <loc>${escapeXml(e.loc)}</loc>
     <lastmod>${escapeXml(e.lastmod)}</lastmod>
     <changefreq>${escapeXml(e.changefreq)}</changefreq>
-    <priority>${escapeXml(e.priority)}</priority>
-  </url>`,
-    )
+    <priority>${escapeXml(e.priority)}</priority>${imagesXml ? `\n${imagesXml}` : ''}
+  </url>`
+    })
     .join('\n')
 
+  const ns = hasImages
+    ? 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n  xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"'
+    : 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
+
   return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset ${ns}>
 ${urls}
 </urlset>
+`
+}
+
+function buildSitemapIndexXml(origin, lastmod) {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>${escapeXml(`${origin}/sitemap.xml`)}</loc>
+    <lastmod>${escapeXml(lastmod)}</lastmod>
+  </sitemap>
+</sitemapindex>
 `
 }
 
@@ -55,14 +81,25 @@ async function main() {
     console.warn(`Sitemap: could not fetch boats (${err.message}), static URLs only`)
   }
 
-  const entries = getSitemapEntries(origin, boats, lastmod)
+  let cities = []
+  try {
+    cities = await fetchSeoCities(apiBase, boats)
+    console.log(`Sitemap: ${cities.length} city landing pages`)
+  } catch {
+    cities = []
+  }
+
+  const entries = getSitemapEntries(origin, boats, lastmod, { apiBase, cities })
   const xml = buildSitemapXml(entries)
   writeFileSync(join(publicDir, 'sitemap.xml'), xml, 'utf8')
+  writeFileSync(join(publicDir, 'sitemap-index.xml'), buildSitemapIndexXml(origin, lastmod), 'utf8')
 
   const routes = getPrerenderRoutes(boats)
   writeFileSync(join(publicDir, 'prerender-routes.json'), JSON.stringify(routes, null, 2), 'utf8')
 
-  console.log(`Wrote sitemap.xml (${entries.length} URLs) and prerender-routes.json (${routes.length} routes)`)
+  console.log(
+    `Wrote sitemap.xml (${entries.length} URLs), sitemap-index.xml, prerender-routes.json (${routes.length} routes)`,
+  )
 }
 
 main().catch((err) => {

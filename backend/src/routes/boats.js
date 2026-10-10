@@ -137,7 +137,8 @@ router.get('/', async (req, res, next) => {
             query = `SELECT * FROM boats WHERE status = 'active' AND LOWER(TRIM(COALESCE(location_city, ''))) = LOWER($1) ORDER BY COALESCE(bookings_count, 0) DESC, id`;
             params = [cityVal];
         } else if (popular) {
-            const lim = Math.min(50, Math.max(1, parseInt(limit, 10) || 10));
+            // До 500 — для sitemap/SEO и полного каталога на сайте; UI обычно запрашивает ≤50.
+            const lim = Math.min(500, Math.max(1, parseInt(limit, 10) || 10));
             query = `SELECT * FROM boats WHERE status = 'active' ORDER BY COALESCE(bookings_count, 0) DESC, id LIMIT $1`;
             params = [lim];
         } else if (lat != null && lng != null) {

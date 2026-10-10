@@ -1,0 +1,1839 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ONTHEWATER — 10 концептов блоков контента страницы катера</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #0a0a0a;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --navy: #1b365d;
+      --navy-soft: rgba(27, 54, 93, 0.08);
+      --bg: #ffffff;
+      --soft: #f3f4f6;
+      --footer: #14161c;
+      --sans: 'Montserrat', system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background: #eef0f3;
+      color: var(--ink);
+    }
+    .pageHead {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+      padding: 18px 28px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: baseline;
+    }
+    .pageHead h1 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .pageHead p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .toc {
+      width: min(1180px, 100% - 32px);
+      margin: 20px auto 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .toc a {
+      text-decoration: none;
+      color: var(--navy);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 999px;
+    }
+    .toc a:hover { border-color: var(--navy); }
+
+    .wrap {
+      width: min(1180px, 100% - 32px);
+      margin: 24px auto 80px;
+      display: grid;
+      gap: 40px;
+    }
+
+    .concept {
+      background: #fff;
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+    .concept__meta {
+      padding: 22px 24px 18px;
+      border-bottom: 1px solid var(--line);
+      display: grid;
+      gap: 8px;
+      background: #fafafa;
+    }
+    .concept__num {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--navy);
+    }
+    .concept__meta h2 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 750;
+      letter-spacing: -.02em;
+    }
+    .concept__meta p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+      max-width: 70ch;
+    }
+
+    /* Shared mock chrome: frozen top (not redesigned) */
+    .chrome {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) 300px;
+      gap: 28px;
+      padding: 24px;
+      background: #fff;
+    }
+    .chrome__frozen {
+      border: 1px dashed #cfd4dc;
+      border-radius: 6px;
+      background:
+        linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+      color: #94a3b8;
+      padding: 18px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      min-height: 160px;
+      display: grid;
+      align-content: center;
+      gap: 8px;
+    }
+    .chrome__frozen strong {
+      color: #64748b;
+      font-size: 13px;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .chrome__aside {
+      border: 1px dashed #cfd4dc;
+      border-radius: 8px;
+      min-height: 280px;
+      background: #f8fafc;
+      padding: 16px;
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .chrome__content {
+      display: grid;
+      gap: 0;
+      min-width: 0;
+    }
+    @media (max-width: 900px) {
+      .chrome { grid-template-columns: 1fr; }
+      .chrome__aside { min-height: 80px; }
+    }
+
+    /* Mock data helpers */
+    .mockDesc {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.65;
+      color: #374151;
+    }
+    .mapPh {
+      height: 180px;
+      border-radius: 4px;
+      background:
+        linear-gradient(135deg, #dbeafe 0%, #e0f2fe 40%, #ecfeff 100%);
+      border: 1px solid var(--line);
+      display: grid;
+      place-items: center;
+      color: var(--navy);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--navy);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .stars { color: var(--navy); letter-spacing: .05em; }
+
+    /* ===================== 01 Editorial index ===================== */
+    .c01 .sec { padding: 36px 0 28px; border-top: 1px solid var(--line); }
+    .c01 .sec:first-child { border-top: 0; padding-top: 8px; }
+    .c01 .secHead {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .c01 .idx {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: .12em;
+    }
+    .c01 h3 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -.03em;
+    }
+    .c01 .amenGrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 24px;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .c01 .amenGrid li {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .c01 .amenGrid li::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--navy);
+      flex-shrink: 0;
+    }
+    .c01 .specRows { display: grid; gap: 0; }
+    .c01 .specRows div {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #eef0f4;
+      font-size: 14px;
+    }
+    .c01 .specRows dt { color: var(--muted); font-weight: 500; }
+    .c01 .specRows dd { margin: 0; font-weight: 600; }
+    .c01 .tiers { display: grid; gap: 8px; }
+    .c01 .tier {
+      display: flex;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+      font-weight: 600;
+      font-size: 15px;
+    }
+    .c01 .owner {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+    .c01 .review {
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+    }
+    .c01 .know details {
+      border-top: 1px solid var(--line);
+      padding: 14px 0;
+    }
+    .c01 .know summary {
+      cursor: pointer;
+      font-weight: 650;
+      font-size: 15px;
+    }
+    .c01 .similar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .c01 .simCard {
+      border-top: 2px solid var(--ink);
+      padding-top: 12px;
+    }
+    .c01 .simCard .ph {
+      aspect-ratio: 4/3;
+      background: #d1d5db;
+      margin-bottom: 10px;
+    }
+    .c01 .simCard b { font-size: 14px; display: block; }
+    .c01 .simCard span { font-size: 12px; color: var(--muted); }
+
+    /* ===================== 02 Soft rooms ===================== */
+    .c02 .chrome__content { gap: 14px; }
+    .c02 .room {
+      background: var(--soft);
+      border-radius: 16px;
+      padding: 22px 22px 20px;
+    }
+    .c02 .room h3 {
+      margin: 0 0 12px;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--navy);
+    }
+    .c02 .amenGrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .c02 .amenGrid li {
+      background: #fff;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .c02 .specs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .c02 .specs div {
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .c02 .specs dt {
+      margin: 0 0 4px;
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .c02 .specs dd { margin: 0; font-size: 16px; font-weight: 700; }
+    .c02 .tiers { display: grid; gap: 8px; }
+    .c02 .tier {
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .c02 .tier.on { outline: 2px solid var(--navy); }
+    .c02 .owner {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .c02 .review {
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-top: 8px;
+    }
+    .c02 .know details {
+      background: #fff;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-top: 8px;
+    }
+    .c02 .know summary { font-weight: 700; cursor: pointer; }
+    .c02 .similar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .c02 .simCard {
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .c02 .simCard .ph { aspect-ratio: 4/3; background: #cbd5e1; }
+    .c02 .simCard .body { padding: 12px; font-size: 13px; font-weight: 700; }
+
+    /* ===================== 03 Anchor rail ===================== */
+    .c03 .split {
+      display: grid;
+      grid-template-columns: 180px minmax(0, 1fr);
+      gap: 28px;
+    }
+    .c03 .rail {
+      position: sticky;
+      top: 90px;
+      align-self: start;
+      display: grid;
+      gap: 6px;
+    }
+    .c03 .rail a {
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      padding: 8px 10px;
+      border-left: 2px solid transparent;
+    }
+    .c03 .rail a.on {
+      color: var(--navy);
+      border-left-color: var(--navy);
+      background: var(--navy-soft);
+    }
+    .c03 .sec { padding: 22px 0; border-bottom: 1px solid var(--line); scroll-margin-top: 100px; }
+    .c03 h3 { margin: 0 0 12px; font-size: 18px; font-weight: 750; }
+    .c03 .amenGrid {
+      columns: 2;
+      gap: 24px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .c03 .amenGrid li {
+      break-inside: avoid;
+      padding: 6px 0 6px 18px;
+      position: relative;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .c03 .amenGrid li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--navy);
+      font-weight: 800;
+      font-size: 12px;
+    }
+    .c03 table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .c03 td { padding: 10px 0; border-bottom: 1px solid #eef0f4; }
+    .c03 td:first-child { color: var(--muted); width: 40%; }
+    .c03 .tierRow {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      margin-bottom: 8px;
+      font-weight: 650;
+      font-size: 14px;
+    }
+    .c03 .tierRow.on { border-color: var(--navy); background: var(--navy-soft); }
+    .c03 .owner { display: flex; gap: 12px; align-items: center; }
+    .c03 .review { margin-top: 12px; padding: 14px; background: var(--soft); }
+    .c03 details { border-top: 1px solid var(--line); padding: 12px 0; }
+    .c03 summary { font-weight: 700; cursor: pointer; }
+    .c03 .similar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .c03 .simCard .ph { aspect-ratio: 4/3; background: #cbd5e1; margin-bottom: 8px; }
+    .c03 .simCard b { font-size: 13px; }
+    @media (max-width: 800px) {
+      .c03 .split { grid-template-columns: 1fr; }
+      .c03 .rail { position: static; display: flex; flex-wrap: wrap; gap: 4px; }
+      .c03 .rail a { border-left: 0; border-bottom: 2px solid transparent; }
+      .c03 .rail a.on { border-bottom-color: var(--navy); }
+    }
+
+    /* ===================== 04 Metric dock ===================== */
+    .c04 .chrome__content { gap: 28px; padding-top: 4px; }
+    .c04 h3 {
+      margin: 0 0 14px;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .c04 .descBox {
+      border-left: 3px solid var(--navy);
+      padding-left: 16px;
+    }
+    .c04 .dock {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 16px;
+    }
+    .c04 .panel {
+      border: 1px solid var(--line);
+      padding: 16px;
+    }
+    .c04 .amenGrid {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 8px;
+    }
+    .c04 .amenGrid li {
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .c04 .amenGrid li i {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--navy);
+      color: #fff;
+      font-style: normal;
+      font-size: 10px;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+    }
+    .c04 .metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .c04 .metrics div {
+      background: var(--soft);
+      padding: 12px;
+    }
+    .c04 .metrics b { display: block; font-size: 18px; }
+    .c04 .metrics span { font-size: 11px; color: var(--muted); font-weight: 600; }
+    .c04 .priceStrip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .c04 .priceStrip button {
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 14px 8px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .c04 .priceStrip button.on {
+      background: var(--navy);
+      color: #fff;
+      border-color: var(--navy);
+    }
+    .c04 .priceStrip b { display: block; font-size: 13px; }
+    .c04 .priceStrip span { font-size: 11px; opacity: .8; }
+    .c04 .locGrid {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 12px;
+    }
+    .c04 .trust {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .c04 .trustCard {
+      border: 1px solid var(--line);
+      padding: 14px;
+    }
+    .c04 .owner { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+    .c04 .know button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      border: 0;
+      border-top: 1px solid var(--line);
+      background: transparent;
+      padding: 12px 0;
+      font-family: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .c04 .similar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .c04 .simCard .ph { aspect-ratio: 1; background: #cbd5e1; margin-bottom: 6px; }
+    .c04 .simCard b { font-size: 12px; }
+    @media (max-width: 800px) {
+      .c04 .dock, .c04 .locGrid, .c04 .trust, .c04 .priceStrip, .c04 .similar {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    /* ===================== 05 Timeline ===================== */
+    .c05 .tl { position: relative; padding-left: 28px; }
+    .c05 .tl::before {
+      content: '';
+      position: absolute;
+      left: 7px;
+      top: 8px;
+      bottom: 8px;
+      width: 2px;
+      background: #d1d5db;
+    }
+    .c05 .sec {
+      position: relative;
+      padding: 0 0 28px;
+    }
+    .c05 .sec::before {
+      content: '';
+      position: absolute;
+      left: -28px;
+      top: 6px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      border: 3px solid var(--navy);
+      box-sizing: border-box;
+    }
+    .c05 h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      font-weight: 800;
+    }
+    .c05 .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .c05 .chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 650;
+      background: #fff;
+    }
+    .c05 .specInline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 18px;
+      font-size: 13px;
+    }
+    .c05 .specInline b { font-weight: 700; }
+    .c05 .specInline span { color: var(--muted); }
+    .c05 .tiers { display: grid; gap: 8px; }
+    .c05 .tier {
+      display: flex;
+      justify-content: space-between;
+      background: var(--soft);
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .c05 .owner { display: flex; gap: 12px; align-items: center; }
+    .c05 .review {
+      margin-top: 10px;
+      padding: 14px;
+      border-radius: 8px;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+    .c05 details {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+    }
+    .c05 summary { font-weight: 700; cursor: pointer; }
+    .c05 .similar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .c05 .simCard .ph { aspect-ratio: 4/3; background: #cbd5e1; border-radius: 8px; margin-bottom: 8px; }
+    .c05 .simCard b { font-size: 13px; }
+
+    /* ===================== 06 Tile & quote ===================== */
+    .c06 .chrome__content { gap: 32px; }
+    .c06 h3 {
+      margin: 0 0 14px;
+      font-size: 20px;
+      font-weight: 750;
+      letter-spacing: -.02em;
+    }
+    .c06 .amenGrid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .c06 .amenGrid li {
+      border: 1px solid var(--line);
+      padding: 16px 14px;
+      font-size: 13px;
+      font-weight: 650;
+      text-align: center;
+      background: #fff;
+    }
+    .c06 .amenGrid li::before {
+      content: '●';
+      display: block;
+      color: var(--navy);
+      font-size: 10px;
+      margin-bottom: 8px;
+    }
+    .c06 .specs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .c06 .specs div {
+      background: var(--navy);
+      color: #fff;
+      padding: 16px 14px;
+      min-height: 92px;
+    }
+    .c06 .specs dt {
+      margin: 0 0 8px;
+      font-size: 11px;
+      opacity: .75;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .c06 .specs dd { margin: 0; font-size: 18px; font-weight: 750; }
+    .c06 .tiers {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .c06 .tier {
+      border: 1px solid var(--line);
+      padding: 16px 12px;
+      text-align: center;
+    }
+    .c06 .tier.on { border-color: var(--navy); box-shadow: inset 0 0 0 1px var(--navy); }
+    .c06 .tier b { display: block; font-size: 18px; margin-bottom: 4px; }
+    .c06 .tier span { font-size: 12px; color: var(--muted); font-weight: 600; }
+    .c06 .quote {
+      border-left: 4px solid var(--navy);
+      padding: 8px 0 8px 18px;
+      font-size: 16px;
+      line-height: 1.5;
+      font-weight: 500;
+    }
+    .c06 .quote footer {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .c06 .ownerBand {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      padding: 16px;
+      background: var(--soft);
+    }
+    .c06 .knowGrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+    .c06 .knowGrid div {
+      border: 1px solid var(--line);
+      padding: 14px;
+      font-size: 13px;
+    }
+    .c06 .knowGrid b { display: block; margin-bottom: 6px; font-size: 13px; }
+    .c06 .knowGrid p { margin: 0; color: var(--muted); line-height: 1.45; }
+    .c06 .similar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .c06 .simCard .ph { aspect-ratio: 16/10; background: #cbd5e1; margin-bottom: 10px; }
+    .c06 .simCard b { font-size: 14px; }
+    @media (max-width: 800px) {
+      .c06 .amenGrid, .c06 .specs, .c06 .tiers, .c06 .knowGrid { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* ===================== 07 Quiet accordion ===================== */
+    .c07 .lead {
+      padding-bottom: 20px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--line);
+    }
+    .c07 .lead h3 {
+      margin: 0 0 12px;
+      font-size: 22px;
+      font-weight: 750;
+    }
+    .c07 details.acc {
+      border-bottom: 1px solid var(--line);
+    }
+    .c07 details.acc > summary {
+      list-style: none;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 0;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .c07 details.acc > summary::-webkit-details-marker { display: none; }
+    .c07 details.acc > summary::after {
+      content: '+';
+      font-weight: 500;
+      color: var(--muted);
+      font-size: 22px;
+      line-height: 1;
+    }
+    .c07 details.acc[open] > summary::after { content: '−'; }
+    .c07 .accBody { padding: 0 0 18px; }
+    .c07 .amenGrid {
+      columns: 2;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .c07 .amenGrid li { padding: 4px 0; }
+    .c07 .specRows div {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #eef0f4;
+      font-size: 14px;
+    }
+    .c07 .specRows dt { color: var(--muted); }
+    .c07 .specRows dd { margin: 0; font-weight: 700; }
+    .c07 .tier {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      font-weight: 650;
+      border-bottom: 1px solid #eef0f4;
+    }
+    .c07 .owner { display: flex; gap: 12px; align-items: center; }
+    .c07 .review { margin-top: 10px; font-size: 14px; line-height: 1.5; }
+    .c07 .similar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px; }
+    .c07 .simCard .ph { aspect-ratio: 4/3; background: #cbd5e1; margin-bottom: 8px; }
+    .c07 .simCard b { font-size: 13px; }
+
+    /* ===================== 08 Trust band ===================== */
+    .c08 .chrome__content { gap: 28px; }
+    .c08 h3 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      font-weight: 750;
+    }
+    .c08 .two {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 20px;
+    }
+    .c08 .amenGrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 16px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .c08 .amenGrid li::before { content: '— '; color: var(--navy); font-weight: 700; }
+    .c08 .specList div {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+    .c08 .specList dt { color: var(--muted); }
+    .c08 .specList dd { margin: 0; font-weight: 700; }
+    .c08 .tiers { display: grid; gap: 8px; }
+    .c08 .tier {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: var(--soft);
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .c08 .trustBand {
+      background: var(--navy);
+      color: #fff;
+      padding: 22px;
+      display: grid;
+      grid-template-columns: 1fr 1.2fr .9fr;
+      gap: 20px;
+    }
+    .c08 .trustBand h3 { color: #fff; }
+    .c08 .trustBand .muted { color: rgba(255,255,255,.7); font-size: 13px; line-height: 1.45; }
+    .c08 .owner { display: flex; gap: 12px; align-items: center; }
+    .c08 .avatar { background: #fff; color: var(--navy); }
+    .c08 .review {
+      background: rgba(255,255,255,.08);
+      padding: 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .c08 .know item, .c08 .know div {
+      border-top: 1px solid rgba(255,255,255,.15);
+      padding: 10px 0;
+      font-size: 13px;
+      font-weight: 650;
+    }
+    .c08 .similar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .c08 .simCard .ph { aspect-ratio: 4/3; background: #cbd5e1; margin-bottom: 8px; }
+    .c08 .simCard b { font-size: 13px; }
+    @media (max-width: 900px) {
+      .c08 .two, .c08 .trustBand { grid-template-columns: 1fr; }
+    }
+
+    /* ===================== 09 Map break ===================== */
+    .c09 .chrome__content { gap: 0; }
+    .c09 .read {
+      max-width: 640px;
+      display: grid;
+      gap: 28px;
+      padding: 8px 0 28px;
+    }
+    .c09 h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--navy);
+    }
+    .c09 .mapBreak {
+      margin: 8px -24px 28px;
+      padding: 0 24px 0;
+    }
+    .c09 .mapBreak .mapPh {
+      height: 260px;
+      border-radius: 0;
+      border-left: 0;
+      border-right: 0;
+    }
+    .c09 .mapBreak .addr {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 0 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .c09 .amenGrid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .c09 .amenGrid li {
+      background: var(--soft);
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 650;
+      border-radius: 2px;
+    }
+    .c09 .specs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      border-top: 1px solid var(--line);
+    }
+    .c09 .specs div {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+    .c09 .specs dt { color: var(--muted); }
+    .c09 .specs dd { margin: 0; font-weight: 700; }
+    .c09 .tiers { display: grid; gap: 6px; }
+    .c09 .tier {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+      font-weight: 650;
+    }
+    .c09 .owner { display: flex; gap: 12px; align-items: center; }
+    .c09 .review { margin-top: 12px; font-size: 14px; line-height: 1.55; color: #374151; }
+    .c09 details { border-top: 1px solid var(--line); padding: 12px 0; }
+    .c09 summary { font-weight: 700; cursor: pointer; }
+    .c09 .similar { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .c09 .simCard .ph { aspect-ratio: 16/10; background: #cbd5e1; margin-bottom: 8px; }
+    .c09 .simCard b { font-size: 13px; }
+
+    /* ===================== 10 Price theater ===================== */
+    .c10 .chrome__content { gap: 30px; }
+    .c10 h3 {
+      margin: 0 0 14px;
+      font-size: 18px;
+      font-weight: 750;
+    }
+    .c10 .priceTheater {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      border: 1px solid var(--ink);
+    }
+    .c10 .priceTheater button {
+      border: 0;
+      border-right: 1px solid var(--ink);
+      background: #fff;
+      padding: 20px 12px;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: left;
+    }
+    .c10 .priceTheater button:last-child { border-right: 0; }
+    .c10 .priceTheater button.on {
+      background: var(--ink);
+      color: #fff;
+    }
+    .c10 .priceTheater .lbl {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      opacity: .65;
+      margin-bottom: 8px;
+    }
+    .c10 .priceTheater b {
+      display: block;
+      font-size: 20px;
+      letter-spacing: -.02em;
+    }
+    .c10 .duo {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .c10 .amenGrid {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 8px;
+    }
+    .c10 .amenGrid li {
+      font-size: 14px;
+      font-weight: 500;
+      padding-left: 16px;
+      position: relative;
+    }
+    .c10 .amenGrid li::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--navy);
+      position: absolute;
+      left: 0;
+      top: .55em;
+    }
+    .c10 .specs div {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+    .c10 .specs dt { color: var(--muted); }
+    .c10 .specs dd { margin: 0; font-weight: 700; }
+    .c10 .locRow {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .c10 .ownerReview {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 16px;
+    }
+    .c10 .card {
+      border: 1px solid var(--line);
+      padding: 16px;
+    }
+    .c10 .owner { display: flex; gap: 12px; align-items: center; }
+    .c10 .know {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+    }
+    .c10 .know div {
+      background: #fff;
+      padding: 16px;
+      font-size: 13px;
+    }
+    .c10 .know b { display: block; margin-bottom: 6px; }
+    .c10 .know p { margin: 0; color: var(--muted); line-height: 1.45; }
+    .c10 .similar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      border-top: 1px solid var(--ink);
+    }
+    .c10 .simCard {
+      padding: 16px 16px 0 0;
+      border-right: 0;
+    }
+    .c10 .simCard .ph {
+      aspect-ratio: 4/3;
+      background: #cbd5e1;
+      margin-bottom: 10px;
+    }
+    .c10 .simCard b { font-size: 13px; display: block; }
+    .c10 .simCard span { font-size: 12px; color: var(--muted); }
+    @media (max-width: 900px) {
+      .c10 .priceTheater, .c10 .duo, .c10 .locRow, .c10 .ownerReview, .c10 .know, .c10 .similar {
+        grid-template-columns: 1fr;
+      }
+      .c10 .priceTheater button { border-right: 0; border-bottom: 1px solid var(--ink); }
+    }
+  </style>
+</head>
+<body>
+  <header class="pageHead">
+    <h1>ONTHEWATER · Content blocks</h1>
+    <p>10 концептов только для блоков контента · галерея и бронь не меняются · скажи номер для внедрения</p>
+  </header>
+
+  <nav class="toc" aria-label="Концепты">
+    <a href="#c01">01 Editorial</a>
+    <a href="#c02">02 Soft rooms</a>
+    <a href="#c03">03 Anchor rail</a>
+    <a href="#c04">04 Metric dock</a>
+    <a href="#c05">05 Timeline</a>
+    <a href="#c06">06 Tile & quote</a>
+    <a href="#c07">07 Accordion</a>
+    <a href="#c08">08 Trust band</a>
+    <a href="#c09">09 Map break</a>
+    <a href="#c10">10 Price theater</a>
+  </nav>
+
+  <main class="wrap">
+
+    <!-- 01 -->
+    <article class="concept c01" id="c01">
+      <div class="concept__meta">
+        <div class="concept__num">Концепт 01</div>
+        <h2>Editorial index</h2>
+        <p>Нумерованные секции как в журнале: крупный заголовок, воздух, тонкие линии. Спокойное чтение без карточек.</p>
+      </div>
+      <div class="chrome">
+        <div>
+          <div class="chrome__frozen" style="margin-bottom:20px">
+            <strong>Галерея + заголовок + спеки — без изменений</strong>
+            Mastercraft Prostar 205 · Троицкое
+          </div>
+          <div class="chrome__content">
+            <section class="sec">
+              <div class="secHead"><span class="idx">01</span><h3>Описание</h3></div>
+              <p class="mockDesc">Easywake — вейкклуб в зоне отдыха «Троицкое». Катаем на вейкборде и учим новичков и тех, кто хочет расти в спорте. Mastercraft Prostar 205 — точный контроль волны и комфорт на борту.</p>
+            </section>
+            <section class="sec">
+              <div class="secHead"><span class="idx">02</span><h3>Что входит в аренду</h3></div>
+              <ul class="amenGrid">
+                <li>Купальная платформа</li><li>Аудиосистема</li><li>Место для загара</li><li>Вейкборд</li><li>Водные лыжи</li><li>Жилеты</li>
+              </ul>
+            </section>
+            <section class="sec">
+              <div class="secHead"><span class="idx">03</span><h3>Характеристики</h3></div>
+              <dl class="specRows">
+                <div><dt>Год</dt><dd>2018</dd></div>
+                <div><dt>Длина</dt><dd>6.1 м</dd></div>
+                <div><dt>Вместимость</dt><dd>5 человек</dd></div>
+                <div><dt>Капитан</dt><dd>Включён</dd></div>
+              </dl>
+            </section>
+            <section class="sec">
+              <div class="secHead"><span class="idx">04</span><h3>Варианты бронирования</h3></div>
+              <div class="tiers">
+                <div class="tier"><span>30 мин</span><span>4 000 ₽</span></div>
+                <div class="tier"><span>1 час</span><span>8 000 ₽</span></div>
+                <div class="tier"><span>2 часа</span><span>16 000 ₽</span></div>
+              </div>
+            </section>
+            <section class="sec">
+              <div class="secHead"><span class="idx">05</span><h3>Расположение</h3></div>
+              <div class="mapPh">Карта · Троицкое</div>
+              <p class="mockDesc" style="margin-top:12px">Московская область, Троицкое · яхт-клуб EasyWake</p>
+            </section>
+            <section class="sec">
+              <div class="secHead"><span class="idx">06</span><h3>Владелец</h3></div>
+              <div class="owner">
+                <div class="avatar">E</div>
+                <div>
+                  <strong>EasyWake</strong>
+                  <div class="stars">★ 5.0 · 1 отзыв</div>
+                </div>
+              </div>
+            </section>
+            <section class="sec">
+              <div class="secHead"><span class="idx">07</span><h3>Отзывы</h3></div>
+              <div class="review">
+                <div class="stars">★★★★★</div>
+                <p class="mockDesc" style="margin-top:8px">Хороший катер, всё понравилось.</p>
+              </div>
+            </section>
+            <section class="sec know">
+              <div class="secHead"><span class="idx">08</span><h3>Важно знать</h3></div>
+              <details open><summary>Отмена бронирования</summary><p class="mockDesc" style="margin-top:8px">Бесплатная отмена за 24 часа до выхода.</p></details>
+              <details><summary>Правила</summary><p class="mockDesc" style="margin-top:8px">На борту только с капитаном клуба.</p></details>
+              <details><summary>Оплата</summary><p class="mockDesc" style="margin-top:8px">Онлайн или на месте по согласованию.</p></details>
+            </section>
+            <section class="sec">
+              <div class="secHead"><span class="idx">09</span><h3>Похожие катера</h3></div>
+              <div class="similar">
+                <div class="simCard"><div class="ph"></div><b>Axis A20</b><span>от 6 000 ₽</span></div>
+                <div class="simCard"><div class="ph"></div><b>Axis T23</b><span>от 7 000 ₽</span></div>
+                <div class="simCard"><div class="ph"></div><b>Centurion</b><span>от 6 000 ₽</span></div>
+              </div>
+            </section>
+          </div>
+        </div>
+        <aside class="chrome__aside">Бронь · без изменений</aside>
+      </div>
+    </article>
+
+    <!-- 02 -->
+    <article class="concept c02" id="c02">
+      <div class="concept__meta">
+        <div class="concept__num">Концепт 02</div>
+        <h2>Soft rooms</h2>
+        <p>Каждый блок — отдельная «комната» на мягком фоне. Удобства и характеристики как плитки внутри секций.</p>
+      </div>
+      <div class="chrome">
+        <div>
+          <div class="chrome__frozen" style="margin-bottom:16px"><strong>Галерея + hero — без изменений</strong></div>
+          <div class="chrome__content">
+            <section class="room">
+              <h3>Описание</h3>
+              <p class="mockDesc">Easywake — вейкклуб в «Троицком». Mastercraft Prostar 205 для вейкборда и спокойного катания с капитаном.</p>
+            </section>
+            <section class="room">
+              <h3>Что входит в аренду</h3>
+              <ul class="amenGrid">
+                <li>Купальная платформа</li><li>Аудиосистема</li><li>Место для загара</li><li>Вейкборд</li><li>Водные лыжи</li><li>Жилеты</li>
+              </ul>
+            </section>
+            <section class="room">
+              <h3>Характеристики</h3>
+              <dl class="specs">
+                <div><dt>Год</dt><dd>2018</dd></div>
+                <div><dt>Длина</dt><dd>6.1 м</dd></div>
+                <div><dt>Гости</dt><dd>5</dd></div>
+              </dl>
+            </section>
+            <section class="room">
+              <h3>Варианты бронирования</h3>
+              <div class="tiers">
+                <div class="tier on"><span>30 мин</span><span>4 000 ₽</span></div>
+                <div class="tier"><span>1 час</span><span>8 000 ₽</span></div>
+                <div class="tier"><span>2 часа</span><span>16 000 ₽</span></div>
+              </div>
+            </section>
+            <section class="room">
+              <h3>Расположение</h3>
+              <div class="mapPh">Карта</div>
+            </section>
+            <section class="room">
+              <h3>Владелец</h3>
+              <div class="owner">
+                <div class="avatar">E</div>
+                <div><strong>EasyWake</strong><div style="font-size:13px;color:var(--muted)">★ 5.0 · отвечает быстро</div></div>
+              </div>
+            </section>
+            <section class="room">
+              <h3>Отзывы</h3>
+              <div class="review"><strong>★★★★★</strong><p class="mockDesc" style="margin-top:6px">Хороший катер, всё понравилось.</p></div>
+            </section>
+            <section class="room know">
+              <h3>Важно знать</h3>
+              <details open><summary>Отмена</summary><p class="mockDesc" style="margin-top:6px">За 24 часа — бесплатно.</p></details>
+              <details><summary>Правила</summary><p class="mockDesc" style="margin-top:6px">Только с капитаном.</p></details>
+            </section>
+            <section class="room">
+              <h3>Похожие катера</h3>
+              <div class="similar">
+                <div class="simCard"><div class="ph"></div><div class="body">Axis A20</div></div>
+                <div class="simCard"><div class="ph"></div><div class="body">Axis T23</div></div>
+                <div class="simCard"><div class="ph"></div><div class="body">Centurion</div></div>
+              </div>
+            </section>
+          </div>
+        </div>
+        <aside class="chrome__aside">Бронь · без изменений</aside>
+      </div>
+    </article>
+
+    <!-- 03 -->
+    <article class="concept c03" id="c03">
+      <div class="concept__meta">
+        <div class="concept__num">Концепт 03</div>
+        <h2>Anchor rail</h2>
+        <p>Левый индекс секций — быстрый прыжок по странице. Контент справа плотный и деловой.</p>
+      </div>
+      <div class="chrome">
+        <div>
+          <div class="chrome__frozen" style="margin-bottom:18px"><strong>Галерея + hero — без изменений</strong></div>
+          <div class="split">
+            <nav class="rail" aria-label="Разделы">
+              <a class="on" href="#c03-d">Описание</a>
+              <a href="#c03-a">Что входит</a>
+              <a href="#c03-s">Характеристики</a>
+              <a href="#c03-t">Тарифы</a>
+              <a href="#c03-m">Расположение</a>
+              <a href="#c03-o">Владелец</a>
+              <a href="#c03-r">Отзывы</a>
+              <a href="#c03-k">Важно знать</a>
+              <a href="#c03-x">Похожие</a>
+            </nav>
+            <div>
+              <section class="sec" id="c03-d"><h3>Описание</h3><p class="mockDesc">Easywake — вейкклуб в «Троицком». Mastercraft Prostar 205 для вейка и семейного катания.</p></section>
+              <section class="sec" id="c03-a"><h3>Что входит в аренду</h3>
+                <ul class="amenGrid"><li>Купальная платформа</li><li>Аудиосистема</li><li>Место для загара</li><li>Вейкборд</li><li>Водные лыжи</li><li>Жилеты</li></ul>
+              </section>
+              <section class="sec" id="c03-s"><h3>Характеристики</h3>
+                <table><tr><td>Год</td><td>2018</td></tr><tr><td>Длина</td><td>6.1 м</td></tr><tr><td>Вместимость</td><td>5</td></tr><tr><td>Капитан</td><td>Включён</td></tr></table>
+              </section>
+              <section class="sec" id="c03-t"><h3>Варианты бронирования</h3>
+                <div class="tierRow on"><span>30 мин</span><span>4 000 ₽</span></div>
+                <div class="tierRow"><span>1 час</span><span>8 000 ₽</span></div>
+                <div class="tierRow"><span>2 часа</span><span>16 000 ₽</span></div>
+              </section>
+              <section class="sec" id="c03-m"><h3>Расположение</h3><div class="mapPh">Карта</div></section>
+              <section class="sec" id="c03-o"><h3>Владелец</h3>
+                <div class="owner"><div class="avatar">E</div><div><strong>EasyWake</strong><div style="font-size:13px;color:var(--muted)">★ 5.0</div></div></div>
+              </section>
+              <section class="sec" id="c03-r"><h3>Отзывы</h3><div class="review">★★★★★ · Хороший катер, всё понравилось.</div></section>
+              <section class="sec" id="c03-k"><h3>Важно знать</h3>
+                <details open><summary>Отмена</summary><p class="mockDesc" style="margin-top:8px">За 24 часа.</p></details>
+                <details><summary>Правила</summary><p class="mockDesc" style="margin-top:8px">С капитаном.</p></details>
+              </section>
+              <section class="sec" id="c03-x"><h3>Похожие катера</h3>
+                <div class="similar">
+                  <div class="simCard"><div class="ph"></div><b>Axis A20</b></div>
+                  <div class="simCard"><div class="ph"></div><b>Axis T23</b></div>
+                  <div class="simCard"><div class="ph"></div><b>Centurion</b></div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+        <aside class="chrome__aside">Бронь · без изменений</aside>
+      </div>
+    </article>
+
+    <!-- 04 -->
+    <article class="concept c04" id="c04">
+      <div class="concept__meta">
+        <div class="concept__num">Концепт 04</div>
+        <h2>Metric dock</h2>
+        <p>Плотный маркетплейс: удобства и характеристики рядом, тарифы — полоса кнопок, доверие в двух колонках.</p>
+      </div>
+      <div class="chrome">
+        <div>
+          <div class="chrome__frozen" style="margin-bottom:18px"><strong>Галерея + hero — без изменений</strong></div>
+          <div class="chrome__content">
+            <section>
+              <h3>Описание</h3>
+              <div class="descBox"><p class="mockDesc">Easywake — вейкклуб в «Троицком». Mastercraft Prostar 205 с капитаном для вейка и отдыха.</p></div>
+            </section>
+            <section class="dock">
+              <div class="panel">
+                <h3>Что входит в аренду</h3>
+                <ul class="amenGrid">
+                  <li><i>✓</i>Купальная платформа</li>
+                  <li><i>✓</i>Аудиосистема</li>
+                  <li><i>✓</i>Место для загара</li>
+                  <li><i>✓</i>Вейкборд</li>
+                  <li><i>✓</i>Водные лыжи</li>
+                  <li><i>✓</i>Жилеты</li>
+                </ul>
+              </div>
+              <div class="panel">
+                <h3>Характеристики</h3>
+                <div class="metrics">
+                  <div><b>2018</b><span>Год</span></div>
+                  <div><b>6.1 м</b><span>Длина</span></div>
+                  <div><b>5</b><span>Гости</span></div>
+                  <div><b>Да</b><span>Капитан</span></div>
+                </div>
+              </div>
+            </section>
+            <section>
+              <h3>Варианты бронирования</h3>
+              <div class="priceStrip">
+                <button class="on" type="button"><b>30 мин</b><span>4 000 ₽</span></button>
+                <button type="button"><b>1 час</b><span>8 000 ₽</span></button>
+                <button type="button"><b>2 часа</b><span>16 000 ₽</span></button>
+                <button type="button"><b>3 часа</b><span>24 000 ₽</span></button>
+              </div>
+            </section>
+            <section class="locGrid">
+              <div>
+                <h3>Расположение</h3>
+                <div class="mapPh">Карта</div>
+              </div>
+              <div class="panel" style="align-self:stretch">
+                <h3>Адрес</h3>
+                <p class="mockDesc">Троицкое, Московская область<br>Яхт-клуб EasyWake</p>
+              </div>
+            </section>
+            <section class="trust">
+              <div class="trustCard">
+                <h3>Владелец</h3>
+                <div class="owner"><div class="avatar">E</div><div><strong>EasyWake</strong><div style="font-size:12px;color:var(--muted)">★ 5.0</div></div></div>
+              </div>
+              <div class="trustCard">
+                <h3>Отзывы</h3>
+                <p class="mockDesc">★★★★★ Хороший катер, всё понравилось.</p>
+              </div>
+            </section>
+            <section>
+              <h3>Важно знать</h3>
+              <div class="know">
+                <button type="button">Отмена бронирования</button>
+                <button type="button">Правила</button>
+                <button type="button">Оплата</button>
+              </div>
+            </section>
+            <section>
+              <h3>Похожие катера</h3>
+              <div class="similar">
+                <div class="simCard"><div class="ph"></div><b>Axis A20</b></div>
+                <div class="simCard"><div class="ph"></div><b>Axis T23</b></div>
+                <div class="simCard"><div class="ph"></div><b>Centurion</b></div>
+                <div class="simCard"><div class="ph"></div><b>Prostar 190</b></div>
+              </div>
+            </section>
+          </div>
+        </div>
+        <aside class="chrome__aside">Бронь · без изменений</aside>
+      </div>
+    </article>
+
+    <!-- 05 -->
+    <article class="concept c05" id="c05">
+      <div class="concept__meta">
+        <div class="concept__num">Концепт 05</div>
+        <h2>Timeline</h2>
+        <p>Вертикальная линия с маркерами: блоки идут как шаги знакомства с катером — от смысла к доверию.</p>
+      </div>
+      <div class="chrome">
+        <div>
+          <div class="chrome__frozen" style="margin-bottom:18px"><strong>Галерея + hero — без изменений</strong></div>
+          <div class="tl">
+            <section class="sec"><h3>Описание</h3><p class="mockDesc">Easywake — вейкклуб в «Троицком». Mastercraft Prostar 205 для вейка и отдыха на воде.</p></section>
+            <section class="sec"><h3>Что входит в аренду</h3>
+              <div class="chips"><span class="chip">Платформа</span><span class="chip">Аудио</span><span class="chip">Загар</span><span class="chip">Вейкборд</span><span class="chip">Лыжи</span><span class="chip">Жилеты</span></div>
+            </section>
+            <section class="sec"><h3>Характеристики</h3>
+              <div class="specInline"><span>Год <b>2018</b></span><span>Длина <b>6.1 м</b></span><span>Гости <b>5</b></span><span>Капитан <b>да</b></span></div>
+            </section>
+            <section class="sec"><h3>Варианты бронирования</h3>
+              <div class="tiers">
+                <div class="tier"><span>30 мин</span><span>4 000 ₽</span></div>
+                <div class="tier"><span>1 час</span><span>8 000 ₽</span></div>
+                <div class="tier"><span>2 часа</span><span>16 000 ₽</span></div>
+              </div>
+            </section>
+            <section class="sec"><h3>Расположение</h3><div class="mapPh">Карта · Троицкое</div></section>
+            <section class="sec"><h3>Владелец</h3>
+              <div class="owner"><div class="avatar">E</div><div><strong>EasyWake</strong><div style="font-size:13px;color:var(--muted)">★ 5.0 · 1 отзыв</div></div></div>
+            </section>
+            <section class="sec"><h3>Отзывы</h3>
+              <div class="review">★★★★★ · Хороший катер, всё понравилось.</div>
+            </section>
+            <section class="sec"><h3>Важно знать</h3>
+              <details open><summary>Отмена</summary><p class="mockDesc" style="margin-top:8px">За 24 часа — бесплатно.</p></details>
+              <details><summary>Правила</summary><p class="mockDesc" style="margin-top:8px">Только с капитаном.</p></details>
+            </section>
+            <section class="sec"><h3>Похожие катера</h3>
+              <div class="similar">
+                <div class="simCard"><div class="ph"></div><b>Axis A20</b></div>
+                <div class="simCard"><div class="ph"></div><b>Axis T23</b></div>
+                <div class="simCard"><div class="ph"></div><b>Centurion</b></div>
+              </div>
+            </section>
+          </div>
+        </div>
+        <aside class="chrome__aside">Бронь · без изменений</aside>
+      </div>
+    </article>
+
+    <!-- 06 -->
+    <article class="concept c06" id="c06">
+      <div class="concept__meta">
+        <div class="concept__num">Концепт 06</div>
+        <h2>Tile & quote</h2>
+        <p>Удобства сеткой плиток, характеристики navy-тайлами, отзыв как цитата, «важно знать» тремя карточками.</p>
+      </div>
+      <div class="chrome">
+        <div>
+          <div class="chrome__frozen" style="margin-bottom:18px"><strong>Галерея + hero — без изменений</strong></div>
+          <div class="chrome__content">
+            <section><h3>Описание</h3><p class="mockDesc">Easywake — вейкклуб в «Троицком». Mastercraft Prostar 205 — волна, контроль и комфорт на борту.</p></section>
+            <section><h3>Что входит в аренду</h3>
+              <ul class="amenGrid"><li>Платформа</li><li>Аудио</li><li>Загар</li><li>Вейкборд</li><li>Лыжи</li><li>Жилеты</li></ul>
+            </section>
+            <section><h3>Характеристики</h3>
+              <dl class="specs">
+                <div><dt>Год</dt><dd>2018</dd></div>
+                <div><dt>Длина</dt><dd>6.1 м</dd></div>
+                <div><dt>Гости</dt><dd>5</dd></div>
+                <div><dt>Капитан</dt><dd>Да</dd></div>
+              </dl>
+            </section>
+            <section><h3>Варианты бронирования</h3>
+              <div class="tiers">
+                <div class="tier on"><b>4 000 ₽</b><span>30 мин</span></div>
+                <div class="tier"><b>8 000 ₽</b><span>1 час</span></div>
+                <div class="tier"><b>16 000 ₽</b><span>2 часа</span></div>
+                <div class="tier"><b>24 000 ₽</b><span>3 часа</span></div>
+              </div>
+            </section>
+            <section><h3>Расположение</h3><div class="mapPh">Карта</div></section>
+            <section>
+              <h3>Владелец</h3>
+              <div class="ownerBand"><div class="avatar">E</div><div><strong>EasyWake</strong><div style="font-size:13px;color:var(--muted)">★ 5.0 · отвечает в приложении</div></div></div>
+            </section>
+            <section>
+              <h3>Отзывы</h3>
+              <blockquote class="quote">«Хороший катер, всё понравилось.»<footer>Гость · ★★★★★</footer></blockquote>
+            </section>
+            <section>
+              <h3>Важно знать</h3>
+              <div class="knowGrid">
+                <div><b>Отмена</b><p>Бесплатно за 24 часа</p></div>
+                <div><b>Правила</b><p>Только с капитаном</p></div>
+                <div><b>Оплата</b><p>Онлайн или на месте</p></div>
+              </div>
+            </section>
+            <section>
+              <h3>Похожие катера</h3>
+              <div class="similar">
+                <div class="simCard"><div class="ph"></div><b>Axis A20</b></div>
+                <div class="simCard"><div class="ph"></div><b>Axis T23</b></div>
+                <div class="simCard"><div class="ph"></div><b>Centurion</b></div>
+              </div>
+            </section>
+          </div>
+        </div>
+        <aside class="chrome__aside">Бронь · без изменений</aside>
+      </div>
+    </article>
+
+    <!-- 07 -->
+    <article class="concept c07" id="c07">
+      <div class="concept__meta">
+        <div class="concept__num">Концепт 07</div>
+        <h2>Quiet accordion</h2>
+        <p>Описание всегда открыто. Остальное — аккуратный аккордеон: меньше скролла, страница короче.</p>
+      </div>
+      <div class="chrome">
+        <div>
+          <div class="chrome__frozen" style="margin-bottom:18px"><strong>Галерея + hero — без изменений</strong></div>
+          <div class="lead">
+            <h3>Описание</h3>
+            <p class="mockDesc">Easywake — вейкклуб в «Троицком». Mastercraft Prostar 205 для вейкборда и спокойного катания с капитаном клуба.</p>
+          </div>
+          <details class="acc" open>
+            <summary>Что входит в аренду</summary>
+            <div class="accBody"><ul class="amenGrid"><li>Купальная платформа</li><li>Аудиосистема</li><li>Место для загара</li><li>Вейкборд</li><li>Водные лыжи</li><li>Жилеты</li></ul></div>
+          </details>
+          <details class="acc">
+            <summary>Характеристики</summary>
+            <div class="accBody"><dl class="specRows">
+              <div><dt>Год</dt><dd>2018</dd></div>
+              <div><dt>Длина</dt><dd>6.1 м</dd></div>
+              <div><dt>Вместимость</dt><dd>5</dd></div>
+            </dl></div>
+          </details>
+          <details class="acc">
+            <summary>Варианты бронирования</summary>
+            <div class="accBody">
+              <div class="tier"><span>30 мин</span><span>4 000 ₽</span></div>
+              <div class="tier"><span>1 час</span><span>8 000 ₽</span></div>
+              <div class="tier"><span>2 часа</span><span>16 000 ₽</span></div>
+            </div>
+          </details>
+          <details class="acc">
+            <summary>Расположение</summary>
+            <div class="accBody"><div class="mapPh">Карта</div></div>
+          </details>
+          <details class="acc" open>
+            <summary>Владелец</summary>
+            <div class="accBody"><div class="owner"><div class="avatar">E</div><div><strong>EasyWake</strong><div style="font-size:13px;color:var(--muted)">★ 5.0</div></div></div></div>
+          </details>
+          <details class="acc" open>
+            <summary>Отзывы</summary>
+            <div class="accBody"><div class="review">★★★★★ Хороший катер, всё понравилось.</div></div>
+          </details>
+          <details class="acc">
+            <summary>Важно знать</summary>
+            <div class="accBody"><p class="mockDesc">Отмена за 24 часа · только с капитаном · оплата онлайн.</p></div>
+          </details>
+          <details class="acc">
+            <summary>Похожие катера</summary>
+            <div class="accBody"><div class="similar">
+              <div class="simCard"><div class="ph"></div><b>Axis A20</b></div>
+              <div class="simCard"><div class="ph"></div><b>Axis T23</b></div>
+              <div class="simCard"><div class="ph"></div><b>Centurion</b></div>
+            </div></div>
+          </details>
+        </div>
+        <aside class="chrome__aside">Бронь · без изменений</aside>
+      </div>
+    </article>
+
+    <!-- 08 -->
+    <article class="concept c08" id="c08">
+      <div class="concept__meta">
+        <div class="concept__num">Концепт 08</div>
+        <h2>Trust band</h2>
+        <p>Факты сверху в двух колонках, затем navy-полоса доверия: владелец, отзыв и правила в одном визуальном блоке.</p>
+      </div>
+      <div class="chrome">
+        <div>
+          <div class="chrome__frozen" style="margin-bottom:18px"><strong>Галерея + hero — без изменений</strong></div>
+          <div class="chrome__content">
+            <section><h3>Описание</h3><p class="mockDesc">Easywake — вейкклуб в «Троицком». Mastercraft Prostar 205 для вейка и семейного катания.</p></section>
+            <section class="two">
+              <div>
+                <h3>Что входит в аренду</h3>
+                <ul class="amenGrid"><li>Платформа</li><li>Аудио</li><li>Загар</li><li>Вейкборд</li><li>Лыжи</li><li>Жилеты</li></ul>
+              </div>
+              <div>
+                <h3>Характеристики</h3>
+                <dl class="specList">
+                  <div><dt>Год</dt><dd>2018</dd></div>
+                  <div><dt>Длина</dt><dd>6.1 м</dd></div>
+                  <div><dt>Гости</dt><dd>5</dd></div>
+                  <div><dt>Капитан</dt><dd>Да</dd></div>
+                </dl>
+              </div>
+            </section>
+            <section>
+              <h3>Варианты бронирования</h3>
+              <div class="tiers">
+                <div class="tier"><span>30 мин</span><span>4 000 ₽</span></div>
+                <div class="tier"><span>1 час</span><span>8 000 ₽</span></div>
+                <div class="tier"><span>2 часа</span><span>16 000 ₽</span></div>
+              </div>
+            </section>
+            <section><h3>Расположение</h3><div class="mapPh">Карта</div></section>
+            <section class="trustBand">
+              <div>
+                <h3>Владелец</h3>
+                <div class="owner"><div class="avatar">E</div><div><strong>EasyWake</strong><div class="muted">★ 5.0 · 1 отзыв</div></div></div>
+              </div>
+              <div>
+                <h3>Отзывы</h3>
+                <div class="review">Хороший катер, всё понравилось.</div>
+              </div>
+              <div class="know">
+                <h3>Важно знать</h3>
+                <div>Отмена за 24 часа</div>
+                <div>Только с капитаном</div>
+                <div>Оплата онлайн</div>
+              </div>
+            </section>
+            <section>
+              <h3>Похожие катера</h3>
+              <div class="similar">
+                <div class="simCard"><div class="ph"></div><b>Axis A20</b></div>
+                <div class="simCard"><div class="ph"></div><b>Axis T23</b></div>
+                <div class="simCard"><div class="ph"></div><b>Centurion</b></div>
+              </div>
+            </section>
+          </div>
+        </div>
+        <aside class="chrome__aside">Бронь · без изменений</aside>
+      </div>
+    </article>
+
+    <!-- 09 -->
+    <article class="concept c09" id="c09">
+      <div class="concept__meta">
+        <div class="concept__num">Концепт 09</div>
+        <h2>Map break</h2>
+        <p>Узкая колонка чтения, карта — full-bleed разрыв посередине страницы. Локация как визуальный якорь.</p>
+      </div>
+      <div class="chrome">
+        <div>
+          <div class="chrome__frozen" style="margin-bottom:18px"><strong>Галерея + hero — без изменений</strong></div>
+          <div class="chrome__content">
+            <div class="read">
+              <section><h3>Описание</h3><p class="mockDesc">Easywake — вейкклуб в зоне отдыха «Троицкое». Mastercraft Prostar 205 для вейкборда и спокойного катания.</p></section>
+              <section><h3>Что входит в аренду</h3>
+                <ul class="amenGrid"><li>Платформа</li><li>Аудио</li><li>Загар</li><li>Вейкборд</li><li>Лыжи</li><li>Жилеты</li></ul>
+              </section>
+              <section><h3>Характеристики</h3>
+                <dl class="specs">
+                  <div><dt>Год</dt><dd>2018</dd></div>
+                  <div><dt>Длина</dt><dd>6.1 м</dd></div>
+                  <div><dt>Гости</dt><dd>5</dd></div>
+                  <div><dt>Капитан</dt><dd>Да</dd></div>
+                </dl>
+              </section>
+              <section><h3>Варианты бронирования</h3>
+                <div class="tiers">
+                  <div class="tier"><span>30 мин</span><span>4 000 ₽</span></div>
+                  <div class="tier"><span>1 час</span><span>8 000 ₽</span></div>
+                  <div class="tier"><span>2 часа</span><span>16 000 ₽</span></div>
+                </div>
+              </section>
+            </div>
+            <section class="mapBreak">
+              <div class="mapPh">Расположение · full-bleed карта</div>
+              <div class="addr"><span>Троицкое, Московская область</span><span>EasyWake</span></div>
+            </section>
+            <div class="read">
+              <section><h3>Владелец</h3>
+                <div class="owner"><div class="avatar">E</div><div><strong>EasyWake</strong><div style="font-size:13px;color:var(--muted)">★ 5.0</div></div></div>
+              </section>
+              <section><h3>Отзывы</h3><div class="review">★★★★★ Хороший катер, всё понравилось.</div></section>
+              <section><h3>Важно знать</h3>
+                <details open><summary>Отмена</summary><p class="mockDesc" style="margin-top:8px">За 24 часа.</p></details>
+                <details><summary>Правила</summary><p class="mockDesc" style="margin-top:8px">С капитаном.</p></details>
+              </section>
+              <section><h3>Похожие катера</h3>
+                <div class="similar">
+                  <div class="simCard"><div class="ph"></div><b>Axis A20</b></div>
+                  <div class="simCard"><div class="ph"></div><b>Axis T23</b></div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+        <aside class="chrome__aside">Бронь · без изменений</aside>
+      </div>
+    </article>
+
+    <!-- 10 -->
+    <article class="concept c10" id="c10">
+      <div class="concept__meta">
+        <div class="concept__num">Концепт 10</div>
+        <h2>Price theater</h2>
+        <p>Тарифы — главный визуальный жест посередине. Остальное строго: две колонки, карта, доверие и похожие.</p>
+      </div>
+      <div class="chrome">
+        <div>
+          <div class="chrome__frozen" style="margin-bottom:18px"><strong>Галерея + hero — без изменений</strong></div>
+          <div class="chrome__content">
+            <section>
+              <h3>Описание</h3>
+              <p class="mockDesc">Easywake — вейкклуб в «Троицком». Mastercraft Prostar 205 для вейка и спокойного катания с капитаном.</p>
+            </section>
+            <section>
+              <h3>Варианты бронирования</h3>
+              <div class="priceTheater">
+                <button class="on" type="button"><span class="lbl">30 мин</span><b>4 000 ₽</b></button>
+                <button type="button"><span class="lbl">1 час</span><b>8 000 ₽</b></button>
+                <button type="button"><span class="lbl">2 часа</span><b>16 000 ₽</b></button>
+                <button type="button"><span class="lbl">3 часа</span><b>24 000 ₽</b></button>
+              </div>
+            </section>
+            <section class="duo">
+              <div>
+                <h3>Что входит в аренду</h3>
+                <ul class="amenGrid">
+                  <li>Купальная платформа</li>
+                  <li>Аудиосистема</li>
+                  <li>Место для загара</li>
+                  <li>Вейкборд</li>
+                  <li>Водные лыжи</li>
+                  <li>Жилеты</li>
+                </ul>
+              </div>
+              <div>
+                <h3>Характеристики</h3>
+                <dl class="specs">
+                  <div><dt>Год</dt><dd>2018</dd></div>
+                  <div><dt>Длина</dt><dd>6.1 м</dd></div>
+                  <div><dt>Вместимость</dt><dd>5</dd></div>
+                  <div><dt>Капитан</dt><dd>Включён</dd></div>
+                </dl>
+              </div>
+            </section>
+            <section>
+              <h3>Расположение</h3>
+              <div class="locRow">
+                <div class="mapPh">Карта</div>
+                <div class="card">
+                  <p class="mockDesc"><strong>Троицкое</strong><br>Московская область<br>Яхт-клуб EasyWake</p>
+                </div>
+              </div>
+            </section>
+            <section class="ownerReview">
+              <div class="card">
+                <h3>Владелец</h3>
+                <div class="owner">
+                  <div class="avatar">E</div>
+                  <div>
+                    <strong>EasyWake</strong>
+                    <div style="font-size:13px;color:var(--muted)">★ 5.0 · 1 отзыв</div>
+                  </div>
+                </div>
+              </div>
+              <div class="card">
+                <h3>Отзывы</h3>
+                <p class="mockDesc">★★★★★ Хороший катер, всё понравилось.</p>
+              </div>
+            </section>
+            <section>
+              <h3>Важно знать</h3>
+              <div class="know">
+                <div><b>Отмена</b><p>Бесплатно за 24 часа</p></div>
+                <div><b>Правила</b><p>Только с капитаном</p></div>
+                <div><b>Оплата</b><p>Онлайн или на месте</p></div>
+              </div>
+            </section>
+            <section>
+              <h3>Похожие катера</h3>
+              <div class="similar">
+                <div class="simCard"><div class="ph"></div><b>Axis A20</b><span>от 6 000 ₽</span></div>
+                <div class="simCard"><div class="ph"></div><b>Axis T23</b><span>от 7 000 ₽</span></div>
+                <div class="simCard"><div class="ph"></div><b>Centurion</b><span>от 6 000 ₽</span></div>
+              </div>
+            </section>
+          </div>
+        </div>
+        <aside class="chrome__aside">Бронь · без изменений</aside>
+      </div>
+    </article>
+
+  </main>
+</body>
+</html>

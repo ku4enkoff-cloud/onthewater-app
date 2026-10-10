@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ONTHEWATER — 10 рендеров /boats</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #0a0a0a;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --navy: #1b365d;
+      --bg: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Montserrat, system-ui, sans-serif;
+      background: #f3f4f6;
+      color: var(--ink);
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+      padding: 18px 28px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .grid {
+      width: min(1280px, 100% - 40px);
+      margin: 28px auto 64px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 28px;
+    }
+    .card {
+      background: var(--bg);
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+    .card button {
+      display: block;
+      width: 100%;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      cursor: zoom-in;
+    }
+    .card img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .meta {
+      padding: 18px 20px 20px;
+      display: grid;
+      gap: 8px;
+    }
+    .meta .num {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--navy);
+    }
+    .meta h2 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -.02em;
+    }
+    .meta p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(10,10,10,.88);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 100;
+    }
+    .lightbox.open { display: flex; }
+    .lightbox img {
+      max-width: min(1400px, 100%);
+      max-height: 92vh;
+      object-fit: contain;
+    }
+    .lightbox .close {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      border: 0;
+      background: transparent;
+      color: #fff;
+      font-size: 28px;
+      cursor: pointer;
+      line-height: 1;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ONTHEWATER · /boats</h1>
+    <p>10 концептов поиска катеров · клик для увеличения · напиши номер для внедрения</p>
+  </header>
+
+  <main class="grid" id="grid"></main>
+
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true">
+    <button class="close" id="close" aria-label="Закрыть">×</button>
+    <img id="lbImg" alt="" />
+  </div>
+
+  <script>
+    const concepts = [
+      {
+        n: '01',
+        title: 'List + map classic',
+        note: 'Список слева, карта справа. Поиск, категории, чипы фильтров. Близко к текущей логике, но в палитре главной.'
+      },
+      {
+        n: '02',
+        title: 'Map-first overlay',
+        note: 'Карта на весь экран, карточки и поиск поверх. Быстрый выбор по локации.'
+      },
+      {
+        n: '03',
+        title: 'Photo grid',
+        note: 'Сетка из 3 колонок без карты. Кнопка «Показать карту». Максимум фото и сравнения.'
+      },
+      {
+        n: '04',
+        title: 'Filters sidebar',
+        note: 'Все фильтры слева постоянно. Справа результаты + мини-карта. Удобно для точного подбора.'
+      },
+      {
+        n: '05',
+        title: 'Compact rows',
+        note: 'Плотные строки: фото · данные · цена. Быстрое сканирование большого списка.'
+      },
+      {
+        n: '06',
+        title: 'Category-led',
+        note: 'Крупные плитки типов катеров сверху, затем результаты выбранной категории.'
+      },
+      {
+        n: '07',
+        title: 'Split 50/50',
+        note: 'Равный сплит список/карта + единая command-bar поиска.'
+      },
+      {
+        n: '08',
+        title: 'App-mirror column',
+        note: 'Узкая колонка как в мобильном приложении, FAB «Карта».'
+      },
+      {
+        n: '09',
+        title: 'Map + preview drawer',
+        note: 'Клик по пину открывает большой превью справа — меньше переходов на карточку.'
+      },
+      {
+        n: '10',
+        title: 'Trust + sort tabs',
+        note: 'Рейтинг, отзывы, бейдж капитана, сортировка табами. Сравнение и доверие.'
+      }
+    ];
+
+    const grid = document.getElementById('grid');
+    const lightbox = document.getElementById('lightbox');
+    const lbImg = document.getElementById('lbImg');
+
+    for (const c of concepts) {
+      const article = document.createElement('article');
+      article.className = 'card';
+      article.innerHTML = `
+        <button type="button" data-src="./boats-search-render-${c.n}.jpg" aria-label="Открыть рендер ${c.n}">
+          <img src="./boats-search-render-${c.n}.jpg" alt="Рендер ${c.n}: ${c.title}" loading="lazy" />
+        </button>
+        <div class="meta">
+          <div class="num">Концепт ${c.n}</div>
+          <h2>${c.title}</h2>
+          <p>${c.note}</p>
+        </div>
+      `;
+      grid.appendChild(article);
+    }
+
+    grid.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-src]');
+      if (!btn) return;
+      lbImg.src = btn.dataset.src;
+      lightbox.classList.add('open');
+    });
+
+    function closeLb() {
+      lightbox.classList.remove('open');
+      lbImg.removeAttribute('src');
+    }
+    document.getElementById('close').addEventListener('click', closeLb);
+    lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLb(); });
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLb(); });
+  </script>
+</body>
+</html>

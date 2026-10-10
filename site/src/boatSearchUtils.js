@@ -420,5 +420,20 @@ export function radiusKmFromBounds(bounds) {
   const latKm = Math.abs(neLat - swLat) * 111 * 0.5
   const midLat = (neLat + swLat) / 2
   const lngKm = Math.abs(neLng - swLng) * 111 * Math.cos((midLat * Math.PI) / 180) * 0.5
-  return Math.min(200, Math.max(8, Math.max(latKm, lngKm) * 1.2))
+  // До ~2500 км — чтобы при отдалении на главной/поиске подтягивались другие регионы РФ
+  return Math.min(2500, Math.max(8, Math.max(latKm, lngKm) * 1.2))
+}
+
+/** Катер внутри bounds Яндекс.Карты: [[swLat, swLng], [neLat, neLng]] */
+export function boatInMapBounds(boat, bounds) {
+  if (!bounds || bounds.length !== 2) return true
+  const lat = Number(boat?.lat)
+  const lng = Number(boat?.lng)
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false
+  const [[swLat, swLng], [neLat, neLng]] = bounds
+  const minLat = Math.min(swLat, neLat)
+  const maxLat = Math.max(swLat, neLat)
+  const minLng = Math.min(swLng, neLng)
+  const maxLng = Math.max(swLng, neLng)
+  return lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng
 }

@@ -1,6 +1,26 @@
+# ONTHEWATER — https://onthewater.ru
 User-agent: *
 Allow: /
+Allow: /boats
+Allow: /boats?
+Allow: /owners
+Allow: /sitemap
+Allow: /privacy
+Allow: /terms
+
+# Личный кабинет и служебные страницы
 Disallow: /login
 Disallow: /register
 Disallow: /account
+Disallow: /design-renders/
+
+# Технические query (фильтры/служебное) — индексируем только city landing
+Disallow: /boats?*date=
+Disallow: /boats?*duration=
+Disallow: /boats?*passengers=
+Disallow: /boats?*price=
+
 Sitemap: https://onthewater.ru/sitemap.xml
+Sitemap: https://onthewater.ru/sitemap-index.xml
+
+Host: https://onthewater.ru

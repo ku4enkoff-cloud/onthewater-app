@@ -9,6 +9,7 @@ import AccountPage from './pages/AccountPage.jsx'
 import OwnerLandingPage from './pages/OwnerLandingPage.jsx'
 import LegalDocumentPage from './pages/LegalDocumentPage.jsx'
 import SitemapPage from './pages/SitemapPage.jsx'
+import SiteHeader from './components/SiteHeader.jsx'
 import SiteFooter from './components/SiteFooter.jsx'
 import AndroidAppPrompt from './components/AndroidAppPrompt.jsx'
 import IosAppPrompt from './components/IosAppPrompt.jsx'
@@ -55,6 +56,9 @@ function ScrollToTopOnRouteChange() {
 
 export default function App() {
   const { user, loading } = useAuth()
+  const { pathname } = useLocation()
+  const isBoatsSearch = pathname === '/boats'
+
   return (
     <>
       <ScrollToTopOnRouteChange />
@@ -62,7 +66,8 @@ export default function App() {
       <GeolocationOnAllowedRoutes />
       <IosAppPrompt />
       <AndroidAppPrompt />
-      <div className="app-outlet">
+      <SiteHeader />
+      <div className={`app-outlet${isBoatsSearch ? ' app-outlet--boatsMap' : ''}`}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/boats" element={<BoatsSearchPage />} />
@@ -105,7 +110,7 @@ export default function App() {
           />
         </Routes>
       </div>
-      <SiteFooter />
+      {isBoatsSearch ? null : <SiteFooter />}
     </>
   )
 }

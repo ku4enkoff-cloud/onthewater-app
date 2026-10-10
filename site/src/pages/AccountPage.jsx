@@ -182,30 +182,6 @@ export default function AccountPage() {
 
   return (
     <>
-      <header className="bd-topBar account-topBar">
-        <div className="bd-topBar__left">
-          <Link to="/" className="bd-topBar__logo" aria-label="ONTHEWATER — на главную">
-            <span className="bd-topBar__logoMark" aria-hidden />
-            <span className="bd-topBar__logoText">onthewater</span>
-          </Link>
-        </div>
-        <nav className="bd-topBar__nav" aria-label="Разделы сайта">
-          <Link to="/" className="bd-topBar__link">
-            Главная
-          </Link>
-          <Link to="/boats" className="bd-topBar__link">
-            Катера
-          </Link>
-        </nav>
-        <div className="account-topBar__actions">
-          <Link to="/account" className="authMenuBtn account-topBar__pill account-topBar__pill--active">
-            Личный кабинет
-          </Link>
-          <button type="button" className="authMenuBtn authMenuBtn--action" onClick={logout}>
-            Выйти
-          </button>
-        </div>
-      </header>
       <div className="auth-page">
         <div className="auth-card auth-card--wide">
         <h1 className="auth-card__title">Личный кабинет</h1>

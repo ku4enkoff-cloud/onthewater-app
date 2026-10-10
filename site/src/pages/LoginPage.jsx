@@ -32,26 +32,6 @@ export default function LoginPage() {
 
   return (
     <>
-      <header className="bd-topBar auth-loginTopBar">
-        <div className="bd-topBar__left">
-          <Link to="/" className="bd-topBar__logo" aria-label="ONTHEWATER — на главную">
-            <span className="bd-topBar__logoMark" aria-hidden />
-            <span className="bd-topBar__logoText">onthewater</span>
-          </Link>
-        </div>
-        <nav className="bd-topBar__nav" aria-label="Разделы сайта">
-          <Link to="/boats" className="bd-topBar__link">
-            Поиск катеров
-          </Link>
-          <Link className="authMenuBtn auth-loginTopBar__btn" to="/register">
-            Регистрация
-          </Link>
-          <span className="authMenuBtn auth-loginTopBar__btn auth-loginTopBar__btn--active" aria-current="page">
-            Войти
-          </span>
-        </nav>
-      </header>
-
       <div className="auth-page">
         <div className="auth-card">
           <h1 className="auth-card__title">Вход</h1>

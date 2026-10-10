@@ -18,7 +18,7 @@ async function fetchBoatsJson(url) {
  * @see mobile/src/client/screens/SearchScreen.js fetchBoats
  */
 export async function fetchPopularBoats(limit = 20) {
-  const lim = Math.min(50, Math.max(1, Number(limit) || 20))
+  const lim = Math.min(500, Math.max(1, Number(limit) || 20))
   return fetchBoatsJson(boatsUrl({ popular: 1, limit: lim }))
 }
 
@@ -37,7 +37,7 @@ export async function fetchBoatsSearch(params) {
   }
   const lat = Number(params.lat) || 55.751244
   const lng = Number(params.lng) || 37.618423
-  const radius = Math.min(200, Math.max(5, Number(params.radius) || 50))
+  const radius = Math.min(2500, Math.max(5, Number(params.radius) || 50))
   return fetchBoatsJson(boatsUrl({ lat, lng, radius }))
 }
 

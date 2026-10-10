@@ -49,23 +49,6 @@ export default function LegalDocumentPage({ slug, defaultTitle, pathForCanonical
 
   return (
     <>
-      <header className="bd-topBar auth-loginTopBar">
-        <div className="bd-topBar__left">
-          <Link to="/" className="bd-topBar__logo" aria-label="ONTHEWATER — на главную">
-            <span className="bd-topBar__logoMark" aria-hidden />
-            <span className="bd-topBar__logoText">onthewater</span>
-          </Link>
-        </div>
-        <nav className="bd-topBar__nav" aria-label="Разделы сайта">
-          <Link to="/boats" className="bd-topBar__link">
-            Поиск катеров
-          </Link>
-          <Link to="/" className="bd-topBar__link">
-            На главную
-          </Link>
-        </nav>
-      </header>
-
       <main className="legal-page">
         <article className="legal-page__inner">
           <h1 className="legal-page__title">{title}</h1>

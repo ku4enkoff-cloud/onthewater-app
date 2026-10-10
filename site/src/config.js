@@ -6,6 +6,16 @@ const env = (import.meta.env.VITE_API_URL || '').trim().replace(/\/$/, '')
 export const API_BASE =
   env || (import.meta.env.DEV ? '' : 'https://api.onthewater.ru')
 
+/**
+ * База для /uploads (фото, видео).
+ * В DEV без VITE_API_URL JSON идёт через proxy, а медиа часто лежит только на проде —
+ * иначе <video src="/uploads/..."> бьётся в пустой localhost:3000.
+ */
+export const MEDIA_BASE =
+  env ||
+  (import.meta.env.VITE_MEDIA_URL || '').trim().replace(/\/$/, '') ||
+  'https://api.onthewater.ru'
+
 /** Ссылки «в приложение» / маркетинг (можно переопределить). */
 export const SITE_MAIN_URL =
   (import.meta.env.VITE_MAIN_SITE_URL || '').trim() || 'https://onthewater.ru'
@@ -27,10 +37,11 @@ export function getPhotoUrl(src) {
   const uploadsMatch = s.match(/\/uploads\/[^?#]+/)
   if (uploadsMatch) {
     const path = uploadsMatch[0].startsWith('/') ? uploadsMatch[0] : `/${uploadsMatch[0]}`
-    return `${API_BASE}${path}`
+    return `${MEDIA_BASE}${path}`
   }
   if (/^https?:\/\//i.test(s)) return s
-  return `${API_BASE}${s.startsWith('/') ? s : `/${s}`}`
+  const base = API_BASE || MEDIA_BASE
+  return `${base}${s.startsWith('/') ? s : `/${s}`}`
 }
 
 /** Превью: /uploads/{uuid}.webp → /uploads/{uuid}-thumb.webp */

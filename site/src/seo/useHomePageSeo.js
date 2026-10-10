@@ -19,7 +19,10 @@ export function useHomePageSeo(heroImageUrl) {
       'Найдите и забронируйте катер или яхту в России: с капитаном или без, популярные направления, прозрачные цены. Бронирование в приложении ONTHEWATER.'
 
     const ogImage =
-      heroImageUrl && (heroImageUrl.startsWith('http') ? heroImageUrl : `${origin}${heroImageUrl.startsWith('/') ? '' : '/'}${heroImageUrl}`)
+      heroImageUrl &&
+      (heroImageUrl.startsWith('http')
+        ? heroImageUrl
+        : `${origin}${heroImageUrl.startsWith('/') ? '' : '/'}${heroImageUrl}`)
 
     const sameAs = SITE_MAIN_URL.replace(/\/$/, '')
     const jsonGraph = [
@@ -28,14 +31,24 @@ export function useHomePageSeo(heroImageUrl) {
         '@id': `${origin}/#organization`,
         name: 'ONTHEWATER',
         url: origin,
-        logo: `${origin}/favicon.svg`,
-        sameAs: [sameAs],
+        logo: {
+          '@type': 'ImageObject',
+          url: `${origin}/favicon.svg`,
+        },
+        sameAs: [sameAs, 'https://t.me/onthewater_support'].filter(Boolean),
+        contactPoint: {
+          '@type': 'ContactPoint',
+          contactType: 'customer service',
+          email: 'hello@onthewater.ru',
+          availableLanguage: ['Russian'],
+        },
       },
       {
         '@type': 'WebSite',
         '@id': `${origin}/#website`,
         url: origin,
         name: 'ONTHEWATER',
+        alternateName: 'Онзевотер — аренда катеров',
         description,
         inLanguage: 'ru-RU',
         publisher: { '@id': `${origin}/#organization` },
@@ -48,15 +61,26 @@ export function useHomePageSeo(heroImageUrl) {
           'query-input': 'required name=search_term_string',
         },
       },
+      {
+        '@type': 'WebPage',
+        '@id': `${canonicalUrl}#webpage`,
+        url: canonicalUrl,
+        name: title,
+        description,
+        isPartOf: { '@id': `${origin}/#website` },
+        about: { '@id': `${origin}/#organization` },
+        inLanguage: 'ru-RU',
+      },
     ]
 
     const revertDoc = applyDocumentSeo({
       title,
       description,
       canonicalUrl,
-      ogImage,
+      ogImage: ogImage || `${origin}/og-default.webp`,
+      ogImageAlt: 'ONTHEWATER — аренда катеров и яхт',
       keywords:
-        'аренда катера, аренда яхты, катер с капитаном, прогулка на катере, бронирование катера, ONTHEWATER',
+        'аренда катера, аренда яхты, катер с капитаном, прогулка на катере, бронирование катера, аренда катера Москва, ONTHEWATER',
     })
 
     const revertLd = applyHomeJsonLd(JSON_LD_ID, jsonGraph)

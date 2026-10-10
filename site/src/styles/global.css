@@ -1,4 +1,4 @@
-﻿/* Monolithic global stylesheet for site/src */
+/* Monolithic global stylesheet for site/src */
 
 @font-face {
   font-family: 'Segoe UI Local';
@@ -3791,15 +3791,16 @@ a.lp-boatCard:hover .lp-boatImg {
   min-height: 100vh;
   background: #f5f5f4;
   color: #1e293b;
-  font-family: var(--sans);
-  font-size: 16px;
+  /* Совпадает с главной: precision-home --pm-sans */
+  font-family: 'Montserrat', 'Segoe UI Local', system-ui, sans-serif;
+  font-size: 18px;
   line-height: 1.5;
 }
 
 .bd-page--bs {
   background: #fff;
   color: #1a1a1a;
-  font-family: var(--sans);
+  font-family: 'Montserrat', 'Segoe UI Local', system-ui, sans-serif;
   /* РЁРёСЂРёРЅР° РѕСЃРЅРѕРІРЅРѕРіРѕ С‚РµРєСЃС‚Р° вЂ” РЅР° РІСЃСЋ СЃРµС‚РєСѓ shell; РїРѕР»РѕСЃР° С…Р°СЂР°РєС‚РµСЂРёСЃС‚РёРє РѕРіСЂР°РЅРёС‡РµРЅР° РѕС‚РґРµР»СЊРЅРѕ */
   --bd-content-max: 100%;
   /* clip РІРјРµСЃС‚Рѕ hidden вЂ” РёРЅР°С‡Рµ Сѓ РїСЂРµРґРєР° В«Р»РѕРјР°РµС‚СЃСЏВ» position: sticky Сѓ РєР°СЂС‚РѕС‡РєРё Р±СЂРѕРЅРё */
@@ -6720,6 +6721,14 @@ a.lp-boatCard:hover .lp-boatImg {
   box-shadow: 0 4px 24px rgba(27, 54, 93, 0.06);
 }
 
+.legal-page__lead {
+  margin: 0 0 28px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: #64748b;
+  max-width: 62ch;
+}
+
 .legal-page__title {
   margin: 0 0 24px;
   font-size: 28px;
@@ -7466,7 +7475,7 @@ a.lp-boatCard:hover .lp-boatImg {
 
 .fm-sheet {
   width: 100%;
-  max-width: 920px;
+  max-width: 690px; /* было 920 — уже на четверть */
   max-height: 92vh;
   background: #fff;
   border-radius: 20px 20px 0 0;

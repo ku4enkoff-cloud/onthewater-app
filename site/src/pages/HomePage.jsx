@@ -1,104 +1,148 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import heroImg from '../../images/app/hero.webp'
+import { useNavigate } from 'react-router-dom'
+import '../styles/precision-home.css'
 import DestinationsSection from '../components/DestinationsSection.jsx'
 import PopularBoats from '../components/PopularBoats.jsx'
 import HomeCategoriesSection from '../components/HomeCategoriesSection.jsx'
-import googlePlayIcon from '../assets/icon-g-p.webp'
-import appleStoreIcon from '../assets/icon-a-s.webp'
-import { OWNER_ANDROID_PLAY_URL, OWNER_IOS_APP_STORE_URL } from '../constants/appStores'
 import { useHomePageSeo } from '../seo/useHomePageSeo.js'
 import { fetchDestinations } from '../api/destinations.js'
 import { LOCATION_OPTIONS, readNearestCityFromStorage } from '../boatSearchUtils.js'
-import { useAuth } from '../context/AuthContext.jsx'
+import heroImg from '../assets/hero-aerial-boat.jpg'
+import appPhoneList from '../assets/app-phone-list.png'
+import appPhoneMap from '../assets/app-phone-map.png'
+import googlePlayIcon from '../assets/stores/google-play-icon.png'
+import NearbyBoatsSection from '../components/NearbyBoatsSection.jsx'
+import HomeDateCalendar from '../components/HomeDateCalendar.jsx'
+import { CLIENT_ANDROID_PLAY_URL, CLIENT_IOS_APP_STORE_URL } from '../constants/appStores'
 
 const HOW_STEPS = [
   {
-    icon: 'shield',
-    title: 'Защита вашей поездки',
-    text: 'Если планы изменились из-за погоды или форс-мажора, мы поможем оформить возврат по правилам сервиса.',
+    num: '01',
+    title: 'Выберите катер',
+    text: 'Сравните суда по району, цене за час и наличию капитана.',
   },
   {
-    icon: 'check',
-    title: 'Проверенные катера',
-    text: 'Каждое судно проходит модерацию: состояние, безопасность, чистота и соответствие описанию.',
+    num: '02',
+    title: 'Забронируйте',
+    text: 'Выберите дату и время, оплатите онлайн и получите подтверждение.',
   },
   {
-    icon: 'lock',
-    title: 'Безопасная оплата',
-    text: 'Оплачивайте онлайн через защищенный процессинг, а подтверждение бронирования получайте в одном месте.',
+    num: '03',
+    title: 'Получите инструктаж',
+    text: 'Владелец или капитан расскажет правила выхода и маршрут.',
   },
   {
-    icon: 'lifebuoy',
-    title: 'Поддержка на каждом этапе',
-    text: 'Команда ONTHEWATER подскажет по маршруту, правилам выхода и поможет в нестандартной ситуации.',
+    num: '04',
+    title: 'Выходите на воду',
+    text: 'Наслаждайтесь поездкой — поддержка Onthewater рядом.',
   },
 ]
 
-function HowIcon({ kind }) {
-  if (kind === 'shield') {
-    return (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-        <path d="M12 3l7 3v6c0 5-3.6 8.5-7 9.8C8.6 20.5 5 17 5 12V6l7-3z" stroke="currentColor" strokeWidth="1.8" />
-      </svg>
-    )
-  }
-  if (kind === 'check') {
-    return (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
-        <path d="M8 12l2.6 2.6L16 9.4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      </svg>
-    )
-  }
-  if (kind === 'lock') {
-    return (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-        <rect x="6" y="10" width="12" height="10" rx="2" stroke="currentColor" strokeWidth="1.8" />
-        <path d="M9 10V8a3 3 0 1 1 6 0v2" stroke="currentColor" strokeWidth="1.8" />
-      </svg>
-    )
-  }
+function PinIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.8" />
-      <circle cx="12" cy="12" r="2.2" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M12 3.5v2.5M12 18v2.5M3.5 12H6M18 12h2.5" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M12 21s-6-5.33-6-10a6 6 0 1 1 12 0c0 4.67-6 10-6 10z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <circle cx="12" cy="11" r="2" stroke="currentColor" strokeWidth="1.8" />
     </svg>
   )
 }
 
-function MenuIcon() {
+function CalendarIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M8 3v4M16 3v4M4 10h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   )
 }
 
-function CloseIcon() {
+function SearchIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   )
+}
+
+function ArrowIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M5 12h12M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function ChevronIcon({ up = false }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d={up ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'}
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function CheckIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M5 12l5 5L20 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+const CITY_REGION_HINT = {
+  Москва: 'Центральная Россия',
+  'Московская область': 'Центральная Россия',
+  'Санкт-Петербург': 'Северо-Запад',
+  'Ленинградская область': 'Северо-Запад',
+  Сочи: 'Краснодарский край',
+  Крым: 'Юг России',
+  Казань: 'Поволжье',
+}
+
+function regionHintFor(city) {
+  return CITY_REGION_HINT[city] || 'Россия'
+}
+
+function formatDateRu(iso) {
+  if (!iso) return 'Любая дата'
+  const [y, m, d] = String(iso).split('-').map(Number)
+  if (!y || !m || !d) return 'Любая дата'
+  return new Date(y, m - 1, d).toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+  })
+}
+
+function todayISO() {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 export default function HomePage() {
   useHomePageSeo(heroImg)
-  const { user, logout } = useAuth()
   const navigate = useNavigate()
   const searchRef = useRef(null)
-  const stickySearchRef = useRef(null)
+  const cityFilterRef = useRef(null)
   const userEditedCityRef = useRef(false)
   const [cityQuery, setCityQuery] = useState(() => readNearestCityFromStorage() || '')
+  const [dateStr, setDateStr] = useState('')
   const [knownCities, setKnownCities] = useState([])
-  const [suggestOpen, setSuggestOpen] = useState(false)
-  const [searchSurface, setSearchSurface] = useState('hero')
-  const [activeIdx, setActiveIdx] = useState(-1)
-  const [mobileNavOpen, setMobileNavOpen] = useState(false)
-  const [showStickyHeader, setShowStickyHeader] = useState(false)
-
+  const [cityOpen, setCityOpen] = useState(false)
+  const [dateOpen, setDateOpen] = useState(false)
+  const [cityFilter, setCityFilter] = useState('')
   useEffect(() => {
     let cancelled = false
     ;(async () => {
@@ -124,32 +168,43 @@ export default function HomePage() {
 
   useEffect(() => {
     const onDown = (e) => {
-      const inHero = searchRef.current?.contains(e.target)
-      const inSticky = stickySearchRef.current?.contains(e.target)
-      if (!inHero && !inSticky) setSuggestOpen(false)
+      if (!searchRef.current?.contains(e.target)) {
+        setCityOpen(false)
+        setDateOpen(false)
+        setCityFilter('')
+      }
+    }
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        setCityOpen(false)
+        setDateOpen(false)
+        setCityFilter('')
+      }
     }
     window.addEventListener('mousedown', onDown)
-    return () => window.removeEventListener('mousedown', onDown)
-  }, [])
-
-  useEffect(() => {
-    const onScroll = () => {
-      const next = window.scrollY > 260
-      setShowStickyHeader(next)
-    }
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  useEffect(() => {
-    document.body.style.overflow = mobileNavOpen ? 'hidden' : ''
+    window.addEventListener('keydown', onKey)
     return () => {
-      document.body.style.overflow = ''
+      window.removeEventListener('mousedown', onDown)
+      window.removeEventListener('keydown', onKey)
     }
-  }, [mobileNavOpen])
+  }, [])
 
-  const closeMobileNav = () => setMobileNavOpen(false)
+  useEffect(() => {
+    if (!cityOpen) return undefined
+    const t = setTimeout(() => cityFilterRef.current?.focus(), 30)
+    return () => clearTimeout(t)
+  }, [cityOpen])
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && String(e.key).toLowerCase() === 'k') {
+        e.preventDefault()
+        setCityOpen(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   useEffect(() => {
     const onNearest = (e) => {
@@ -162,363 +217,300 @@ export default function HomePage() {
     return () => window.removeEventListener('boatrent:nearest-city', onNearest)
   }, [])
 
-  const suggestions = useMemo(() => {
-    const q = cityQuery.trim().toLowerCase()
-    if (!q) return knownCities.slice(0, 8)
-    return knownCities.filter((c) => c.toLowerCase().includes(q)).slice(0, 8)
-  }, [cityQuery, knownCities])
+  const cityOptions = useMemo(() => {
+    const base =
+      knownCities.length > 0
+        ? knownCities
+        : LOCATION_OPTIONS.map((o) => o.value).filter((v) => v && v !== '__all')
+    const q = cityFilter.trim().toLowerCase()
+    if (!q) return base
+    return base.filter(
+      (c) => c.toLowerCase().includes(q) || regionHintFor(c).toLowerCase().includes(q),
+    )
+  }, [knownCities, cityFilter])
 
-  const submitSearch = (raw) => {
-    const value = String(raw || '').trim()
-    if (!value) {
-      navigate('/boats')
-      return
-    }
-    navigate(`/boats?city=${encodeURIComponent(value)}`)
+  const submitSearch = (rawCity) => {
+    const value = String(rawCity ?? cityQuery).trim()
+    const params = new URLSearchParams()
+    if (value) params.set('city', value)
+    if (dateStr) params.set('date', dateStr)
+    const qs = params.toString()
+    navigate(qs ? `/boats?${qs}` : '/boats')
   }
 
-  const pickSuggestion = (city) => {
+  const pickCity = (city) => {
     userEditedCityRef.current = true
     setCityQuery(city)
-    setSuggestOpen(false)
-    setActiveIdx(-1)
-    submitSearch(city)
+    setCityOpen(false)
+    setCityFilter('')
   }
-
-  const handleInputKeyDown = (e) => {
-    if (!suggestOpen || suggestions.length === 0) {
-      if (e.key === 'Enter') {
-        e.preventDefault()
-        submitSearch(cityQuery)
-      }
-      return
-    }
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      setActiveIdx((i) => (i + 1 >= suggestions.length ? 0 : i + 1))
-      return
-    }
-    if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      setActiveIdx((i) => (i <= 0 ? suggestions.length - 1 : i - 1))
-      return
-    }
-    if (e.key === 'Escape') {
-      setSuggestOpen(false)
-      setActiveIdx(-1)
-      return
-    }
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      if (activeIdx >= 0 && suggestions[activeIdx]) {
-        pickSuggestion(suggestions[activeIdx])
-      } else {
-        submitSearch(cityQuery)
-      }
-    }
-  }
-
-  const renderSearchBar = (mode) => (
-    <div
-      className={`lp-searchBar lp-searchBar--pill${mode === 'sticky' ? ' lp-searchBar--sticky' : ''}`}
-      role="search"
-      ref={mode === 'sticky' ? stickySearchRef : searchRef}
-    >
-      <div className="lp-searchField lp-searchField--pill lp-searchField--suggest">
-        <span className="lp-searchPin" aria-hidden>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M12 21s-6-5.33-6-10a6 6 0 1 1 12 0c0 4.67-6 10-6 10z"
-              stroke="currentColor"
-              strokeWidth="1.75"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <circle cx="12" cy="11" r="2.25" stroke="currentColor" strokeWidth="1.75" />
-          </svg>
-        </span>
-        <label className="lp-srOnly" htmlFor={mode === 'sticky' ? 'where-sticky' : 'where'}>
-          Куда
-        </label>
-        <input
-          id={mode === 'sticky' ? 'where-sticky' : 'where'}
-          type="text"
-          placeholder="Куда хотите выйти на воду?"
-          className="lp-searchInput"
-          autoComplete="off"
-          value={cityQuery}
-          onChange={(e) => {
-            userEditedCityRef.current = true
-            setCityQuery(e.target.value)
-            setSearchSurface(mode)
-            setSuggestOpen(true)
-            setActiveIdx(-1)
-          }}
-          onFocus={() => {
-            setSearchSurface(mode)
-            setSuggestOpen(true)
-          }}
-          onKeyDown={handleInputKeyDown}
-          aria-expanded={suggestOpen && searchSurface === mode && suggestions.length > 0}
-        />
-        {suggestOpen && (searchSurface === mode || (mode === 'sticky' && showStickyHeader)) && suggestions.length > 0 ? (
-          <div className="lp-citySuggest" role="listbox" aria-label="Подсказки городов">
-            {suggestions.map((city, idx) => (
-              <button
-                key={city}
-                type="button"
-                className={`lp-citySuggest__item${idx === activeIdx ? ' lp-citySuggest__item--active' : ''}`}
-                onMouseEnter={() => setActiveIdx(idx)}
-                onClick={() => pickSuggestion(city)}
-              >
-                {city}
-              </button>
-            ))}
-          </div>
-        ) : null}
-      </div>
-      <button type="button" className="lp-searchBtn lp-searchBtn--pill" onClick={() => submitSearch(cityQuery)}>
-        Найти
-      </button>
-    </div>
-  )
 
   return (
-    <main className="lp">
-      <header className={`lp-stickySearch${showStickyHeader ? ' lp-stickySearch--show' : ''}`} aria-hidden={!showStickyHeader}>
-        <div className="lp-stickySearch__inner">
-          <Link to="/" className="lp-logo lp-logo--sticky" aria-label="ONTHEWATER">
-            <span className="lp-logoIcon" aria-hidden>
-              <svg viewBox="0 0 40 40" width="32" height="32" fill="none">
-                <circle cx="20" cy="20" r="19" fill="#0061C1" />
-                <path d="M8 22c3-4 7-6 12-6s9 2 12 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" fill="none" />
-              </svg>
-            </span>
-            <span className="lp-logoText">onthewater</span>
-          </Link>
-          {renderSearchBar('sticky')}
+    <main className="pm">
+      <section className="pm-hero">
+        <div className="pm-hero__bg" aria-hidden="true">
+          <img src={heroImg} alt="" decoding="async" />
         </div>
-      </header>
+        <div className="pm-container pm-hero__grid">
+          <div className="pm-hero__copy">
+            <h1 className="pm-hero__title">ONTHEWATER</h1>
+            <p className="pm-hero__subtitle">Аренда катеров</p>
+            <p className="pm-hero__lead">
+              Точные маршруты, чистая вода и умное бронирование. Найдите катер с капитаном или без — цена видна сразу.
+            </p>
 
-      <section className="lp-heroWrap">
-        <div className="lp-heroBg" style={{ backgroundImage: `url(${heroImg})` }} aria-hidden />
-        <div className="lp-heroTint" aria-hidden />
-
-        <header className="lp-header">
-          <div className="lp-headerTop">
-            <Link to="/" className="lp-logo" aria-label="ONTHEWATER" onClick={closeMobileNav}>
-              <span className="lp-logoIcon" aria-hidden>
-                <svg viewBox="0 0 40 40" width="40" height="40" fill="none">
-                  <circle cx="20" cy="20" r="19" fill="#0061C1" />
-                  <path
-                    d="M8 22c3-4 7-6 12-6s9 2 12 6"
-                    stroke="#fff"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    fill="none"
-                  />
-                  <path
-                    d="M10 26c2.5-2 5.5-3 10-3s7.5 1 10 3"
-                    stroke="#fff"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    opacity="0.85"
-                    fill="none"
-                  />
-                </svg>
-              </span>
-              <span className="lp-logoText">onthewater</span>
-            </Link>
-
-            <button
-              type="button"
-              className="lp-navToggle"
-              aria-expanded={mobileNavOpen}
-              aria-controls="lp-mobile-menu"
-              aria-label={mobileNavOpen ? 'Закрыть меню' : 'Открыть меню'}
-              onClick={() => setMobileNavOpen((o) => !o)}
+            <form
+              className="pm-search"
+              role="search"
+              ref={searchRef}
+              onSubmit={(e) => {
+                e.preventDefault()
+                submitSearch(cityQuery)
+              }}
             >
-              {mobileNavOpen ? <CloseIcon /> : <MenuIcon />}
-            </button>
-          </div>
-
-          <nav className="lp-nav lp-navDesktop" aria-label="Основное меню">
-            <Link to="/boats">Катера</Link>
-            <a href="#how">Как это работает</a>
-            <a href="#destinations">Направления</a>
-            <a href="#contact">Контакты</a>
-          </nav>
-
-          <div className="lp-headerActions lp-headerActionsDesktop">
-            <Link to="/owners" className="lp-linkMuted">
-              Разместить объявление
-            </Link>
-            {user ? (
-              <>
-                <Link to="/account" className="lp-btnGhost authMenuBtn">
-                  Личный кабинет
-                </Link>
-                <button type="button" className="lp-btnGhost authMenuBtn authMenuBtn--action" onClick={logout}>
-                  Выйти
+              <div className="pm-search__pill">
+                <button
+                  type="button"
+                  className={`pm-search__seg pm-search__seg--where${cityOpen ? ' is-active' : ''}`}
+                  aria-haspopup="listbox"
+                  aria-expanded={cityOpen}
+                  onClick={() => {
+                    setCityOpen((o) => !o)
+                    setDateOpen(false)
+                  }}
+                >
+                  <span className="pm-search__segIcon" aria-hidden>
+                    <PinIcon />
+                  </span>
+                  <span className="pm-search__segText">
+                    <span className="pm-search__segLabel">Где</span>
+                    <span className="pm-search__segValue">{cityQuery || 'Любой город'}</span>
+                  </span>
                 </button>
-              </>
-            ) : (
-              <>
-                <Link to="/register" className="lp-btnGhost authMenuBtn">
-                  Регистрация
-                </Link>
-                <Link to="/login" className="lp-btnGhost authMenuBtn">
-                  Вход
-                </Link>
-              </>
-            )}
-          </div>
 
-          {mobileNavOpen ? (
-            <button
-              type="button"
-              className="lp-navBackdrop"
-              aria-label="Закрыть меню"
-              onClick={closeMobileNav}
-            />
-          ) : null}
+                <span className="pm-search__divider" aria-hidden />
 
-          <div
-            id="lp-mobile-menu"
-            className={`lp-mobileNav${mobileNavOpen ? ' lp-mobileNav--open' : ''}`}
-            aria-hidden={!mobileNavOpen}
-          >
-            <div className="lp-mobileNavInner">
-              <p className="lp-mobileNavEyebrow">Разделы</p>
-              <nav className="lp-mobileNavLinks" aria-label="Меню (мобильная версия)">
-                <Link to="/boats" onClick={closeMobileNav}>
-                  Катера
-                </Link>
-                <a href="#how" onClick={closeMobileNav}>
-                  Как это работает
-                </a>
-                <a href="#destinations" onClick={closeMobileNav}>
-                  Направления
-                </a>
-                <a href="#contact" onClick={closeMobileNav}>
-                  Контакты
-                </a>
-              </nav>
-              <div className="lp-mobileNavActions">
-                <Link to="/owners" className="lp-mobileNavMuted" onClick={closeMobileNav}>
-                  Разместить объявление
-                </Link>
-                <div className="lp-mobileNavBtns">
-                  {user ? (
-                    <>
-                      <Link
-                        to="/account"
-                        className="lp-btnGhost lp-btnGhost--block lp-mobileNavBtnPrimary authMenuBtn"
-                        onClick={closeMobileNav}
-                      >
-                        Личный кабинет
-                      </Link>
+                <button
+                  type="button"
+                  className={`pm-search__seg pm-search__seg--when${dateOpen ? ' is-active' : ''}`}
+                  aria-haspopup="dialog"
+                  aria-expanded={dateOpen}
+                  onClick={() => {
+                    setDateOpen((o) => !o)
+                    setCityOpen(false)
+                    setCityFilter('')
+                  }}
+                >
+                  <span className="pm-search__segIcon" aria-hidden>
+                    <CalendarIcon />
+                  </span>
+                  <span className="pm-search__segText">
+                    <span className="pm-search__segLabel">Когда</span>
+                    <span className="pm-search__segValue">{formatDateRu(dateStr)}</span>
+                  </span>
+                  <span className="pm-search__segChev" aria-hidden>
+                    <ChevronIcon />
+                  </span>
+                </button>
+              </div>
+
+              {dateOpen ? (
+                <div className="pm-calWrap">
+                  <HomeDateCalendar
+                    value={dateStr}
+                    minDate={todayISO()}
+                    onChange={setDateStr}
+                    onClose={() => setDateOpen(false)}
+                  />
+                </div>
+              ) : null}
+
+              {cityOpen ? (
+                <div className="pm-cityPanel" role="listbox" aria-label="Выбор города">
+                  <div className="pm-cityPanel__search">
+                    <span className="pm-cityPanel__searchIcon" aria-hidden>
+                      <SearchIcon />
+                    </span>
+                    <input
+                      ref={cityFilterRef}
+                      className="pm-cityPanel__searchInput"
+                      type="text"
+                      placeholder="Поиск города…"
+                      value={cityFilter}
+                      onChange={(e) => setCityFilter(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          setCityOpen(false)
+                          setCityFilter('')
+                        }
+                      }}
+                    />
+                    <kbd className="pm-cityPanel__kbd">⌘ K</kbd>
+                  </div>
+
+                  <ul className="pm-cityPanel__list">
+                    <li role="presentation">
                       <button
                         type="button"
-                        className="lp-btnGhost lp-btnGhost--block lp-mobileNavBtnSecondary authMenuBtn authMenuBtn--action"
-                        onClick={() => {
-                          logout()
-                          closeMobileNav()
-                        }}
+                        role="option"
+                        aria-selected={!cityQuery}
+                        className={`pm-cityPanel__item${!cityQuery ? ' is-selected' : ''}`}
+                        onClick={() => pickCity('')}
                       >
-                        Выйти
+                        <span className="pm-cityPanel__pin" aria-hidden>
+                          <PinIcon />
+                        </span>
+                        <span className="pm-cityPanel__copy">
+                          <span className="pm-cityPanel__name">Любой город</span>
+                          <span className="pm-cityPanel__region">Все регионы</span>
+                        </span>
+                        {!cityQuery ? (
+                          <span className="pm-cityPanel__check" aria-hidden>
+                            <CheckIcon />
+                          </span>
+                        ) : null}
                       </button>
-                    </>
-                  ) : (
-                    <>
-                      <Link
-                        to="/register"
-                        className="lp-btnGhost lp-btnGhost--block lp-mobileNavBtnPrimary authMenuBtn"
-                        onClick={closeMobileNav}
-                      >
-                        Регистрация
-                      </Link>
-                      <Link
-                        to="/login"
-                        className="lp-btnGhost lp-btnGhost--block lp-mobileNavBtnSecondary authMenuBtn"
-                        onClick={closeMobileNav}
-                      >
-                        Вход
-                      </Link>
-                    </>
-                  )}
+                    </li>
+                    {cityOptions.map((city) => {
+                      const selected = city === cityQuery
+                      return (
+                        <li key={city} role="presentation">
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={selected}
+                            className={`pm-cityPanel__item${selected ? ' is-selected' : ''}`}
+                            onClick={() => pickCity(city)}
+                          >
+                            <span className="pm-cityPanel__pin" aria-hidden>
+                              <PinIcon />
+                            </span>
+                            <span className="pm-cityPanel__copy">
+                              <span className="pm-cityPanel__name">{city}</span>
+                              <span className="pm-cityPanel__region">{regionHintFor(city)}</span>
+                            </span>
+                            {selected ? (
+                              <span className="pm-cityPanel__check" aria-hidden>
+                                <CheckIcon />
+                              </span>
+                            ) : null}
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                  {!cityFilter.trim() ? (
+                    <p className="pm-cityPanel__foot">Популярные направления</p>
+                  ) : null}
                 </div>
-              </div>
-            </div>
+              ) : null}
+
+              <button type="submit" className="pm-search__submit">
+                Найти катер <ArrowIcon />
+              </button>
+            </form>
           </div>
-        </header>
-
-        <div className="lp-heroContent">
-          <h1 className="lp-heroTitle">
-            Арендуйте идеальный катер
-            <br />
-            для вашего отдыха
-          </h1>
-
-          {renderSearchBar('hero')}
         </div>
       </section>
 
-      <DestinationsSection />
+      <NearbyBoatsSection />
+      <DestinationsSection variant="precision" />
+      <PopularBoats variant="precision" />
+      <HomeCategoriesSection variant="precision" />
 
-      <PopularBoats />
-      <HomeCategoriesSection />
-
-      <section className="lp-section lp-how" id="how">
-        <div className="lp-container">
-          <div className="lp-howBadge">
-            <span className="lp-howBadge__accent">on</span>thewater
+      <section className="pm-section" id="how">
+        <div className="pm-container">
+          <div className="pm-sectionHead">
+            <h2 className="pm-sectionTitle">Как это работает</h2>
           </div>
-          <div className="lp-howCard">
-            <h2 className="lp-howTitle">Как это работает</h2>
-            <div className="lp-howRow">
+          <div className="pm-howGrid">
             {HOW_STEPS.map((step) => (
-              <div key={step.title} className="lp-howStep">
-                <div className="lp-howIconWrap">
-                  <HowIcon kind={step.icon} />
-                </div>
-                <h3 className="lp-howStepTitle">{step.title}</h3>
-                <p className="lp-howStepText">{step.text}</p>
-              </div>
+              <article key={step.num} className="pm-howStep">
+                <div className="pm-howStep__num">{step.num}</div>
+                <h3 className="pm-howStep__title">{step.title}</h3>
+                <p className="pm-howStep__text">{step.text}</p>
+              </article>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="pm-app" id="app" aria-label="Мобильное приложение ONTHEWATER">
+        <div className="pm-container pm-app__panel">
+          <div className="pm-app__copy">
+            <p className="pm-app__eyebrow">Приложение</p>
+            <h2 className="pm-app__title">Вся прогулка — в вашем телефоне</h2>
+            <p className="pm-app__text">
+              Ищите катера на карте, общайтесь с владельцем и управляйте бронированием в приложении
+              ONTHEWATER.
+            </p>
+            <ul className="pm-app__features">
+              <li>Поиск катеров списком и на карте</li>
+              <li>Бронирование и избранное под рукой</li>
+            </ul>
+            <div className="pm-app__stores" aria-label="Скачать клиентское приложение">
+              <a
+                href={CLIENT_IOS_APP_STORE_URL}
+                className="pm-app__badge"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Скачать ONTHEWATER в App Store"
+              >
+                <svg className="pm-app__badgeIcon" width="22" height="26" viewBox="0 0 24 24" aria-hidden>
+                  <path
+                    fill="currentColor"
+                    d="M16.7 12.6c0-2.1 1.7-3.1 1.8-3.2-1-1.4-2.5-1.6-3.1-1.6-1.3-.1-2.5.8-3.2.8-.7 0-1.7-.7-2.8-.7-1.4 0-2.8.9-3.5 2.2-1.5 2.6-.4 6.5 1.1 8.6.7 1 1.6 2.2 2.8 2.1 1.1 0 1.5-.7 2.9-.7s1.7.7 2.9.7c1.2 0 1.9-1 2.6-2 .8-1.2 1.2-2.3 1.2-2.4-.1 0-2.3-.9-2.3-3.4zM14.7 6.5c.6-.8 1.1-1.8.9-2.9-1 .1-2.1.7-2.8 1.5-.6.7-1.1 1.8-.9 2.8 1.1.1 2.1-.5 2.8-1.4z"
+                  />
+                </svg>
+                <span className="pm-app__badgeText">
+                  <span className="pm-app__badgeEyebrow">Загрузите в</span>
+                  <span className="pm-app__badgeName">App Store</span>
+                </span>
+              </a>
+              <a
+                href={CLIENT_ANDROID_PLAY_URL}
+                className="pm-app__badge"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Скачать ONTHEWATER в Google Play"
+              >
+                <img
+                  className="pm-app__badgeIcon pm-app__badgeIcon--play"
+                  src={googlePlayIcon}
+                  alt=""
+                  width="22"
+                  height="22"
+                  aria-hidden
+                />
+                <span className="pm-app__badgeText">
+                  <span className="pm-app__badgeEyebrow">Доступно в</span>
+                  <span className="pm-app__badgeName">Google Play</span>
+                </span>
+              </a>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section className="lp-cta" id="contact">
-        <div className="lp-ctaBg" aria-hidden />
-        <div className="lp-ctaInner">
-          <h2 className="lp-ctaTitle">Владеете катером? Зарабатывайте</h2>
-          <p className="lp-ctaSub">Сдавайте судно в аренду через ONTHEWATER.</p>
-          <div className="lp-ctaStores" aria-label="Скачать приложение для владельцев ONTHEWATER">
-            <a
-              href={OWNER_IOS_APP_STORE_URL}
-              className="lp-ctaStoreBadge lp-ctaStoreBadge--apple"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Скачать приложение для владельцев в App Store"
-            >
-              <img src={appleStoreIcon} alt="App Store" className="lp-ctaStoreBadge__img" />
-            </a>
-            <a
-              href={OWNER_ANDROID_PLAY_URL}
-              className="lp-ctaStoreBadge lp-ctaStoreBadge--google"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Скачать приложение в Google Play"
-            >
-              <img src={googlePlayIcon} alt="Google Play" className="lp-ctaStoreBadge__img" />
-            </a>
+          <div className="pm-app__phones" aria-label="Скриншоты приложения ONTHEWATER">
+            <figure className="pm-app__device">
+              <img
+                className="pm-app__phoneImg"
+                src={appPhoneList}
+                alt="Список катеров в приложении"
+                loading="lazy"
+                decoding="async"
+              />
+            </figure>
+            <figure className="pm-app__device">
+              <img
+                className="pm-app__phoneImg"
+                src={appPhoneMap}
+                alt="Карта катеров в приложении"
+                loading="lazy"
+                decoding="async"
+              />
+            </figure>
           </div>
         </div>
       </section>
-
     </main>
   )
 }

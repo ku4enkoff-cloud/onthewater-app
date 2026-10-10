@@ -12,6 +12,15 @@ export default defineConfig(({ mode }) => {
       env.VITE_YANDEX_MAPKIT_API_KEY ||
       DEFAULT_YANDEX_MAPS_KEY,
   ).trim()
+  // Пустой VITE_API_URL → запросы на тот же origin и proxy на localhost:3000.
+  // Если задан удалённый API — proxy не нужен (и /boats не должен перехватывать SPA-роут).
+  const useLocalApiProxy = !String(env.VITE_API_URL || '').trim()
+
+  /** Не проксировать HTML — иначе /boats открывает API вместо React-страницы. */
+  const bypassSpaHtml = (req) => {
+    if (req.headers.accept?.includes('text/html')) return '/index.html'
+    return null
+  }
 
   return {
     define: {
@@ -20,15 +29,17 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [react()],
     server: {
-      proxy: {
-        '/boats': { target: 'http://localhost:3000', changeOrigin: true },
-        '/boat-types': { target: 'http://localhost:3000', changeOrigin: true },
-        '/uploads': { target: 'http://localhost:3000', changeOrigin: true },
-        '/destinations': { target: 'http://localhost:3000', changeOrigin: true },
-        '/legal-documents': { target: 'http://localhost:3000', changeOrigin: true },
-        '/auth': { target: 'http://localhost:3000', changeOrigin: true },
-        '/bookings': { target: 'http://localhost:3000', changeOrigin: true },
-      },
+      proxy: useLocalApiProxy
+        ? {
+            '/boats': { target: 'http://localhost:3000', changeOrigin: true, bypass: bypassSpaHtml },
+            '/boat-types': { target: 'http://localhost:3000', changeOrigin: true },
+            '/uploads': { target: 'http://localhost:3000', changeOrigin: true },
+            '/destinations': { target: 'http://localhost:3000', changeOrigin: true },
+            '/legal-documents': { target: 'http://localhost:3000', changeOrigin: true },
+            '/auth': { target: 'http://localhost:3000', changeOrigin: true },
+            '/bookings': { target: 'http://localhost:3000', changeOrigin: true },
+          }
+        : undefined,
     },
   }
 })

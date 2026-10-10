@@ -135,7 +135,7 @@ export function DualRangeSlider({ low, high, min, max, onChange }) {
 }
 
 /**
- * Как mobile/src/client/components/FiltersModal.js — цена (два ползунка), гости, длительность, капитан, вейкборд.
+ * Как mobile/src/client/components/FiltersModal.js — цена, тип, гости, длительность, капитан, вейкборд.
  */
 export default function FiltersModal({
   onClose,
@@ -146,11 +146,13 @@ export default function FiltersModal({
   durationOptions = [30, 60, 120, 180, 240, 360, 480],
   maxPassengers = 20,
   focusSection = null,
+  boatTypes = [],
 }) {
   const pMin = priceRange.min
   const pMax = priceRange.max > pMin ? priceRange.max : pMin + 1000
 
   const sectionPriceRef = useRef(null)
+  const sectionTypeRef = useRef(null)
   const sectionGuestsRef = useRef(null)
   const sectionDurationRef = useRef(null)
   const sectionCaptainRef = useRef(null)
@@ -159,6 +161,7 @@ export default function FiltersModal({
     if (!focusSection) return
     const map = {
       price: sectionPriceRef,
+      boatType: sectionTypeRef,
       passengers: sectionGuestsRef,
       duration: sectionDurationRef,
       captain: sectionCaptainRef,
@@ -179,12 +182,34 @@ export default function FiltersModal({
     const hi = clamp(filters.priceHigh ?? pMax, pMin, pMax)
     return Math.max(lo, hi)
   })
+  const [boatTypeId, setBoatTypeId] = useState(() => filters.boatTypeId ?? null)
+  const [boatTypeName, setBoatTypeName] = useState(() => filters.boatTypeName ?? null)
   const [passengers, setPassengers] = useState(() => filters.passengers ?? 1)
   const [duration, setDuration] = useState(() => filters.duration ?? null)
   const [captain, setCaptain] = useState(() => filters.captain ?? null)
   const [waterSports, setWaterSports] = useState(() =>
     Array.isArray(filters.waterSports) ? [...filters.waterSports] : [],
   )
+
+  const typeSelected = (t) =>
+    String(boatTypeId) === String(t.id) ||
+    (boatTypeName &&
+      (boatTypeName || '').toLowerCase() === (t.name || '').toLowerCase())
+
+  const selectBoatType = (t) => {
+    if (!t) {
+      setBoatTypeId(null)
+      setBoatTypeName(null)
+      return
+    }
+    if (typeSelected(t)) {
+      setBoatTypeId(null)
+      setBoatTypeName(null)
+      return
+    }
+    setBoatTypeId(t.id)
+    setBoatTypeName(t.name)
+  }
 
   useEffect(() => {
     const onKey = (e) => {
@@ -202,6 +227,7 @@ export default function FiltersModal({
   const countActiveInModal = () => {
     let n = 0
     if (priceLow > pMin || priceHigh < pMax) n++
+    if (boatTypeId || boatTypeName) n++
     if (passengers !== 1) n++
     if (duration) n++
     if (captain) n++
@@ -214,6 +240,8 @@ export default function FiltersModal({
       ...filters,
       priceLow,
       priceHigh,
+      boatTypeId,
+      boatTypeName,
       passengers,
       duration,
       captain,
@@ -225,6 +253,8 @@ export default function FiltersModal({
     filters,
     priceLow,
     priceHigh,
+    boatTypeId,
+    boatTypeName,
     passengers,
     duration,
     captain,
@@ -235,6 +265,8 @@ export default function FiltersModal({
   const handleClear = () => {
     setPriceLow(pMin)
     setPriceHigh(pMax)
+    setBoatTypeId(null)
+    setBoatTypeName(null)
     setPassengers(1)
     setDuration(null)
     setCaptain(null)
@@ -245,6 +277,8 @@ export default function FiltersModal({
     onApply({
       priceLow,
       priceHigh,
+      boatTypeId,
+      boatTypeName,
       passengers,
       duration,
       captain,
@@ -306,6 +340,36 @@ export default function FiltersModal({
               onChange={handlePriceChange}
             />
           </div>
+
+          {boatTypes.length > 0 ? (
+            <>
+              <div className="fm-divider" />
+              <div className="fm-section" ref={sectionTypeRef}>
+                <p className="fm-sectionTitle" style={{ marginBottom: 12 }}>
+                  Тип катера
+                </p>
+                <div className="fm-chipRow fm-chipRow--wrap">
+                  <button
+                    type="button"
+                    className={`fm-chip${!boatTypeId && !boatTypeName ? ' fm-chip--on' : ''}`}
+                    onClick={() => selectBoatType(null)}
+                  >
+                    Все типы
+                  </button>
+                  {boatTypes.map((t) => (
+                    <button
+                      key={String(t.id)}
+                      type="button"
+                      className={`fm-chip${typeSelected(t) ? ' fm-chip--on' : ''}`}
+                      onClick={() => selectBoatType(t)}
+                    >
+                      {t.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : null}
 
           <div className="fm-divider" />
 

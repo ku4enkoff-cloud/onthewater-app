@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { loadYandexMaps } from '../../lib/yandexMaps'
+import { createBoatsClusterLayer } from '../../lib/yandexBoatsClusterLayer'
 import { getPhotoUrl, getThumbUrl } from '../../config'
 import { firstPhotoThumbUrl, getEffectiveMinDurationMinutes } from '../../boatUtils'
 import {
@@ -8,9 +9,14 @@ import {
   getExactPriceForDuration,
   radiusKmFromBounds,
 } from '../../boatSearchUtils'
+import { getMapMarkerPriceLabel } from '../../lib/mapDisplayMarkers'
+import MapBoatPreview from '../MapBoatPreview.jsx'
 
 const PICK_THUMB_PLACEHOLDER =
   'https://placehold.co/144x96/e8eef4/64748b?text=%D0%9A%D0%B0%D1%82%D0%B5%D1%80'
+
+const PREVIEW_WIDTH = 320
+const PREVIEW_GAP = 14
 
 function debounce(fn, ms) {
   let t
@@ -20,16 +26,6 @@ function debounce(fn, ms) {
   }
 }
 
-function markerPriceText(boat, durationFilter) {
-  const activeDuration = durationFilter || getEffectiveMinDurationMinutes(boat)
-  const p =
-    getExactPriceForDuration(boat, activeDuration) ?? (Number(boat.price_per_hour) || 0)
-  const n = Math.round(p)
-  if (n >= 1000) return `${Math.round(n / 1000)}k ₽`
-  return `${n} ₽`
-}
-
-/** Данные для строки в модалке выбора при наложении меток */
 function buildPickCandidate(boat, durationFilter) {
   const minDur = getEffectiveMinDurationMinutes(boat)
   const activeDuration = durationFilter || minDur
@@ -45,38 +41,40 @@ function buildPickCandidate(boat, durationFilter) {
   }
 }
 
-/** Расстояние по поверхности Земли, м */
-function distanceMeters(lat1, lon1, lat2, lon2) {
-  const R = 6371000
-  const rad = (d) => (d * Math.PI) / 180
-  const dLat = rad(lat2 - lat1)
-  const dLon = rad(lon2 - lon1)
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLon / 2) ** 2
-  return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)))
+function priceTextForBoat(boat, durationFilter) {
+  if (durationFilter) {
+    const p = getExactPriceForDuration(boat, durationFilter) ?? (Number(boat.price_per_hour) || 0)
+    const n = Math.round(Number(p) || 0)
+    return n > 0 ? `${n.toLocaleString('ru-RU')} ₽` : getMapMarkerPriceLabel(boat)
+  }
+  return getMapMarkerPriceLabel(boat)
 }
 
-/** Расстояние между точками на карте в пикселях экрана (для визуально наложенных меток) */
-function pixelDistanceOnMap(map, lat1, lon1, lat2, lon2) {
+function reportMapViewport(map, onViewportChange, onGeoSearch) {
   try {
-    const z = map.getZoom()
-    const proj = map.options.get('projection')
-    const p1 = proj.toGlobalPixels([lat1, lon1], z)
-    const p2 = proj.toGlobalPixels([lat2, lon2], z)
-    const dx = p1[0] - p2[0]
-    const dy = p1[1] - p2[1]
-    return Math.hypot(dx, dy)
+    const bounds = map.getBounds()
+    const c = map.getCenter()
+    const radius = radiusKmFromBounds(bounds)
+    onViewportChange?.(bounds)
+    onGeoSearch?.({ lat: c[0], lng: c[1], radius })
   } catch {
-    return Infinity
+    /* ignore */
   }
 }
 
-/** Считаем метки «рядом», если близко на экране или по координатам */
-function isSameVisualCluster(map, lat1, lon1, lat2, lon2) {
-  const m = distanceMeters(lat1, lon1, lat2, lon2)
-  const px = pixelDistanceOnMap(map, lat1, lon1, lat2, lon2)
-  return px < 72 || m < 95
+function previewStyleFromHover(hover) {
+  if (!hover) return null
+  const w = Math.min(PREVIEW_WIDTH, Math.max(200, (hover.containerW || 400) - 24))
+  let left = hover.x + PREVIEW_GAP
+  let top = hover.y
+  // Если справа не хватает места — слева от метки
+  if (left + w > (hover.containerW || 0) - 8) {
+    left = hover.x - PREVIEW_GAP - w
+  }
+  left = Math.max(8, Math.min(left, (hover.containerW || w) - w - 8))
+  const maxTop = (hover.containerH || 400) - 24
+  top = Math.max(40, Math.min(top, maxTop))
+  return { left, top, width: w }
 }
 
 export default function YandexBoatsMap({
@@ -85,68 +83,60 @@ export default function YandexBoatsMap({
   center,
   zoom,
   selectedBoatId,
-  searchOnMove,
   autoFitBounds,
   onGeoSearch,
+  onViewportChange,
   onPlacemarksPick,
+  onHoverBoatOpen,
   filters,
 }) {
   const containerRef = useRef(null)
+  const wrapRef = useRef(null)
   const mapRef = useRef(null)
-  const layoutRef = useRef(null)
-  const placemarksRef = useRef(new Map())
-  const [mapReady, setMapReady] = useState(false)
+  const layerRef = useRef(null)
+  const boatsRef = useRef(boats)
+  const filtersRef = useRef(filters)
+  const autoFitRef = useRef(autoFitBounds)
+  const didAutoFitRef = useRef(false)
   const onGeoSearchRef = useRef(onGeoSearch)
-  const searchOnMoveRef = useRef(searchOnMove)
+  const onViewportChangeRef = useRef(onViewportChange)
   const onPlacemarksPickRef = useRef(onPlacemarksPick)
+  const onHoverBoatOpenRef = useRef(onHoverBoatOpen)
+  const suppressActionRef = useRef(0)
+  const [mapReady, setMapReady] = useState(false)
+  const [hoverPreview, setHoverPreview] = useState(null)
 
   useEffect(() => {
     onGeoSearchRef.current = onGeoSearch
   }, [onGeoSearch])
   useEffect(() => {
-    searchOnMoveRef.current = searchOnMove
-  }, [searchOnMove])
+    onViewportChangeRef.current = onViewportChange
+  }, [onViewportChange])
   useEffect(() => {
     onPlacemarksPickRef.current = onPlacemarksPick
   }, [onPlacemarksPick])
-
-  const onActionEndRef = useRef(null)
   useEffect(() => {
-    onActionEndRef.current = debounce(() => {
-      const map = mapRef.current
-      if (!map || !searchOnMoveRef.current) return
-      try {
-        const b = map.getBounds()
-        const c = map.getCenter()
-        const r = radiusKmFromBounds(b)
-        onGeoSearchRef.current?.({ lat: c[0], lng: c[1], radius: r })
-      } catch {
-        /* ignore */
-      }
-    }, 500)
-  }, [])
+    onHoverBoatOpenRef.current = onHoverBoatOpen
+  }, [onHoverBoatOpen])
+  useEffect(() => {
+    boatsRef.current = boats
+  }, [boats])
+  useEffect(() => {
+    filtersRef.current = filters
+  }, [filters])
+  useEffect(() => {
+    autoFitRef.current = autoFitBounds
+  }, [autoFitBounds])
 
   useEffect(() => {
     if (!apiKey || !containerRef.current) return undefined
     let cancelled = false
     let map = null
+    let onActionEnd = null
 
     loadYandexMaps(apiKey)
       .then((ymaps) => {
         if (cancelled || !containerRef.current) return
-
-        const PricePinLayout = ymaps.templateLayoutFactory.createClass(
-          '<div class="$[properties.pinClass]">' +
-            '<span class="yw-pin__txt">$[properties.priceText]</span>' +
-            '$[properties.instantHtml]' +
-            '</div>',
-          {
-            build() {
-              PricePinLayout.superclass.build.call(this)
-            },
-          },
-        )
-        layoutRef.current = PricePinLayout
 
         map = new ymaps.Map(containerRef.current, {
           center: [center.lat, center.lon],
@@ -155,7 +145,55 @@ export default function YandexBoatsMap({
         })
         mapRef.current = map
 
-        map.events.add('actionend', () => onActionEndRef.current?.())
+        layerRef.current = createBoatsClusterLayer(ymaps, map, {
+          positionRoot: wrapRef.current || containerRef.current,
+          getPriceLabel: (boat) => priceTextForBoat(boat, filtersRef.current?.duration || null),
+          onSelect: ({ boats: selected }) => {
+            suppressActionRef.current = Date.now() + 900
+            setHoverPreview(null)
+            const durationFilter = filtersRef.current?.duration || null
+            const payload = selected
+              .slice()
+              .sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'ru'))
+              .map((b) => buildPickCandidate(b, durationFilter))
+            onPlacemarksPickRef.current?.(payload)
+          },
+          onHover: (payload) => {
+            if (!payload?.boats?.length) {
+              setHoverPreview(null)
+              return
+            }
+            setHoverPreview({
+              boats: payload.boats
+                .slice()
+                .sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'ru')),
+              style: previewStyleFromHover(payload),
+            })
+          },
+          selectedBoatId,
+        })
+        if (wrapRef.current) {
+          layerRef.current.setPositionRoot?.(wrapRef.current)
+        }
+
+        onActionEnd = debounce(() => {
+          if (Date.now() < suppressActionRef.current) {
+            try {
+              onViewportChangeRef.current?.(map.getBounds())
+            } catch {
+              /* ignore */
+            }
+            return
+          }
+          reportMapViewport(map, onViewportChangeRef.current, onGeoSearchRef.current)
+        }, 450)
+        map.events.add('actionend', onActionEnd)
+
+        try {
+          onViewportChangeRef.current?.(map.getBounds())
+        } catch {
+          /* ignore */
+        }
 
         setMapReady(true)
       })
@@ -164,7 +202,21 @@ export default function YandexBoatsMap({
     return () => {
       cancelled = true
       setMapReady(false)
-      placemarksRef.current = new Map()
+      didAutoFitRef.current = false
+      setHoverPreview(null)
+      try {
+        layerRef.current?.destroy()
+      } catch {
+        /* ignore */
+      }
+      layerRef.current = null
+      if (map && onActionEnd) {
+        try {
+          map.events.remove('actionend', onActionEnd)
+        } catch {
+          /* ignore */
+        }
+      }
       if (map) {
         try {
           map.destroy()
@@ -173,114 +225,76 @@ export default function YandexBoatsMap({
         }
       }
       mapRef.current = null
-      layoutRef.current = null
     }
-  }, [apiKey]) // eslint-disable-line react-hooks/exhaustive-deps -- центр/zoom: отдельный эффект
+  }, [apiKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const map = mapRef.current
     if (!mapReady || !map) return
     try {
+      suppressActionRef.current = Date.now() + 400
       map.setCenter([center.lat, center.lon], zoom, { duration: 250 })
     } catch {
       /* ignore */
     }
   }, [mapReady, center.lat, center.lon, zoom])
 
-  const rebuildPlacemarks = useCallback(() => {
-    const map = mapRef.current
-    const LayoutClass = layoutRef.current
-    if (!mapReady || !map || !LayoutClass || !window.ymaps) return
+  useEffect(() => {
+    if (!mapReady || !layerRef.current) return
+    layerRef.current.setBoats(boatsRef.current || [])
 
-    map.geoObjects.removeAll()
-    placemarksRef.current.clear()
-
-    const durationFilter = filters?.duration || null
-    const withCoords = boats.filter((b) => b.lat != null && b.lng != null)
-
-    for (const boat of withCoords) {
-      const id = String(boat.id)
-      const instant = boat.instant_booking !== false
-      const lat = Number(boat.lat)
-      const lng = Number(boat.lng)
-      const pm = new window.ymaps.Placemark(
-        [lat, lng],
-        {
-          priceText: markerPriceText(boat, durationFilter),
-          pinClass: 'yw-pin',
-          instantHtml: instant ? '<span class="yw-pin__zap">⚡</span>' : '',
-          hintContent: boat.title || 'Катер',
-        },
-        {
-          iconLayout: LayoutClass,
-          /* якорь ближе к центру плашки; область клика шире длинных цен вроде «50k ₽» */
-          iconOffset: [-32, -20],
-          iconShape: {
-            type: 'Rectangle',
-            coordinates: [
-              [-12, -44],
-              [112, 20],
-            ],
-          },
-          interactiveZIndex: true,
-          zIndex: 650,
-          cursor: 'pointer',
-        },
-      )
-      pm.events.add('click', (e) => {
+    if (autoFitRef.current !== false && !didAutoFitRef.current) {
+      const list = (boatsRef.current || []).filter((b) => b.lat != null && b.lng != null)
+      const map = mapRef.current
+      if (map && list.length > 1) {
+        didAutoFitRef.current = true
         try {
-          e.stopPropagation()
-        } catch {
-          /* ignore */
-        }
-        const neighbors = withCoords
-          .filter((b) =>
-            isSameVisualCluster(map, lat, lng, Number(b.lat), Number(b.lng)),
+          suppressActionRef.current = Date.now() + 700
+          const ymaps = window.ymaps
+          const bounds = ymaps.util.bounds.fromPoints(
+            list.map((b) => [Number(b.lat), Number(b.lng)]),
           )
-          .sort((a, b) => {
-            if (a.id === boat.id) return -1
-            if (b.id === boat.id) return 1
-            return String(a.title || '').localeCompare(String(b.title || ''), 'ru')
-          })
-        const payload = neighbors.map((b) => buildPickCandidate(b, durationFilter))
-        onPlacemarksPickRef.current?.(payload)
-      })
-      map.geoObjects.add(pm)
-      placemarksRef.current.set(id, pm)
-    }
-
-    if (autoFitBounds !== false) {
-      if (withCoords.length > 1) {
-        try {
-          map.setBounds(map.geoObjects.getBounds(), { checkZoomRange: true, zoomMargin: 56 })
+          const moved = map.setBounds(bounds, { checkZoomRange: true, zoomMargin: 56 })
+          const notify = () => {
+            try {
+              onViewportChangeRef.current?.(map.getBounds())
+            } catch {
+              /* ignore */
+            }
+          }
+          if (moved && typeof moved.then === 'function') moved.then(notify)
+          else notify()
         } catch {
           /* ignore */
         }
-      } else if (withCoords.length === 1) {
+      } else if (map && list.length === 1) {
+        didAutoFitRef.current = true
         try {
-          map.setCenter([Number(withCoords[0].lat), Number(withCoords[0].lng)], 13)
+          suppressActionRef.current = Date.now() + 700
+          map.setCenter([Number(list[0].lat), Number(list[0].lng)], 13)
+          onViewportChangeRef.current?.(map.getBounds())
+        } catch {
+          /* ignore */
+        }
+      } else if (map) {
+        try {
+          onViewportChangeRef.current?.(map.getBounds())
         } catch {
           /* ignore */
         }
       }
-    }
-  }, [mapReady, boats, filters?.duration, autoFitBounds])
-
-  useEffect(() => {
-    rebuildPlacemarks()
-  }, [rebuildPlacemarks])
-
-  useEffect(() => {
-    if (!mapReady) return
-    placemarksRef.current.forEach((pm, id) => {
-      const selected = selectedBoatId != null && String(selectedBoatId) === id
+    } else if (mapRef.current) {
       try {
-        pm.properties.set('pinClass', `yw-pin${selected ? ' yw-pin--selected' : ''}`)
-        pm.options.set('zIndex', selected ? 4000 : 650)
+        onViewportChangeRef.current?.(mapRef.current.getBounds())
       } catch {
         /* ignore */
       }
-    })
+    }
+  }, [mapReady, boats, filters?.duration])
+
+  useEffect(() => {
+    if (!mapReady) return
+    layerRef.current?.setSelectedBoatId(selectedBoatId)
   }, [mapReady, selectedBoatId])
 
   if (!apiKey) {
@@ -291,5 +305,28 @@ export default function YandexBoatsMap({
     )
   }
 
-  return <div ref={containerRef} className="bs-map" role="application" aria-label="Карта катеров" />
+  return (
+    <div ref={wrapRef} className="bs-mapShell">
+      <div ref={containerRef} className="bs-map" role="application" aria-label="Карта катеров" />
+      {hoverPreview?.boats?.length && hoverPreview.style ? (
+        <MapBoatPreview
+          boats={hoverPreview.boats}
+          anchored
+          style={hoverPreview.style}
+          onMouseEnter={() => layerRef.current?.keepHover?.()}
+          onMouseLeave={() => layerRef.current?.releaseHover?.()}
+          onOpenBoat={(boat) => {
+            setHoverPreview(null)
+            layerRef.current?.releaseHover?.()
+            if (onHoverBoatOpenRef.current) {
+              onHoverBoatOpenRef.current(boat)
+              return
+            }
+            const durationFilter = filtersRef.current?.duration || null
+            onPlacemarksPickRef.current?.([buildPickCandidate(boat, durationFilter)])
+          }}
+        />
+      ) : null}
+    </div>
+  )
 }

@@ -26,27 +26,38 @@ function photoCount(boat) {
   return Array.isArray(p) ? p.length : 0
 }
 
-export default function BoatResultCard({ boat, filters, selected, onHover, onLeave }) {
+export default function BoatResultCard({ boat, filters, selected, onHover, onLeave, layout = 'card' }) {
   const img = firstPhotoThumbUrl(boat, getPhotoUrl, getThumbUrl) || PLACEHOLDER
   const nPhotos = photoCount(boat)
   const instantBook = boat.instant_booking !== false
   const hasTopOwner = Number(boat.rating) >= 4.8 && !instantBook
-  const activeDuration = filters.duration || getEffectiveMinDurationMinutes(boat)
+  const activeDuration = filters?.duration || getEffectiveMinDurationMinutes(boat)
   const activePrice =
     getExactPriceForDuration(boat, activeDuration) ?? (Number(boat.price_per_hour) || 0)
   const durLabel = formatDurationChipLabel(activeDuration)
+  const isRow = layout === 'row'
+  const isEditorial = layout === 'editorial'
+  const loc = formatCardLocationCaps(boat)
+  const locShort = (
+    String(boat?.location_city || boat?.locationCity || '').trim() || loc
+  ).toUpperCase()
 
   return (
     <article
       id={boat.id != null ? `bs-boat-${boat.id}` : undefined}
-      className={`bs-card${selected ? ' bs-card--selected' : ''}`}
+      className={`bs-card${selected ? ' bs-card--selected' : ''}${isRow ? ' bs-card--row' : ''}${isEditorial ? ' bs-card--ed' : ''}`}
       onMouseEnter={() => onHover?.(boat.id)}
       onMouseLeave={() => onLeave?.()}
     >
       <Link to={boatDetailPath(boat)} className="bs-card__link">
         <div className="bs-card__imageWrap">
-          <img src={img} alt={`${boat.title || 'Катер'}, ${formatCardLocationCaps(boat)}`} className="bs-card__image" loading="lazy" />
-          {instantBook ? (
+          <img
+            src={img}
+            alt={`${boat.title || 'Катер'}, ${loc}`}
+            className="bs-card__image"
+            loading="lazy"
+          />
+          {!isRow && !isEditorial && instantBook ? (
             <div className="bs-card__badge bs-card__badge--instant">
               <span className="bs-card__zap" aria-hidden>
                 ⚡
@@ -54,28 +65,43 @@ export default function BoatResultCard({ boat, filters, selected, onHover, onLea
               Мгновенно
             </div>
           ) : null}
-          {nPhotos > 0 ? (
-            <div className="bs-card__photoCount">
-              1/{nPhotos}
+          {!isRow && !isEditorial && nPhotos > 0 ? (
+            <div className="bs-card__photoCount">1/{nPhotos}</div>
+          ) : null}
+          {!isRow && !isEditorial ? (
+            <div className="bs-card__priceBadge">
+              <span className="bs-card__priceMain">от {activePrice.toLocaleString('ru-RU')} ₽</span>
+              <span className="bs-card__priceUnit">/{durLabel}</span>
             </div>
           ) : null}
-          <div className="bs-card__priceBadge">
-            <span className="bs-card__priceMain">от {activePrice.toLocaleString('ru-RU')} ₽</span>
-            <span className="bs-card__priceUnit">/{durLabel}</span>
-          </div>
         </div>
         <div className="bs-card__body">
-          <div className="bs-card__badgeRow">
-            {hasTopOwner ? (
-              <span className="bs-card__topOwner">
-                <span aria-hidden>🏆</span> Бывалый
-              </span>
-            ) : null}
-            <span className="bs-card__location">{formatCardLocationCaps(boat)}</span>
-          </div>
-          <div className="bs-card__titleRow">
-            <h3 className="bs-card__title">{boat.title || 'Катер'}</h3>
-            <div className="bs-card__ratingBlock">
+          {isEditorial ? (
+            <>
+              <div className="bs-card__location">{locShort}</div>
+              <h3 className="bs-card__title">{boat.title || 'Катер'}</h3>
+              <div className="bs-card__edPrice">
+                от {activePrice.toLocaleString('ru-RU')} ₽{' '}
+                <span className="bs-card__edPriceUnit">/ {durLabel}</span>
+              </div>
+              <p className="bs-card__meta">
+                ★ {boat.rating ?? 0} · до {boat.capacity ?? '—'} гостей
+                {boat.captain_included ? ' · С капитаном' : ''}
+              </p>
+            </>
+          ) : isRow ? (
+            <>
+              <div className="bs-card__rowTop">
+                <h3 className="bs-card__title">{boat.title || 'Катер'}</h3>
+                <div className="bs-card__rowPrice">
+                  <span className="bs-card__priceMain">от {activePrice.toLocaleString('ru-RU')} ₽</span>
+                  <span className="bs-card__priceUnit">/{durLabel}</span>
+                </div>
+              </div>
+              <p className="bs-card__rowMeta">
+                {loc}
+                {boat.captain_included ? ' · С капитаном' : ''}
+              </p>
               <div className="bs-card__ratingLine">
                 <span className="bs-card__star" aria-hidden>
                   ★
@@ -85,15 +111,40 @@ export default function BoatResultCard({ boat, filters, selected, onHover, onLea
                   ({boat.reviews_count ?? 0} {pluralizeReviews(boat.reviews_count ?? 0)})
                 </span>
               </div>
-              <div className="bs-card__bookings">
-                {boat.bookings_count ?? 0} {pluralizeBookings(boat.bookings_count ?? 0)}
+            </>
+          ) : (
+            <>
+              <div className="bs-card__badgeRow">
+                {hasTopOwner ? (
+                  <span className="bs-card__topOwner">
+                    <span aria-hidden>🏆</span> Бывалый
+                  </span>
+                ) : null}
+                <span className="bs-card__location">{loc}</span>
               </div>
-            </div>
-          </div>
-          <p className="bs-card__meta">
-            {getBookingPeriodLabel(boat)} • до {boat.capacity ?? '—'} гостей
-            {boat.captain_included ? ' • С капитаном' : ''}
-          </p>
+              <div className="bs-card__titleRow">
+                <h3 className="bs-card__title">{boat.title || 'Катер'}</h3>
+                <div className="bs-card__ratingBlock">
+                  <div className="bs-card__ratingLine">
+                    <span className="bs-card__star" aria-hidden>
+                      ★
+                    </span>
+                    <span className="bs-card__ratingNum">{boat.rating ?? 0}</span>
+                    <span className="bs-card__reviews">
+                      ({boat.reviews_count ?? 0} {pluralizeReviews(boat.reviews_count ?? 0)})
+                    </span>
+                  </div>
+                  <div className="bs-card__bookings">
+                    {boat.bookings_count ?? 0} {pluralizeBookings(boat.bookings_count ?? 0)}
+                  </div>
+                </div>
+              </div>
+              <p className="bs-card__meta">
+                {getBookingPeriodLabel(boat)} • до {boat.capacity ?? '—'} гостей
+                {boat.captain_included ? ' • С капитаном' : ''}
+              </p>
+            </>
+          )}
         </div>
       </Link>
     </article>

@@ -2,13 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { boatDetailPath, boatUrlSegment, parseBoatUrlParam } from '../boatUrl'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { fetchBoatById, fetchBoatReviews, fetchBoatsSearch, fetchPopularBoats } from '../api/boats'
+import { fetchBoatById, fetchBoatReviews, fetchBoatsSearch } from '../api/boats'
 import { YANDEX_MAPS_API_KEY, getPhotoUrl } from '../config'
 import {
   allPhotoUrls,
   buildBookingDurationTiers,
   formatCardLocation,
-  formatGuestLabelRu,
   formatPriceRu,
   getEffectiveMinDurationMinutes,
   getMinDurationPrice,
@@ -23,154 +22,19 @@ import {
   pluralizeBookings,
   pluralizeReviews,
 } from '../boatSearchUtils'
-import BookingCalendarModal, { formatBookingDateRu } from '../components/booking/BookingCalendarModal.jsx'
-import TimePickerModal from '../components/booking/TimePickerModal.jsx'
+import BookingPanelC06 from '../components/booking/BookingPanelC06.jsx'
 import BoatDetailLocationMap from '../components/boat/BoatDetailLocationMap.jsx'
-import BoatHeroSpecStrip from '../components/boat/BoatHeroSpecStrip.jsx'
 import BoatResultCard from '../components/search/BoatResultCard.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { createBooking } from '../api/bookings'
 import { useBoatDetailPageSeo } from '../seo/useBoatDetailPageSeo.js'
+import '../styles/boat-detail-c06.css'
 
 const PLACEHOLDER = 'https://placehold.co/1200x750/e8eef4/64748b?text=%D0%9A%D0%B0%D1%82%D0%B5%D1%80'
 const DESC_PREVIEW = 480
 const AMENITIES_PREVIEW = 15
 const BOOKING_TIERS_PREVIEW = 4
 const FAVORITES_STORAGE_KEY = 'boatrent_site_favorites'
-
-function DetailPageHeader({ bookDate, onOpenCalendar, showCalendar }) {
-  const { user, logout } = useAuth()
-  const [mobileNavOpen, setMobileNavOpen] = useState(false)
-  const closeMobileNav = useCallback(() => setMobileNavOpen(false), [])
-  return (
-    <header className="bd-topBar">
-      <div className="bd-topBar__lead">
-        <div className="bd-topBar__left">
-          <Link to="/" className="bd-topBar__logo" aria-label="ONTHEWATER — на главную" onClick={closeMobileNav}>
-            <span className="bd-topBar__logoMark" aria-hidden />
-            <span className="bd-topBar__logoText">onthewater</span>
-          </Link>
-        </div>
-        <button
-          type="button"
-          className="bd-navToggle"
-          aria-expanded={mobileNavOpen}
-          aria-controls="bd-mobile-menu"
-          aria-label={mobileNavOpen ? 'Закрыть меню' : 'Открыть меню'}
-          onClick={() => setMobileNavOpen((o) => !o)}
-        >
-          {mobileNavOpen ? (
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          ) : (
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          )}
-        </button>
-      </div>
-
-      <nav className="bd-topBar__nav bd-topBar__navDesktop" aria-label="Разделы сайта">
-        {showCalendar ? (
-          <button type="button" className="bd-topBar__pill" onClick={onOpenCalendar} aria-label="Выбрать дату бронирования">
-            <span className="bd-topBar__pillIcon" aria-hidden>
-              📅
-            </span>
-            <span>{formatBookingDateRu(bookDate)}</span>
-          </button>
-        ) : null}
-        <Link to="/boats" className="bd-topBar__link">
-          Поиск катеров
-        </Link>
-        {user ? (
-          <>
-            <Link className="bd-topBar__link authMenuBtn" to="/account">
-              Личный кабинет
-            </Link>
-            <button type="button" className="bd-topBar__link authMenuBtn authMenuBtn--action" onClick={logout}>
-              Выйти
-            </button>
-          </>
-        ) : (
-          <>
-            <Link className="bd-topBar__link authMenuBtn" to="/register">
-              Регистрация
-            </Link>
-            <Link className="bd-topBar__link authMenuBtn" to="/login">
-              Войти
-            </Link>
-          </>
-        )}
-      </nav>
-
-      {mobileNavOpen ? (
-        <button type="button" className="bd-navBackdrop" aria-label="Закрыть меню" onClick={closeMobileNav} />
-      ) : null}
-
-      <div id="bd-mobile-menu" className={`bd-mobileNav${mobileNavOpen ? ' bd-mobileNav--open' : ''}`} aria-hidden={!mobileNavOpen}>
-        <div className="bd-mobileNavInner">
-          <p className="bd-mobileNavEyebrow">Разделы</p>
-          <nav className="bd-mobileNavLinks" aria-label="Меню страницы катера">
-            <Link to="/boats" onClick={closeMobileNav}>
-              Катера
-            </Link>
-            <Link to="/#how" onClick={closeMobileNav}>
-              Как это работает
-            </Link>
-            <Link to="/#destinations" onClick={closeMobileNav}>
-              Направления
-            </Link>
-            <Link to="/#contact" onClick={closeMobileNav}>
-              Контакты
-            </Link>
-          </nav>
-
-          <div className="bd-mobileNavActions">
-            {showCalendar ? (
-              <button
-                type="button"
-                className="bd-mobileNavBtn bd-mobileNavBtn--secondary"
-                onClick={() => {
-                  onOpenCalendar?.()
-                  closeMobileNav()
-                }}
-              >
-                {formatBookingDateRu(bookDate)}
-              </button>
-            ) : null}
-            {user ? (
-              <div className="bd-mobileNavBtns">
-                <Link to="/account" className="bd-mobileNavBtn bd-mobileNavBtn--primary" onClick={closeMobileNav}>
-                  Личный кабинет
-                </Link>
-                <button
-                  type="button"
-                  className="bd-mobileNavBtn bd-mobileNavBtn--secondary"
-                  onClick={() => {
-                    logout()
-                    closeMobileNav()
-                  }}
-                >
-                  Выйти
-                </button>
-              </div>
-            ) : (
-              <div className="bd-mobileNavBtns">
-                <Link to="/register" className="bd-mobileNavBtn bd-mobileNavBtn--primary" onClick={closeMobileNav}>
-                  Регистрация
-                </Link>
-                <Link to="/login" className="bd-mobileNavBtn bd-mobileNavBtn--secondary" onClick={closeMobileNav}>
-                  Войти
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </header>
-  )
-}
 
 function todayISO() {
   const d = new Date()
@@ -191,8 +55,15 @@ function parseVideoUrls(boat) {
   }
   if (!Array.isArray(videos)) return []
   return videos
-    .map((src) => getPhotoUrl(src))
-    .filter((src, idx, arr) => typeof src === 'string' && src.trim() && arr.indexOf(src) === idx)
+    .map((src) => getPhotoUrl(src) || (typeof src === 'string' ? src.trim() : null))
+    .filter(
+      (src, idx, arr) =>
+        typeof src === 'string' &&
+        src.trim() &&
+        !src.startsWith('file://') &&
+        !src.startsWith('content://') &&
+        arr.indexOf(src) === idx,
+    )
 }
 
 function formatReviewDate(iso) {
@@ -233,13 +104,13 @@ export default function BoatDetailPage() {
   const [descOpen, setDescOpen] = useState(false)
   const [bookDate, setBookDate] = useState(todayISO)
   const [bookDuration, setBookDuration] = useState('')
-  const [calendarOpen, setCalendarOpen] = useState(false)
   const [favorite, setFavorite] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
-  const [timePickerOpen, setTimePickerOpen] = useState(false)
   const [bookStartTime, setBookStartTime] = useState('')
   const [bookGuests, setBookGuests] = useState(1)
   const [galleryLightboxOpen, setGalleryLightboxOpen] = useState(false)
+  const [videoModalOpen, setVideoModalOpen] = useState(false)
+  const [videoIndex, setVideoIndex] = useState(0)
   const [amenitiesExpanded, setAmenitiesExpanded] = useState(false)
   const [bookingTiersExpanded, setBookingTiersExpanded] = useState(false)
   const [authPromptOpen, setAuthPromptOpen] = useState(false)
@@ -247,11 +118,6 @@ export default function BoatDetailPage() {
   const [bookingSubmitting, setBookingSubmitting] = useState(false)
   const [bookingError, setBookingError] = useState('')
   const [bookingSuccessOpen, setBookingSuccessOpen] = useState(false)
-  const [knowOpen, setKnowOpen] = useState({
-    cancellation: false,
-    rules: false,
-    payment: false,
-  })
   const [similarBoats, setSimilarBoats] = useState([])
   const galleryTouchRef = useRef({ x: 0, y: 0 })
 
@@ -352,10 +218,6 @@ export default function BoatDetailPage() {
   }, [resolvedId])
 
   useEffect(() => {
-    setKnowOpen({ cancellation: false, rules: false, payment: false })
-  }, [resolvedId])
-
-  useEffect(() => {
     if (!authPromptOpen) return
     const onKey = (e) => {
       if (e.key === 'Escape') setAuthPromptOpen(false)
@@ -403,49 +265,80 @@ export default function BoatDetailPage() {
         const city = String(boat.location_city || boat.locationCity || '').trim()
         const region = String(boat.location_region || boat.locationRegion || '').trim()
         const typeId = boat.type_id != null ? Number(boat.type_id) : null
-        const typeName = String(boat.type_name || '').trim().toLowerCase()
-        const cityPool = city && locKeys.includes(city) ? await fetchBoatsSearch({ city }) : []
-        const regionPool = region && isRegion(region) ? await fetchBoatsSearch({ region }) : []
-        const fallbackPool =
-          cityPool.length === 0 && regionPool.length === 0 ? await fetchPopularBoats(60) : []
-        const list = [...cityPool, ...regionPool, ...fallbackPool]
+        const typeName = String(boat.type_name || boat.type || '').trim().toLowerCase()
+        const originLat = Number(boat.lat)
+        const originLng = Number(boat.lng)
+        const hasOrigin = Number.isFinite(originLat) && Number.isFinite(originLng)
+
+        const pools = await Promise.all([
+          hasOrigin ? fetchBoatsSearch({ lat: originLat, lng: originLng, radius: 80 }) : Promise.resolve([]),
+          hasOrigin ? fetchBoatsSearch({ lat: originLat, lng: originLng, radius: 200 }) : Promise.resolve([]),
+          city && locKeys.includes(city) ? fetchBoatsSearch({ city }) : Promise.resolve([]),
+          region && isRegion(region) ? fetchBoatsSearch({ region }) : Promise.resolve([]),
+          fetchBoatsSearch({ allRegions: true }),
+        ])
         if (cancelled) return
+
         const ex = Number(boat.id)
         const unique = []
         const seen = new Set()
-        for (const item of list) {
+        for (const item of pools.flat()) {
           const id = Number(item?.id)
           if (!Number.isFinite(id) || id === ex || seen.has(id)) continue
           seen.add(id)
           unique.push(item)
         }
+
         const isSameType = (item) => {
           const itemTypeId = item?.type_id != null ? Number(item.type_id) : null
-          const itemTypeName = String(item?.type_name || '').trim().toLowerCase()
-          if (typeId != null && itemTypeId != null && Number.isFinite(itemTypeId)) return itemTypeId === typeId
+          const itemTypeName = String(item?.type_name || item?.type || '')
+            .trim()
+            .toLowerCase()
+          if (typeId != null && Number.isFinite(typeId) && itemTypeId != null && Number.isFinite(itemTypeId)) {
+            return itemTypeId === typeId
+          }
           if (typeName && itemTypeName) return itemTypeName === typeName
           return false
         }
-        const inSameCity = (item) =>
-          city &&
-          String(item?.location_city || item?.locationCity || '')
-            .trim()
-            .toLowerCase() === city.toLowerCase()
-        const inSameRegion = (item) =>
-          region &&
-          String(item?.location_region || item?.locationRegion || '')
-            .trim()
-            .toLowerCase() === region.toLowerCase()
 
-        const top = unique.filter((item) => isSameType(item) && (inSameCity(item) || inSameRegion(item)))
-        const sameType = unique.filter((item) => isSameType(item) && !top.includes(item))
-        const closeLocation = unique.filter(
-          (item) => (inSameCity(item) || inSameRegion(item)) && !top.includes(item) && !sameType.includes(item),
-        )
-        const rest = unique.filter(
-          (item) => !top.includes(item) && !sameType.includes(item) && !closeLocation.includes(item),
-        )
-        setSimilarBoats([...top, ...sameType, ...closeLocation, ...rest].slice(0, 8))
+        /** Примерное расстояние в км (как на бэкенде: градусы × 111). */
+        const distanceKm = (item) => {
+          if (!hasOrigin) return Number.POSITIVE_INFINITY
+          const lat = Number(item?.lat)
+          const lng = Number(item?.lng)
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return Number.POSITIVE_INFINITY
+          const dLat = lat - originLat
+          const dLng = lng - originLng
+          return Math.sqrt(dLat * dLat + dLng * dLng) * 111
+        }
+
+        const cityKey = city.toLowerCase()
+        const regionKey = region.toLowerCase()
+        const locationRank = (item) => {
+          const itemCity = String(item?.location_city || item?.locationCity || '')
+            .trim()
+            .toLowerCase()
+          const itemRegion = String(item?.location_region || item?.locationRegion || '')
+            .trim()
+            .toLowerCase()
+          if (cityKey && itemCity === cityKey) return 0
+          if (regionKey && itemRegion === regionKey) return 1
+          return 2
+        }
+
+        const sameTypeNearby = unique
+          .filter(isSameType)
+          .sort((a, b) => {
+            const da = distanceKm(a)
+            const db = distanceKm(b)
+            if (da !== db) return da - db
+            const lr = locationRank(a) - locationRank(b)
+            if (lr !== 0) return lr
+            return (Number(b.bookings_count) || 0) - (Number(a.bookings_count) || 0)
+          })
+          .slice(0, 8)
+
+        setSimilarBoats(sameTypeNearby)
       } catch {
         if (!cancelled) setSimilarBoats([])
       }
@@ -453,7 +346,18 @@ export default function BoatDetailPage() {
     return () => {
       cancelled = true
     }
-  }, [boat?.id, boat?.location_city, boat?.location_region, boat?.locationCity, boat?.locationRegion])
+  }, [
+    boat?.id,
+    boat?.lat,
+    boat?.lng,
+    boat?.type_id,
+    boat?.type_name,
+    boat?.type,
+    boat?.location_city,
+    boat?.location_region,
+    boat?.locationCity,
+    boat?.locationRegion,
+  ])
 
   /** Канонический URL с актуальным slug из названия (старые ссылки /boats/5 тоже работают). */
   useEffect(() => {
@@ -534,6 +438,7 @@ export default function BoatDetailPage() {
   )
 
   const closeGalleryLightbox = useCallback(() => setGalleryLightboxOpen(false), [])
+  const closeVideoModal = useCallback(() => setVideoModalOpen(false), [])
 
   const openGalleryLightboxAt = useCallback(
     (e, index) => {
@@ -547,14 +452,39 @@ export default function BoatDetailPage() {
     [photos.length],
   )
 
+  const openVideoModal = useCallback(
+    (e) => {
+      e.stopPropagation()
+      if (videos.length < 1) return
+      setVideoIndex(0)
+      setVideoModalOpen(true)
+    },
+    [videos.length],
+  )
+
   useEffect(() => {
-    if (!galleryLightboxOpen) return
+    if (!galleryLightboxOpen && !videoModalOpen) return
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const onKey = (e) => {
       if (e.key === 'Escape') {
         e.preventDefault()
-        setGalleryLightboxOpen(false)
+        if (videoModalOpen) setVideoModalOpen(false)
+        else setGalleryLightboxOpen(false)
+        return
+      }
+      if (videoModalOpen) {
+        const n = videos.length
+        if (n < 2) return
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault()
+          setVideoIndex((idx) => (idx <= 0 ? n - 1 : idx - 1))
+        }
+        if (e.key === 'ArrowRight') {
+          e.preventDefault()
+          setVideoIndex((idx) => (idx >= n - 1 ? 0 : idx + 1))
+        }
+        return
       }
       const n = photos.length
       if (n < 2) return
@@ -572,7 +502,7 @@ export default function BoatDetailPage() {
       document.body.style.overflow = prevOverflow
       window.removeEventListener('keydown', onKey)
     }
-  }, [galleryLightboxOpen, photos.length])
+  }, [galleryLightboxOpen, videoModalOpen, photos.length, videos.length])
 
   const maxBookGuests = useMemo(
     () => Math.max(1, Math.min(50, Number(boat?.capacity) || 20)),
@@ -609,14 +539,9 @@ export default function BoatDetailPage() {
     return items
   }, [boat])
 
-  const toggleKnow = useCallback((id) => {
-    setKnowOpen((prev) => ({ ...prev, [id]: !prev[id] }))
-  }, [])
-
   if (loading) {
     return (
       <div className="bd-page">
-        <DetailPageHeader showCalendar={false} />
         <div className="bd-loading">Загружаем катер…</div>
       </div>
     )
@@ -625,7 +550,6 @@ export default function BoatDetailPage() {
   if (error === 'notfound' || !boat) {
     return (
       <div className="bd-page">
-        <DetailPageHeader showCalendar={false} />
         <div className="bd-error">
           <p>Катер не найден или снят с публикации.</p>
           <p>
@@ -639,7 +563,6 @@ export default function BoatDetailPage() {
   if (error) {
     return (
       <div className="bd-page">
-        <DetailPageHeader showCalendar={false} />
         <div className="bd-error">
           <p>Не удалось загрузить данные. Попробуйте позже.</p>
           <p>
@@ -651,7 +574,6 @@ export default function BoatDetailPage() {
   }
 
   const title = boat.title || boat.type_name || 'Катер'
-  const loc = formatCardLocation(boat)
   const lengthStr =
     boat.length_m != null && String(boat.length_m).trim() !== ''
       ? `${String(boat.length_m).replace(',', '.')} м`
@@ -662,10 +584,6 @@ export default function BoatDetailPage() {
   const amenities = getBoatAmenities(boat)
   const ownerInitial = (boat.owner_name || 'В')[0].toUpperCase()
   const avatarUrl = boat.owner_avatar ? getPhotoUrl(boat.owner_avatar) : null
-  const responseRate =
-    boat.response_rate != null && Number.isFinite(Number(boat.response_rate))
-      ? Math.round(Number(boat.response_rate))
-      : null
   const bookingsN = Math.max(0, Number(boat.bookings_count) || 0)
 
   const prevPhoto = () => setPhotoIndex((i) => (i <= 0 ? photos.length - 1 : i - 1))
@@ -680,395 +598,250 @@ export default function BoatDetailPage() {
       ? durationOptions
       : durationOptions.slice(0, BOOKING_TIERS_PREVIEW)
   const showBookingTiersToggle = durationOptions.length > BOOKING_TIERS_PREVIEW
+  const thumbPhotos = photos
+  const typeLabel = (boat.type_name || boat.type || 'Катер').trim()
+  const reviewCount = Array.isArray(reviews) ? reviews.length : 0
+
   const renderBookingCard = () => (
-    <div className="bd-bookCard bd-bookCard--bs bd-bookCard--setter">
-      <header className="bd-bookCard__head">
-        <div className="bd-bookCard__price">
-          <strong>{formatPriceRu(selectedTierPrice)} ₽</strong>
-          <span className="bd-bookCard__unit">
-            /{' '}
-            {minDurationLabel({
-              schedule_min_duration: Number(bookDuration) || getEffectiveMinDurationMinutes(boat),
-            })}
-          </span>
-        </div>
-      </header>
-
-      <div className="bd-bookCard__stack">
-        <div className="bd-bookCard__row bd-bookCard__row--datePick">
-          <div className="bd-bookCard__rowMain">
-            <span className="bd-bookCard__rowLabel" id="bd-date-label">
-              Дата
-            </span>
-            <div className="bd-bookCard__dateRow">
-              <button
-                type="button"
-                className="bd-bookCard__dateBtn bd-bookCard__dateBtn--flex"
-                aria-labelledby="bd-date-label"
-                onClick={() => setCalendarOpen(true)}
-              >
-                {formatBookingDateRu(bookDate)}
-              </button>
-            </div>
-          </div>
-          <span className="bd-bookCard__rowIcon" aria-hidden>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          </span>
-        </div>
-
-        <div className="bd-bookCard__row bd-bookCard__row--dur">
-          <div className="bd-bookCard__rowMain">
-            <span className="bd-bookCard__rowLabel">Длительность</span>
-            <div className="bd-bookCard__chips" role="group" aria-label="Длительность">
-              {durationOptions.map((t) => {
-                const active = String(t.duration) === String(bookDuration)
-                return (
-                  <button
-                    key={t.duration}
-                    type="button"
-                    className={`bd-bookCard__chip${active ? ' bd-bookCard__chip--on' : ''}`}
-                    onClick={() => setBookDuration(String(t.duration))}
-                  >
-                    {minDurationLabel({ schedule_min_duration: t.duration })}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-          <span className="bd-bookCard__rowIcon" aria-hidden>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="13" r="7" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M12 9v4l2.5 1.5M9 3h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          </span>
-        </div>
-
-        <button type="button" className="bd-bookCard__row bd-bookCard__row--tap" onClick={() => setTimePickerOpen(true)}>
-          <span className="bd-bookCard__rowMain">
-            <span className="bd-bookCard__rowLabel">Время начала</span>
-            {bookStartTime ? (
-              <span className="bd-bookCard__rowValue">{bookStartTime}</span>
-            ) : (
-              <span className="bd-bookCard__rowValue bd-bookCard__rowValue--muted">Нажмите, чтобы выбрать время</span>
-            )}
-          </span>
-          <span className="bd-bookCard__rowIcon" aria-hidden>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          </span>
-        </button>
-
-        <div className="bd-bookCard__row bd-bookCard__row--guests" role="group" aria-label="Количество гостей">
-          <div className="bd-bookCard__rowMain">
-            <span className="bd-bookCard__rowLabel">Гости</span>
-            <div className="bd-bookCard__guestRow bd-bookCard__guestRow--inline">
-              <button
-                type="button"
-                className="bd-bookCard__guestStepBtn bd-bookCard__guestStepBtn--dec"
-                onClick={() => setBookGuests((g) => Math.max(1, g - 1))}
-                disabled={bookGuests <= 1}
-                aria-label="Меньше гостей"
-              >
-                −
-              </button>
-              <span className="bd-bookCard__guestStepLabel">{formatGuestLabelRu(bookGuests)}</span>
-              <button
-                type="button"
-                className="bd-bookCard__guestStepBtn bd-bookCard__guestStepBtn--inc"
-                onClick={() => setBookGuests((g) => Math.min(maxBookGuests, g + 1))}
-                disabled={bookGuests >= maxBookGuests}
-                aria-label="Больше гостей"
-              >
-                +
-              </button>
-            </div>
-          </div>
-          <span className="bd-bookCard__rowIcon" aria-hidden>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM5 20v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </span>
-        </div>
-      </div>
-
-      {bookingError ? <p className="bd-bookCard__error">{bookingError}</p> : null}
-      {bookStartTime ? user ? (
-        <button type="button" className="bd-bookCard__ctaFull" onClick={submitBookingRequest} disabled={bookingSubmitting}>
-          {bookingSubmitting ? 'Отправляем…' : 'Запрос на бронирование'}
-        </button>
-      ) : (
-        <button type="button" className="bd-bookCard__ctaFull" onClick={() => setAuthPromptOpen(true)}>
-          Запрос на бронирование
-        </button>
-      ) : (
-        <span className="bd-bookCard__ctaFull bd-bookCard__ctaFull--disabled" aria-disabled>
-          Запрос на бронирование
-        </span>
-      )}
-    </div>
+    <BookingPanelC06
+      boat={boat}
+      boatId={resolvedId}
+      bookDate={bookDate}
+      onDateChange={setBookDate}
+      bookDuration={bookDuration}
+      onDurationChange={setBookDuration}
+      bookStartTime={bookStartTime}
+      onStartTimeChange={setBookStartTime}
+      durationOptions={durationOptions}
+      selectedTierPrice={selectedTierPrice}
+      bookingError={bookingError}
+      bookingSubmitting={bookingSubmitting}
+      user={user}
+      onSubmit={submitBookingRequest}
+      onAuthRequired={() => setAuthPromptOpen(true)}
+      minDate={todayISO()}
+    />
   )
 
   return (
-    <div className="bd-page bd-page--bs">
-      <DetailPageHeader showCalendar={false} />
-
-      <BookingCalendarModal
-        open={calendarOpen}
-        onClose={() => setCalendarOpen(false)}
-        value={bookDate}
-        minDate={todayISO()}
-        onApply={(iso) => setBookDate(iso)}
-      />
-
-      <TimePickerModal
-        open={timePickerOpen}
-        onClose={() => setTimePickerOpen(false)}
-        boat={boat}
-        boatId={resolvedId}
-        bookDate={bookDate}
-        durationMin={Number(bookDuration) || getEffectiveMinDurationMinutes(boat)}
-        value={bookStartTime}
-        onApply={(slot) => {
-          setBookStartTime(slot)
-          setTimePickerOpen(false)
-        }}
-      />
-
-      <section
-        className="bd-galleryBleed"
-        aria-label="Фотографии катера"
-        onTouchStart={onGalleryTouchStart}
-        onTouchEnd={onGalleryTouchEnd}
+    <div className="bd-page bd-page--bs bd-page--c06">
+      <article
+        className="bd-shell"
+        itemScope
+        itemType="https://schema.org/Product"
+        data-boat-id={boat.id}
       >
-        <div className={photos.length > 1 ? 'bd-galleryBleed__grid' : 'bd-galleryBleed__grid bd-galleryBleed__grid--single'}>
-          <div
-            className="bd-galleryBleed__pane bd-galleryBleed__pane--left"
-            onClick={(e) => openGalleryLightboxAt(e, photoIndex)}
-            role="presentation"
-          >
-            <img
-              src={photos[photoIndex]}
-              alt={`${title}, фото ${photoIndex + 1}`}
-              className="bd-galleryBleed__img"
-              loading="eager"
-              decoding="async"
-            />
-            {boat.instant_booking !== false ? (
-              <div className="bd-galleryBleed__badge">
-                <span aria-hidden>⚡</span> Мгновенное бронирование
-              </div>
-            ) : null}
-            {photos.length > 1 ? (
-              <>
-                <button type="button" className="bd-galleryBleed__nav bd-galleryBleed__nav--prev" onClick={prevPhoto} aria-label="Предыдущее фото">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-                    <path d="M15 6l-6 6 6 6" stroke="#0369a1" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-                <div className="bd-galleryBleed__counter" aria-live="polite">
-                  {photoIndex + 1} / {photos.length}
-                </div>
-              </>
-            ) : null}
-            {photos.length <= 1 ? (
-              <div className="bd-galleryBleed__actions">
-                <button
-                  type="button"
-                  className="bd-galleryBleed__fab"
-                  onClick={toggleFavorite}
-                  aria-label={favorite ? 'Убрать из избранного' : 'В избранное'}
-                  aria-pressed={favorite}
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>
-                    {favorite ? (
-                      <path
-                        fill="currentColor"
-                        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-                      />
-                    ) : (
-                      <path
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.75"
-                        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-                      />
-                    )}
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  className="bd-galleryBleed__fab"
-                  onClick={handleShare}
-                  aria-label={shareCopied ? 'Ссылка скопирована' : 'Поделиться'}
-                  title={shareCopied ? 'Ссылка скопирована' : 'Поделиться'}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                    <path
-                      d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-              </div>
-            ) : null}
-          </div>
-          {photos.length > 1 ? (
-            <div
-              className="bd-galleryBleed__pane bd-galleryBleed__pane--right"
-              onClick={(e) => openGalleryLightboxAt(e, (photoIndex + 1) % photos.length)}
-              role="presentation"
-            >
-              <img
-                src={photos[(photoIndex + 1) % photos.length]}
-                alt={`${title}, фото ${((photoIndex + 1) % photos.length) + 1}`}
-                className="bd-galleryBleed__img"
-                loading="lazy"
-                decoding="async"
-              />
-              <div className="bd-galleryBleed__actions">
-                <button
-                  type="button"
-                  className="bd-galleryBleed__fab"
-                  onClick={toggleFavorite}
-                  aria-label={favorite ? 'Убрать из избранного' : 'В избранное'}
-                  aria-pressed={favorite}
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>
-                    {favorite ? (
-                      <path
-                        fill="currentColor"
-                        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-                      />
-                    ) : (
-                      <path
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.75"
-                        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-                      />
-                    )}
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  className="bd-galleryBleed__fab"
-                  onClick={handleShare}
-                  aria-label={shareCopied ? 'Ссылка скопирована' : 'Поделиться'}
-                  title={shareCopied ? 'Ссылка скопирована' : 'Поделиться'}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                    <path
-                      d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <button type="button" className="bd-galleryBleed__nav bd-galleryBleed__nav--next" onClick={nextPhoto} aria-label="Следующее фото">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path d="M9 6l6 6-6 6" stroke="#0369a1" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            </div>
-          ) : null}
-        </div>
-      </section>
-
-      <div className="bd-shell">
-        {photos.length > 1 ? (
-          <div className="bd-topZone__media">
-            <div className="bd-thumbsBs bd-thumbsBs--belowBleed" role="tablist" aria-label="Миниатюры">
-              {photos.map((src, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  role="tab"
-                  className={`bd-thumbBs${i === photoIndex ? ' bd-thumbBs--on' : ''}`}
-                  onClick={() => setPhotoIndex(i)}
-                  aria-label={`Фото ${i + 1}`}
-                  aria-selected={i === photoIndex}
-                >
-                  <img src={src} alt={`${title}, миниатюра ${i + 1}`} />
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
         <div className="bd-detailGrid">
           <div className="bd-detailGrid__leftCol">
-          <div className="bd-heroUnder">
-            <header className="bd-heroBs">
-              <div className="bd-heroBs__top">
+            <section
+              className={`bd-c06Gallery${photos.length <= 1 ? ' bd-c06Gallery--single' : ''}`}
+              aria-label="Фотографии катера"
+              onTouchStart={onGalleryTouchStart}
+              onTouchEnd={onGalleryTouchEnd}
+            >
+              <figure
+                className="bd-c06Gallery__main"
+                onClick={(e) => openGalleryLightboxAt(e, photoIndex)}
+                role="presentation"
+              >
+                <img
+                  src={photos[photoIndex]}
+                  alt={`${title}, фото ${photoIndex + 1}`}
+                  className="bd-c06Gallery__mainImg"
+                  loading="eager"
+                  decoding="async"
+                />
+                {photos.length > 1 ? (
+                  <div className="bd-c06Gallery__counter" aria-live="polite">
+                    {photoIndex + 1} / {photos.length}
+                  </div>
+                ) : null}
+                {videos.length > 0 ? (
+                  <button
+                    type="button"
+                    className="bd-c06Gallery__videoBadge"
+                    onClick={openVideoModal}
+                    aria-label={`Смотреть видео, ${videos.length}`}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                      <rect x="2" y="5" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.8" />
+                      <path d="M16 10l6-3v10l-6-3v-4z" fill="currentColor" />
+                    </svg>
+                    Видео: {videos.length}
+                  </button>
+                ) : null}
+                <div className="bd-c06Gallery__actions">
+                  <button
+                    type="button"
+                    className="bd-c06Gallery__fab"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleFavorite()
+                    }}
+                    aria-label={favorite ? 'Убрать из избранного' : 'В избранное'}
+                    aria-pressed={favorite}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>
+                      {favorite ? (
+                        <path
+                          fill="currentColor"
+                          d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                        />
+                      ) : (
+                        <path
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.75"
+                          d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+                        />
+                      )}
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    className="bd-c06Gallery__fab"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleShare()
+                    }}
+                    aria-label={shareCopied ? 'Ссылка скопирована' : 'Поделиться'}
+                    title={shareCopied ? 'Ссылка скопирована' : 'Поделиться'}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                      <path
+                        d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </figure>
+              {photos.length > 1 ? (
+                <div className="bd-c06Gallery__thumbs" role="tablist" aria-label="Миниатюры">
+                  {thumbPhotos.map((src, i) => (
+                    <button
+                      key={`${src}-${i}`}
+                      type="button"
+                      role="tab"
+                      className={`bd-c06Gallery__thumb${i === photoIndex ? ' is-on' : ''}`}
+                      onClick={() => setPhotoIndex(i)}
+                      aria-label={`Фото ${i + 1}`}
+                      aria-selected={i === photoIndex}
+                    >
+                      <img src={src} alt={`${title}, миниатюра ${i + 1}`} />
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </section>
+
+            <header className="bd-c06Hero">
+              <div className="bd-c06Hero__row">
+                <h1 className="bd-c06Hero__title" itemProp="name">
+                  {title}
+                </h1>
                 {boat.rating != null ? (
-                  <span className="bd-heroBs__rating">
-                    <span className="bd-heroBs__star" aria-hidden>
+                  <span className="bd-c06Hero__rating">
+                    <span className="bd-c06Hero__star" aria-hidden>
                       ★
                     </span>
                     {Number(boat.rating).toFixed(1)}
-                  </span>
-                ) : null}
-                {bookingsN > 0 ? (
-                  <span className="bd-heroBs__bookings">
-                    ({bookingsN} {pluralizeBookings(bookingsN)})
+                    {reviewCount > 0 ? (
+                      <span className="bd-c06Hero__ratingMeta">
+                        ({reviewCount} {pluralizeReviews(reviewCount)})
+                      </span>
+                    ) : bookingsN > 0 ? (
+                      <span className="bd-c06Hero__ratingMeta">
+                        ({bookingsN} {pluralizeBookings(bookingsN)})
+                      </span>
+                    ) : null}
                   </span>
                 ) : null}
               </div>
-              <h1 className="bd-heroBs__title">{title}</h1>
-              <p className="bd-heroBs__loc">{loc}</p>
-
-              <BoatHeroSpecStrip
-                lengthStr={lengthStr}
-                capacity={capacity}
-                boat={boat}
-                responseRate={responseRate}
-              />
+              {locationFullLine && locationFullLine !== '—' ? (
+                boat.lat != null && boat.lng != null ? (
+                  <a
+                    className="bd-heroBs__loc bd-heroBs__loc--link"
+                    style={{ marginTop: 0 }}
+                    href={`https://yandex.ru/maps/?pt=${boat.lng},${boat.lat}&z=16`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {locationFullLine}
+                  </a>
+                ) : (
+                  <a
+                    className="bd-heroBs__loc bd-heroBs__loc--link"
+                    style={{ marginTop: 0 }}
+                    href={`https://yandex.ru/maps/?text=${encodeURIComponent(locationFullLine)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {locationFullLine}
+                  </a>
+                )
+              ) : (
+                <p className="bd-heroBs__loc" style={{ marginTop: 0 }}>
+                  —
+                </p>
+              )}
             </header>
-          </div>
+
+            <ul className="bd-c06Specs" aria-label="Ключевые характеристики">
+              <li className="bd-c06Specs__item">
+                <span className="bd-c06Specs__icon" aria-hidden>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M3 15l2-6h10l3 4h3v2H4l-1-0zM7 17a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm9 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <span itemProp="category">{typeLabel}</span>
+              </li>
+              <li className="bd-c06Specs__item">
+                <span className="bd-c06Specs__icon" aria-hidden>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 3c-2.5 3.5-5 6.2-5 9.5a5 5 0 1 0 10 0C17 9.2 14.5 6.5 12 3z"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <span>Длина: {lengthStr}</span>
+              </li>
+              <li className="bd-c06Specs__item">
+                <span className="bd-c06Specs__icon" aria-hidden>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM5 20v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <span>Вместимость: {capacity} {capacity !== '—' ? 'человек' : ''}</span>
+              </li>
+            </ul>
 
           <div className="bd-detailGrid__primary">
-          <main className="bd-main bd-main--below">
-          {videos.length > 0 ? (
-            <section className="bd-blockBs">
-              <div className="bd-blockBs__head">
-                <h2 className="bd-blockBs__h">Видео</h2>
-                <span className="bd-blockBs__sub">{videos.length}</span>
-              </div>
-              <div className="bd-videoGrid">
-                {videos.map((src, i) => (
-                  <figure key={src} className="bd-videoCard">
-                    <video
-                      className="bd-videoCard__player"
-                      src={src}
-                      controls
-                      playsInline
-                      preload="metadata"
-                    />
-                    <figcaption className="bd-videoCard__caption">Видео {i + 1}</figcaption>
-                  </figure>
-                ))}
-              </div>
-            </section>
-          ) : null}
-
-          <section className="bd-blockBs">
-            <h2 className="bd-blockBs__h">Описание</h2>
+          <main className="bd-main bd-main--below bd-qa">
+          <section className="bd-qa__lead" aria-labelledby="bd-desc-heading">
+            <h2 id="bd-desc-heading" className="bd-qa__leadH">
+              Описание
+            </h2>
             {desc ? (
               <>
-                <p className={`bd-desc${!descOpen && descLong ? ' bd-desc--clamp' : ''}`}>{desc}</p>
+                <div itemProp="description">
+                  <p className={`bd-desc${!descOpen && descLong ? ' bd-desc--clamp' : ''}`}>{desc}</p>
+                </div>
                 {descLong ? (
                   <button type="button" className="bd-readMore" onClick={() => setDescOpen((v) => !v)}>
                     {descOpen ? 'Свернуть' : 'Читать полностью'}
@@ -1076,151 +849,166 @@ export default function BoatDetailPage() {
                 ) : null}
               </>
             ) : (
-              <p className="bd-desc">Владелец пока не добавил описание.</p>
+              <div itemProp="description">
+                <p className="bd-desc">Владелец пока не добавил описание.</p>
+              </div>
             )}
           </section>
 
-          {amenities.length > 0 ? (
-            <section className="bd-blockBs bd-amenitiesBs">
-              <h2 className="bd-blockBs__h">Удобства</h2>
-              <ul className="bd-amenityColsBs" role="list">
-                {(amenitiesExpanded || amenities.length <= AMENITIES_PREVIEW
-                  ? amenities
-                  : amenities.slice(0, AMENITIES_PREVIEW)
-                ).map((a) => (
-                  <li key={a} className="bd-amenityColsBs__item">
-                    <span className="bd-amenityColsBs__check" aria-hidden />
-                    <span className="bd-amenityColsBs__label">{a}</span>
-                  </li>
-                ))}
-              </ul>
-              {amenities.length > AMENITIES_PREVIEW && !amenitiesExpanded ? (
-                <button
-                  type="button"
-                  className="bd-amenityColsBs__more"
-                  onClick={() => setAmenitiesExpanded(true)}
-                >
-                  Показать все
-                </button>
-              ) : null}
-            </section>
+          {videos.length > 0 ? (
+            <details className="bd-qa__acc" open>
+              <summary>Видео ({videos.length})</summary>
+              <div className="bd-qa__body">
+                <div className="bd-videoGrid">
+                  {videos.map((src, i) => (
+                    <figure key={src} className="bd-videoCard">
+                      <video
+                        className="bd-videoCard__player"
+                        src={src}
+                        controls
+                        playsInline
+                        preload="metadata"
+                      />
+                      <figcaption className="bd-videoCard__caption">Видео {i + 1}</figcaption>
+                    </figure>
+                  ))}
+                </div>
+              </div>
+            </details>
           ) : null}
 
-          <section className="bd-blockBs">
-            <h2 className="bd-blockBs__h">Характеристики</h2>
-            <dl className="bd-specTableBs">
-              <div className="bd-specTableBs__row">
-                <dt>Год</dt>
-                <dd>{boat.year ? String(boat.year) : '—'}</dd>
+          {amenities.length > 0 ? (
+            <details className="bd-qa__acc" open>
+              <summary>Удобства</summary>
+              <div className="bd-qa__body">
+                <ul className="bd-qaAmen" role="list">
+                  {(amenitiesExpanded || amenities.length <= AMENITIES_PREVIEW
+                    ? amenities
+                    : amenities.slice(0, AMENITIES_PREVIEW)
+                  ).map((a) => (
+                    <li key={a}>{a}</li>
+                  ))}
+                </ul>
+                {amenities.length > AMENITIES_PREVIEW && !amenitiesExpanded ? (
+                  <button type="button" className="bd-readMore" onClick={() => setAmenitiesExpanded(true)}>
+                    Показать все
+                  </button>
+                ) : null}
               </div>
-              <div className="bd-specTableBs__row">
-                <dt>Длина</dt>
-                <dd>{lengthStr}</dd>
-              </div>
-              <div className="bd-specTableBs__row">
-                <dt>Производитель</dt>
-                <dd>{boat.manufacturer?.trim() || '—'}</dd>
-              </div>
-              <div className="bd-specTableBs__row">
-                <dt>Модель</dt>
-                <dd>{boat.model?.trim() || '—'}</dd>
-              </div>
-              <div className="bd-specTableBs__row">
-                <dt>Вместимость</dt>
-                <dd>{capacity}</dd>
-              </div>
-              <div className="bd-specTableBs__row">
-                <dt>Тип</dt>
-                <dd>{boat.type_name || '—'}</dd>
-              </div>
-              <div className="bd-specTableBs__row">
-                <dt>Длительность аренды</dt>
-                <dd>{getBookingPeriodLabel(boat)}</dd>
-              </div>
-            </dl>
-          </section>
+            </details>
+          ) : null}
+
+          <details className="bd-qa__acc">
+            <summary>Характеристики</summary>
+            <div className="bd-qa__body">
+              <dl className="bd-qaSpecs">
+                <div>
+                  <dt>Год</dt>
+                  <dd>{boat.year ? String(boat.year) : '—'}</dd>
+                </div>
+                <div>
+                  <dt>Длина</dt>
+                  <dd>{lengthStr}</dd>
+                </div>
+                <div>
+                  <dt>Производитель</dt>
+                  <dd>{boat.manufacturer?.trim() || '—'}</dd>
+                </div>
+                <div>
+                  <dt>Модель</dt>
+                  <dd>{boat.model?.trim() || '—'}</dd>
+                </div>
+                <div>
+                  <dt>Вместимость</dt>
+                  <dd>{capacity}</dd>
+                </div>
+                <div>
+                  <dt>Тип</dt>
+                  <dd>{boat.type_name || '—'}</dd>
+                </div>
+                <div>
+                  <dt>Капитан</dt>
+                  <dd>{boat.captain_included ? 'Включён' : 'Нет'}</dd>
+                </div>
+                <div>
+                  <dt>Аренда</dt>
+                  <dd>{getBookingPeriodLabel(boat)}</dd>
+                </div>
+              </dl>
+            </div>
+          </details>
 
           {durationOptions.length > 0 ? (
-            <section className="bd-blockBs bd-bookingTiersBs" aria-label="Варианты бронирования">
-              <h2 className="bd-blockBs__h">Варианты бронирования</h2>
-              <p className="bd-bookingTiersBs__kicker">
-                {boat.captain_included ? 'С капитаном' : 'Аренда'}
-              </p>
-              <div className="bd-bookingTiersBs__card" role="list">
-                {bookingTierRows.map((t) => {
-                  const active = String(t.duration) === String(bookDuration)
-                  const isBaseTier = t.duration === durationOptions[0]?.duration
-                  return (
-                    <button
-                      key={t.duration}
-                      type="button"
-                      className={`bd-bookingTiersBs__row${active ? ' bd-bookingTiersBs__row--on' : ''}`}
-                      onClick={() => setBookDuration(String(t.duration))}
-                    >
-                      <span className="bd-bookingTiersBs__dur">
-                        {formatDurationListLabel(t.duration)}
-                      </span>
-                      <span
-                        className={
-                          isBaseTier
-                            ? 'bd-bookingTiersBs__price bd-bookingTiersBs__price--base'
-                            : 'bd-bookingTiersBs__price'
-                        }
+            <details className="bd-qa__acc" aria-label="Варианты бронирования">
+              <summary>Варианты бронирования</summary>
+              <div className="bd-qa__body">
+                <p className="bd-qa__kicker">{boat.captain_included ? 'С капитаном' : 'Аренда'}</p>
+                <div className="bd-qaTiers" role="list">
+                  {bookingTierRows.map((t) => {
+                    const active = String(t.duration) === String(bookDuration)
+                    return (
+                      <button
+                        key={t.duration}
+                        type="button"
+                        className={`bd-qaTier${active ? ' is-on' : ''}`}
+                        onClick={() => setBookDuration(String(t.duration))}
                       >
-                        {formatPriceRu(t.price)} ₽
-                      </span>
-                    </button>
-                  )
-                })}
+                        <span>{formatDurationListLabel(t.duration)}</span>
+                        <strong>{formatPriceRu(t.price)} ₽</strong>
+                      </button>
+                    )
+                  })}
+                </div>
+                {showBookingTiersToggle ? (
+                  <button
+                    type="button"
+                    className="bd-readMore"
+                    onClick={() => setBookingTiersExpanded((v) => !v)}
+                  >
+                    {bookingTiersExpanded ? 'Скрыть' : 'Показать все'}
+                  </button>
+                ) : null}
               </div>
-              {showBookingTiersToggle ? (
-                <button
-                  type="button"
-                  className="bd-readMore"
-                  onClick={() => setBookingTiersExpanded((v) => !v)}
-                >
-                  {bookingTiersExpanded ? 'Скрыть' : 'Показать все'}
-                </button>
-              ) : null}
-            </section>
+            </details>
           ) : null}
 
-          <section className="bd-blockBs">
-            <h2 className="bd-blockBs__h">Расположение</h2>
-            {boat.lat != null && boat.lng != null ? (
-              <BoatDetailLocationMap
-                apiKey={YANDEX_MAPS_API_KEY}
-                lat={boat.lat}
-                lng={boat.lng}
-                title={title}
-              />
-            ) : null}
-            {boat.lat == null || boat.lng == null ? (
-              <p className="bd-locationBs">
-                Точные координаты и причал станут доступны после подтверждения бронирования.
-              </p>
-            ) : null}
-            <p className="bd-locationBs bd-locationBs--muted">{locationFullLine}</p>
-            {boat.location_yacht_club ? (
-              <p className="bd-locationBs">Яхт-клуб: {boat.location_yacht_club}</p>
-            ) : null}
-          </section>
+          <details className="bd-qa__acc">
+            <summary>Расположение</summary>
+            <div className="bd-qa__body">
+              {boat.lat != null && boat.lng != null ? (
+                <BoatDetailLocationMap
+                  apiKey={YANDEX_MAPS_API_KEY}
+                  lat={boat.lat}
+                  lng={boat.lng}
+                  title={title}
+                />
+              ) : (
+                <p className="bd-locationBs">
+                  Точные координаты и причал станут доступны после подтверждения бронирования.
+                </p>
+              )}
+              <p className="bd-locationBs bd-locationBs--muted">{locationFullLine}</p>
+              {boat.location_yacht_club ? (
+                <p className="bd-locationBs">Яхт-клуб: {boat.location_yacht_club}</p>
+              ) : null}
+            </div>
+          </details>
 
-          <section className="bd-blockBs" aria-label="Владелец">
-            <h2 className="bd-blockBs__h">Владелец</h2>
-            <div className="bd-ownerStrip bd-ownerStrip--underH2">
-              <div className="bd-ownerStrip__row">
+          <details className="bd-qa__acc" open>
+            <summary>Владелец</summary>
+            <div className="bd-qa__body">
+              <div className="bd-qaOwner">
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt={boat.owner_name || 'Владелец'} className="bd-ownerStrip__avatar" />
+                  <img src={avatarUrl} alt={boat.owner_name || 'Владелец'} className="bd-qaOwner__avatar" />
                 ) : (
-                  <div className="bd-ownerStrip__avatar bd-ownerStrip__avatar--ph" aria-hidden>
+                  <div className="bd-qaOwner__avatar bd-qaOwner__avatar--ph" aria-hidden>
                     {ownerInitial}
                   </div>
                 )}
-                <div className="bd-ownerStrip__body">
-                  <p className="bd-ownerStrip__name">{boat.owner_name || 'Владелец'}</p>
+                <div>
+                  <p className="bd-qaOwner__name">{boat.owner_name || 'Владелец'}</p>
                   {boat.rating != null ? (
-                    <p className="bd-ownerStrip__meta">
+                    <p className="bd-qaOwner__meta">
                       ★ {Number(boat.rating).toFixed(1)}
                       {boat.reviews_count != null
                         ? ` · ${boat.reviews_count} ${pluralizeReviews(boat.reviews_count)}`
@@ -1229,103 +1017,62 @@ export default function BoatDetailPage() {
                   ) : null}
                 </div>
               </div>
-            </div>
-            <p className="bd-crewBs__text">
-              Уточните детали выхода и маршрут в чате приложения — владелец ответит после запроса брони.
-            </p>
-          </section>
-
-          <section className="bd-blockBs">
-            <h2 className="bd-blockBs__h">
-              Отзывы
-              {boat.reviews_count != null ? (
-                <span className="bd-blockBs__hSub">
-                  {' '}
-                  ({boat.reviews_count} {pluralizeReviews(boat.reviews_count)})
-                </span>
-              ) : null}
-            </h2>
-            {boat.rating != null ? (
-              <p className="bd-reviewsBs__summary">
-                <span className="bd-reviewsBs__star" aria-hidden>
-                  ★
-                </span>
-                <strong>{Number(boat.rating).toFixed(1)}</strong>
-                <span className="bd-reviewsBs__lbl">средняя оценка</span>
+              <p className="bd-qaOwner__note">
+                Уточните детали выхода и маршрут в чате приложения — владелец ответит после запроса брони.
               </p>
-            ) : null}
-            {reviews.length === 0 ? (
-              <p className="bd-emptyReviews">Пока нет опубликованных отзывов.</p>
-            ) : (
-              <div className="bd-reviews">
-                {reviews.map((r, idx) => (
-                  <article key={r.id ?? `rev-${idx}`} className="bd-review bd-review--bs">
-                    <div className="bd-review__head">
-                      <span className="bd-review__author">{normalizeReviewAuthorName(r.user_name)}</span>
-                      <span className="bd-review__stars" aria-label={`Оценка ${r.rating} из 5`}>
-                        {'★'.repeat(Math.min(5, Math.max(1, Number(r.rating) || 5)))}
-                      </span>
-                    </div>
-                    <div className="bd-review__date">{formatReviewDate(r.created_at)}</div>
-                    {r.text ? <p className="bd-review__text">{r.text}</p> : null}
-                  </article>
-                ))}
-              </div>
-            )}
-          </section>
+            </div>
+          </details>
+
+          <details className="bd-qa__acc" open>
+            <summary>
+              Отзывы
+              {boat.reviews_count != null
+                ? ` (${boat.reviews_count} ${pluralizeReviews(boat.reviews_count)})`
+                : ''}
+            </summary>
+            <div className="bd-qa__body">
+              {boat.rating != null ? (
+                <p className="bd-qaReviews__summary">
+                  <span aria-hidden>★</span>
+                  <strong>{Number(boat.rating).toFixed(1)}</strong>
+                  <span>средняя оценка</span>
+                </p>
+              ) : null}
+              {reviews.length === 0 ? (
+                <p className="bd-emptyReviews">Пока нет опубликованных отзывов.</p>
+              ) : (
+                <div className="bd-qaReviews">
+                  {reviews.map((r, idx) => (
+                    <article key={r.id ?? `rev-${idx}`} className="bd-qaReview">
+                      <div className="bd-qaReview__head">
+                        <span className="bd-qaReview__author">{normalizeReviewAuthorName(r.user_name)}</span>
+                        <span className="bd-qaReview__stars" aria-label={`Оценка ${r.rating} из 5`}>
+                          {'★'.repeat(Math.min(5, Math.max(1, Number(r.rating) || 5)))}
+                        </span>
+                      </div>
+                      <div className="bd-qaReview__date">{formatReviewDate(r.created_at)}</div>
+                      {r.text ? <p className="bd-qaReview__text">{r.text}</p> : null}
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
+          </details>
 
           {knowAccordionItems.length > 0 ? (
-            <section className="bd-blockBs bd-knowAccordionSection">
-              <h2 className="bd-blockBs__h">Важно знать</h2>
-              <div className="bd-knowAccordion">
-                {knowAccordionItems.map((item) => {
-                  const open = knowOpen[item.id]
-                  const panelId = `bd-know-panel-${item.id}`
-                  const headId = `bd-know-head-${item.id}`
-                  return (
-                    <div key={item.id} className="bd-knowAccordion__item">
-                      <button
-                        type="button"
-                        className="bd-knowAccordion__trigger"
-                        id={headId}
-                        aria-expanded={open}
-                        aria-controls={panelId}
-                        onClick={() => toggleKnow(item.id)}
-                      >
-                        <span className="bd-knowAccordion__title">{item.title}</span>
-                        <span className="bd-knowAccordion__chevWrap" aria-hidden>
-                          <svg
-                            className={`bd-knowAccordion__chev${open ? ' bd-knowAccordion__chev--open' : ''}`}
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                          >
-                            <path
-                              d="M6 9l6 6 6-6"
-                              stroke="currentColor"
-                              strokeWidth="2.2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        </span>
-                      </button>
-                      {open ? (
-                        <div
-                          id={panelId}
-                          className="bd-knowAccordion__panel"
-                          role="region"
-                          aria-labelledby={headId}
-                        >
-                          <p className="bd-policy">{item.body}</p>
-                        </div>
-                      ) : null}
+            <details className="bd-qa__acc">
+              <summary>Важно знать</summary>
+              <div className="bd-qa__body">
+                <div className="bd-qaKnow">
+                  {knowAccordionItems.map((item) => (
+                    <div key={item.id} className="bd-qaKnow__item">
+                      <strong>{item.title}</strong>
+                      <p className="bd-policy">{item.body}</p>
                     </div>
-                  )
-                })}
+                  ))}
+                </div>
               </div>
-            </section>
+            </details>
           ) : null}
           </main>
           </div>
@@ -1335,7 +1082,7 @@ export default function BoatDetailPage() {
             {renderBookingCard()}
           </aside>
         </div>
-      </div>
+      </article>
 
       <div className="bd-mobileBookBar" role="region" aria-label="Быстрое бронирование">
         <div className="bd-mobileBookBar__price">
@@ -1348,19 +1095,95 @@ export default function BoatDetailPage() {
       </div>
 
       {similarBoats.length > 0 ? (
-        <section className="bd-similar" aria-labelledby="bd-similar-heading">
+        <section className="bd-similar bd-similar--ed" aria-labelledby="bd-similar-heading">
           <div className="bd-similar__inner">
-            <h2 id="bd-similar-heading" className="bd-similar__title">
-              Похожие катера
-            </h2>
+            <div className="bd-similar__head">
+              <h2 id="bd-similar-heading" className="bd-similar__title">
+                Похожие катера
+              </h2>
+              <Link
+                to={
+                  boat?.location_city
+                    ? `/boats?city=${encodeURIComponent(String(boat.location_city).trim())}`
+                    : '/boats'
+                }
+                className="bd-similar__more"
+              >
+                Смотреть все
+              </Link>
+            </div>
             <div className="bd-similar__grid">
               {similarBoats.map((b) => (
-                <BoatResultCard key={b.id} boat={b} filters={{}} />
+                <BoatResultCard key={b.id} boat={b} filters={{}} layout="editorial" />
               ))}
             </div>
           </div>
         </section>
       ) : null}
+
+      {videoModalOpen && videos.length > 0
+        ? createPortal(
+            <div
+              className="bd-videoModal"
+              role="presentation"
+              onMouseDown={(e) => {
+                if (e.target === e.currentTarget) closeVideoModal()
+              }}
+            >
+              <div
+                className="bd-videoModal__sheet"
+                role="dialog"
+                aria-modal="true"
+                aria-label={`Видео: ${title}`}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <div className="bd-videoModal__head">
+                  <h3 className="bd-videoModal__title">{title}</h3>
+                  <button type="button" className="bd-videoModal__close" onClick={closeVideoModal} aria-label="Закрыть">
+                    ×
+                  </button>
+                </div>
+                <div className="bd-videoModal__stage">
+                  <video
+                    key={videos[videoIndex] || videoIndex}
+                    className="bd-videoModal__player"
+                    src={videos[videoIndex]}
+                    controls
+                    playsInline
+                    autoPlay
+                    preload="metadata"
+                  />
+                </div>
+                {videos.length > 1 ? (
+                  <div className="bd-videoModal__pager">
+                    <button
+                      type="button"
+                      className="bd-videoModal__nav"
+                      onClick={() => setVideoIndex((i) => Math.max(0, i - 1))}
+                      disabled={videoIndex <= 0}
+                      aria-label="Предыдущее видео"
+                    >
+                      ‹
+                    </button>
+                    <span className="bd-videoModal__count">
+                      {videoIndex + 1}/{videos.length}
+                    </span>
+                    <button
+                      type="button"
+                      className="bd-videoModal__nav"
+                      onClick={() => setVideoIndex((i) => Math.min(videos.length - 1, i + 1))}
+                      disabled={videoIndex >= videos.length - 1}
+                      aria-label="Следующее видео"
+                    >
+                      ›
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
 
       {galleryLightboxOpen
         ? createPortal(

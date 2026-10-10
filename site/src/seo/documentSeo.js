@@ -115,11 +115,13 @@ export function applyDocumentSeo({
   ogTitle,
   ogDescription,
   ogImage,
+  ogImageAlt,
+  ogType = 'website',
   ogLocale = 'ru_RU',
   ogSiteName = 'ONTHEWATER',
   twitterCard = 'summary_large_image',
   keywords,
-  robots,
+  robots = 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
 }) {
   const revertFns = []
   const prevTitle = document.title
@@ -129,6 +131,8 @@ export function applyDocumentSeo({
   if (description) revertFns.push(setMetaName('description', description))
   if (keywords) revertFns.push(setMetaName('keywords', keywords))
   if (robots) revertFns.push(setMetaName('robots', robots))
+  revertFns.push(setMetaName('googlebot', robots.includes('noindex') ? robots : 'index, follow'))
+  revertFns.push(setMetaName('yandex', robots.includes('noindex') ? 'noindex, nofollow' : 'index, follow'))
 
   if (canonicalUrl) revertFns.push(setLinkRel('canonical', canonicalUrl))
 
@@ -137,10 +141,14 @@ export function applyDocumentSeo({
   if (ogT) revertFns.push(setMetaProperty('og:title', ogT))
   if (ogD) revertFns.push(setMetaProperty('og:description', ogD))
   if (canonicalUrl) revertFns.push(setMetaProperty('og:url', canonicalUrl))
-  revertFns.push(setMetaProperty('og:type', 'website'))
+  revertFns.push(setMetaProperty('og:type', ogType))
   revertFns.push(setMetaProperty('og:locale', ogLocale))
   revertFns.push(setMetaProperty('og:site_name', ogSiteName))
-  if (ogImage) revertFns.push(setMetaProperty('og:image', ogImage))
+  if (ogImage) {
+    revertFns.push(setMetaProperty('og:image', ogImage))
+    revertFns.push(setMetaProperty('og:image:secure_url', ogImage))
+    if (ogImageAlt) revertFns.push(setMetaProperty('og:image:alt', ogImageAlt))
+  }
 
   if (ogT) revertFns.push(setMetaName('twitter:title', ogT))
   if (ogD) revertFns.push(setMetaName('twitter:description', ogD))
