@@ -66,30 +66,30 @@ const MapPriceBubble = React.memo(function MapPriceBubble({ price, selected }) {
     const radius = 8;
     return (
         <View style={mapMarkerStyles.priceBubbleWrap} collapsable={false}>
-            <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-                <Rect
-                    x={1}
-                    y={1}
-                    width={w - 2}
-                    height={h - 2}
-                    rx={radius}
-                    ry={radius}
+        <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+            <Rect
+                x={1}
+                y={1}
+                width={w - 2}
+                height={h - 2}
+                rx={radius}
+                ry={radius}
                     fill={NAVY}
                     stroke={selected ? '#fff' : 'rgba(255,255,255,0.5)'}
                     strokeWidth={selected ? 2.5 : 1.5}
-                />
-                <SvgText
-                    x={w / 2}
-                    y={h / 2 + 5}
-                    fill="#fff"
+            />
+            <SvgText
+                x={w / 2}
+                y={h / 2 + 5}
+                fill="#fff"
                     fontSize={13}
-                    fontWeight="700"
-                    fontFamily={theme.fonts.bold}
-                    textAnchor="middle"
-                >
-                    {price}
-                </SvgText>
-            </Svg>
+                fontWeight="700"
+                fontFamily={theme.fonts.bold}
+                textAnchor="middle"
+            >
+                {price}
+            </SvgText>
+        </Svg>
         </View>
     );
 });
@@ -800,10 +800,10 @@ export default function SearchResultsScreen({ route, navigation }) {
                     return next === prev ? prev : next;
                 });
                 lastViewportFetchRef.current = { lat, lng, radiusKm: fetchRadius, bounds };
-            } catch (_) {
+        } catch (_) {
                 if (fetchSeq !== mapFetchSeqRef.current || !mapModalOpenRef.current) return;
                 setMapBoats((prev) => (prev.length ? prev : []));
-            } finally {
+        } finally {
                 if (mapModalOpenRef.current && shouldShowLoader) setMapLoading(false);
             }
         },
@@ -983,9 +983,9 @@ export default function SearchResultsScreen({ route, navigation }) {
 
     const handleCameraPositionChangeEnd = useCallback(
         (event) => {
-            const native = event?.nativeEvent ?? event;
+        const native = event?.nativeEvent ?? event;
             applyCameraToLiveRef(mapLiveCameraRef, native);
-            const zoom = parseCameraZoom(native);
+        const zoom = parseCameraZoom(native);
             if (zoom != null) setMapRenderZoom(zoom);
             syncMapPriceMode(zoom);
             scheduleMapViewportFetch();
@@ -1728,54 +1728,54 @@ export default function SearchResultsScreen({ route, navigation }) {
                                             keyboardShouldPersistTaps="handled"
                                         >
                                             {selectedMapBoats.map((boat, idx) => (
-                                                <TouchableOpacity
+                                    <TouchableOpacity
                                                     key={String(boat.id)}
                                                     style={[
                                                         styles.mapBoatSheet,
                                                         idx > 0 ? styles.mapBoatSheetStacked : null,
                                                     ]}
-                                                    onPress={() => {
+                                        onPress={() => {
                                                         const boatId = boat.id;
-                                                        closeMapModal();
-                                                        InteractionManager.runAfterInteractions(() => {
-                                                            setTimeout(() => {
-                                                                navigation.navigate('BoatDetail', { boatId });
-                                                            }, 300);
-                                                        });
-                                                    }}
+                                            closeMapModal();
+                                            InteractionManager.runAfterInteractions(() => {
+                                                setTimeout(() => {
+                                                    navigation.navigate('BoatDetail', { boatId });
+                                                }, 300);
+                                            });
+                                        }}
                                                     activeOpacity={0.92}
-                                                >
+                                    >
                                                     <AppImage
                                                         uri={resolveListPhotoUri(boat.photos?.[0])}
-                                                        style={styles.mapBoatSheetImage}
+                                            style={styles.mapBoatSheetImage}
                                                         recyclingKey={String(boat.id)}
-                                                    />
-                                                    <View style={styles.mapBoatSheetInfo}>
-                                                        <Text style={styles.mapBoatSheetTitle} numberOfLines={1}>
+                                        />
+                                        <View style={styles.mapBoatSheetInfo}>
+                                            <Text style={styles.mapBoatSheetTitle} numberOfLines={1}>
                                                             {boat.title || 'Катер'}
-                                                        </Text>
-                                                        <View style={styles.mapBoatSheetMeta}>
+                                            </Text>
+                                            <View style={styles.mapBoatSheetMeta}>
                                                             <Star
                                                                 size={14}
                                                                 color={theme.colors.star}
                                                                 fill={theme.colors.star}
                                                             />
-                                                            <Text style={styles.mapBoatSheetRating}>
+                                                <Text style={styles.mapBoatSheetRating}>
                                                                 {boat.rating ?? 0} ({boat.bookings_count ?? 0}{' '}
                                                                 {pluralizeBookings(boat.bookings_count ?? 0)})
-                                                            </Text>
-                                                        </View>
-                                                        <View style={styles.mapBoatSheetPriceRow}>
+                                                </Text>
+                                            </View>
+                                            <View style={styles.mapBoatSheetPriceRow}>
                                                             {boat.instant_booking !== false && (
-                                                                <Zap size={14} color="#10B981" fill="#10B981" />
-                                                            )}
-                                                            <Text style={styles.mapBoatSheetPrice}>
+                                                    <Zap size={14} color="#10B981" fill="#10B981" />
+                                                )}
+                                                <Text style={styles.mapBoatSheetPrice}>
                                                                 от {(Number(boat.price_per_hour) || 0).toLocaleString('ru-RU')}{' '}
                                                                 ₽/час
-                                                            </Text>
-                                                        </View>
-                                                    </View>
-                                                </TouchableOpacity>
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
                                             ))}
                                         </ScrollView>
                                     </View>

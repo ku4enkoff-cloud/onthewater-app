@@ -1,5 +1,6 @@
 [
   "/",
+  "/boats",
   "/owners",
   "/privacy",
   "/terms",
@@ -11,7 +12,7 @@
   "/boats/26-bester-400",
   "/boats/29-axis-t23-easywake",
   "/boats/30-centurion-air-warrior-easywake",
-  "/boats/31-axis-t23-wakedivision",
+  "/boats/31-axis-t23-wakedivision-krokus",
   "/boats/32-mastercraft-prostar-190-wakeadventure",
   "/boats/34-aelita",
   "/boats/35-riva-ariston-1964",
@@ -23,5 +24,6 @@
   "/boats/41-apachi-3900ndnd",
   "/boats/42-kater-astra-375",
   "/boats/43-cobra-elegance-2050",
-  "/boats/44-centurion-centurion-enzo-sv230"
+  "/boats/44-centurion-centurion-enzo-sv230",
+  "/boats/45-arenda-naduvnoy-yahty-bez-kapitana"
 ]

@@ -28,6 +28,7 @@ const { width } = Dimensions.get('window');
 
 const NAVY = '#1B365D';
 const HERO_IMAGE = require('../../../assets/hero.webp');
+const HERO_HEIGHT = 400;
 
 const FALLBACK_DESTINATIONS = [
     { id: 'moscow', name: 'Москва', image: 'https://images.unsplash.com/photo-1513326738677-9646ab0f3b3b?w=400' },
@@ -303,42 +304,63 @@ export default function SearchScreen({ navigation }) {
                         resizeMode="cover"
                     />
                     <LinearGradient
-                        colors={['rgba(251,248,243,0.85)', 'rgba(251,248,243,0.5)', 'transparent']}
-                        style={styles.heroGradient}
+                        colors={[
+                            'rgba(251,248,243,0.9)',
+                            'rgba(251,248,243,0.5)',
+                            'rgba(251,248,243,0.1)',
+                            'transparent',
+                        ]}
+                        locations={[0, 0.35, 0.65, 1]}
+                        style={styles.heroGradientTop}
                         pointerEvents="none"
                     />
-                    <View style={[styles.heroContent, { top: insets.top + 12 }]}>
-                        <Text style={styles.heroTitle}>Бронируй, катай, отдыхай</Text>
-                        <Text style={styles.heroSubtitle}>
-                            аренда катеров, прогулки с капитаном{'\n'}и незабываемые впечатления на воде
-                        </Text>
-                    </View>
-                    <View style={[styles.heroCtaWrap, { top: insets.top + 118 }]}>
-                        <TouchableOpacity
-                            style={styles.nearbyButton}
-                            onPress={() =>
-                                navigation.navigate('SearchResults', {
-                                    useMyLocation: true,
-                                    cityName: null,
-                                    dateISO: new Date().toISOString(),
-                                    openMap: true,
-                                })
-                            }
-                            activeOpacity={0.9}
-                        >
-                            <MapPin size={18} color="#fff" />
-                            <Text style={styles.nearbyButtonText}>Катера поблизости</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.regionLink}
-                            onPress={() => setLocationModalVisible(true)}
-                            activeOpacity={0.7}
-                            hitSlop={{ top: 8, bottom: 8, left: 12, right: 12 }}
-                        >
-                            <Text style={styles.regionLinkText}>
-                                Найти катер в другом регионе →
+                    {/* Мягкий слив внизу без BlurView/blurRadius — на Android они крашат hardware bitmaps */}
+                    <LinearGradient
+                        colors={[
+                            'transparent',
+                            'rgba(251,248,243,0.25)',
+                            'rgba(251,248,243,0.62)',
+                            'rgba(251,248,243,0.9)',
+                            theme.colors.backgroundWarm,
+                        ]}
+                        locations={[0, 0.2, 0.45, 0.75, 1]}
+                        style={styles.heroGradientBottom}
+                        pointerEvents="none"
+                    />
+                    <View style={styles.heroInner}>
+                        <View style={styles.heroContent}>
+                            <Text style={styles.heroTitle}>Бронируй, катай, отдыхай</Text>
+                            <Text style={styles.heroSubtitle}>
+                                Аренда катеров, прогулки с капитаном{'\n'}и незабываемые впечатления на воде.
                             </Text>
-                        </TouchableOpacity>
+                        </View>
+                        <View style={styles.heroCtaWrap}>
+                            <TouchableOpacity
+                                style={styles.nearbyButton}
+                                onPress={() =>
+                                    navigation.navigate('SearchResults', {
+                                        useMyLocation: true,
+                                        cityName: null,
+                                        dateISO: new Date().toISOString(),
+                                        openMap: true,
+                                    })
+                                }
+                                activeOpacity={0.9}
+                            >
+                                <MapPin size={18} color="#fff" />
+                                <Text style={styles.nearbyButtonText}>Катера поблизости</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.regionLink}
+                                onPress={() => setLocationModalVisible(true)}
+                                activeOpacity={0.7}
+                                hitSlop={{ top: 8, bottom: 8, left: 12, right: 12 }}
+                            >
+                                <Text style={styles.regionLinkText}>
+                                    Найти катер в другом регионе →
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
 
@@ -437,52 +459,63 @@ const styles = StyleSheet.create({
     },
     /* ---- Hero (full-width image + overlay text) ---- */
     heroWrap: {
-        height: 380,
+        height: HERO_HEIGHT,
         marginHorizontal: -theme.spacing.lg,
         position: 'relative',
         overflow: 'hidden',
         marginBottom: theme.spacing.sm,
+        justifyContent: 'flex-end',
     },
     heroImage: {
         ...StyleSheet.absoluteFillObject,
         width: '100%',
         height: '100%',
     },
-    heroGradient: {
+    heroGradientTop: {
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
+        height: '50%',
+    },
+    heroGradientBottom: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
         height: '55%',
     },
-    heroContent: {
-        position: 'absolute',
-        left: theme.spacing.lg,
-        right: theme.spacing.lg,
+    heroInner: {
+        flex: 1,
+        justifyContent: 'space-between',
+        paddingHorizontal: theme.spacing.lg,
+        paddingTop: 8,
+        paddingBottom: 16,
         zIndex: 1,
     },
+    heroContent: {
+        maxWidth: 760,
+    },
     heroTitle: {
-        fontSize: 24,
+        fontSize: 22,
         fontFamily: theme.fonts.bold,
         color: NAVY,
-        lineHeight: 34,
+        lineHeight: 30,
         marginBottom: 6,
     },
     heroSubtitle: {
-        fontSize: 15,
+        fontSize: 14,
         fontFamily: theme.fonts.regular,
         color: NAVY,
-        lineHeight: 22,
+        lineHeight: 20,
+        opacity: 0.92,
     },
     heroCtaWrap: {
-        position: 'absolute',
-        left: theme.spacing.lg,
-        right: theme.spacing.lg,
-        zIndex: 1,
         alignItems: 'center',
+        width: '100%',
         maxWidth: 760,
         alignSelf: 'center',
-        width: '100%',
+        paddingTop: 16,
     },
     nearbyButton: {
         flexDirection: 'row',
@@ -490,7 +523,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: NAVY,
         width: '100%',
-        paddingVertical: 16,
+        paddingVertical: 14,
         paddingHorizontal: 20,
         borderRadius: 999,
         gap: 10,

@@ -1,189 +1,316 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://onthewater.ru/</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-10-10</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://onthewater.ru/boats</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-10-10</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://onthewater.ru/boats?city=%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0</loc>
-    <lastmod>2026-06-19</lastmod>
+    <loc>https://onthewater.ru/boats?city=%D0%93%D1%80%D0%B8%D0%B1%D0%BA%D0%B8</loc>
+    <lastmod>2026-10-10</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://onthewater.ru/boats?city=%D0%A1%D0%B0%D0%BD%D0%BA%D1%82-%D0%9F%D0%B5%D1%82%D0%B5%D1%80%D0%B1%D1%83%D1%80%D0%B3</loc>
-    <lastmod>2026-06-19</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://onthewater.ru/boats?city=%D0%A1%D0%BE%D1%87%D0%B8</loc>
-    <lastmod>2026-06-19</lastmod>
+    <loc>https://onthewater.ru/boats?city=%D0%94%D0%BE%D0%BB%D0%B3%D0%BE%D0%BF%D1%80%D1%83%D0%B4%D0%BD%D1%8B%D0%B9</loc>
+    <lastmod>2026-10-10</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://onthewater.ru/boats?city=%D0%9A%D0%B0%D0%B7%D0%B0%D0%BD%D1%8C</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://onthewater.ru/boats?city=%D0%9A%D1%80%D0%B0%D1%81%D0%BD%D0%BE%D0%B3%D0%BE%D1%80%D1%81%D0%BA</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://onthewater.ru/boats?city=%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0</loc>
+    <lastmod>2026-10-10</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://onthewater.ru/boats?city=%D0%9C%D0%BE%D1%81%D0%BA%D0%BE%D0%B2%D1%81%D0%BA%D0%B0%D1%8F%20%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://onthewater.ru/boats?city=%D0%9C%D1%8B%D1%82%D0%B8%D1%89%D0%B8</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://onthewater.ru/boats?city=%D0%A1%D0%B0%D0%BD%D0%BA%D1%82-%D0%9F%D0%B5%D1%82%D0%B5%D1%80%D0%B1%D1%83%D1%80%D0%B3</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://onthewater.ru/boats?city=%D0%A1%D0%B5%D1%80%D0%BF%D1%83%D1%85%D0%BE%D0%B2</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://onthewater.ru/boats?city=%D0%A1%D0%BE%D1%87%D0%B8</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://onthewater.ru/boats?city=%D0%A2%D1%80%D0%BE%D0%B8%D1%86%D0%BA%D0%BE%D0%B5</loc>
+    <lastmod>2026-10-10</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://onthewater.ru/owners</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-10-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://onthewater.ru/privacy</loc>
-    <lastmod>2026-06-19</lastmod>
-    <changefreq>monthly</changefreq>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
     <loc>https://onthewater.ru/terms</loc>
-    <lastmod>2026-06-19</lastmod>
-    <changefreq>monthly</changefreq>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
     <loc>https://onthewater.ru/sitemap</loc>
-    <lastmod>2026-06-19</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
   </url>
   <url>
     <loc>https://onthewater.ru/boats/19-mastercraft-prostar-205-easywake</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-03-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://api.onthewater.ru/uploads/2b2dd470-7f58-4fa9-ab1d-25756e4e3359.webp</image:loc>
+      <image:title>Mastercraft Prostar 205 EasyWake</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://onthewater.ru/boats/20-axis-a20-easywake</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-03-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://api.onthewater.ru/uploads/23b57d9c-a42e-4370-817b-62235fabcfea.webp</image:loc>
+      <image:title>Axis A20 EasyWake</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://onthewater.ru/boats/24-komfortabelnyy-teplohod-sv-nikolay</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-04-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://api.onthewater.ru/uploads/ea8cfac7-4f1a-49c7-aa6f-8ec7292186b8.webp</image:loc>
+      <image:title>Комфортабельный теплоход Св.Николай</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://onthewater.ru/boats/25-feniks-530</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-04-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://api.onthewater.ru/uploads/3ccdb0c2-839d-456b-847b-f9d969fbfad6.webp</image:loc>
+      <image:title>Феникс 530</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://onthewater.ru/boats/26-bester-400</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-04-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://api.onthewater.ru/uploads/f348a780-1c2b-4d16-b81c-ba97481252c1.webp</image:loc>
+      <image:title>Bester 400</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://onthewater.ru/boats/29-axis-t23-easywake</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-05-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://api.onthewater.ru/uploads/3f0443aa-cf75-4743-9d96-f764887890b5.webp</image:loc>
+      <image:title>Axis T23 EasyWake</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://onthewater.ru/boats/30-centurion-air-warrior-easywake</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-05-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://api.onthewater.ru/uploads/846eed83-297f-4311-8105-d7ba7d640d25.webp</image:loc>
+      <image:title>Centurion Air Warrior Easywake</image:title>
+    </image:image>
   </url>
   <url>
-    <loc>https://onthewater.ru/boats/31-axis-t23-wakedivision</loc>
-    <lastmod>2026-06-19</lastmod>
+    <loc>https://onthewater.ru/boats/31-axis-t23-wakedivision-krokus</loc>
+    <lastmod>2026-05-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://api.onthewater.ru/uploads/f71b9b11-de8d-4137-8f37-3b4bbb840875.webp</image:loc>
+      <image:title>Axis T23 Wakedivision Крокус</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://onthewater.ru/boats/32-mastercraft-prostar-190-wakeadventure</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-05-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://api.onthewater.ru/uploads/f793ee06-e86c-4c35-8ef6-4936d94bf921.webp</image:loc>
+      <image:title>MasterCraft Prostar 190 Wakeadventure</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://onthewater.ru/boats/34-aelita</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-05-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://api.onthewater.ru/uploads/afcdba4a-a737-4104-8abe-8bf801e93f59.webp</image:loc>
+      <image:title>Аэлита</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://onthewater.ru/boats/35-riva-ariston-1964</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-05-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://api.onthewater.ru/uploads/9af6771d-a644-4797-8a2c-c0761668661b.webp</image:loc>
+      <image:title>Riva Ariston 1964</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://onthewater.ru/boats/36-teplohod-luxury</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-06-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://api.onthewater.ru/uploads/1828e6b7-5edb-49f3-9d50-20e383f0a4ba.webp</image:loc>
+      <image:title>Теплоход Luxury</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://onthewater.ru/boats/37-hausbot-semen</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-06-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://api.onthewater.ru/uploads/d61584cb-4400-4e95-9dea-2f8c7f972aa9.webp</image:loc>
+      <image:title>Хаусбот Семен</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://onthewater.ru/boats/38-yahta-printsessa-61</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-06-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://api.onthewater.ru/uploads/ecf560a4-ba75-47e5-826d-3473a9d677b3.webp</image:loc>
+      <image:title>Яхта Принцесса 61</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://onthewater.ru/boats/39-hausbot-akvavilla</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-06-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://api.onthewater.ru/uploads/afeeb562-b682-4635-8a4c-ec88f264c093.webp</image:loc>
+      <image:title>Хаусбот Аквавилла</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://onthewater.ru/boats/40-brp-sea-doo-bombardier-gti-le</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-06-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://api.onthewater.ru/uploads/178d6f07-4b94-4ee3-8439-94f4e3f998a3.webp</image:loc>
+      <image:title>BRP SEA DOO BOMBARDIER GTI LE</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://onthewater.ru/boats/41-apachi-3900ndnd</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-06-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://api.onthewater.ru/uploads/e065e7f8-56ea-4ef2-882c-6a0ba39ce87f.webp</image:loc>
+      <image:title>Апачи 3900НДНД</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://onthewater.ru/boats/42-kater-astra-375</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-06-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://api.onthewater.ru/uploads/6fecc210-4354-404e-9ae6-10237b653c79.webp</image:loc>
+      <image:title>Катер  Astra 375</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://onthewater.ru/boats/43-cobra-elegance-2050</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-06-14</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://api.onthewater.ru/uploads/12760101-4e55-48fb-9a7c-873752bdae07.webp</image:loc>
+      <image:title>Cobra Elegance 2050</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://onthewater.ru/boats/44-centurion-centurion-enzo-sv230</loc>
-    <lastmod>2026-06-19</lastmod>
+    <lastmod>2026-06-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://api.onthewater.ru/uploads/b1262a04-7f35-4ea1-8091-92950cef40ed.webp</image:loc>
+      <image:title>Centurion Centurion Enzo sv230</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://onthewater.ru/boats/45-arenda-naduvnoy-yahty-bez-kapitana</loc>
+    <lastmod>2026-06-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://api.onthewater.ru/uploads/1827aac0-f1e2-4209-b499-e45aebd8d10e.webp</image:loc>
+      <image:title>Аренда надувной яхты без капитана.</image:title>
+    </image:image>
   </url>
 </urlset>
