@@ -120,6 +120,14 @@ export default function BoatDetailPage() {
   const [bookingSuccessOpen, setBookingSuccessOpen] = useState(false)
   const [similarBoats, setSimilarBoats] = useState([])
   const galleryTouchRef = useRef({ x: 0, y: 0 })
+  const similarScrollerRef = useRef(null)
+
+  const scrollSimilarBy = useCallback((dir) => {
+    const el = similarScrollerRef.current
+    if (!el) return
+    const step = Math.max(260, Math.round(el.clientWidth * 0.75))
+    el.scrollBy({ left: dir * step, behavior: 'smooth' })
+  }, [])
 
   useBoatDetailPageSeo(boat)
 
@@ -1101,18 +1109,60 @@ export default function BoatDetailPage() {
               <h2 id="bd-similar-heading" className="bd-similar__title">
                 Похожие катера
               </h2>
-              <Link
-                to={
-                  boat?.location_city
-                    ? `/boats?city=${encodeURIComponent(String(boat.location_city).trim())}`
-                    : '/boats'
-                }
-                className="bd-similar__more"
-              >
-                Смотреть все
-              </Link>
+              <div className="bd-similar__headRight">
+                <div className="bd-similar__nav" role="group" aria-label="Прокрутка похожих катеров">
+                  <button
+                    type="button"
+                    className="bd-similar__navBtn"
+                    aria-label="Назад"
+                    onClick={() => scrollSimilarBy(-1)}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+                      <path
+                        d="M15 18l-6-6 6-6"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    className="bd-similar__navBtn"
+                    aria-label="Вперёд"
+                    onClick={() => scrollSimilarBy(1)}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+                      <path
+                        d="M9 18l6-6-6-6"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <Link
+                  to={
+                    boat?.location_city
+                      ? `/boats?city=${encodeURIComponent(String(boat.location_city).trim())}`
+                      : '/boats'
+                  }
+                  className="bd-similar__more"
+                >
+                  Смотреть все →
+                </Link>
+              </div>
             </div>
-            <div className="bd-similar__grid">
+            <div
+              ref={similarScrollerRef}
+              className="bd-similar__grid"
+              tabIndex={0}
+              role="region"
+              aria-label="Список похожих катеров"
+            >
               {similarBoats.map((b) => (
                 <BoatResultCard key={b.id} boat={b} filters={{}} layout="editorial" />
               ))}

@@ -46,7 +46,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(uploadsDir));
 
-const { apiLimiter } = require('./middleware/rateLimiter');
+const { apiLimiter, publicReadLimiter } = require('./middleware/rateLimiter');
+app.use(publicReadLimiter);
 app.use(apiLimiter);
 
 app.get('/', (req, res) => res.json({

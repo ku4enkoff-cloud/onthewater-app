@@ -735,37 +735,90 @@
 .bd-page--c06 .bd-similar--ed .bd-similar__head {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 16px;
-  margin-bottom: 18px;
+  margin-bottom: 22px;
 }
 
 .bd-page--c06 .bd-similar--ed .bd-similar__title {
   margin: 0;
-  font-size: clamp(22px, 2.4vw, 28px);
-  font-weight: 750;
-  letter-spacing: -0.03em;
+  font-size: clamp(16px, 1.8vw, 20px);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: #0a0a0a;
+}
+
+.bd-page--c06 .bd-similar--ed .bd-similar__headRight {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.bd-page--c06 .bd-similar--ed .bd-similar__nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bd-page--c06 .bd-similar--ed .bd-similar__navBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #0a0a0a;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.bd-page--c06 .bd-similar--ed .bd-similar__navBtn:hover {
+  border-color: #c7ccd4;
+  background: #f8f9fb;
 }
 
 .bd-page--c06 .bd-similar--ed .bd-similar__more {
   flex-shrink: 0;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  color: #1b365d;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #0a0a0a;
   text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: border-color 0.15s ease;
+  white-space: nowrap;
+  transition: color 0.15s ease;
 }
 
 .bd-page--c06 .bd-similar--ed .bd-similar__more:hover {
-  border-bottom-color: #1b365d;
+  color: #1b365d;
 }
 
 .bd-page--c06 .bd-similar--ed .bd-similar__grid {
   gap: 20px;
   grid-auto-columns: minmax(240px, 280px);
-  padding-bottom: 8px;
+  padding-bottom: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.bd-page--c06 .bd-similar--ed .bd-similar__grid::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+@media (max-width: 640px) {
+  .bd-page--c06 .bd-similar--ed .bd-similar__headRight {
+    gap: 10px;
+  }
+
+  .bd-page--c06 .bd-similar--ed .bd-similar__more {
+    font-size: 11px;
+  }
 }
 
 .bd-page--c06 .bd-similar--ed .bs-card--ed {
