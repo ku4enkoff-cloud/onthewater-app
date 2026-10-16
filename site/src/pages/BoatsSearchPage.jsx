@@ -537,6 +537,7 @@ export default function BoatsSearchPage() {
               zoom={mapViewport.zoom}
               selectedBoatId={selectedBoatId}
               autoFitBounds
+              isActive={mapVisible}
               onGeoSearch={handleGeoSearch}
               onViewportChange={handleViewportChange}
               onPlacemarksPick={handleMapPlacemarksPick}

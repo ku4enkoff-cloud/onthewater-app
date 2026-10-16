@@ -87,6 +87,15 @@
   width: 100%;
 }
 
+.mapp-shell__body--boatsMap .bs-page--mapFirst .bs-stage,
+.mapp-shell__body--boatsMap .bs-page--mapFirst .bs-mapCol,
+.mapp-shell__body--boatsMap .bs-page--mapFirst .bs-mapWrap,
+.mapp-shell__body--boatsMap .bs-page--mapFirst .bs-mapShell,
+.mapp-shell__body--boatsMap .bs-page--mapFirst .bs-map {
+  min-height: 0;
+  height: 100%;
+}
+
 /* Bottom tabs */
 .mapp-tabs {
   position: fixed;

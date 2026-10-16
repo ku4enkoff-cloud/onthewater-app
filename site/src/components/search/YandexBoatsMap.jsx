@@ -26,6 +26,37 @@ function debounce(fn, ms) {
   }
 }
 
+/** Яндекс.Карты при 0×0 контейнере остаются серыми — ждём реальный размер (mobile shell). */
+function waitForContainerSize(el, timeoutMs = 2500) {
+  return new Promise((resolve) => {
+    if (!el) {
+      resolve(false)
+      return
+    }
+    if (el.offsetWidth > 0 && el.offsetHeight > 0) {
+      resolve(true)
+      return
+    }
+    let done = false
+    const finish = (ok) => {
+      if (done) return
+      done = true
+      try {
+        ro.disconnect()
+      } catch {
+        /* ignore */
+      }
+      clearTimeout(timer)
+      resolve(ok)
+    }
+    const ro = new ResizeObserver(() => {
+      if (el.offsetWidth > 0 && el.offsetHeight > 0) finish(true)
+    })
+    ro.observe(el)
+    const timer = setTimeout(() => finish(el.offsetWidth > 0 && el.offsetHeight > 0), timeoutMs)
+  })
+}
+
 function buildPickCandidate(boat, durationFilter) {
   const minDur = getEffectiveMinDurationMinutes(boat)
   const activeDuration = durationFilter || minDur
@@ -89,6 +120,8 @@ export default function YandexBoatsMap({
   onPlacemarksPick,
   onHoverBoatOpen,
   filters,
+  /** false когда режим «Список» — после возврата на карту нужен fitToViewport */
+  isActive = true,
 }) {
   const containerRef = useRef(null)
   const wrapRef = useRef(null)
@@ -133,17 +166,39 @@ export default function YandexBoatsMap({
     let cancelled = false
     let map = null
     let onActionEnd = null
+    let resizeObserver = null
 
-    loadYandexMaps(apiKey)
-      .then((ymaps) => {
+    ;(async () => {
+      try {
+        await waitForContainerSize(containerRef.current)
         if (cancelled || !containerRef.current) return
 
+        const ymaps = await loadYandexMaps(apiKey)
+        if (cancelled || !containerRef.current) return
+
+        const lat = Number(center?.lat)
+        const lon = Number(center?.lon ?? center?.lng)
         map = new ymaps.Map(containerRef.current, {
-          center: [center.lat, center.lon],
-          zoom,
+          center: [Number.isFinite(lat) ? lat : 55.751244, Number.isFinite(lon) ? lon : 37.618423],
+          zoom: zoom || 10,
           controls: ['zoomControl'],
         })
         mapRef.current = map
+
+        // После появления высоты (mobile shell) — пересчитать размер тайлов
+        try {
+          map.container.fitToViewport()
+        } catch {
+          /* ignore */
+        }
+        resizeObserver = new ResizeObserver(() => {
+          try {
+            mapRef.current?.container?.fitToViewport()
+          } catch {
+            /* ignore */
+          }
+        })
+        resizeObserver.observe(containerRef.current)
 
         layerRef.current = createBoatsClusterLayer(ymaps, map, {
           positionRoot: wrapRef.current || containerRef.current,
@@ -195,15 +250,31 @@ export default function YandexBoatsMap({
           /* ignore */
         }
 
-        setMapReady(true)
-      })
-      .catch(() => setMapReady(false))
+        // ещё раз после layout
+        requestAnimationFrame(() => {
+          try {
+            mapRef.current?.container?.fitToViewport()
+          } catch {
+            /* ignore */
+          }
+        })
+
+        if (!cancelled) setMapReady(true)
+      } catch {
+        if (!cancelled) setMapReady(false)
+      }
+    })()
 
     return () => {
       cancelled = true
       setMapReady(false)
       didAutoFitRef.current = false
       setHoverPreview(null)
+      try {
+        resizeObserver?.disconnect()
+      } catch {
+        /* ignore */
+      }
       try {
         layerRef.current?.destroy()
       } catch {
@@ -233,11 +304,15 @@ export default function YandexBoatsMap({
     if (!mapReady || !map) return
     try {
       suppressActionRef.current = Date.now() + 400
-      map.setCenter([center.lat, center.lon], zoom, { duration: 250 })
+      const lat = Number(center?.lat)
+      const lon = Number(center?.lon ?? center?.lng)
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return
+      map.setCenter([lat, lon], zoom, { duration: 250 })
+      map.container.fitToViewport()
     } catch {
       /* ignore */
     }
-  }, [mapReady, center.lat, center.lon, zoom])
+  }, [mapReady, center.lat, center.lon, center?.lng, zoom])
 
   useEffect(() => {
     if (!mapReady || !layerRef.current) return
@@ -296,6 +371,20 @@ export default function YandexBoatsMap({
     if (!mapReady) return
     layerRef.current?.setSelectedBoatId(selectedBoatId)
   }, [mapReady, selectedBoatId])
+
+  useEffect(() => {
+    if (!mapReady || !isActive) return
+    const map = mapRef.current
+    if (!map) return
+    const id = requestAnimationFrame(() => {
+      try {
+        map.container.fitToViewport()
+      } catch {
+        /* ignore */
+      }
+    })
+    return () => cancelAnimationFrame(id)
+  }, [mapReady, isActive])
 
   if (!apiKey) {
     return (
