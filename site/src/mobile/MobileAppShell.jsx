@@ -14,11 +14,20 @@ function showTabsForPath(pathname) {
 export default function MobileAppShell() {
   const { pathname } = useLocation()
   const showTabs = showTabsForPath(pathname)
+  const isBoatsMap = pathname === '/boats'
 
   return (
     <ChatUnreadProvider>
-      <div className="mapp mapp-shell">
-        <div className={`mapp-shell__body${showTabs ? '' : ' mapp-shell__body--noTabs'}`}>
+      <div className={`mapp mapp-shell${isBoatsMap ? ' mapp-shell--boatsMap' : ''}`}>
+        <div
+          className={[
+            'mapp-shell__body',
+            showTabs ? '' : 'mapp-shell__body--noTabs',
+            isBoatsMap ? 'mapp-shell__body--boatsMap' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
           <Outlet />
         </div>
         {showTabs ? <BottomTabBar /> : null}

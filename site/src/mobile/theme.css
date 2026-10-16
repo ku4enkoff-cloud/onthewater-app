@@ -57,10 +57,34 @@
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   padding-bottom: calc(var(--mapp-tab-h) + var(--mapp-safe-bottom) + 8px);
+  /* не даём глобальным стилям сайта схлопнуть поля */
+  text-align: left;
 }
 
 .mapp-shell__body--noTabs {
   padding-bottom: calc(12px + var(--mapp-safe-bottom));
+}
+
+/* /boats map-first: нужен реальный height, иначе bs-page height:100% = белый экран */
+.mapp-shell--boatsMap {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.mapp-shell__body--boatsMap {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 0;
+  min-height: 0;
+}
+
+.mapp-shell__body--boatsMap > .bs-page--mapFirst {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
 }
 
 /* Bottom tabs */

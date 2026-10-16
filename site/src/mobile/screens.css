@@ -1,14 +1,30 @@
-/* Home */
+/* Home — как SearchScreen: контент 24px, hero full-bleed */
 .mapp-home {
+  --mapp-pad-x: 24px;
   background: var(--mapp-bg-warm);
+  padding-left: var(--mapp-pad-x);
+  padding-right: var(--mapp-pad-x);
+  padding-bottom: 8px;
+}
+
+.mapp h1,
+.mapp h2,
+.mapp h3 {
+  font-family: 'Jost', system-ui, sans-serif;
+  letter-spacing: normal;
+  color: var(--mapp-navy);
 }
 
 .mapp-hero {
   position: relative;
-  min-height: 400px;
-  padding: calc(16px + var(--mapp-safe-top)) 20px 28px;
+  height: 400px;
+  margin: 0 calc(-1 * var(--mapp-pad-x)) 8px;
+  padding: calc(12px + var(--mapp-safe-top)) var(--mapp-pad-x) 20px;
   overflow: hidden;
   color: var(--mapp-navy);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 }
 
 .mapp-hero__img {
@@ -29,7 +45,7 @@
 
 .mapp-hero__gradTop {
   top: 0;
-  height: 55%;
+  height: 50%;
   background: linear-gradient(
     180deg,
     rgba(251, 248, 243, 0.9) 0%,
@@ -57,40 +73,50 @@
   z-index: 1;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  min-height: 360px;
-  gap: 20px;
+  justify-content: space-between;
+  flex: 1;
+  min-height: 0;
+  gap: 16px;
+  width: 100%;
+  max-width: 760px;
 }
 
 .mapp-hero__title {
-  margin: 0 0 8px;
-  font-size: 28px;
-  font-weight: 700;
-  line-height: 1.15;
-  color: var(--mapp-navy);
+  margin: 0 0 6px !important;
+  padding: 0;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  line-height: 1.25;
+  color: var(--mapp-navy) !important;
+  letter-spacing: normal !important;
 }
 
 .mapp-hero__sub {
   margin: 0;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.4;
-  color: var(--mapp-gray700);
+  color: var(--mapp-navy);
+  opacity: 0.92;
   white-space: pre-line;
 }
 
 .mapp-hero__cta {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding-top: 8px;
 }
 
 .mapp-hero__nearby {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
   min-height: 48px;
-  padding: 0 20px;
+  padding: 14px 20px;
   border: 0;
   border-radius: 999px;
   background: var(--mapp-navy);
@@ -109,21 +135,25 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  padding: 0;
+  padding: 4px 0;
+  text-align: center;
 }
 
 .mapp-sectionTitle {
-  margin: 8px 0 12px;
-  padding: 0 16px;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--mapp-navy);
+  margin: 8px 0 12px !important;
+  padding: 0;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  line-height: 1.3;
+  color: var(--mapp-navy) !important;
+  letter-spacing: normal !important;
 }
 
 .mapp-hscroll {
   display: flex;
   gap: 12px;
-  padding: 0 16px 8px;
+  margin-right: calc(-1 * var(--mapp-pad-x));
+  padding: 0 var(--mapp-pad-x) 8px 0;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;

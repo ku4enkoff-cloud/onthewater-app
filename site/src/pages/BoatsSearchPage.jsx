@@ -202,10 +202,6 @@ export default function BoatsSearchPage() {
     boatTypeName: typeNameFromUrl || null,
   }))
   const [mapVisible, setMapVisible] = useState(true)
-
-  useEffect(() => {
-    if (openMapFromUrl) setMapVisible(true)
-  }, [openMapFromUrl])
   const [mapBounds, setMapBounds] = useState(null)
   const [selectedBoatId, setSelectedBoatId] = useState(null)
   const [mapPickCandidates, setMapPickCandidates] = useState(null)
@@ -214,6 +210,10 @@ export default function BoatsSearchPage() {
   const [filtersModalKey, setFiltersModalKey] = useState(0)
   const [filtersModalFocus, setFiltersModalFocus] = useState(null)
   const [filterDropdown, setFilterDropdown] = useState(null)
+
+  useEffect(() => {
+    if (openMapFromUrl) setMapVisible(true)
+  }, [openMapFromUrl])
 
   const searchBarRef = useRef(null)
   const cityFilterRef = useRef(null)
