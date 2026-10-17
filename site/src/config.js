@@ -63,3 +63,11 @@ export function getThumbUrl(src) {
 export function getListPhotoUrl(src) {
   return getThumbUrl(src) || getPhotoUrl(src)
 }
+
+/**
+ * Карточки направлений/категорий: превью *-thumb.webp если есть, иначе полный URL.
+ * Для jpg без превью — полный файл (лучше завести thumb на бэке).
+ */
+export function getCardImageUrl(src) {
+  return getListPhotoUrl(src)
+}

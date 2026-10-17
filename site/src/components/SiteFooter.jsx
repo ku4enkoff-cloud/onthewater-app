@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import googlePlayIcon from '../assets/stores/google-play-icon.png'
+import googlePlayIcon from '../assets/stores/google-play-icon.webp'
 import { CLIENT_ANDROID_PLAY_URL, CLIENT_IOS_APP_STORE_URL } from '../constants/appStores'
 import '../styles/site-footer.css'
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchDestinations } from '../api/destinations'
-import { API_BASE, getPhotoUrl } from '../config'
+import { API_BASE, getCardImageUrl, getPhotoUrl } from '../config'
 
 const PLACEHOLDER = 'https://placehold.co/400x260/e8eef4/64748b?text=%D0%9D%D0%B0%D0%BF%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5'
 
@@ -65,12 +65,25 @@ export default function DestinationsSection({ variant = 'default' }) {
             <div className="pm-destGrid">
               {grid.map((d) => {
                 const name = String(d?.name || '').trim() || 'Направление'
-                const img = getPhotoUrl(d?.image) || PLACEHOLDER
+                const full = getPhotoUrl(d?.image) || PLACEHOLDER
+                const img = getCardImageUrl(d?.image) || full
                 const q = encodeURIComponent(name)
                 return (
                   <Link key={d.id || name} to={`/boats?city=${q}`} className="pm-destCard">
                     <div className="pm-destCard__media">
-                      <img src={img} alt={`Аренда катеров в ${name}`} className="pm-destCard__img" loading="lazy" />
+                      <img
+                        src={img}
+                        alt={`Аренда катеров в ${name}`}
+                        className="pm-destCard__img"
+                        loading="lazy"
+                        decoding="async"
+                        width="640"
+                        height="320"
+                        sizes="(max-width: 720px) 90vw, 320px"
+                        onError={(e) => {
+                          if (full && e.currentTarget.src !== full) e.currentTarget.src = full
+                        }}
+                      />
                       <span className="pm-destCard__shade" aria-hidden />
                       <span className="pm-destCard__caption">
                         <span className="pm-destCard__name">{name}</span>
@@ -148,12 +161,25 @@ export default function DestinationsSection({ variant = 'default' }) {
                 ))
               : items.map((d) => {
                   const name = String(d.name || '').trim() || '—'
-                  const img = getPhotoUrl(d.image) || PLACEHOLDER
+                  const full = getPhotoUrl(d.image) || PLACEHOLDER
+                  const img = getCardImageUrl(d.image) || full
                   const q = encodeURIComponent(name)
                   return (
                     <Link key={d.id} to={`/boats?city=${q}`} className="lp-destCard">
                       <div className="lp-destCardImgWrap">
-                        <img src={img} alt={`Аренда катеров в ${name}`} className="lp-destCardImg" loading="lazy" />
+                        <img
+                          src={img}
+                          alt={`Аренда катеров в ${name}`}
+                          className="lp-destCardImg"
+                          loading="lazy"
+                          decoding="async"
+                          width="400"
+                          height="260"
+                          sizes="200px"
+                          onError={(e) => {
+                            if (full && e.currentTarget.src !== full) e.currentTarget.src = full
+                          }}
+                        />
                       </div>
                       <span className="lp-destCardName">{name}</span>
                     </Link>

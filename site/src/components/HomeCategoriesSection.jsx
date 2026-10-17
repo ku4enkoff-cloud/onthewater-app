@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchBoatTypes } from '../api/boats'
-import { getPhotoUrl } from '../config'
+import { getCardImageUrl, getPhotoUrl } from '../config'
 
 const FALLBACK_IMAGE = 'https://placehold.co/900x600/e2e8f0/334155?text=%D0%A2%D0%B8%D0%BF+%D1%81%D1%83%D0%B4%D0%BD%D0%B0'
 
@@ -36,7 +36,7 @@ export default function HomeCategoriesSection({ variant = 'default' }) {
               .map((t) => ({
                 id: String(t?.id ?? ''),
                 name: String(t?.name || '').trim(),
-                image: getPhotoUrl(t?.image) || FALLBACK_IMAGE,
+                image: getCardImageUrl(t?.image) || getPhotoUrl(t?.image) || FALLBACK_IMAGE,
               }))
               .filter((t) => t.id && t.name)
           : []

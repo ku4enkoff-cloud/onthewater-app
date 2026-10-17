@@ -7,10 +7,10 @@ import HomeCategoriesSection from '../components/HomeCategoriesSection.jsx'
 import { useHomePageSeo } from '../seo/useHomePageSeo.js'
 import { fetchDestinations } from '../api/destinations.js'
 import { LOCATION_OPTIONS, readNearestCityFromStorage } from '../boatSearchUtils.js'
-import heroImg from '../assets/hero-aerial-boat.jpg'
-import appPhoneList from '../assets/app-phone-list.png'
-import appPhoneMap from '../assets/app-phone-map.png'
-import googlePlayIcon from '../assets/stores/google-play-icon.png'
+import heroImg from '../assets/hero-aerial-boat.webp'
+import appPhoneList from '../assets/app-phone-list.webp'
+import appPhoneMap from '../assets/app-phone-map.webp'
+import googlePlayIcon from '../assets/stores/google-play-icon.webp'
 import NearbyBoatsSection from '../components/NearbyBoatsSection.jsx'
 import HomeDateCalendar from '../components/HomeDateCalendar.jsx'
 import { CLIENT_ANDROID_PLAY_URL, CLIENT_IOS_APP_STORE_URL } from '../constants/appStores'
@@ -249,7 +249,7 @@ export default function HomePage() {
     <main className="pm">
       <section className="pm-hero">
         <div className="pm-hero__bg" aria-hidden="true">
-          <img src={heroImg} alt="" decoding="async" />
+          <img src={heroImg} alt="" decoding="async" width="1920" height="1080" fetchPriority="high" />
         </div>
         <div className="pm-container pm-hero__grid">
           <div className="pm-hero__copy">
@@ -495,6 +495,9 @@ export default function HomePage() {
                 className="pm-app__phoneImg"
                 src={appPhoneList}
                 alt="Список катеров в приложении"
+                width="600"
+                height="1230"
+                sizes="(max-width: 720px) 45vw, 300px"
                 loading="lazy"
                 decoding="async"
               />
@@ -504,6 +507,9 @@ export default function HomePage() {
                 className="pm-app__phoneImg"
                 src={appPhoneMap}
                 alt="Карта катеров в приложении"
+                width="600"
+                height="1230"
+                sizes="(max-width: 720px) 45vw, 300px"
                 loading="lazy"
                 decoding="async"
               />
