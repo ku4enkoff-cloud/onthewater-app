@@ -155,6 +155,27 @@ export default function BookingPanelC06({
         />
       </section>
 
+      <section className="bd-c06Book__section" aria-labelledby="bd-c06-dur">
+        <h3 id="bd-c06-dur" className="bd-c06Book__label">
+          Длительность
+        </h3>
+        <div className="bd-c06Book__durGrid" role="group" aria-label="Длительность">
+          {durationOptions.map((t) => {
+            const active = String(t.duration) === String(bookDuration)
+            return (
+              <button
+                key={t.duration}
+                type="button"
+                className={`bd-c06Book__durBtn${active ? ' is-on' : ''}`}
+                onClick={() => onDurationChange(String(t.duration))}
+              >
+                {hoursLabelRu(t.duration)}
+              </button>
+            )
+          })}
+        </div>
+      </section>
+
       <section className="bd-c06Book__section" aria-labelledby="bd-c06-time">
         <h3 id="bd-c06-time" className="bd-c06Book__label">
           Выберите время
@@ -175,27 +196,6 @@ export default function BookingPanelC06({
         {displaySlots.length === 0 ? (
           <p className="bd-c06Book__hint">Нет доступных слотов на эту дату</p>
         ) : null}
-      </section>
-
-      <section className="bd-c06Book__section" aria-labelledby="bd-c06-dur">
-        <h3 id="bd-c06-dur" className="bd-c06Book__label">
-          Длительность
-        </h3>
-        <div className="bd-c06Book__durGrid" role="group" aria-label="Длительность">
-          {durationOptions.map((t) => {
-            const active = String(t.duration) === String(bookDuration)
-            return (
-              <button
-                key={t.duration}
-                type="button"
-                className={`bd-c06Book__durBtn${active ? ' is-on' : ''}`}
-                onClick={() => onDurationChange(String(t.duration))}
-              >
-                {hoursLabelRu(t.duration)}
-              </button>
-            )
-          })}
-        </div>
       </section>
 
       <div className="bd-c06Book__total">
