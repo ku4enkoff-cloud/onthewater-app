@@ -1358,8 +1358,30 @@ export default function BoatDetailPage() {
                   onClick={() => setAuthPromptOpen(false)}
                   aria-label="Закрыть"
                 >
-                  ×
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <path
+                      d="M18 6L6 18M6 6l12 12"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
                 </button>
+                <div className="bd-authPrompt__icon" aria-hidden>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                    />
+                    <path
+                      d="M4 20c1.6-3.2 4.2-4.8 8-4.8s6.4 1.6 8 4.8"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </div>
                 <h3 id="bd-authPrompt-title" className="bd-authPrompt__title">
                   Для бронирования нужна авторизация
                 </h3>
@@ -1367,11 +1389,19 @@ export default function BoatDetailPage() {
                   Чтобы отправить запрос на бронирование, войдите в личный кабинет или зарегистрируйтесь на сайте.
                 </p>
                 <div className="bd-authPrompt__actions">
-                  <Link className="bd-authPrompt__btn bd-authPrompt__btn--primary" to="/register" onClick={() => setAuthPromptOpen(false)}>
-                    Зарегистрироваться
-                  </Link>
-                  <Link className="bd-authPrompt__btn bd-authPrompt__btn--ghost" to="/login" onClick={() => setAuthPromptOpen(false)}>
+                  <Link
+                    className="bd-authPrompt__btn bd-authPrompt__btn--primary"
+                    to="/login"
+                    onClick={() => setAuthPromptOpen(false)}
+                  >
                     Войти
+                  </Link>
+                  <Link
+                    className="bd-authPrompt__btn bd-authPrompt__btn--ghost"
+                    to="/register"
+                    onClick={() => setAuthPromptOpen(false)}
+                  >
+                    Зарегистрироваться
                   </Link>
                 </div>
               </div>
@@ -1402,8 +1432,26 @@ export default function BoatDetailPage() {
                   onClick={() => setBookingSuccessOpen(false)}
                   aria-label="Закрыть"
                 >
-                  ×
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <path
+                      d="M18 6L6 18M6 6l12 12"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
                 </button>
+                <div className="bd-authPrompt__icon bd-authPrompt__icon--ok" aria-hidden>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M5 12.5 9.5 17 19 7.5"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
                 <h3 id="bd-bookingSuccess-title" className="bd-authPrompt__title">
                   Запрос на бронирование отправлен
                 </h3>

@@ -6354,111 +6354,156 @@ a.lp-boatCard:hover .lp-boatImg {
   inset: 0;
   z-index: 5600;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  padding: 16px;
-  background: rgba(15, 23, 42, 0.45);
+  padding: 0;
+  background: rgba(10, 20, 40, 0.48);
+  font-family: 'Montserrat', 'Segoe UI Local', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (min-width: 641px) {
+  .bd-authPrompt {
+    align-items: center;
+    padding: 24px;
+  }
 }
 
 .bd-authPrompt__sheet {
   position: relative;
-  width: min(100%, 560px);
-  border-radius: 16px;
+  width: min(100%, 420px);
+  border-radius: 20px 20px 0 0;
   background: #fff;
-  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.24);
-  padding: 22px 22px 18px;
+  box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.18);
+  padding: 28px 22px 22px;
+  text-align: center;
+}
+
+@media (min-width: 641px) {
+  .bd-authPrompt__sheet {
+    border-radius: 16px;
+    box-shadow: 0 20px 48px rgba(15, 23, 42, 0.22);
+    padding: 32px 28px 24px;
+  }
 }
 
 .bd-authPrompt__close {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 34px;
-  height: 34px;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
   border: 0;
   border-radius: 50%;
-  background: #f1f5f9;
-  color: #334155;
-  font-size: 22px;
-  line-height: 1;
+  background: #f3f4f6;
+  color: #1b365d;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.bd-authPrompt__close:hover {
+  background: #e5e7eb;
+}
+
+.bd-authPrompt__icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  color: #1b365d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bd-authPrompt__icon--ok {
+  background: #ecfdf5;
+  color: #047857;
 }
 
 .bd-authPrompt__title {
   margin: 0;
-  padding-right: 38px;
-  font-size: 22px;
-  line-height: 1.2;
+  padding: 0 28px;
+  font-size: 20px;
+  line-height: 1.25;
   font-weight: 800;
-  color: #0f172a;
+  color: #1b365d;
   letter-spacing: -0.02em;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
 .bd-authPrompt__text {
-  margin: 10px 0 0;
+  margin: 10px auto 0;
+  max-width: 34em;
   font-size: 14px;
-  line-height: 1.5;
-  color: #475569;
+  line-height: 1.55;
+  font-weight: 500;
+  color: #6b7280;
   overflow-wrap: anywhere;
 }
 
 .bd-authPrompt__actions {
-  margin-top: 18px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
 .bd-authPrompt__btn {
-  min-height: 42px;
-  border-radius: 10px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 48px;
+  border-radius: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   font-family: inherit;
-  border: 1px solid transparent;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 
 .bd-authPrompt__btn--primary {
-  background: #0061c1;
-  border-color: #0061c1;
+  background: #0a0a0a;
+  border-color: #0a0a0a;
   color: #fff;
 }
 
 .bd-authPrompt__btn--primary:hover {
-  background: #0052a3;
-  border-color: #0052a3;
+  background: #1b365d;
+  border-color: #1b365d;
   color: #fff;
 }
 
 .bd-authPrompt__btn--ghost {
   background: #fff;
-  border-color: #cbd5e1;
-  color: #0f172a;
+  border-color: #1b365d;
+  color: #1b365d;
 }
 
 .bd-authPrompt__btn--ghost:hover {
-  background: #f8fafc;
-  border-color: #94a3b8;
+  background: #f3f4f6;
+  border-color: #1b365d;
+  color: #1b365d;
 }
 
 @media (max-width: 420px) {
   .bd-authPrompt__sheet {
-    padding: 20px 14px 14px;
+    padding: 26px 16px 18px;
   }
 
   .bd-authPrompt__title {
     font-size: 18px;
-  }
-
-  .bd-authPrompt__actions {
-    grid-template-columns: 1fr;
   }
 }
 
