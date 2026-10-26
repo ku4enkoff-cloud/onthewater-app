@@ -5,6 +5,7 @@ import {
   filterSlotsByStep,
   getAvailableTimeSlotsBySchedule,
   getBookingSlotStepMinutes,
+  groupSlotsByDaypart,
   isStartTimeValid,
   isTodayDateKey,
   slotToMinutes,
@@ -102,8 +103,47 @@ export default function TimePickerModal({
     () => filterSlotsByStep(TIME_SLOTS, getBookingSlotStepMinutes(boat)),
     [boat],
   )
+  const daypartGroups = useMemo(() => groupSlotsByDaypart(stepSlots), [stepSlots])
 
   if (!open || typeof document === 'undefined') return null
+
+  const renderSlot = (slot) => {
+    const canStart = canStartSlot(slot, { boat, bookDate, durationMin, busyIntervals })
+    const isSelected = pendingTime === slot
+    const disabled = !canStart
+    return (
+      <button
+        key={slot}
+        type="button"
+        role="listitem"
+        className={[
+          'tpm-slot',
+          isSelected && 'tpm-slot--selected',
+          canStart && !isSelected && 'tpm-slot--ok',
+          !canStart && 'tpm-slot--off',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        disabled={disabled}
+        onClick={() => {
+          if (canStart) setPendingTime(slot)
+        }}
+      >
+        <span
+          className={[
+            'tpm-slotText',
+            isSelected && 'tpm-slotText--selected',
+            canStart && !isSelected && 'tpm-slotText--ok',
+            !canStart && 'tpm-slotText--off',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
+          {slot}
+        </span>
+      </button>
+    )
+  }
 
   return createPortal(
     <div
@@ -144,45 +184,14 @@ export default function TimePickerModal({
           )}
         </div>
         <div className="tpm-gridWrap">
-          <div className="tpm-grid" role="list">
-            {stepSlots.map((slot) => {
-              const canStart = canStartSlot(slot, { boat, bookDate, durationMin, busyIntervals })
-              const isSelected = pendingTime === slot
-              const disabled = !canStart
-              return (
-                <button
-                  key={slot}
-                  type="button"
-                  role="listitem"
-                  className={[
-                    'tpm-slot',
-                    isSelected && 'tpm-slot--selected',
-                    canStart && !isSelected && 'tpm-slot--ok',
-                    !canStart && 'tpm-slot--off',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  disabled={disabled}
-                  onClick={() => {
-                    if (canStart) setPendingTime(slot)
-                  }}
-                >
-                  <span
-                    className={[
-                      'tpm-slotText',
-                      isSelected && 'tpm-slotText--selected',
-                      canStart && !isSelected && 'tpm-slotText--ok',
-                      !canStart && 'tpm-slotText--off',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                  >
-                    {slot}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
+          {daypartGroups.map((group) => (
+            <div key={group.id} className="tpm-daypart">
+              <p className="tpm-daypartLabel">{group.label}</p>
+              <div className="tpm-grid" role="list" aria-label={group.label}>
+                {group.slots.map(renderSlot)}
+              </div>
+            </div>
+          ))}
         </div>
         <div className="tpm-footer">
           <button

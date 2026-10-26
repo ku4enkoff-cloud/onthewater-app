@@ -35,6 +35,32 @@ export function filterSlotsByStep(slots, stepMinutes) {
   })
 }
 
+/** Утро < 12:00, день 12:00–16:59, вечер ≥ 17:00 */
+export function daypartForSlot(slot) {
+  const m = slotToMinutes(slot)
+  if (!Number.isFinite(m)) return 'day'
+  if (m < 12 * 60) return 'morning'
+  if (m < 17 * 60) return 'day'
+  return 'evening'
+}
+
+const DAYPART_META = [
+  { id: 'morning', label: 'Утро' },
+  { id: 'day', label: 'День' },
+  { id: 'evening', label: 'Вечер' },
+]
+
+/** Группы слотов для UI: только непустые части суток. */
+export function groupSlotsByDaypart(slots) {
+  const buckets = { morning: [], day: [], evening: [] }
+  for (const slot of slots || []) {
+    buckets[daypartForSlot(slot)].push(slot)
+  }
+  return DAYPART_META.map((meta) => ({ ...meta, slots: buckets[meta.id] })).filter(
+    (g) => g.slots.length > 0,
+  )
+}
+
 export function isSlotInBusyInterval(slot, busyIntervals = []) {
   if (!Array.isArray(busyIntervals) || !slot) return false
   return busyIntervals.some((b) => {

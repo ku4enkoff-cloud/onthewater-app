@@ -8105,6 +8105,23 @@ a.lp-boatCard:hover .lp-boatImg {
   padding: 0 20px 8px;
 }
 
+.tpm-daypart {
+  margin-bottom: 14px;
+}
+
+.tpm-daypart:last-child {
+  margin-bottom: 0;
+}
+
+.tpm-daypartLabel {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
 .tpm-grid {
   display: flex;
   flex-wrap: wrap;

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { fetchBoatAvailability } from '../../api/boats.js'
 import {
   getAvailableTimeSlotsBySchedule,
+  groupSlotsByDaypart,
   isStartTimeValid,
   isTodayDateKey,
   slotToMinutes,
@@ -84,6 +85,7 @@ export default function BookingPanelC06({
 
   // Слоты из API-графика; шаг 30/60 уже заложен в getAvailableTimeSlotsBySchedule
   const displaySlots = scheduleSlots
+  const daypartGroups = useMemo(() => groupSlotsByDaypart(displaySlots), [displaySlots])
 
   useEffect(() => {
     if (!bookStartTime) return
@@ -106,6 +108,27 @@ export default function BookingPanelC06({
       : Number(selectedTierPrice) || 0
   const durationText = hoursLabelRu(durationMin)
   const canBook = Boolean(bookStartTime)
+
+  const renderSlotBtn = (slot) => {
+    const ok = canStartSlot(slot, {
+      boat,
+      bookDate,
+      durationMin,
+      busyIntervals,
+    })
+    const active = bookStartTime === slot
+    return (
+      <button
+        key={slot}
+        type="button"
+        className={`bd-c06Book__timeBtn${active ? ' is-on' : ''}`}
+        disabled={!ok}
+        onClick={() => onStartTimeChange(slot)}
+      >
+        {slot}
+      </button>
+    )
+  }
 
   return (
     <div className="bd-c06Book">
@@ -137,28 +160,18 @@ export default function BookingPanelC06({
           Выберите время
         </h3>
         {loadingSlots ? <p className="bd-c06Book__hint">Загружаем слоты…</p> : null}
-        <div className="bd-c06Book__timeGrid" role="group" aria-label="Время начала">
-          {displaySlots.map((slot) => {
-            const ok = canStartSlot(slot, {
-              boat,
-              bookDate,
-              durationMin,
-              busyIntervals,
-            })
-            const active = bookStartTime === slot
-            return (
-              <button
-                key={slot}
-                type="button"
-                className={`bd-c06Book__timeBtn${active ? ' is-on' : ''}`}
-                disabled={!ok}
-                onClick={() => onStartTimeChange(slot)}
-              >
-                {slot}
-              </button>
-            )
-          })}
-        </div>
+        {daypartGroups.length > 0 ? (
+          <div className="bd-c06Book__timeGroups">
+            {daypartGroups.map((group) => (
+              <div key={group.id} className="bd-c06Book__timeGroup">
+                <p className="bd-c06Book__timeGroupLabel">{group.label}</p>
+                <div className="bd-c06Book__timeGrid" role="group" aria-label={group.label}>
+                  {group.slots.map(renderSlotBtn)}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
         {displaySlots.length === 0 ? (
           <p className="bd-c06Book__hint">Нет доступных слотов на эту дату</p>
         ) : null}

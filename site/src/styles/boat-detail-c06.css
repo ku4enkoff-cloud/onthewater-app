@@ -1057,6 +1057,21 @@
   cursor: default;
 }
 
+.bd-c06Book__timeGroups {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bd-c06Book__timeGroupLabel {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
 .bd-c06Book__timeGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
