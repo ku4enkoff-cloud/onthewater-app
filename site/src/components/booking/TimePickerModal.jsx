@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { fetchBoatAvailability } from '../../api/boats.js'
 import {
+  filterSlotsByStep,
   getAvailableTimeSlotsBySchedule,
+  getBookingSlotStepMinutes,
   isStartTimeValid,
   isTodayDateKey,
   slotToMinutes,
@@ -96,6 +98,11 @@ export default function TimePickerModal({
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
+  const stepSlots = useMemo(
+    () => filterSlotsByStep(TIME_SLOTS, getBookingSlotStepMinutes(boat)),
+    [boat],
+  )
+
   if (!open || typeof document === 'undefined') return null
 
   return createPortal(
@@ -138,7 +145,7 @@ export default function TimePickerModal({
         </div>
         <div className="tpm-gridWrap">
           <div className="tpm-grid" role="list">
-            {TIME_SLOTS.map((slot) => {
+            {stepSlots.map((slot) => {
               const canStart = canStartSlot(slot, { boat, bookDate, durationMin, busyIntervals })
               const isSelected = pendingTime === slot
               const disabled = !canStart

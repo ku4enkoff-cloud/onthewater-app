@@ -82,11 +82,8 @@ export default function BookingPanelC06({
     [boat, bookDate, durationMin],
   )
 
-  const displaySlots = useMemo(() => {
-    const hourly = scheduleSlots.filter((s) => String(s).endsWith(':00'))
-    const base = hourly.length >= 4 ? hourly : scheduleSlots
-    return base.slice(0, 12)
-  }, [scheduleSlots])
+  // Слоты из API-графика; шаг 30/60 уже заложен в getAvailableTimeSlotsBySchedule
+  const displaySlots = scheduleSlots
 
   useEffect(() => {
     if (!bookStartTime) return

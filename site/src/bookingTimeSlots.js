@@ -1,6 +1,9 @@
 /**
  * Та же логика, что в mobile/src/client/screens/BoatDetailScreen.js
  * (слоты, расписание, пересечение с busy).
+ *
+ * Шаг старта берём из карточки катера: schedule_min_duration === 30 → 30 мин,
+ * иначе (60+) → 1 час.
  */
 
 const TIME_SLOTS = []
@@ -13,6 +16,23 @@ export { TIME_SLOTS }
 export function slotToMinutes(slot) {
   const [h, m] = String(slot).split(':').map(Number)
   return h * 60 + m
+}
+
+/** Шаг слотов старта по API: schedule_min_duration (30 → полчаса, 60+ → час). */
+export function getBookingSlotStepMinutes(boat) {
+  const raw = boat?.schedule_min_duration
+  const n = raw != null && raw !== '' ? Number(raw) : NaN
+  const min = Number.isFinite(n) && n > 0 ? Math.round(n) : 60
+  return min < 60 ? 30 : 60
+}
+
+export function filterSlotsByStep(slots, stepMinutes) {
+  const step = Number(stepMinutes) || 60
+  if (step <= 0) return Array.isArray(slots) ? slots : []
+  return (slots || []).filter((slot) => {
+    const m = slotToMinutes(slot)
+    return Number.isFinite(m) && m % step === 0
+  })
 }
 
 export function isSlotInBusyInterval(slot, busyIntervals = []) {
@@ -84,8 +104,10 @@ export function getAvailableTimeSlotsBySchedule(boat, dateKeyOrDate, durationMin
   const endMin = slotToMinutes(endStr)
   const dur = Number(durationMin) || 60
   const latestStartMin = endMin - dur
+  const step = getBookingSlotStepMinutes(boat)
   return TIME_SLOTS.filter((slot) => {
     const slotMin = slotToMinutes(slot)
+    if (slotMin % step !== 0) return false
     return slotMin >= startMin && slotMin <= latestStartMin
   })
 }
