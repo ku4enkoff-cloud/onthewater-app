@@ -5,9 +5,78 @@ import { useAuth } from '../context/AuthContext'
 import { useNoIndexSeo } from '../seo/useNoIndexSeo.js'
 import googlePlayIcon from '../assets/icon-g-p.webp'
 import appleStoreIcon from '../assets/icon-a-s.webp'
-import { OWNER_ANDROID_PLAY_URL, OWNER_IOS_APP_STORE_URL } from '../constants/appStores'
+import {
+  CLIENT_ANDROID_PLAY_URL,
+  CLIENT_IOS_APP_STORE_URL,
+  OWNER_ANDROID_PLAY_URL,
+  OWNER_IOS_APP_STORE_URL,
+} from '../constants/appStores'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const BENEFITS = [
+  {
+    id: 'favorites',
+    title: 'Избранные катера',
+    text: 'Сохраняйте понравившиеся суда и находите их в один клик.',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path
+          d="M4.5 14.5c1.2-2.2 3.4-3.5 7.5-3.5s6.3 1.3 7.5 3.5"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+        />
+        <path
+          d="M7 11.5c.4-2.8 2.2-5 5-5s4.6 2.2 5 5"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+        />
+        <path d="M12 6.5V4.8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    id: 'booking',
+    title: 'Быстрое бронирование',
+    text: 'Бронируйте катера быстро и без лишних шагов.',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M4 10h16M8 3v4M16 3v4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+        <path
+          d="M9.5 14.5 11 16l3.5-3.5"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    ),
+  },
+  {
+    id: 'chat',
+    title: 'Чат с владельцем',
+    text: 'Связывайтесь с владельцами напрямую и уточняйте детали.',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path
+          d="M5 17.5V8.8A2.8 2.8 0 0 1 7.8 6h8.4A2.8 2.8 0 0 1 19 8.8v5.4a2.8 2.8 0 0 1-2.8 2.8H9.2L5 19.5v-2Z"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M9 11.2h.01M12 11.2h.01M15 11.2h.01"
+          stroke="currentColor"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+        />
+      </svg>
+    ),
+  },
+]
 
 function formatPhoneRu(value) {
   const digits = String(value || '').replace(/\D/g, '')
@@ -40,6 +109,9 @@ export default function RegisterPage() {
     password: '',
     passwordRepeat: '',
   })
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showPasswordRepeat, setShowPasswordRepeat] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -77,6 +149,10 @@ export default function RegisterPage() {
       setError('Пароли не совпадают')
       return
     }
+    if (!acceptedTerms) {
+      setError('Нужно согласиться с условиями использования')
+      return
+    }
 
     setSubmitting(true)
     try {
@@ -100,102 +176,247 @@ export default function RegisterPage() {
   }
 
   return (
-    <>
-      <div className="auth-page">
-        <div className="auth-card">
+    <div className="auth-page auth-page--register">
+      <div className="auth-register">
+        <aside className="auth-register__benefits" aria-labelledby="auth-register-benefits-title">
+          <h2 id="auth-register-benefits-title" className="auth-register__benefitsTitle">
+            Преимущества с ONTHEWATER
+          </h2>
+          <ul className="auth-register__benefitList">
+            {BENEFITS.map((item) => (
+              <li key={item.id} className="auth-register__benefit">
+                <span className="auth-register__benefitIcon">{item.icon}</span>
+                <div>
+                  <p className="auth-register__benefitTitle">{item.title}</p>
+                  <p className="auth-register__benefitText">{item.text}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <div className="auth-register__stores">
+            <p className="auth-register__storesLabel">Приложение ONTHEWATER</p>
+            <div className="auth-ownerStores" aria-label="Скачать приложение">
+              <a
+                href={CLIENT_IOS_APP_STORE_URL}
+                className="auth-ownerStoreBadge auth-ownerStoreBadge--apple"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Скачать ONTHEWATER в App Store"
+              >
+                <img src={appleStoreIcon} alt="App Store" className="auth-ownerStoreBadge__img" />
+              </a>
+              <a
+                href={CLIENT_ANDROID_PLAY_URL}
+                className="auth-ownerStoreBadge auth-ownerStoreBadge--google"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Скачать ONTHEWATER в Google Play"
+              >
+                <img src={googlePlayIcon} alt="Google Play" className="auth-ownerStoreBadge__img" />
+              </a>
+            </div>
+            <p className="auth-register__ownerHint">
+              Владельцам судов — регистрация в{' '}
+              <a href={OWNER_IOS_APP_STORE_URL} target="_blank" rel="noopener noreferrer">
+                приложении для владельцев
+              </a>
+              {' · '}
+              <a href={OWNER_ANDROID_PLAY_URL} target="_blank" rel="noopener noreferrer">
+                Google Play
+              </a>
+            </p>
+          </div>
+        </aside>
+
+        <div className="auth-card auth-register__card">
           <h1 className="auth-card__title">Регистрация</h1>
-          <p className="auth-card__sub">Заполните поля для создания аккаунта.</p>
+          <p className="auth-card__sub">
+            Создайте аккаунт, чтобы бронировать катера и общаться с владельцами.
+          </p>
           <form className="auth-form" onSubmit={onSubmit}>
-            <label className="auth-field">
+            <label className="auth-field auth-field--icon">
               <span>Имя</span>
-              <input
-                type="text"
-                value={form.name}
-                onChange={(e) => setForm((v) => ({ ...v, name: e.target.value }))}
-                placeholder="Как к вам обращаться"
-                autoComplete="name"
-                required
-              />
+              <span className="auth-field__control">
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={(e) => setForm((v) => ({ ...v, name: e.target.value }))}
+                  placeholder="Ваше имя"
+                  autoComplete="name"
+                  required
+                />
+                <span className="auth-field__icon" aria-hidden>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                    />
+                    <path
+                      d="M4.5 19.5c1.5-3 4-4.5 7.5-4.5s6 1.5 7.5 4.5"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </span>
+              </span>
             </label>
-            <label className="auth-field">
+            <label className="auth-field auth-field--icon">
               <span>Email</span>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm((v) => ({ ...v, email: e.target.value }))}
-                placeholder="example@mail.ru"
-                autoComplete="email"
-                required
-              />
+              <span className="auth-field__control">
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm((v) => ({ ...v, email: e.target.value }))}
+                  placeholder="name@example.com"
+                  autoComplete="email"
+                  required
+                />
+                <span className="auth-field__icon" aria-hidden>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <rect x="3.5" y="5.5" width="17" height="13" rx="2" stroke="currentColor" strokeWidth="1.7" />
+                    <path
+                      d="m4.5 7.5 7.5 6 7.5-6"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+              </span>
             </label>
-            <label className="auth-field">
+            <label className="auth-field auth-field--icon">
               <span>Телефон</span>
-              <input
-                type="tel"
-                value={form.phone}
-                onChange={(e) => setForm((v) => ({ ...v, phone: formatPhoneRu(e.target.value) }))}
-                placeholder="+7 (999) 123-45-67"
-                autoComplete="tel"
-                maxLength={18}
-                required
-              />
+              <span className="auth-field__control">
+                <input
+                  type="tel"
+                  value={form.phone}
+                  onChange={(e) => setForm((v) => ({ ...v, phone: formatPhoneRu(e.target.value) }))}
+                  placeholder="+7 (___) ___-__-__"
+                  autoComplete="tel"
+                  maxLength={18}
+                  required
+                />
+                <span className="auth-field__icon" aria-hidden>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M8.2 4.8h2.1l1 4.2-1.6 1a11.5 11.5 0 0 0 4.3 4.3l1-1.6 4.2 1v2.1a1.6 1.6 0 0 1-1.7 1.6A13.8 13.8 0 0 1 4.6 6.5 1.6 1.6 0 0 1 6.2 4.8Z"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+              </span>
             </label>
-            <label className="auth-field">
+            <label className="auth-field auth-field--icon">
               <span>Пароль</span>
-              <input
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm((v) => ({ ...v, password: e.target.value }))}
-                placeholder="Не менее 6 символов"
-                autoComplete="new-password"
-                required
-              />
+              <span className="auth-field__control">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={form.password}
+                  onChange={(e) => setForm((v) => ({ ...v, password: e.target.value }))}
+                  placeholder="Придумайте пароль"
+                  autoComplete="new-password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="auth-field__iconBtn"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    {showPassword ? (
+                      <>
+                        <path
+                          d="M3 3l18 18M10.6 10.6A3 3 0 0 0 13.4 13.4"
+                          stroke="currentColor"
+                          strokeWidth="1.7"
+                          strokeLinecap="round"
+                        />
+                        <path
+                          d="M9.9 5.2A10.8 10.8 0 0 1 12 5c5.2 0 8.8 4.2 9.8 7-.4 1.1-1.2 2.5-2.4 3.7M6.1 6.1C4.5 7.4 3.4 9 2.9 12c1 2.8 4.6 7 9.1 7 1.4 0 2.7-.3 3.9-.9"
+                          stroke="currentColor"
+                          strokeWidth="1.7"
+                          strokeLinecap="round"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <path
+                          d="M2.9 12c1-2.8 4.6-7 9.1-7s8.1 4.2 9.1 7c-1 2.8-4.6 7-9.1 7s-8.1-4.2-9.1-7Z"
+                          stroke="currentColor"
+                          strokeWidth="1.7"
+                        />
+                        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7" />
+                      </>
+                    )}
+                  </svg>
+                </button>
+              </span>
             </label>
-            <label className="auth-field">
+            <label className="auth-field auth-field--icon">
               <span>Повторите пароль</span>
-              <input
-                type="password"
-                value={form.passwordRepeat}
-                onChange={(e) => setForm((v) => ({ ...v, passwordRepeat: e.target.value }))}
-                placeholder="Повторите пароль"
-                autoComplete="new-password"
-                required
-              />
+              <span className="auth-field__control">
+                <input
+                  type={showPasswordRepeat ? 'text' : 'password'}
+                  value={form.passwordRepeat}
+                  onChange={(e) => setForm((v) => ({ ...v, passwordRepeat: e.target.value }))}
+                  placeholder="Повторите пароль"
+                  autoComplete="new-password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="auth-field__iconBtn"
+                  onClick={() => setShowPasswordRepeat((v) => !v)}
+                  aria-label={showPasswordRepeat ? 'Скрыть пароль' : 'Показать пароль'}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <path
+                      d="M2.9 12c1-2.8 4.6-7 9.1-7s8.1 4.2 9.1 7c-1 2.8-4.6 7-9.1 7s-8.1-4.2-9.1-7Z"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                    />
+                    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7" />
+                  </svg>
+                </button>
+              </span>
             </label>
+
+            <label className="auth-register__terms">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+              />
+              <span>
+                Я соглашаюсь с{' '}
+                <Link to="/terms">Условиями использования</Link> и{' '}
+                <Link to="/privacy">Политикой конфиденциальности</Link>
+              </span>
+            </label>
+
             {error ? <p className="auth-error">{error}</p> : null}
             {success ? <p className="auth-success">{success}</p> : null}
-            <button type="submit" className="auth-submit" disabled={submitting}>
-              {submitting ? 'Регистрируем…' : 'Зарегистрироваться'}
+
+            <button type="submit" className="auth-submit auth-submit--dark" disabled={submitting}>
+              {submitting ? 'Регистрируем…' : 'Создать аккаунт'}
             </button>
           </form>
-          <p className="auth-card__hint">
+
+          <div className="auth-register__divider" role="separator" aria-label="или">
+            <span>или</span>
+          </div>
+          <p className="auth-card__hint auth-register__loginHint">
             Уже есть аккаунт? <Link to="/login">Войти</Link>
           </p>
-          <p className="auth-card__hint auth-card__hint--owner">
-            Для владельцев судов регистрация доступна в мобильном приложении для владельцев.
-          </p>
-          <div className="auth-ownerStores" aria-label="Скачать приложение для владельцев">
-            <a
-              href={OWNER_IOS_APP_STORE_URL}
-              className="auth-ownerStoreBadge auth-ownerStoreBadge--apple"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Скачать приложение для владельцев в App Store"
-            >
-              <img src={appleStoreIcon} alt="App Store" className="auth-ownerStoreBadge__img" />
-            </a>
-            <a
-              href={OWNER_ANDROID_PLAY_URL}
-              className="auth-ownerStoreBadge auth-ownerStoreBadge--google"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Скачать приложение для владельцев в Google Play"
-            >
-              <img src={googlePlayIcon} alt="Google Play" className="auth-ownerStoreBadge__img" />
-            </a>
-          </div>
         </div>
       </div>
-    </>
+    </div>
   )
 }
