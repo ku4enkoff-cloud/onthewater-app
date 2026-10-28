@@ -195,6 +195,7 @@ export function getSitemapEntries(origin, boats, lastmod, { apiBase, cities } = 
     add(`/boats?city=${encodeURIComponent(city)}`, '0.85', 'daily')
   }
   add('/owners', '0.7', 'weekly')
+  add('/about', '0.7', 'monthly')
   add('/privacy', '0.3', 'yearly')
   add('/terms', '0.3', 'yearly')
   add('/sitemap', '0.5', 'weekly')
@@ -215,7 +216,7 @@ export function getSitemapEntries(origin, boats, lastmod, { apiBase, cities } = 
 
 export function getPrerenderRoutes(boats) {
   // /boats → dist/boats/index.html обязателен: иначе nginx видит пустую папку boats/ и отдаёт 403
-  const staticRoutes = ['/', '/boats', '/owners', '/privacy', '/terms', '/sitemap']
+  const staticRoutes = ['/', '/boats', '/owners', '/about', '/privacy', '/terms', '/sitemap']
   const boatRoutes = boats
     .map((boat) => {
       const seg = boatUrlSegment(boat)

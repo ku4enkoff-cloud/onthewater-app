@@ -74,6 +74,9 @@ export default function SitemapPage() {
               <li>
                 <Link to="/owners">Для владельцев катеров</Link>
               </li>
+              <li>
+                <Link to="/about">О нас</Link>
+              </li>
             </ul>
           </section>
 

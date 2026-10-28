@@ -77,7 +77,7 @@ export default function SiteHeader() {
           <Link to="/boats">Катера</Link>
           <Link to="/#destinations">Направления</Link>
           <Link to="/#categories">Тарифы</Link>
-          <Link to="/#how">О нас</Link>
+          <Link to="/about">О нас</Link>
         </nav>
 
         <div className="pm-header__actions">
@@ -163,7 +163,7 @@ export default function SiteHeader() {
           <Link to="/#categories" onClick={closeMobileNav}>
             Тарифы
           </Link>
-          <Link to="/#how" onClick={closeMobileNav}>
+          <Link to="/about" onClick={closeMobileNav}>
             О нас
           </Link>
         </nav>

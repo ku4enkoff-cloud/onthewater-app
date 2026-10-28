@@ -9,6 +9,7 @@ import AccountPage from './pages/AccountPage.jsx'
 import OwnerLandingPage from './pages/OwnerLandingPage.jsx'
 import LegalDocumentPage from './pages/LegalDocumentPage.jsx'
 import SitemapPage from './pages/SitemapPage.jsx'
+import AboutPage from './pages/AboutPage.jsx'
 import NotFoundPage from './pages/NotFoundPage.jsx'
 import SiteHeader from './components/SiteHeader.jsx'
 import SiteFooter from './components/SiteFooter.jsx'
@@ -145,6 +146,7 @@ export default function App() {
           <Route path="/boats" element={<BoatsSearchPage />} />
           <Route path="/boats/:boatSlug" element={<BoatDetailPage />} />
           <Route path="/owners" element={<OwnerLandingPage />} />
+          <Route path="/about" element={<AboutPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/sitemap" element={<SitemapPage />} />

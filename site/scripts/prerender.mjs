@@ -51,6 +51,7 @@ function waitSelectorForRoute(route) {
   if (route === '/boats') return '.bs-page'
   if (route.startsWith('/boats/')) return '.bd-c06Hero__title, .bd-heroBs__title, h1'
   if (route === '/owners') return '.owner-page__title, h1'
+  if (route === '/about') return '.about-page__title, h1'
   if (route === '/privacy' || route === '/terms') return 'main'
   if (route === '/sitemap') return '.sitemap-page__nav, h1'
   return '#root .app-outlet'

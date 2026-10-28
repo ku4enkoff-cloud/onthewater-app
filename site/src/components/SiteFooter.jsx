@@ -93,7 +93,7 @@ export default function SiteFooter() {
                 <Link to="/owners">Владельцам</Link>
               </li>
               <li>
-                <Link to="/#how">О нас</Link>
+                <Link to="/about">О нас</Link>
               </li>
             </ul>
           </div>
