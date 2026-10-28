@@ -956,6 +956,30 @@
   color: var(--c06-muted);
 }
 
+.bd-c06Book__unavailable {
+  padding: 28px 8px 20px;
+  text-align: center;
+}
+
+.bd-c06Book__unavailableTitle {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--c06-ink);
+  letter-spacing: -0.01em;
+}
+
+.bd-c06Book__unavailableText {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--c06-muted);
+}
+
+.bd-c06Book--unavailable .bd-c06Book__section {
+  margin-bottom: 8px;
+}
+
 .bd-c06Book__cal.pm-cal {
   width: 100%;
   max-width: none;

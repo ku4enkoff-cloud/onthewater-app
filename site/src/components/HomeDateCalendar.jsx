@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 const WEEK_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
@@ -49,8 +49,19 @@ function buildCells(year, month) {
 
 /**
  * Поповер календаря для поиска на главной (стиль precision-home).
+ * isDateDisabled(key) — доп. блокировка (нерабочие дни судна и т.п.).
+ * onViewChange({ year, month }) — смена отображаемого месяца.
  */
-export default function HomeDateCalendar({ value, minDate, onChange, onClose, hideFooter = false, className = '' }) {
+export default function HomeDateCalendar({
+  value,
+  minDate,
+  onChange,
+  onClose,
+  hideFooter = false,
+  className = '',
+  isDateDisabled,
+  onViewChange,
+}) {
   const minKey = minDate || toISOKey(new Date())
   const initial = parseISOKey(value) || new Date()
   const [viewYear, setViewYear] = useState(initial.getFullYear())
@@ -59,6 +70,10 @@ export default function HomeDateCalendar({ value, minDate, onChange, onClose, hi
   const cells = useMemo(() => buildCells(viewYear, viewMonth), [viewYear, viewMonth])
   const title = monthTitle(viewYear, viewMonth)
   const todayKey = toISOKey(new Date())
+
+  useEffect(() => {
+    onViewChange?.({ year: viewYear, month: viewMonth })
+  }, [viewYear, viewMonth, onViewChange])
 
   const goPrev = () => {
     setViewMonth((m) => {
@@ -80,8 +95,10 @@ export default function HomeDateCalendar({ value, minDate, onChange, onClose, hi
     })
   }
 
+  const dayBlocked = (key) => key < minKey || Boolean(isDateDisabled?.(key))
+
   const pick = (key) => {
-    if (key < minKey) return
+    if (dayBlocked(key)) return
     onChange(key)
     onClose?.()
   }
@@ -116,7 +133,7 @@ export default function HomeDateCalendar({ value, minDate, onChange, onClose, hi
 
       <div className="pm-cal__grid">
         {cells.map((c) => {
-          const disabled = c.key < minKey
+          const disabled = dayBlocked(c.key)
           const selected = value && c.key === value
           const isToday = c.key === todayKey
           return (

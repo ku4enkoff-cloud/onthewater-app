@@ -325,6 +325,57 @@ export function filterBoatsByScheduleOnDate(boats, dateISO) {
   return boats.filter((b) => isBoatWorkingOnDate(b, dateISO))
 }
 
+/**
+ * Есть ли хотя бы один рабочий день с fromISO (включ.) в горизонте horizonDays.
+ * Если нет — судно «не работает по календарю», бронирование недоступно целиком.
+ */
+export function hasBoatFutureWorkingDay(boat, fromISO, horizonDays = 180) {
+  const from = dateFromISOKey(fromISO) || new Date()
+  from.setHours(0, 0, 0, 0)
+  const days = Math.max(1, Number(horizonDays) || 180)
+  for (let i = 0; i < days; i++) {
+    const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + i)
+    if (isBoatWorkingOnDate(boat, toLocalDateKeyFromDate(d))) return true
+  }
+  return false
+}
+
+/**
+ * Есть ли рабочий день в конкретном месяце (с учётом fromISO — обычно сегодня).
+ * Пустой месяц в dates-календаре владельца = «не работает в этом месяце».
+ */
+export function isBoatWorkingInMonth(boat, year, month, fromISO) {
+  const y = Number(year)
+  const m = Number(month)
+  if (!Number.isFinite(y) || !Number.isFinite(m) || m < 0 || m > 11) return true
+
+  const monthStart = new Date(y, m, 1)
+  const monthEnd = new Date(y, m + 1, 0)
+  const from = dateFromISOKey(fromISO) || new Date()
+  from.setHours(0, 0, 0, 0)
+
+  const start = monthStart < from ? from : monthStart
+  if (start > monthEnd) return false
+
+  for (let d = new Date(start); d <= monthEnd; d.setDate(d.getDate() + 1)) {
+    if (isBoatWorkingOnDate(boat, toLocalDateKeyFromDate(d))) return true
+  }
+  return false
+}
+
+/** Ближайший рабочий день с fromISO (включ.), или null. */
+export function findNextBoatWorkingDay(boat, fromISO, horizonDays = 180) {
+  const from = dateFromISOKey(fromISO) || new Date()
+  from.setHours(0, 0, 0, 0)
+  const days = Math.max(1, Number(horizonDays) || 180)
+  for (let i = 0; i < days; i++) {
+    const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + i)
+    const key = toLocalDateKeyFromDate(d)
+    if (isBoatWorkingOnDate(boat, key)) return key
+  }
+  return null
+}
+
 export function computeBoatTypesFromList(allBoats) {
   const seenByName = new Map()
   for (const b of allBoats) {

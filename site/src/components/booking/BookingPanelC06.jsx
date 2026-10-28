@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchBoatAvailability } from '../../api/boats.js'
 import {
   getAvailableTimeSlotsBySchedule,
@@ -7,6 +7,12 @@ import {
   isTodayDateKey,
   slotToMinutes,
 } from '../../bookingTimeSlots.js'
+import {
+  findNextBoatWorkingDay,
+  hasBoatFutureWorkingDay,
+  isBoatWorkingInMonth,
+  isBoatWorkingOnDate,
+} from '../../boatSearchUtils.js'
 import { formatPriceRu, minDurationLabel } from '../../boatUtils.js'
 import HomeDateCalendar from '../HomeDateCalendar.jsx'
 
@@ -31,8 +37,18 @@ function canStartSlot(slot, { boat, bookDate, durationMin, busyIntervals }) {
   return !isPast && inSchedule && isStartTimeValid(slot, durationMin, busyIntervals)
 }
 
+function BookingUnavailableNotice() {
+  return (
+    <div className="bd-c06Book__unavailable" role="status">
+      <p className="bd-c06Book__unavailableTitle">Бронирование недоступно</p>
+      <p className="bd-c06Book__unavailableText">Владелец не принимает заявки на выбранный период.</p>
+    </div>
+  )
+}
+
 /**
  * Booking-first панель (концепт 06): календарь + время + длительность + итог.
+ * Если судно не работает по календарю / месяц закрыт владельцем — форма скрыта.
  */
 export default function BookingPanelC06({
   boat,
@@ -54,11 +70,49 @@ export default function BookingPanelC06({
 }) {
   const [busyIntervals, setBusyIntervals] = useState([])
   const [loadingSlots, setLoadingSlots] = useState(false)
+  const [viewMonth, setViewMonth] = useState(() => {
+    const d = bookDate && /^\d{4}-\d{2}-\d{2}$/.test(bookDate) ? bookDate : minDate
+    const [y, m] = String(d || '').split('-').map(Number)
+    return { year: y || new Date().getFullYear(), month: (m || 1) - 1 }
+  })
   const durationMin = Number(bookDuration) || 60
+  const minKey =
+    minDate ||
+    (() => {
+      const n = new Date()
+      return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`
+    })()
+
+  const scheduleOpen = useMemo(() => hasBoatFutureWorkingDay(boat, minKey), [boat, minKey])
+
+  const monthOpen = useMemo(
+    () => isBoatWorkingInMonth(boat, viewMonth.year, viewMonth.month, minKey),
+    [boat, viewMonth.year, viewMonth.month, minKey],
+  )
+
+  const isDateDisabled = useCallback(
+    (key) => !isBoatWorkingOnDate(boat, key),
+    [boat],
+  )
+
+  const handleViewChange = useCallback((next) => {
+    setViewMonth((prev) => {
+      if (prev.year === next.year && prev.month === next.month) return prev
+      return next
+    })
+  }, [])
+
+  // Если выбранный день вне графика — перейти на ближайший рабочий
+  useEffect(() => {
+    if (!scheduleOpen || !bookDate || !onDateChange) return
+    if (isBoatWorkingOnDate(boat, bookDate)) return
+    const next = findNextBoatWorkingDay(boat, minKey)
+    if (next && next !== bookDate) onDateChange(next)
+  }, [boat, bookDate, minKey, onDateChange, scheduleOpen])
 
   useEffect(() => {
     let cancelled = false
-    if (!boatId || !bookDate) {
+    if (!boatId || !bookDate || !scheduleOpen || !monthOpen) {
       setBusyIntervals([])
       return undefined
     }
@@ -76,14 +130,13 @@ export default function BookingPanelC06({
     return () => {
       cancelled = true
     }
-  }, [boatId, bookDate])
+  }, [boatId, bookDate, scheduleOpen, monthOpen])
 
   const scheduleSlots = useMemo(
-    () => getAvailableTimeSlotsBySchedule(boat, bookDate, durationMin),
-    [boat, bookDate, durationMin],
+    () => (scheduleOpen && monthOpen ? getAvailableTimeSlotsBySchedule(boat, bookDate, durationMin) : []),
+    [boat, bookDate, durationMin, scheduleOpen, monthOpen],
   )
 
-  // Слоты из API-графика; шаг 30/60 уже заложен в getAvailableTimeSlotsBySchedule
   const displaySlots = scheduleSlots
   const daypartGroups = useMemo(() => groupSlotsByDaypart(displaySlots), [displaySlots])
 
@@ -107,7 +160,7 @@ export default function BookingPanelC06({
       ? Math.round(Number(selectedTierPrice) / hours)
       : Number(selectedTierPrice) || 0
   const durationText = hoursLabelRu(durationMin)
-  const canBook = Boolean(bookStartTime)
+  const canBook = Boolean(bookStartTime) && scheduleOpen && monthOpen
 
   const renderSlotBtn = (slot) => {
     const ok = canStartSlot(slot, {
@@ -130,17 +183,55 @@ export default function BookingPanelC06({
     )
   }
 
+  const head = (
+    <header className="bd-c06Book__head">
+      <span className="bd-c06Book__headIcon" aria-hidden>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.6" />
+          <path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+      </span>
+      <h2 className="bd-c06Book__title">Забронировать</h2>
+    </header>
+  )
+
+  // Судно не работает по календарю вообще — скрываем форму
+  if (!scheduleOpen) {
+    return (
+      <div className="bd-c06Book bd-c06Book--unavailable">
+        {head}
+        <BookingUnavailableNotice />
+      </div>
+    )
+  }
+
+  // Месяц закрыт владельцем — календарь оставляем для перехода на другой месяц
+  if (!monthOpen) {
+    return (
+      <div className="bd-c06Book bd-c06Book--unavailable">
+        {head}
+        <section className="bd-c06Book__section" aria-labelledby="bd-c06-date">
+          <h3 id="bd-c06-date" className="bd-c06Book__label">
+            Выберите дату
+          </h3>
+          <HomeDateCalendar
+            className="bd-c06Book__cal"
+            value={bookDate}
+            minDate={minKey}
+            onChange={onDateChange}
+            hideFooter
+            isDateDisabled={isDateDisabled}
+            onViewChange={handleViewChange}
+          />
+        </section>
+        <BookingUnavailableNotice />
+      </div>
+    )
+  }
+
   return (
     <div className="bd-c06Book">
-      <header className="bd-c06Book__head">
-        <span className="bd-c06Book__headIcon" aria-hidden>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.6" />
-            <path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-          </svg>
-        </span>
-        <h2 className="bd-c06Book__title">Забронировать</h2>
-      </header>
+      {head}
 
       <section className="bd-c06Book__section" aria-labelledby="bd-c06-date">
         <h3 id="bd-c06-date" className="bd-c06Book__label">
@@ -149,9 +240,11 @@ export default function BookingPanelC06({
         <HomeDateCalendar
           className="bd-c06Book__cal"
           value={bookDate}
-          minDate={minDate}
+          minDate={minKey}
           onChange={onDateChange}
           hideFooter
+          isDateDisabled={isDateDisabled}
+          onViewChange={handleViewChange}
         />
       </section>
 
