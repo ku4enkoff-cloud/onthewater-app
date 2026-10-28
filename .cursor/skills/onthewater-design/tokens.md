@@ -6,9 +6,10 @@
 |------|--------|
 | Navy (titles, brand) | `#1b365d` |
 | Navy deep (links/alt) | `#002b5b` |
-| CTA blue (auth/marketing) | `#0061c1` |
-| CTA blue hover | `#0052a3` |
-| CTA black (C06 book) | `#0a0a0a` |
+| CTA black (header / register / primary) | `#0a0a0a` |
+| CTA hover | `#1b365d` |
+| Page / card bg | `#ffffff` |
+| Radius (header, forms, CTA) | `2px` |
 | Ink | `#0a0a0a` |
 | Muted body | `#6b7280` / `#64748b` |
 | Line | `#e5e7eb` / `#e6ebf1` |

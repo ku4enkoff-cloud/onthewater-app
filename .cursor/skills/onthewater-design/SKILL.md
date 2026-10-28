@@ -19,9 +19,9 @@ description: >-
 
 ## Visual direction
 
-- Brand-first navy (`#1b365d` / `#002b5b`), Montserrat, airy light gray canvases.
-- Primary CTA on auth/marketing: **blue `#0061c1`**. Booking detail CTA may stay black `#0a0a0a` (C06).
-- Atmosphere: soft water/marina photography, curved splits, glass/white cards — not flat purple SaaS.
+- Match **homepage** (`precision-home`): Montserrat, ink `#0a0a0a`, muted `#6b7280`, line `#e5e7eb`, navy `#1b365d`, radius `2px`, white canvas.
+- Primary CTA = header «Разместить объявление»: black `#0a0a0a`, uppercase, hover navy.
+- Section titles: uppercase, weight 800, letter-spacing `0.1em` (`.pm-sectionTitle`).
 - Motion: 2–3 intentional transitions max; no glow spam.
 
 ## Do / Don't

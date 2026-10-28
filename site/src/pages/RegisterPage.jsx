@@ -5,12 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { useNoIndexSeo } from '../seo/useNoIndexSeo.js'
 import '../styles/precision-home.css'
 import googlePlayIcon from '../assets/stores/google-play-icon.webp'
-import {
-  CLIENT_ANDROID_PLAY_URL,
-  CLIENT_IOS_APP_STORE_URL,
-  OWNER_ANDROID_PLAY_URL,
-  OWNER_IOS_APP_STORE_URL,
-} from '../constants/appStores'
+import { CLIENT_ANDROID_PLAY_URL, CLIENT_IOS_APP_STORE_URL } from '../constants/appStores'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -309,16 +304,6 @@ export default function RegisterPage() {
                 </span>
               </a>
             </div>
-            <p className="auth-register__ownerHint">
-              Владельцам судов — регистрация в{' '}
-              <a href={OWNER_IOS_APP_STORE_URL} target="_blank" rel="noopener noreferrer">
-                приложении для владельцев
-              </a>
-              {' · '}
-              <a href={OWNER_ANDROID_PLAY_URL} target="_blank" rel="noopener noreferrer">
-                Google Play
-              </a>
-            </p>
           </div>
         </aside>
 
