@@ -27,7 +27,14 @@ export default function LegalDocumentPage({ slug, defaultTitle, pathForCanonical
         if (data?.title) setTitle(data.title)
         setBodyHtml(legalBodyToHtml(typeof data?.body === 'string' ? data.body : ''))
       } catch (e) {
-        if (!cancelled) setError(e?.message || 'Не удалось загрузить документ')
+        if (!cancelled) {
+          const raw = e?.message || ''
+          setError(
+            /failed to fetch|networkerror|load failed/i.test(raw)
+              ? 'Не удалось загрузить документ'
+              : raw || 'Не удалось загрузить документ',
+          )
+        }
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -48,25 +55,39 @@ export default function LegalDocumentPage({ slug, defaultTitle, pathForCanonical
   }, [title, pathForCanonical])
 
   return (
-    <>
-      <main className="legal-page">
+    <main className="legal-page">
+      <div className="legal-page__wrap">
+        <nav className="legal-page__nav" aria-label="Юридические документы">
+          <Link
+            to="/terms"
+            className={`legal-page__navLink${pathForCanonical === '/terms' ? ' is-active' : ''}`}
+          >
+            Условия использования
+          </Link>
+          <Link
+            to="/privacy"
+            className={`legal-page__navLink${pathForCanonical === '/privacy' ? ' is-active' : ''}`}
+          >
+            Политика конфиденциальности
+          </Link>
+        </nav>
+
         <article className="legal-page__inner">
           <h1 className="legal-page__title">{title}</h1>
+
           {loading && <p className="legal-page__status">Загружаем…</p>}
+
           {!loading && error && (
             <p className="legal-page__error">
-              {error}.{' '}
-              <Link to="/">Вернуться на главную</Link>
+              {error}. <Link to="/">Вернуться на главную</Link>
             </p>
           )}
+
           {!loading && !error && (
-            <div
-              className="legal-page__body"
-              dangerouslySetInnerHTML={{ __html: bodyHtml }}
-            />
+            <div className="legal-page__body" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
           )}
         </article>
-      </main>
-    </>
+      </div>
+    </main>
   )
 }
