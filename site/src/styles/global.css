@@ -32,7 +32,7 @@
   font-display: swap;
 }
 
-/* Unified auth buttons in top menus (����������� / ����) */
+/* Unified auth buttons in top menus (Регистрация / Вход) */
 .authMenuBtn {
   border: 2px solid rgba(255, 255, 255, 0.88) !important;
   border-radius: 18px !important;
@@ -1116,7 +1116,7 @@ code {
 
 /* Source: App.css */
 
-/* Landing — mockup palette: primary #0061C1, text #002B5B, muted #F4F7F9 */
+/* Landing вЂ” mockup palette: primary #0061C1, text #002B5B, muted #F4F7F9 */
 
 .lp {
   font-family: var(--sans);
@@ -1548,14 +1548,14 @@ code {
   text-align: left;
 }
 
-/* �����: sticky-������ ������ ����������� ������� �������� .lp-searchBar */
+/* Важно: sticky-версия должна перекрывать базовые свойства .lp-searchBar */
 .lp-searchBar.lp-searchBar--sticky {
   overflow: visible;
   position: relative;
   z-index: 6;
 }
 
-/* Один инпут + кнопка в «таблетке» (как Boatsetter) */
+/* РћРґРёРЅ РёРЅРїСѓС‚ + РєРЅРѕРїРєР° РІ В«С‚Р°Р±Р»РµС‚РєРµВ» (РєР°Рє Boatsetter) */
 .lp-searchBar--pill:not(.lp-searchBar--sticky) {
   flex-wrap: nowrap;
   align-items: center;
@@ -2664,7 +2664,7 @@ a.lp-boatCard:hover .lp-boatImg {
     font-size: 14px;
   }
 
-  /* Подсказки на всю ширину «таблетки» поиска (контекст позиции — вся полоса) */
+  /* РџРѕРґСЃРєР°Р·РєРё РЅР° РІСЃСЋ С€РёСЂРёРЅСѓ В«С‚Р°Р±Р»РµС‚РєРёВ» РїРѕРёСЃРєР° (РєРѕРЅС‚РµРєСЃС‚ РїРѕР·РёС†РёРё вЂ” РІСЃСЏ РїРѕР»РѕСЃР°) */
   .lp-searchBar--pill:not(.lp-searchBar--sticky) .lp-searchField--suggest {
     position: static;
   }
@@ -2826,7 +2826,7 @@ a.lp-boatCard:hover .lp-boatImg {
 
 /* Source: pages\boatsSearch.css */
 
-/* Глобальные стили маркеров (рендерятся внутри контейнера Яндекса) */
+/* Р“Р»РѕР±Р°Р»СЊРЅС‹Рµ СЃС‚РёР»Рё РјР°СЂРєРµСЂРѕРІ (СЂРµРЅРґРµСЂСЏС‚СЃСЏ РІРЅСѓС‚СЂРё РєРѕРЅС‚РµР№РЅРµСЂР° РЇРЅРґРµРєСЃР°) */
 .yw-pin {
   display: inline-flex;
   align-items: center;
@@ -3227,7 +3227,7 @@ a.lp-boatCard:hover .lp-boatImg {
   overflow-y: hidden;
   flex-wrap: nowrap;
   -webkit-overflow-scrolling: touch;
-  /* Зазор под чипами: бегунок не наезжает на подписи (особенно overlay-скролл на iOS) */
+  /* Р—Р°Р·РѕСЂ РїРѕРґ С‡РёРїР°РјРё: Р±РµРіСѓРЅРѕРє РЅРµ РЅР°РµР·Р¶Р°РµС‚ РЅР° РїРѕРґРїРёСЃРё (РѕСЃРѕР±РµРЅРЅРѕ overlay-СЃРєСЂРѕР»Р» РЅР° iOS) */
   padding: 6px 0 20px;
   margin-bottom: 2px;
   scrollbar-width: thin;
@@ -3936,7 +3936,7 @@ a.lp-boatCard:hover .lp-boatImg {
     flex-direction: column;
   }
 
-  /* «Карта»: только шапка (заголовок + Список/Карта) и карта на всю оставшуюся высоту */
+  /* В«РљР°СЂС‚Р°В»: С‚РѕР»СЊРєРѕ С€Р°РїРєР° (Р·Р°РіРѕР»РѕРІРѕРє + РЎРїРёСЃРѕРє/РљР°СЂС‚Р°) Рё РєР°СЂС‚Р° РЅР° РІСЃСЋ РѕСЃС‚Р°РІС€СѓСЋСЃСЏ РІС‹СЃРѕС‚Сѓ */
   .bs-main:not(.bs-main--mapOff) .bs-listCol__scroll {
     display: none !important;
   }
@@ -4135,13 +4135,13 @@ a.lp-boatCard:hover .lp-boatImg {
 
 /* Source: pages\boatDetail.css */
 
-/* Страница катера — вариант в духе Boatsetter (светлый фон, широкая галерея, карточка брони). */
+/* РЎС‚СЂР°РЅРёС†Р° РєР°С‚РµСЂР° вЂ” РІР°СЂРёР°РЅС‚ РІ РґСѓС…Рµ Boatsetter (СЃРІРµС‚Р»С‹Р№ С„РѕРЅ, С€РёСЂРѕРєР°СЏ РіР°Р»РµСЂРµСЏ, РєР°СЂС‚РѕС‡РєР° Р±СЂРѕРЅРё). */
 
 .bd-page {
   min-height: 100vh;
   background: #f5f5f4;
   color: #1e293b;
-  /* ��������� � �������: precision-home --pm-sans */
+  /* Совпадает с главной: precision-home --pm-sans */
   font-family: 'Montserrat', 'Segoe UI Local', system-ui, sans-serif;
   font-size: 18px;
   line-height: 1.5;
@@ -4151,13 +4151,13 @@ a.lp-boatCard:hover .lp-boatImg {
   background: #fff;
   color: #1a1a1a;
   font-family: 'Montserrat', 'Segoe UI Local', system-ui, sans-serif;
-  /* Ширина основного текста — на всю сетку shell; полоса характеристик ограничена отдельно */
+  /* РЁРёСЂРёРЅР° РѕСЃРЅРѕРІРЅРѕРіРѕ С‚РµРєСЃС‚Р° вЂ” РЅР° РІСЃСЋ СЃРµС‚РєСѓ shell; РїРѕР»РѕСЃР° С…Р°СЂР°РєС‚РµСЂРёСЃС‚РёРє РѕРіСЂР°РЅРёС‡РµРЅР° РѕС‚РґРµР»СЊРЅРѕ */
   --bd-content-max: 100%;
-  /* clip вместо hidden — иначе у предка «ломается» position: sticky у карточки брони */
+  /* clip РІРјРµСЃС‚Рѕ hidden вЂ” РёРЅР°С‡Рµ Сѓ РїСЂРµРґРєР° В«Р»РѕРјР°РµС‚СЃСЏВ» position: sticky Сѓ РєР°СЂС‚РѕС‡РєРё Р±СЂРѕРЅРё */
   overflow-x: clip;
 }
 
-/* Шапка в духе boat listing: белая полоса, логотип слева, ссылки справа */
+/* РЁР°РїРєР° РІ РґСѓС…Рµ boat listing: Р±РµР»Р°СЏ РїРѕР»РѕСЃР°, Р»РѕРіРѕС‚РёРї СЃР»РµРІР°, СЃСЃС‹Р»РєРё СЃРїСЂР°РІР° */
 .bd-topBar {
   position: sticky;
   top: 0;
@@ -4480,12 +4480,12 @@ a.lp-boatCard:hover .lp-boatImg {
   box-sizing: border-box;
 }
 
-/* Карточка брони чуть заходит на галерею снизу (как на референсе) — shell почти вплотную */
+/* РљР°СЂС‚РѕС‡РєР° Р±СЂРѕРЅРё С‡СѓС‚СЊ Р·Р°С…РѕРґРёС‚ РЅР° РіР°Р»РµСЂРµСЋ СЃРЅРёР·Сѓ (РєР°Рє РЅР° СЂРµС„РµСЂРµРЅСЃРµ) вЂ” shell РїРѕС‡С‚Рё РІРїР»РѕС‚РЅСѓСЋ */
 .bd-page--bs > .bd-galleryBleed + .bd-shell {
   margin-top: 0;
 }
 
-/* Shell: под фото — 2 колонки; по бокам шире поля от краёв экрана */
+/* Shell: РїРѕРґ С„РѕС‚Рѕ вЂ” 2 РєРѕР»РѕРЅРєРё; РїРѕ Р±РѕРєР°Рј С€РёСЂРµ РїРѕР»СЏ РѕС‚ РєСЂР°С‘РІ СЌРєСЂР°РЅР° */
 .bd-page--bs .bd-shell {
   max-width: none;
   width: 100%;
@@ -4493,7 +4493,7 @@ a.lp-boatCard:hover .lp-boatImg {
   padding: 25px clamp(40px, 5.5vw, 88px) 56px;
 }
 
-/* Сетка: слева заголовок + весь контент, справа бронь — высота строки по контенту, карточка уезжает при скролле вместе с текстом */
+/* РЎРµС‚РєР°: СЃР»РµРІР° Р·Р°РіРѕР»РѕРІРѕРє + РІРµСЃСЊ РєРѕРЅС‚РµРЅС‚, СЃРїСЂР°РІР° Р±СЂРѕРЅСЊ вЂ” РІС‹СЃРѕС‚Р° СЃС‚СЂРѕРєРё РїРѕ РєРѕРЅС‚РµРЅС‚Сѓ, РєР°СЂС‚РѕС‡РєР° СѓРµР·Р¶Р°РµС‚ РїСЂРё СЃРєСЂРѕР»Р»Рµ РІРјРµСЃС‚Рµ СЃ С‚РµРєСЃС‚РѕРј */
 .bd-detailGrid {
   min-width: 0;
 }
@@ -4510,7 +4510,7 @@ a.lp-boatCard:hover .lp-boatImg {
   flex-direction: column;
 }
 
-/* Текст «Катер» и остальной main — на всю ширину левой колонки (не min(720px)) */
+/* РўРµРєСЃС‚ В«РљР°С‚РµСЂВ» Рё РѕСЃС‚Р°Р»СЊРЅРѕР№ main вЂ” РЅР° РІСЃСЋ С€РёСЂРёРЅСѓ Р»РµРІРѕР№ РєРѕР»РѕРЅРєРё (РЅРµ min(720px)) */
 .bd-page--bs .bd-detailGrid__leftCol .bd-main {
   max-width: none;
   width: 100%;
@@ -4552,7 +4552,7 @@ a.lp-boatCard:hover .lp-boatImg {
     display: none;
   }
 
-  /* Левая колонка: hero + контент в одном flex — нет «дыры» под карточку; справа только бронь */
+  /* Р›РµРІР°СЏ РєРѕР»РѕРЅРєР°: hero + РєРѕРЅС‚РµРЅС‚ РІ РѕРґРЅРѕРј flex вЂ” РЅРµС‚ В«РґС‹СЂС‹В» РїРѕРґ РєР°СЂС‚РѕС‡РєСѓ; СЃРїСЂР°РІР° С‚РѕР»СЊРєРѕ Р±СЂРѕРЅСЊ */
   .bd-page--bs .bd-detailGrid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) clamp(220px, 34vw, 480px);
@@ -4573,7 +4573,7 @@ a.lp-boatCard:hover .lp-boatImg {
     min-width: 0;
     margin-top: clamp(-72px, -8vw, -40px);
     position: sticky;
-    /* шапка + зазор (в ~3 раза больше прежнего 16px от «вплотную») */
+    /* С€Р°РїРєР° + Р·Р°Р·РѕСЂ (РІ ~3 СЂР°Р·Р° Р±РѕР»СЊС€Рµ РїСЂРµР¶РЅРµРіРѕ 16px РѕС‚ В«РІРїР»РѕС‚РЅСѓСЋВ») */
     top: max(104px, calc(env(safe-area-inset-top, 0px) + 100px));
   }
 
@@ -4594,7 +4594,7 @@ a.lp-boatCard:hover .lp-boatImg {
     gap: 0;
   }
 
-  /* Миниатюры → бронь → блок с заголовком и контентом */
+  /* РњРёРЅРёР°С‚СЋСЂС‹ в†’ Р±СЂРѕРЅСЊ в†’ Р±Р»РѕРє СЃ Р·Р°РіРѕР»РѕРІРєРѕРј Рё РєРѕРЅС‚РµРЅС‚РѕРј */
   .bd-page--bs .bd-shell > .bd-topZone__media {
     order: 1;
   }
@@ -4683,7 +4683,7 @@ a.lp-boatCard:hover .lp-boatImg {
   }
 }
 
-/* Галерея на всю ширину вьюпорта: белый фон, ~65/35, крупные стрелки и FAB */
+/* Р“Р°Р»РµСЂРµСЏ РЅР° РІСЃСЋ С€РёСЂРёРЅСѓ РІСЊСЋРїРѕСЂС‚Р°: Р±РµР»С‹Р№ С„РѕРЅ, ~65/35, РєСЂСѓРїРЅС‹Рµ СЃС‚СЂРµР»РєРё Рё FAB */
 .bd-galleryBleed {
   position: relative;
   z-index: 1;
@@ -4889,7 +4889,7 @@ a.lp-boatCard:hover .lp-boatImg {
 }
 
 @media (min-width: 721px) {
-  /* Два фото в ряд: общая высота, ширина ~65/35 — обе панели одной высоты, картинка cover на всю ячейку */
+  /* Р”РІР° С„РѕС‚Рѕ РІ СЂСЏРґ: РѕР±С‰Р°СЏ РІС‹СЃРѕС‚Р°, С€РёСЂРёРЅР° ~65/35 вЂ” РѕР±Рµ РїР°РЅРµР»Рё РѕРґРЅРѕР№ РІС‹СЃРѕС‚С‹, РєР°СЂС‚РёРЅРєР° cover РЅР° РІСЃСЋ СЏС‡РµР№РєСѓ */
   .bd-galleryBleed__grid:not(.bd-galleryBleed__grid--single) {
     align-items: stretch;
     grid-template-rows: clamp(360px, min(64vh, 72vw), 880px);
@@ -5013,7 +5013,7 @@ a.lp-boatCard:hover .lp-boatImg {
   }
 }
 
-/* Двухколоночный контент + сайдбар */
+/* Р”РІСѓС…РєРѕР»РѕРЅРѕС‡РЅС‹Р№ РєРѕРЅС‚РµРЅС‚ + СЃР°Р№РґР±Р°СЂ */
 .bd-split {
   display: flex;
   flex-direction: row;
@@ -5092,7 +5092,7 @@ a.lp-boatCard:hover .lp-boatImg {
   }
 }
 
-/* Заголовок листинга */
+/* Р—Р°РіРѕР»РѕРІРѕРє Р»РёСЃС‚РёРЅРіР° */
 .bd-heroBs {
   margin-bottom: 8px;
 }
@@ -5135,7 +5135,7 @@ a.lp-boatCard:hover .lp-boatImg {
   color: #6b7280;
 }
 
-/* Полоса характеристик (иконка → значение → подпись, разделители как на референсе) */
+/* РџРѕР»РѕСЃР° С…Р°СЂР°РєС‚РµСЂРёСЃС‚РёРє (РёРєРѕРЅРєР° в†’ Р·РЅР°С‡РµРЅРёРµ в†’ РїРѕРґРїРёСЃСЊ, СЂР°Р·РґРµР»РёС‚РµР»Рё РєР°Рє РЅР° СЂРµС„РµСЂРµРЅСЃРµ) */
 .bd-specStrip {
   display: flex;
   flex-wrap: wrap;
@@ -5190,7 +5190,7 @@ a.lp-boatCard:hover .lp-boatImg {
   }
 }
 
-/* Полоса под заголовком — крупнее, в тон 20px основного текста страницы BS */
+/* РџРѕР»РѕСЃР° РїРѕРґ Р·Р°РіРѕР»РѕРІРєРѕРј вЂ” РєСЂСѓРїРЅРµРµ, РІ С‚РѕРЅ 20px РѕСЃРЅРѕРІРЅРѕРіРѕ С‚РµРєСЃС‚Р° СЃС‚СЂР°РЅРёС†С‹ BS */
 .bd-page--bs .bd-specStrip__title {
   font-size: 16px;
   line-height: 1.3;
@@ -5307,7 +5307,7 @@ a.lp-boatCard:hover .lp-boatImg {
   }
 }
 
-/* Секции контента */
+/* РЎРµРєС†РёРё РєРѕРЅС‚РµРЅС‚Р° */
 .bd-blockBs {
   margin-top: 36px;
   padding-top: 32px;
@@ -5328,7 +5328,7 @@ a.lp-boatCard:hover .lp-boatImg {
   letter-spacing: -0.02em;
 }
 
-/* Страница BS: секции и hero в духе Boatsetter (порядок блоков и футер сайта не меняются) */
+/* РЎС‚СЂР°РЅРёС†Р° BS: СЃРµРєС†РёРё Рё hero РІ РґСѓС…Рµ Boatsetter (РїРѕСЂСЏРґРѕРє Р±Р»РѕРєРѕРІ Рё С„СѓС‚РµСЂ СЃР°Р№С‚Р° РЅРµ РјРµРЅСЏСЋС‚СЃСЏ) */
 .bd-page--bs .bd-heroBs__title {
   color: #002b5b;
   font-weight: 600;
@@ -5566,7 +5566,7 @@ a.lp-boatCard:hover .lp-boatImg {
   color: #6b7280;
 }
 
-/* Удобства — три колонки, иконка-галочка в круге (как на референсе листинга) */
+/* РЈРґРѕР±СЃС‚РІР° вЂ” С‚СЂРё РєРѕР»РѕРЅРєРё, РёРєРѕРЅРєР°-РіР°Р»РѕС‡РєР° РІ РєСЂСѓРіРµ (РєР°Рє РЅР° СЂРµС„РµСЂРµРЅСЃРµ Р»РёСЃС‚РёРЅРіР°) */
 .bd-amenityColsBs {
   margin: 0;
   padding: 0;
@@ -5885,7 +5885,7 @@ a.lp-boatCard:hover .lp-boatImg {
   line-height: 1.55;
 }
 
-/* Единый 20px для текста подпунктов в основном блоке (удобства, характеристики, отзывы и т.д.) */
+/* Р•РґРёРЅС‹Р№ 20px РґР»СЏ С‚РµРєСЃС‚Р° РїРѕРґРїСѓРЅРєС‚РѕРІ РІ РѕСЃРЅРѕРІРЅРѕРј Р±Р»РѕРєРµ (СѓРґРѕР±СЃС‚РІР°, С…Р°СЂР°РєС‚РµСЂРёСЃС‚РёРєРё, РѕС‚Р·С‹РІС‹ Рё С‚.Рґ.) */
 .bd-page--bs .bd-main .bd-amenityColsBs__item,
 .bd-page--bs .bd-main .bd-amenityColsBs__more,
 .bd-page--bs .bd-main .bd-specTableBs dt,
@@ -6163,7 +6163,7 @@ a.lp-boatCard:hover .lp-boatImg {
   }
 }
 
-/* Карточка брони: стиль как на референсе (шапка, строки с иконками, синяя CTA, «Условия») */
+/* РљР°СЂС‚РѕС‡РєР° Р±СЂРѕРЅРё: СЃС‚РёР»СЊ РєР°Рє РЅР° СЂРµС„РµСЂРµРЅСЃРµ (С€Р°РїРєР°, СЃС‚СЂРѕРєРё СЃ РёРєРѕРЅРєР°РјРё, СЃРёРЅСЏСЏ CTA, В«РЈСЃР»РѕРІРёСЏВ») */
 .bd-bookCard--setter {
   padding: 22px 22px 20px;
   border: 1px solid #e0e0e0;
@@ -6243,7 +6243,7 @@ a.lp-boatCard:hover .lp-boatImg {
   margin-top: 0;
 }
 
-/* Чипы длительности: один ряд + горизонтальный скролл (как в референсе) */
+/* Р§РёРїС‹ РґР»РёС‚РµР»СЊРЅРѕСЃС‚Рё: РѕРґРёРЅ СЂСЏРґ + РіРѕСЂРёР·РѕРЅС‚Р°Р»СЊРЅС‹Р№ СЃРєСЂРѕР»Р» (РєР°Рє РІ СЂРµС„РµСЂРµРЅСЃРµ) */
 .bd-bookCard__chips {
   display: flex;
   flex-wrap: nowrap;
@@ -6475,7 +6475,7 @@ a.lp-boatCard:hover .lp-boatImg {
   outline-offset: 4px;
 }
 
-/* Степпер гостей в строке карточки */
+/* РЎС‚РµРїРїРµСЂ РіРѕСЃС‚РµР№ РІ СЃС‚СЂРѕРєРµ РєР°СЂС‚РѕС‡РєРё */
 .bd-bookCard--setter .bd-bookCard__guestRow--inline {
   display: flex;
   align-items: center;
@@ -7228,7 +7228,7 @@ a.lp-boatCard:hover .lp-boatImg {
   font-weight: 700;
 }
 
-/* Полноэкранная галерея по клику на фото */
+/* РџРѕР»РЅРѕСЌРєСЂР°РЅРЅР°СЏ РіР°Р»РµСЂРµСЏ РїРѕ РєР»РёРєСѓ РЅР° С„РѕС‚Рѕ */
 .bd-galleryLightbox {
   position: fixed;
   inset: 0;
@@ -7338,7 +7338,7 @@ a.lp-boatCard:hover .lp-boatImg {
   pointer-events: none;
 }
 
-/* Похожие катера: полная ширина вьюпорта, блок перед футером сайта */
+/* РџРѕС…РѕР¶РёРµ РєР°С‚РµСЂР°: РїРѕР»РЅР°СЏ С€РёСЂРёРЅР° РІСЊСЋРїРѕСЂС‚Р°, Р±Р»РѕРє РїРµСЂРµРґ С„СѓС‚РµСЂРѕРј СЃР°Р№С‚Р° */
 .bd-page--bs .bd-similar {
   width: 100vw;
   max-width: 100%;
@@ -7386,7 +7386,7 @@ a.lp-boatCard:hover .lp-boatImg {
 
 /* Source: components\SiteFooter.css */
 
-/* Футер в духе Boatsetter: пять колонок + нижняя полоса */
+/* Р¤СѓС‚РµСЂ РІ РґСѓС…Рµ Boatsetter: РїСЏС‚СЊ РєРѕР»РѕРЅРѕРє + РЅРёР¶РЅСЏСЏ РїРѕР»РѕСЃР° */
 
 .sf {
   background: #fff;
@@ -7877,7 +7877,7 @@ a.lp-boatCard:hover .lp-boatImg {
 
 .fm-sheet {
   width: 100%;
-  max-width: 690px; /* ���� 920 � ��� �� �������� */
+  max-width: 690px; /* было 920 — уже на четверть */
   max-height: 92vh;
   background: #fff;
   border-radius: 20px 20px 0 0;
@@ -8180,7 +8180,7 @@ a.lp-boatCard:hover .lp-boatImg {
   display: none;
 }
 
-/* Длительность: одна строка, скролл по горизонтали (как в модалке .fm-chipRow--scroll) */
+/* Р”Р»РёС‚РµР»СЊРЅРѕСЃС‚СЊ: РѕРґРЅР° СЃС‚СЂРѕРєР°, СЃРєСЂРѕР»Р» РїРѕ РіРѕСЂРёР·РѕРЅС‚Р°Р»Рё (РєР°Рє РІ РјРѕРґР°Р»РєРµ .fm-chipRow--scroll) */
 .fqd-panel .fqd-durationRow {
   flex-wrap: nowrap;
   overflow-x: auto;
@@ -8199,7 +8199,7 @@ a.lp-boatCard:hover .lp-boatImg {
 
 /* Source: components\booking\bookingCalendarModal.css */
 
-/* Модальное окно календаря — стиль как на референсе: светлый фон, синие акценты */
+/* РњРѕРґР°Р»СЊРЅРѕРµ РѕРєРЅРѕ РєР°Р»РµРЅРґР°СЂСЏ вЂ” СЃС‚РёР»СЊ РєР°Рє РЅР° СЂРµС„РµСЂРµРЅСЃРµ: СЃРІРµС‚Р»С‹Р№ С„РѕРЅ, СЃРёРЅРёРµ Р°РєС†РµРЅС‚С‹ */
 
 .bcm-overlay {
   position: fixed;
