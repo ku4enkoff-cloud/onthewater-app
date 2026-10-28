@@ -17,13 +17,7 @@ const BENEFITS = [
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
         <path
-          d="M12 3.5v17M8.2 7.2h7.6M7 11.2h10M9.2 20.5h5.6"
-          stroke="currentColor"
-          strokeWidth="1.7"
-          strokeLinecap="round"
-        />
-        <path
-          d="M12 3.5c2.2 1.4 3.6 2.6 3.6 4.4S14.2 10.5 12 10.5 8.4 9.7 8.4 7.9 9.8 4.9 12 3.5Z"
+          d="M12 20.4S4.5 15.2 4.5 9.8A3.9 3.9 0 0 1 12 7.2a3.9 3.9 0 0 1 7.5 2.6c0 5.4-7.5 10.6-7.5 10.6Z"
           stroke="currentColor"
           strokeWidth="1.7"
           strokeLinejoin="round"
@@ -37,15 +31,8 @@ const BENEFITS = [
     text: 'Бронируйте катера быстро и без лишних шагов.',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-        <rect x="4" y="5" width="16" height="15" rx="2.2" stroke="currentColor" strokeWidth="1.7" />
-        <path d="M4 10h16M8 3.5v4M16 3.5v4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-        <path
-          d="M9.4 14.6 11.1 16.3l3.7-3.7"
-          stroke="currentColor"
-          strokeWidth="1.7"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+        <rect x="3.75" y="5" width="16.5" height="15" rx="2" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M3.75 10h16.5M8 3.5v4M16 3.5v4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
       </svg>
     ),
   },
@@ -56,16 +43,10 @@ const BENEFITS = [
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
         <path
-          d="M5 17.2V8.7A2.7 2.7 0 0 1 7.7 6h8.6A2.7 2.7 0 0 1 19 8.7v5.2a2.7 2.7 0 0 1-2.7 2.7H9l-4 2.6v-1.9Z"
+          d="M5 17.2V8.6A2.6 2.6 0 0 1 7.6 6h8.8A2.6 2.6 0 0 1 19 8.6v5.4a2.6 2.6 0 0 1-2.6 2.6H9.1L5 19.4v-2.2Z"
           stroke="currentColor"
           strokeWidth="1.7"
           strokeLinejoin="round"
-        />
-        <path
-          d="M9 11.2h.01M12 11.2h.01M15 11.2h.01"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
         />
       </svg>
     ),

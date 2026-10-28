@@ -136,17 +136,17 @@
 
 .auth-register__benefit {
   display: grid;
-  grid-template-columns: 44px 1fr;
-  gap: 14px;
+  grid-template-columns: 24px 1fr;
+  gap: 12px;
   align-items: start;
 }
 
 .auth-register__benefitIcon {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--reg-radius);
-  background: var(--reg-navy-soft);
-  color: var(--reg-navy);
+  width: 24px;
+  height: 24px;
+  margin-top: 1px;
+  background: none;
+  color: var(--reg-ink);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -155,7 +155,6 @@
 
 .auth-register__benefitBody {
   min-width: 0;
-  padding-top: 2px;
 }
 
 .auth-register__benefitTitle {
