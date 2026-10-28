@@ -7155,7 +7155,8 @@ a.lp-boatCard:hover .lp-boatImg {
 }
 
 .legal-page__inner {
-  max-width: 760px;
+  max-width: none;
+  width: 100%;
   margin: 0;
   background: transparent;
   border-radius: 0;
