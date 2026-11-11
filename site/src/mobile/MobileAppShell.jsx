@@ -15,7 +15,7 @@ function showTabsForPath(pathname) {
 export default function MobileAppShell() {
   const { pathname } = useLocation()
   const showTabs = showTabsForPath(pathname)
-  const isBoatsMap = pathname === '/boats'
+  const isBoatsMap = pathname.replace(/\/+$/, '') === '/boats'
 
   return (
     <ChatUnreadProvider>

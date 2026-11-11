@@ -83,7 +83,7 @@ function TermsPage() {
 
 function DesktopLayout() {
   const { pathname } = useLocation()
-  const isBoatsSearch = pathname === '/boats'
+  const isBoatsSearch = pathname.replace(/\/+$/, '') === '/boats'
   return (
     <>
       <IosAppPrompt />
