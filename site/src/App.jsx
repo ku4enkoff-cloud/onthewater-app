@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useRef } from 'react'
+import { Suspense, lazy, useEffect, useLayoutEffect, useRef } from 'react'
 import { Routes, Route, useLocation, useParams, Navigate, Outlet } from 'react-router-dom'
 import HomePage from './pages/HomePage.jsx'
 import BoatsSearchPage from './pages/BoatsSearchPage.jsx'
@@ -84,6 +84,10 @@ function TermsPage() {
 function DesktopLayout() {
   const { pathname } = useLocation()
   const isBoatsSearch = pathname.replace(/\/+$/, '') === '/boats'
+  useLayoutEffect(() => {
+    document.documentElement.classList.toggle('site-zoom-off', isBoatsSearch)
+    return () => document.documentElement.classList.remove('site-zoom-off')
+  }, [isBoatsSearch])
   return (
     <>
       <IosAppPrompt />
