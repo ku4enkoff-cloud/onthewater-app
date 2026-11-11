@@ -3,6 +3,13 @@ import { fetchMe, loginAuth } from '../api/auth'
 
 const TOKEN_KEY = 'boatrent_site_token'
 
+export const OWNER_ACCOUNT_ERROR = 'OWNER_ACCOUNT'
+
+/** Сайт — только для клиентов; владельцы работают в отдельном приложении. */
+function isOwnerAccount(user) {
+  return user?.role === 'owner'
+}
+
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
@@ -21,6 +28,10 @@ export function AuthProvider({ children }) {
       try {
         const me = await fetchMe(saved)
         if (cancelled) return
+        if (isOwnerAccount(me)) {
+          localStorage.removeItem(TOKEN_KEY)
+          return
+        }
         setToken(saved)
         setUser(me)
       } catch {
@@ -43,6 +54,11 @@ export function AuthProvider({ children }) {
     const nextToken = String(payload?.token || '')
     const nextUser = payload?.user || null
     if (!nextToken || !nextUser) throw new Error('Сервер вернул некорректный ответ авторизации')
+    if (isOwnerAccount(nextUser)) {
+      const err = new Error('Это аккаунт владельца. Управляйте катерами в приложении ONTHEWATER для владельцев.')
+      err.code = OWNER_ACCOUNT_ERROR
+      throw err
+    }
     localStorage.setItem(TOKEN_KEY, nextToken)
     setToken(nextToken)
     setUser(nextUser)

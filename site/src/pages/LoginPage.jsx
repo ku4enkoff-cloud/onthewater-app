@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { OWNER_ACCOUNT_ERROR, useAuth } from '../context/AuthContext'
+import { OWNER_ANDROID_PLAY_URL, OWNER_IOS_APP_STORE_URL } from '../constants/appStores'
 import { useNoIndexSeo } from '../seo/useNoIndexSeo.js'
 import '../styles/precision-home.css'
 import AuthSplitAside from '../components/auth/AuthSplitAside.jsx'
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [ownerBlocked, setOwnerBlocked] = useState(false)
 
   if (user) return <Navigate to="/account" replace />
 
@@ -23,11 +25,17 @@ export default function LoginPage() {
   const onSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setOwnerBlocked(false)
     setSubmitting(true)
     try {
       await login(form)
       navigate(next, { replace: true })
     } catch (err) {
+      if (err?.code === OWNER_ACCOUNT_ERROR) {
+        setOwnerBlocked(true)
+        setForm((v) => ({ ...v, password: '' }))
+        return
+      }
       setError(err?.message || 'Не удалось войти')
     } finally {
       setSubmitting(false)
@@ -82,6 +90,23 @@ export default function LoginPage() {
             </label>
 
             {error ? <p className="auth-error">{error}</p> : null}
+            {ownerBlocked ? (
+              <div className="auth-ownerNotice" role="alert">
+                <strong>Это аккаунт владельца</strong>
+                <p>
+                  Личный кабинет на сайте — для арендаторов. Брони, календарь и чаты с клиентами доступны в приложении
+                  ONTHEWATER для владельцев.
+                </p>
+                <div className="auth-ownerNotice__stores">
+                  <a href={OWNER_IOS_APP_STORE_URL} target="_blank" rel="noopener noreferrer">
+                    App Store
+                  </a>
+                  <a href={OWNER_ANDROID_PLAY_URL} target="_blank" rel="noopener noreferrer">
+                    Google Play
+                  </a>
+                </div>
+              </div>
+            ) : null}
 
             <button type="submit" className="auth-submit auth-submit--brand" disabled={submitting}>
               {submitting ? 'Входим…' : 'Войти'}
