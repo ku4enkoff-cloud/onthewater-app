@@ -31,14 +31,22 @@ function fingerprintBoats(boats, getPriceLabel) {
     .join('|')
 }
 
+/** Карта не уменьшается вместе с сайтом (--site-zoom в global.css), поэтому метки масштабируем сами */
+function siteZoom() {
+  if (typeof document === 'undefined') return 1
+  const z = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--site-zoom'))
+  return z > 0 && z < 1 ? z : 1
+}
+
 function imageIconOptions(icon, zIndex = 600) {
-  const [w, h] = icon.size
-  const [ox, oy] = icon.offset
+  const k = siteZoom()
+  const [w, h] = icon.size.map((v) => Math.round(v * k))
+  const [ox, oy] = icon.offset.map((v) => Math.round(v * k))
   return {
     iconLayout: 'default#image',
     iconImageHref: icon.href,
-    iconImageSize: icon.size,
-    iconImageOffset: icon.offset,
+    iconImageSize: [w, h],
+    iconImageOffset: [ox, oy],
     iconShape: {
       type: 'Rectangle',
       coordinates: [
