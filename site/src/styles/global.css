@@ -1111,6 +1111,29 @@ body {
   box-sizing: border-box;
 }
 
+/*
+ * Ноутбуки 1920×1080 с масштабом Windows 125–150% дают окно 1280–1536 CSS px —
+ * сайт уменьшаем целиком. Карты возвращаем в натуральный масштаб: Яндекс.Карты
+ * и превью у маркеров считают координаты в пикселях без учёта zoom.
+ */
+@media (min-width: 1025px) and (max-width: 1439px) {
+  html {
+    --site-zoom: 0.85;
+    zoom: var(--site-zoom);
+  }
+
+  #root {
+    min-height: calc(100svh / var(--site-zoom));
+  }
+
+  .bs-mapShell,
+  .pm-map,
+  .pm-nearby__map,
+  .bd-locationMap {
+    zoom: calc(1 / var(--site-zoom));
+  }
+}
+
 .app-outlet {
   flex: 1 0 auto;
   display: flex;

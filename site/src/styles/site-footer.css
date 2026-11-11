@@ -282,9 +282,3 @@
     grid-template-columns: 1fr;
   }
 }
-
-@media (min-width: 981px) and (max-width: 1440px) {
-  .pm-footer {
-    padding-top: 44px;
-  }
-}

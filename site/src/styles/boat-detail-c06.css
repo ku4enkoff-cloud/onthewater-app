@@ -1243,25 +1243,3 @@
     max-height: max(300px, calc(100vh - 230px));
   }
 }
-
-/* Ноутбуки с масштабом Windows 125–150%: окно 1280–1440 CSS px */
-@media (min-width: 961px) and (max-width: 1440px) {
-  .bd-page--c06 .bd-detailGrid {
-    grid-template-columns: minmax(0, 1.35fr) minmax(300px, 350px);
-  }
-
-  .bd-c06Hero__title {
-    font-size: clamp(26px, 2.4vw, 34px);
-  }
-
-  .bd-c06Book {
-    padding: 18px 18px 16px;
-  }
-
-  .bd-c06Book .pm-cal__day {
-    aspect-ratio: auto;
-    width: 36px;
-    height: 36px;
-    justify-self: center;
-  }
-}

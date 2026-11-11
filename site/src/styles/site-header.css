@@ -325,15 +325,3 @@
     display: none;
   }
 }
-
-/* Ноутбуки с масштабом Windows 125–150%: окно 1280–1440 CSS px */
-@media (min-width: 981px) and (max-width: 1440px) {
-  .pm-header__inner {
-    min-height: 60px;
-    padding-block: 8px;
-  }
-
-  .pm-nav {
-    gap: 24px;
-  }
-}
