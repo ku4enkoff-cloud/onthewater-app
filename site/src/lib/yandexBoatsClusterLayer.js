@@ -354,7 +354,6 @@ export function createBoatsClusterLayer(ymaps, map, options = {}) {
 
   const setBoats = (boats) => {
     allBoats = boats || []
-    lastRenderKey = ''
     rebuildPlacemarks()
   }
 

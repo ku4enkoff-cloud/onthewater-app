@@ -1115,21 +1115,21 @@ body {
  * Ноутбуки 1920×1080 с масштабом Windows 125–150% дают окно 1280–1536 CSS px —
  * сайт уменьшаем целиком. Карты возвращаем в натуральный масштаб: Яндекс.Карты
  * и превью у маркеров считают координаты в пикселях без учёта zoom.
- * На /boats (полноэкранная карта) zoom выключен: под ним карта тормозит при масштабировании.
  */
 @media (min-width: 1025px) and (max-width: 1439px) {
-  html:not(.site-zoom-off) {
+  html {
     --site-zoom: 0.85;
     zoom: var(--site-zoom);
   }
 
-  html:not(.site-zoom-off) #root {
+  #root {
     min-height: calc(100svh / var(--site-zoom));
   }
 
-  html:not(.site-zoom-off) .pm-map,
-  html:not(.site-zoom-off) .pm-nearby__map,
-  html:not(.site-zoom-off) .bd-locationMap {
+  .bs-mapShell,
+  .pm-map,
+  .pm-nearby__map,
+  .bd-locationMap {
     zoom: calc(1 / var(--site-zoom));
   }
 }

@@ -17,6 +17,7 @@ import {
   formatGuestsQuickLabel,
   isRegion,
   boatInMapBounds,
+  distanceKm,
   readNearestCityFromStorage,
 } from '../boatSearchUtils'
 import BoatResultCard from '../components/search/BoatResultCard.jsx'
@@ -351,15 +352,17 @@ export default function BoatsSearchPage() {
     setCityFilter('')
   }, [])
 
+  const lastGeoSearchRef = useRef(null)
   const handleGeoSearch = useCallback(async ({ lat, lng, radius }) => {
-    setLoading(true)
+    // Приближение/сдвиг внутри уже загруженного круга — данные те же, запрос не нужен
+    const prev = lastGeoSearchRef.current
+    if (prev && distanceKm(prev.lat, prev.lng, lat, lng) + radius <= prev.radius) return
+    lastGeoSearchRef.current = { lat, lng, radius }
     try {
       const list = await fetchBoatsSearch({ lat, lng, radius })
-      setAllBoats(list)
+      if (lastGeoSearchRef.current?.lat === lat && lastGeoSearchRef.current?.lng === lng) setAllBoats(list)
     } catch {
-      setAllBoats([])
-    } finally {
-      setLoading(false)
+      lastGeoSearchRef.current = prev
     }
   }, [])
 
@@ -369,6 +372,7 @@ export default function BoatsSearchPage() {
 
   useEffect(() => {
     setMapBounds(null)
+    lastGeoSearchRef.current = null
   }, [locationKey])
 
   const boatsOnDate = useMemo(
