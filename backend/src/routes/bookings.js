@@ -3,10 +3,13 @@ const { pool } = require('../db');
 const { authenticate } = require('../middleware/auth');
 const { sendPush } = require('../utils/push');
 const { sendBookingStatusEmail } = require('../services/email');
+const { emitToUser } = require('../realtime');
 
 const router = express.Router();
 
-async function sendBookingPushToClient(userId, title, body, bookingId) {
+/** quiet: действие совершил сам клиент — сайт обновит данные, но без звука. */
+async function sendBookingPushToClient(userId, title, body, bookingId, { quiet = false } = {}) {
+    emitToUser(userId, 'booking:updated', { booking_id: bookingId, title, body, quiet });
     try {
         const { rows } = await pool.query('SELECT push_token FROM users WHERE id = $1', [userId]);
         const token = rows[0]?.push_token;
@@ -179,7 +182,7 @@ router.post('/:id/cancel', authenticate, async (req, res, next) => {
             const body = cancelledByOwner
                 ? `Владелец отменил бронирование «${booking.boat_title || 'Катер'}».`
                 : `Вы отменили бронирование «${booking.boat_title || 'Катер'}».`;
-            await sendBookingPushToClient(booking.user_id, title, body, booking.id);
+            await sendBookingPushToClient(booking.user_id, title, body, booking.id, { quiet: !cancelledByOwner });
             await sendBookingEmailToClient(
                 booking.user_id,
                 booking,

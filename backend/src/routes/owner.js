@@ -5,10 +5,12 @@ const { sendPush } = require('../utils/push');
 const { attachLastMessageMeta } = require('../utils/chatFormat');
 const { sendBookingStatusEmail } = require('../services/email');
 const { getBlockedUserIdsFor } = require('../utils/moderationHelpers');
+const { emitToUser } = require('../realtime');
 
 const router = express.Router();
 
 async function sendBookingPushToClient(userId, title, body, bookingId) {
+    emitToUser(userId, 'booking:updated', { booking_id: bookingId, title, body });
     try {
         const { rows } = await pool.query('SELECT push_token FROM users WHERE id = $1', [userId]);
         const token = rows[0]?.push_token;

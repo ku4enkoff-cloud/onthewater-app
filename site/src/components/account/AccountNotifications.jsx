@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchNotificationSettings, updateNotificationSettings } from '../../api/auth'
+import { isSoundEnabled, playNotifySound, setSoundEnabled } from '../../lib/notifySound'
 
 const ITEMS = [
   {
@@ -22,6 +23,14 @@ const ITEMS = [
 export default function AccountNotifications({ token, email }) {
   const [settings, setSettings] = useState(null)
   const [error, setError] = useState('')
+  const [sound, setSound] = useState(isSoundEnabled)
+
+  const toggleSound = () => {
+    const next = !sound
+    setSound(next)
+    setSoundEnabled(next)
+    if (next) playNotifySound('message', { force: true })
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -78,6 +87,25 @@ export default function AccountNotifications({ token, email }) {
           ))}
         </div>
       ) : null}
+
+      <h2 className="acc-subtitle acc-subtitle--spaced">На сайте</h2>
+      <div className="acc-panel">
+        <label className="acc-switchRow">
+          <span>
+            <strong>Звуковые оповещения</strong>
+            <span>Короткий сигнал при новом сообщении и изменении статуса бронирования, пока сайт открыт.</span>
+          </span>
+          <input type="checkbox" className="acc-switch" checked={sound} onChange={toggleSound} />
+        </label>
+        <div className="acc-soundPreview">
+          <button type="button" className="acc-btn acc-btn--ghost" onClick={() => playNotifySound('message', { force: true })}>
+            Сигнал сообщения
+          </button>
+          <button type="button" className="acc-btn acc-btn--ghost" onClick={() => playNotifySound('booking', { force: true })}>
+            Сигнал бронирования
+          </button>
+        </div>
+      </div>
     </section>
   )
 }

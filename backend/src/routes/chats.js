@@ -6,6 +6,7 @@ const { attachLastMessageMeta } = require('../utils/chatFormat');
 const { sendNewMessageEmail } = require('../services/email');
 const { validateMessageText } = require('../utils/contentFilter');
 const { getBlockedUserIdsFor, isBlockedBetween } = require('../utils/moderationHelpers');
+const { emitToUser } = require('../realtime');
 
 const router = express.Router();
 
@@ -314,11 +315,9 @@ router.post('/:id/messages', authenticate, async (req, res, next) => {
              WHERE id = $2`,
             [text, chatId]
         );
-        const io = req.app.get('io');
-        if (io) {
-            const payload = { chat_id: chatId, message: rows[0] };
-            io.to(`user_${chat.user_id}`).to(`user_${chat.owner_id}`).emit('chat:message', payload);
-        }
+        const payload = { chat_id: chatId, message: rows[0] };
+        emitToUser(chat.user_id, 'chat:message', payload);
+        emitToUser(chat.owner_id, 'chat:message', payload);
         sendMessagePushToRecipient(recipientId, senderName, text, chatId);
         sendMessageEmailToClientIfEnabled({
             recipientId,

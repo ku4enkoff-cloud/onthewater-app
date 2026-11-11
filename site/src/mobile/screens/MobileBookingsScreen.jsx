@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { cancelBooking, fetchMyBookings } from '../../api/bookings'
 import { getListPhotoUrl } from '../../config'
 import { useAuth } from '../../context/AuthContext'
+import { useBookingEvents } from '../../context/RealtimeContext.jsx'
 import { useNoIndexSeo } from '../../seo/useNoIndexSeo'
 import UnauthorizedCard from '../components/UnauthorizedCard.jsx'
 
@@ -64,6 +65,10 @@ export default function MobileBookingsScreen() {
     setLoading(true)
     load()
   }, [load])
+
+  useBookingEvents(() => {
+    load()
+  })
 
   if (!user) {
     return (

@@ -9,7 +9,7 @@ import { createChat, fetchUnreadMessagesCount } from '../api/chats'
 import { getPhotoUrl } from '../config'
 import { useNoIndexSeo } from '../seo/useNoIndexSeo.js'
 import { useVisiblePolling } from '../hooks/useVisiblePolling.js'
-import { useChatMessageEvents } from '../context/RealtimeContext.jsx'
+import { useBookingEvents, useChatMessageEvents } from '../context/RealtimeContext.jsx'
 import { bookingGroup } from '../components/account/accountUtils'
 import AccountBookings from '../components/account/AccountBookings.jsx'
 import AccountMessages from '../components/account/AccountMessages.jsx'
@@ -102,6 +102,15 @@ export default function AccountPage() {
   }, [token, tab])
 
   useVisiblePolling(refreshInBackground, 45000)
+
+  useBookingEvents(() => {
+    fetchMyBookings(token)
+      .then((rows) => {
+        setBookings(rows)
+        setBookingsError('')
+      })
+      .catch(() => {})
+  })
 
   useChatMessageEvents(({ message } = {}) => {
     if (tab === 'messages' || !message) return

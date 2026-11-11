@@ -19,6 +19,7 @@ if (!process.env.JWT_SECRET) {
 
 const io = new Server(httpServer, { cors: { origin: '*' } });
 app.set('io', io);
+require('./realtime').setIO(io);
 
 try {
     const { createAdapter } = require('@socket.io/redis-adapter');
