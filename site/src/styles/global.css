@@ -1133,7 +1133,7 @@ body {
     zoom: calc(1 / var(--site-zoom));
   }
 
-  .pm-mapPreview--anchored {
+  html .pm-mapPreview.pm-mapPreview--anchored {
     transform: translate(0, -50%) scale(var(--site-zoom));
     transform-origin: left center;
   }
