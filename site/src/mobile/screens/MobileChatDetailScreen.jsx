@@ -4,6 +4,7 @@ import { ChevronLeft, Send } from 'lucide-react'
 import { fetchChat, fetchChatMessages, sendChatMessage } from '../../api/chats'
 import { useAuth } from '../../context/AuthContext'
 import { useNoIndexSeo } from '../../seo/useNoIndexSeo'
+import { useVisiblePolling } from '../../hooks/useVisiblePolling'
 import { useChatUnread } from '../context/ChatUnreadContext'
 import UnauthorizedCard from '../components/UnauthorizedCard.jsx'
 
@@ -39,6 +40,8 @@ export default function MobileChatDetailScreen() {
     setLoading(true)
     load()
   }, [load])
+
+  useVisiblePolling(load, 5000, Boolean(token && chatId))
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })

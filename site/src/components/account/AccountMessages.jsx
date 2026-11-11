@@ -11,6 +11,7 @@ import {
 } from '../../api/chats'
 import { getPhotoUrl } from '../../config'
 import { boatDetailPath } from '../../boatUrl'
+import { useVisiblePolling } from '../../hooks/useVisiblePolling'
 import { formatChatTime } from './accountUtils'
 
 function previewText(chat) {
@@ -37,22 +38,29 @@ export default function AccountMessages({ token, activeChatId, onSelectChat, onU
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
-  const bottomRef = useRef(null)
+  const msgsRef = useRef(null)
+
+  const viewRef = useRef(view)
+  viewRef.current = view
+  const openChatRef = useRef(activeChatId)
+  openChatRef.current = activeChatId
 
   const loadChats = useCallback(async () => {
     if (!token) return
+    const requestedView = view
     try {
-      const rows = await fetchChats(token, { archived: view === 'archive' })
-      setChats(rows)
-      if (view === 'inbox') {
-        onUnreadChange(rows.reduce((sum, c) => sum + (Number(c.unread_count) || 0), 0))
-      }
+      const rows = await fetchChats(token, { archived: requestedView === 'archive' })
+      if (viewRef.current !== requestedView) return
+      // Открытый диалог считается прочитанным: сервер отметит его при следующем запросе сообщений
+      setChats(
+        rows.map((c) => (String(c.id) === String(openChatRef.current) ? { ...c, unread_count: 0 } : c)),
+      )
     } catch {
-      setChats([])
+      if (viewRef.current === requestedView) setChats([])
     } finally {
-      setLoading(false)
+      if (viewRef.current === requestedView) setLoading(false)
     }
-  }, [token, view, onUnreadChange])
+  }, [token, view])
 
   useEffect(() => {
     setLoading(true)
@@ -64,39 +72,65 @@ export default function AccountMessages({ token, activeChatId, onSelectChat, onU
     [chats, activeChatId],
   )
 
+  const loadMessages = useCallback(
+    async ({ silent = false } = {}) => {
+      const id = openChatRef.current
+      if (!id || !token) return
+      if (!silent) {
+        setMessagesLoading(true)
+        setError('')
+      }
+      try {
+        const rows = await fetchChatMessages(token, id)
+        if (String(openChatRef.current) !== String(id)) return
+        setMessages((prev) => {
+          const sameTail =
+            prev.length === rows.length && String(prev[prev.length - 1]?.id) === String(rows[rows.length - 1]?.id)
+          return sameTail ? prev : rows
+        })
+        setChats((prev) => prev.map((c) => (String(c.id) === String(id) ? { ...c, unread_count: 0 } : c)))
+      } catch {
+        if (!silent && String(openChatRef.current) === String(id)) setMessages([])
+      } finally {
+        if (!silent && String(openChatRef.current) === String(id)) setMessagesLoading(false)
+      }
+    },
+    [token],
+  )
+
   useEffect(() => {
-    if (!activeChatId || !token) {
+    if (!activeChatId) {
       setMessages([])
-      return undefined
+      return
     }
-    let cancelled = false
-    setMessagesLoading(true)
-    setError('')
-    fetchChatMessages(token, activeChatId)
-      .then((rows) => {
-        if (cancelled) return
-        setMessages(rows)
-        setChats((prev) => prev.map((c) => (String(c.id) === String(activeChatId) ? { ...c, unread_count: 0 } : c)))
-      })
-      .catch(() => {
-        if (!cancelled) setMessages([])
-      })
-      .finally(() => {
-        if (!cancelled) setMessagesLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [activeChatId, token])
+    setMessages([])
+    loadMessages()
+  }, [activeChatId, loadMessages])
+
+  useVisiblePolling(() => loadMessages({ silent: true }), 5000, Boolean(activeChatId))
+  useVisiblePolling(() => loadChats(), 8000)
 
   useEffect(() => {
     if (view !== 'inbox') return
     onUnreadChange(chats.reduce((sum, c) => sum + (Number(c.unread_count) || 0), 0))
   }, [chats, view, onUnreadChange])
 
+  const stickToBottomRef = useRef(true)
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: 'end' })
-  }, [messages.length, activeChatId])
+    stickToBottomRef.current = true
+  }, [activeChatId])
+
+  useEffect(() => {
+    const box = msgsRef.current
+    if (box && stickToBottomRef.current) box.scrollTop = box.scrollHeight
+  }, [messages.length, activeChatId, messagesLoading])
+
+  const onMsgsScroll = () => {
+    const box = msgsRef.current
+    if (!box) return
+    stickToBottomRef.current = box.scrollHeight - box.scrollTop - box.clientHeight < 80
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -126,6 +160,7 @@ export default function AccountMessages({ token, activeChatId, onSelectChat, onU
         ),
       )
       setText('')
+      stickToBottomRef.current = true
     } catch (err) {
       setError(err?.message || 'Не удалось отправить сообщение')
     } finally {
@@ -265,7 +300,7 @@ export default function AccountMessages({ token, activeChatId, onSelectChat, onU
                 </div>
               </header>
 
-              <div className="acc-chat__msgs">
+              <div className="acc-chat__msgs" ref={msgsRef} onScroll={onMsgsScroll}>
                 {messagesLoading ? (
                   <p className="acc-muted">Загружаем сообщения…</p>
                 ) : messages.length === 0 ? (
@@ -280,9 +315,7 @@ export default function AccountMessages({ token, activeChatId, onSelectChat, onU
                       </div>
                     )
                   })
-                )}
-                <div ref={bottomRef} />
-              </div>
+                )}              </div>
 
               {error ? <p className="acc-error acc-chat__error">{error}</p> : null}
 

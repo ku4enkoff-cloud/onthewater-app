@@ -8,6 +8,7 @@ import { fetchMyReviews, uploadAvatar } from '../api/auth'
 import { createChat, fetchUnreadMessagesCount } from '../api/chats'
 import { getPhotoUrl } from '../config'
 import { useNoIndexSeo } from '../seo/useNoIndexSeo.js'
+import { useVisiblePolling } from '../hooks/useVisiblePolling.js'
 import { bookingGroup } from '../components/account/accountUtils'
 import AccountBookings from '../components/account/AccountBookings.jsx'
 import AccountMessages from '../components/account/AccountMessages.jsx'
@@ -84,6 +85,22 @@ export default function AccountPage() {
   useEffect(() => {
     loadReviews()
   }, [loadReviews])
+
+  const refreshInBackground = useCallback(async () => {
+    const [rows, count, reviewRows] = await Promise.all([
+      fetchMyBookings(token).catch(() => null),
+      tab === 'messages' ? Promise.resolve(null) : fetchUnreadMessagesCount(token).catch(() => null),
+      fetchMyReviews(token).catch(() => null),
+    ])
+    if (rows) {
+      setBookings(rows)
+      setBookingsError('')
+    }
+    if (count != null) setUnread(count)
+    if (reviewRows) setReviews(reviewRows)
+  }, [token, tab])
+
+  useVisiblePolling(refreshInBackground, 45000)
 
   const reviewedBoatIds = useMemo(() => new Set(reviews.map((r) => String(r.boat_id))), [reviews])
   const tripsCount = useMemo(() => bookings.filter((b) => bookingGroup(b) === 'completed').length, [bookings])

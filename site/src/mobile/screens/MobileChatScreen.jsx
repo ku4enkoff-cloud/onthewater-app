@@ -10,6 +10,7 @@ import {
 import { getPhotoUrl } from '../../config'
 import { useAuth } from '../../context/AuthContext'
 import { useNoIndexSeo } from '../../seo/useNoIndexSeo'
+import { useVisiblePolling } from '../../hooks/useVisiblePolling'
 import { useChatUnread } from '../context/ChatUnreadContext'
 import UnauthorizedCard from '../components/UnauthorizedCard.jsx'
 
@@ -50,6 +51,8 @@ export default function MobileChatScreen() {
     setLoading(true)
     load()
   }, [load])
+
+  useVisiblePolling(load, 8000, Boolean(token))
 
   const openArchive = async () => {
     setArchiveOpen(true)
