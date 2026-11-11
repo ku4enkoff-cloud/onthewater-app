@@ -76,7 +76,7 @@ export default function SiteHeader() {
         <nav className="pm-nav" aria-label="Основное меню">
           <Link to="/boats">Катера</Link>
           <Link to="/#destinations">Направления</Link>
-          <Link to="/#categories">Тарифы</Link>
+          <Link to="/owners">Владельцам</Link>
           <Link to="/about">О нас</Link>
         </nav>
 
@@ -160,8 +160,8 @@ export default function SiteHeader() {
           <Link to="/#destinations" onClick={closeMobileNav}>
             Направления
           </Link>
-          <Link to="/#categories" onClick={closeMobileNav}>
-            Тарифы
+          <Link to="/owners" onClick={closeMobileNav}>
+            Владельцам
           </Link>
           <Link to="/about" onClick={closeMobileNav}>
             О нас
