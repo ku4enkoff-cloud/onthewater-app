@@ -12,12 +12,18 @@ import {
 import { getPhotoUrl } from '../../config'
 import { boatDetailPath } from '../../boatUrl'
 import { useVisiblePolling } from '../../hooks/useVisiblePolling'
+import { useChatMessageEvents, useRealtime } from '../../context/RealtimeContext'
 import { formatChatTime } from './accountUtils'
 
 function previewText(chat) {
   const mine = chat.last_message_is_own || chat.last_message_sender === 'me'
   const text = chat.last_message || 'Нет сообщений'
   return `${mine ? 'Вы: ' : ''}${text}`
+}
+
+function appendUnique(list, message) {
+  if (message?.id != null && list.some((m) => String(m.id) === String(message.id))) return list
+  return [...list, message]
 }
 
 function Avatar({ src }) {
@@ -39,11 +45,14 @@ export default function AccountMessages({ token, activeChatId, onSelectChat, onU
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const msgsRef = useRef(null)
+  const { connected } = useRealtime()
 
   const viewRef = useRef(view)
   viewRef.current = view
   const openChatRef = useRef(activeChatId)
   openChatRef.current = activeChatId
+  const chatsRef = useRef(chats)
+  chatsRef.current = chats
 
   const loadChats = useCallback(async () => {
     if (!token) return
@@ -107,8 +116,40 @@ export default function AccountMessages({ token, activeChatId, onSelectChat, onU
     loadMessages()
   }, [activeChatId, loadMessages])
 
-  useVisiblePolling(() => loadMessages({ silent: true }), 5000, Boolean(activeChatId))
-  useVisiblePolling(() => loadChats(), 8000)
+  // При живом сокете опрос — только подстраховка
+  useVisiblePolling(() => loadMessages({ silent: true }), connected ? 30000 : 5000, Boolean(activeChatId))
+  useVisiblePolling(() => loadChats(), connected ? 60000 : 8000)
+
+  useChatMessageEvents(({ chat_id: chatId, message } = {}) => {
+    if (chatId == null || !message) return
+    const isOpen = String(chatId) === String(openChatRef.current)
+    const mine = message.is_own === true || message.sender === 'me'
+
+    if (isOpen) {
+      setMessages((prev) => appendUnique(prev, message))
+      // GET сообщений помечает входящие прочитанными на сервере
+      if (!mine) loadMessages({ silent: true })
+    }
+
+    if (viewRef.current !== 'inbox') return
+    if (!chatsRef.current.some((c) => String(c.id) === String(chatId))) {
+      loadChats()
+      return
+    }
+    setChats((prev) =>
+      prev.map((c) =>
+        String(c.id) !== String(chatId)
+          ? c
+          : {
+              ...c,
+              last_message: message.text,
+              last_message_is_own: mine,
+              last_message_at: message.created_at || new Date().toISOString(),
+              unread_count: isOpen || mine ? 0 : (Number(c.unread_count) || 0) + 1,
+            },
+      ),
+    )
+  })
 
   useEffect(() => {
     if (view !== 'inbox') return
@@ -148,10 +189,12 @@ export default function AccountMessages({ token, activeChatId, onSelectChat, onU
       setSending(true)
       setError('')
       const created = await sendChatMessage(token, activeChatId, value)
-      setMessages((prev) => [
-        ...prev,
-        created?.id ? created : { id: `local-${Date.now()}`, text: value, is_own: true, created_at: new Date().toISOString() },
-      ])
+      setMessages((prev) =>
+        appendUnique(
+          prev,
+          created?.id ? created : { id: `local-${Date.now()}`, text: value, is_own: true, created_at: new Date().toISOString() },
+        ),
+      )
       setChats((prev) =>
         prev.map((c) =>
           String(c.id) === String(activeChatId)

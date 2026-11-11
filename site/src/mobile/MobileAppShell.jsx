@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import BottomTabBar from './components/BottomTabBar.jsx'
 import { ChatUnreadProvider } from './context/ChatUnreadContext.jsx'
@@ -28,7 +29,9 @@ export default function MobileAppShell() {
             .filter(Boolean)
             .join(' ')}
         >
-          <Outlet />
+          <Suspense fallback={null}>
+            <Outlet />
+          </Suspense>
         </div>
         {showTabs ? <BottomTabBar /> : null}
       </div>

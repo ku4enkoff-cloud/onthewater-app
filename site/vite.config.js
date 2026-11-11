@@ -38,6 +38,8 @@ export default defineConfig(({ mode }) => {
             '/legal-documents': { target: 'http://localhost:3000', changeOrigin: true },
             '/auth': { target: 'http://localhost:3000', changeOrigin: true },
             '/bookings': { target: 'http://localhost:3000', changeOrigin: true },
+            '/chats': { target: 'http://localhost:3000', changeOrigin: true, bypass: bypassSpaHtml },
+            '/socket.io': { target: 'http://localhost:3000', changeOrigin: true, ws: true },
           }
         : undefined,
     },

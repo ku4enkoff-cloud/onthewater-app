@@ -11,6 +11,7 @@ import { getPhotoUrl } from '../../config'
 import { useAuth } from '../../context/AuthContext'
 import { useNoIndexSeo } from '../../seo/useNoIndexSeo'
 import { useVisiblePolling } from '../../hooks/useVisiblePolling'
+import { useChatMessageEvents, useRealtime } from '../../context/RealtimeContext'
 import { useChatUnread } from '../context/ChatUnreadContext'
 import UnauthorizedCard from '../components/UnauthorizedCard.jsx'
 
@@ -52,7 +53,9 @@ export default function MobileChatScreen() {
     load()
   }, [load])
 
-  useVisiblePolling(load, 8000, Boolean(token))
+  const { connected } = useRealtime()
+  useVisiblePolling(load, connected ? 60000 : 8000, Boolean(token))
+  useChatMessageEvents(() => load())
 
   const openArchive = async () => {
     setArchiveOpen(true)

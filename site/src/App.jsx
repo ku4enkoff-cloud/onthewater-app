@@ -1,16 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { Suspense, lazy, useEffect, useRef } from 'react'
 import { Routes, Route, useLocation, useParams, Navigate, Outlet } from 'react-router-dom'
 import HomePage from './pages/HomePage.jsx'
 import BoatsSearchPage from './pages/BoatsSearchPage.jsx'
 import BoatDetailPage from './pages/BoatDetailPage.jsx'
-import LoginPage from './pages/LoginPage.jsx'
-import RegisterPage from './pages/RegisterPage.jsx'
-import AccountPage from './pages/AccountPage.jsx'
 import OwnerLandingPage from './pages/OwnerLandingPage.jsx'
-import LegalDocumentPage from './pages/LegalDocumentPage.jsx'
-import SitemapPage from './pages/SitemapPage.jsx'
 import AboutPage from './pages/AboutPage.jsx'
-import NotFoundPage from './pages/NotFoundPage.jsx'
 import SiteHeader from './components/SiteHeader.jsx'
 import SiteFooter from './components/SiteFooter.jsx'
 import AndroidAppPrompt from './components/AndroidAppPrompt.jsx'
@@ -21,12 +15,20 @@ import { useAuth } from './context/AuthContext.jsx'
 import { useIsMobileApp } from './hooks/useIsMobileApp.js'
 import MobileAppShell from './mobile/MobileAppShell.jsx'
 import MobileHomeScreen from './mobile/screens/MobileHomeScreen.jsx'
-import MobileFavoritesScreen from './mobile/screens/MobileFavoritesScreen.jsx'
-import MobileBookingsScreen from './mobile/screens/MobileBookingsScreen.jsx'
-import MobileChatScreen from './mobile/screens/MobileChatScreen.jsx'
-import MobileChatDetailScreen from './mobile/screens/MobileChatDetailScreen.jsx'
-import MobileProfileScreen from './mobile/screens/MobileProfileScreen.jsx'
 import DesktopTabRedirect from './mobile/screens/DesktopTabRedirect.jsx'
+
+// Страницы-входы из поиска не делать lazy: createRoot перерисовывает пререндер, и пока грузится чанк, контент пропадает.
+const LoginPage = lazy(() => import('./pages/LoginPage.jsx'))
+const RegisterPage = lazy(() => import('./pages/RegisterPage.jsx'))
+const AccountPage = lazy(() => import('./pages/AccountPage.jsx'))
+const LegalDocumentPage = lazy(() => import('./pages/LegalDocumentPage.jsx'))
+const SitemapPage = lazy(() => import('./pages/SitemapPage.jsx'))
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage.jsx'))
+const MobileFavoritesScreen = lazy(() => import('./mobile/screens/MobileFavoritesScreen.jsx'))
+const MobileBookingsScreen = lazy(() => import('./mobile/screens/MobileBookingsScreen.jsx'))
+const MobileChatScreen = lazy(() => import('./mobile/screens/MobileChatScreen.jsx'))
+const MobileChatDetailScreen = lazy(() => import('./mobile/screens/MobileChatDetailScreen.jsx'))
+const MobileProfileScreen = lazy(() => import('./mobile/screens/MobileProfileScreen.jsx'))
 
 function GeolocationOnAllowedRoutes() {
   const { pathname } = useLocation()
@@ -88,7 +90,9 @@ function DesktopLayout() {
       <AndroidAppPrompt />
       <SiteHeader />
       <div className={`app-outlet${isBoatsSearch ? ' app-outlet--boatsMap' : ''}`}>
-        <Outlet />
+        <Suspense fallback={<div className="bd-loading">Загружаем…</div>}>
+          <Outlet />
+        </Suspense>
       </div>
       {isBoatsSearch ? null : <SiteFooter />}
     </>

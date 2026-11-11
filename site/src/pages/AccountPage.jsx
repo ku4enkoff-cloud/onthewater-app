@@ -9,6 +9,7 @@ import { createChat, fetchUnreadMessagesCount } from '../api/chats'
 import { getPhotoUrl } from '../config'
 import { useNoIndexSeo } from '../seo/useNoIndexSeo.js'
 import { useVisiblePolling } from '../hooks/useVisiblePolling.js'
+import { useChatMessageEvents } from '../context/RealtimeContext.jsx'
 import { bookingGroup } from '../components/account/accountUtils'
 import AccountBookings from '../components/account/AccountBookings.jsx'
 import AccountMessages from '../components/account/AccountMessages.jsx'
@@ -101,6 +102,12 @@ export default function AccountPage() {
   }, [token, tab])
 
   useVisiblePolling(refreshInBackground, 45000)
+
+  useChatMessageEvents(({ message } = {}) => {
+    if (tab === 'messages' || !message) return
+    if (message.is_own === true || message.sender === 'me') return
+    fetchUnreadMessagesCount(token).then(setUnread).catch(() => {})
+  })
 
   const reviewedBoatIds = useMemo(() => new Set(reviews.map((r) => String(r.boat_id))), [reviews])
   const tripsCount = useMemo(() => bookings.filter((b) => bookingGroup(b) === 'completed').length, [bookings])

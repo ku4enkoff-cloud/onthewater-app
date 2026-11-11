@@ -5,6 +5,7 @@ import { fetchChat, fetchChatMessages, sendChatMessage } from '../../api/chats'
 import { useAuth } from '../../context/AuthContext'
 import { useNoIndexSeo } from '../../seo/useNoIndexSeo'
 import { useVisiblePolling } from '../../hooks/useVisiblePolling'
+import { useChatMessageEvents, useRealtime } from '../../context/RealtimeContext'
 import { useChatUnread } from '../context/ChatUnreadContext'
 import UnauthorizedCard from '../components/UnauthorizedCard.jsx'
 
@@ -41,7 +42,11 @@ export default function MobileChatDetailScreen() {
     load()
   }, [load])
 
-  useVisiblePolling(load, 5000, Boolean(token && chatId))
+  const { connected } = useRealtime()
+  useVisiblePolling(load, connected ? 30000 : 5000, Boolean(token && chatId))
+  useChatMessageEvents(({ chat_id: eventChatId } = {}) => {
+    if (String(eventChatId) === String(chatId)) load()
+  })
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })

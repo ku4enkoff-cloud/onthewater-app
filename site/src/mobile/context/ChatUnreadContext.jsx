@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { fetchUnreadMessagesCount } from '../../api/chats'
+import { useChatMessageEvents } from '../../context/RealtimeContext'
 
 const ChatUnreadContext = createContext({ unread: 0, refreshUnread: async () => {} })
 
@@ -27,6 +28,10 @@ export function ChatUnreadProvider({ children }) {
     const id = setInterval(refreshUnread, 30000)
     return () => clearInterval(id)
   }, [refreshUnread, token])
+
+  useChatMessageEvents(({ message } = {}) => {
+    if (message && message.is_own !== true && message.sender !== 'me') refreshUnread()
+  })
 
   const value = useMemo(() => ({ unread, refreshUnread }), [unread, refreshUnread])
   return <ChatUnreadContext.Provider value={value}>{children}</ChatUnreadContext.Provider>

@@ -18,6 +18,7 @@ if (!process.env.JWT_SECRET) {
 }
 
 const io = new Server(httpServer, { cors: { origin: '*' } });
+app.set('io', io);
 
 try {
     const { createAdapter } = require('@socket.io/redis-adapter');
