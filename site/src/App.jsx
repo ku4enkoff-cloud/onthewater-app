@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Routes, Route, useLocation, Navigate, Outlet } from 'react-router-dom'
+import { Routes, Route, useLocation, useParams, Navigate, Outlet } from 'react-router-dom'
 import HomePage from './pages/HomePage.jsx'
 import BoatsSearchPage from './pages/BoatsSearchPage.jsx'
 import BoatDetailPage from './pages/BoatDetailPage.jsx'
@@ -102,7 +102,7 @@ function HomeEntry() {
 
 function FavoritesEntry() {
   const isMobileApp = useIsMobileApp()
-  return isMobileApp ? <MobileFavoritesScreen /> : <DesktopTabRedirect to="/account" />
+  return isMobileApp ? <MobileFavoritesScreen /> : <DesktopTabRedirect to="/account?tab=favorites" />
 }
 
 function BookingsEntry() {
@@ -112,12 +112,14 @@ function BookingsEntry() {
 
 function ChatsEntry() {
   const isMobileApp = useIsMobileApp()
-  return isMobileApp ? <MobileChatScreen /> : <DesktopTabRedirect to="/account" />
+  return isMobileApp ? <MobileChatScreen /> : <DesktopTabRedirect to="/account?tab=messages" />
 }
 
 function ChatDetailEntry() {
   const isMobileApp = useIsMobileApp()
-  return isMobileApp ? <MobileChatDetailScreen /> : <DesktopTabRedirect to="/account" />
+  const { chatId } = useParams()
+  const to = chatId ? `/account?tab=messages&chat=${encodeURIComponent(chatId)}` : '/account?tab=messages'
+  return isMobileApp ? <MobileChatDetailScreen /> : <DesktopTabRedirect to={to} />
 }
 
 function AccountEntry() {

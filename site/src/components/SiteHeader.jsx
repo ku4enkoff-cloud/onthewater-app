@@ -100,7 +100,7 @@ export default function SiteHeader() {
                 {user ? (
                   <>
                     <Link to="/account" role="menuitem" className="pm-accountMenu__item" onClick={closeAccountMenu}>
-                      Кабинет
+                      Личный кабинет
                     </Link>
                     <button
                       type="button"

@@ -84,3 +84,19 @@ export async function fetchBoatAvailability(boatId, dateStr) {
   const data = await res.json()
   return Array.isArray(data?.busy) ? data.busy : []
 }
+
+export async function createBoatReview(token, boatId, { rating, text }) {
+  const base = API_BASE || ''
+  const res = await fetch(`${base}/boats/${encodeURIComponent(boatId)}/reviews`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    credentials: 'omit',
+    body: JSON.stringify({ rating, text }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data?.error || 'Не удалось отправить отзыв')
+  return data
+}
