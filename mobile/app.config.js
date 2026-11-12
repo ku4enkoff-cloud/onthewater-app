@@ -107,6 +107,7 @@ export default {
       './plugins/withAndroidSigning.js',
       './plugins/withAndroidOpenGlPlayCompat.js',
       './plugins/withYandexMapKitKey.js',
+      './plugins/withIosDisableScriptSandboxing.js',
       ...(hasGoogleServices ? ['./plugins/withGoogleServices.js'] : []),
       [
         'expo-build-properties',
