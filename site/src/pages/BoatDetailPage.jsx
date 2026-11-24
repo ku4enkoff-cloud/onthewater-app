@@ -24,6 +24,7 @@ import {
 } from '../boatSearchUtils'
 import BookingPanelC06 from '../components/booking/BookingPanelC06.jsx'
 import BoatDetailLocationMap from '../components/boat/BoatDetailLocationMap.jsx'
+import MobileBoatDetail from '../components/boat/MobileBoatDetail.jsx'
 import BoatResultCard from '../components/search/BoatResultCard.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { createBooking } from '../api/bookings'
@@ -33,6 +34,7 @@ import { useFavorites } from '../context/FavoritesContext.jsx'
 import { useIsMobileApp } from '../hooks/useIsMobileApp.js'
 import { createChat } from '../api/chats.js'
 import '../styles/boat-detail-c06.css'
+import '../styles/boat-detail-app.css'
 
 const PLACEHOLDER = 'https://placehold.co/1200x750/e8eef4/64748b?text=%D0%9A%D0%B0%D1%82%D0%B5%D1%80'
 
@@ -643,6 +645,34 @@ export default function BoatDetailPage() {
 
   return (
     <div className="bd-page bd-page--bs bd-page--c06">
+      <MobileBoatDetail
+        boat={boat}
+        photos={photos}
+        photoIndex={photoIndex}
+        onPhotoIndex={setPhotoIndex}
+        videos={videos}
+        reviews={reviews}
+        favorite={favorite}
+        onToggleFavorite={toggleFavorite}
+        onShare={handleShare}
+        onOpenGallery={(index) => {
+          setPhotoIndex(index)
+          setGalleryLightboxOpen(true)
+        }}
+        onOpenVideo={() => {
+          if (!videos.length) return
+          setVideoIndex(0)
+          setVideoModalOpen(true)
+        }}
+        durationOptions={durationOptions}
+        bookDuration={bookDuration}
+        onDurationChange={setBookDuration}
+        selectedTierPrice={selectedTierPrice}
+        onBook={() => setMobileBookingOpen(true)}
+        onMessage={handleMessageOwner}
+        chatBusy={chatBusy}
+        similarBoats={similarBoats}
+      />
       <article
         className="bd-shell"
         itemScope
@@ -1327,7 +1357,7 @@ export default function BoatDetailPage() {
                   ×
                 </button>
                 <h3 id="bd-mobile-booking-title" className="bd-mobileBookModal__title">
-                  Бронирование
+                  Запрос на бронирование
                 </h3>
                 <div className="bd-mobileBookModal__body">{renderBookingCard()}</div>
               </div>
