@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthContext } from '../../shared/context/AuthContext';
 import { theme } from '../../shared/theme';
 import { getAppVariant } from '../../shared/appVariant';
+import { reportAppEvent } from '../../shared/analytics/appMetrica';
 
 const appVariant = getAppVariant();
 
@@ -101,6 +102,9 @@ export default function RegisterScreen({ navigation, route }) {
                 accept_terms: true,
             });
             const data = res?.data || {};
+            if (appVariant === 'client') {
+                reportAppEvent('COMPLETED_REGISTRATION');
+            }
             if (data.token && data.user) {
                 if (navigation.canGoBack()) navigation.goBack();
                 return;

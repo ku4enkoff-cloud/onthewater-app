@@ -23,3 +23,17 @@ export function initAppMetrica() {
         console.warn('[AppMetrica]', e?.message || e);
     }
 }
+
+/** Событие для конверсии AppMetrica / Директа. Имя должно совпасть с событием в кабинете. */
+export function reportAppEvent(name) {
+    if (!name) return;
+    initAppMetrica();
+    try {
+        const AppMetrica = require('@appmetrica/react-native-analytics').default;
+        if (typeof AppMetrica?.reportEvent === 'function') {
+            AppMetrica.reportEvent(String(name));
+        }
+    } catch (e) {
+        console.warn('[AppMetrica]', e?.message || e);
+    }
+}
