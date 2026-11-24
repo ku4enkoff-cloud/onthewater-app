@@ -723,3 +723,465 @@
     padding: 8px;
   }
 }
+
+/* Phone: list like the client app. Desktop map layout stays. */
+.bs-app,
+.bs-appFab {
+  display: none;
+}
+
+.bs-card.bs-card--app {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.bs-card.bs-card--app:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+.bs-card--app .bs-card__imageWrap {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #e4e7ec;
+}
+
+.bs-card--app .bs-card__mediaLink {
+  display: block;
+  height: 100%;
+}
+
+.bs-card--app .bs-card__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bs-card--app .bs-card__heart {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: #111827;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.18);
+  cursor: pointer;
+}
+
+.bs-card--app .bs-card__photoCount--app,
+.bs-card--app .bs-card__priceBadge--app {
+  z-index: 2;
+  pointer-events: none;
+}
+
+.bs-card--app .bs-card__photoCount--app {
+  top: auto;
+  right: auto;
+  left: 10px;
+  bottom: 10px;
+  background: rgba(17, 17, 17, 0.72);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+}
+
+.bs-card--app .bs-card__priceBadge--app {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  background: #1a1a1a;
+  border-radius: 10px;
+  padding: 7px 10px;
+  bottom: 10px;
+  right: 10px;
+  box-shadow: none;
+}
+
+.bs-card--app .bs-card__priceBadge--app .bs-card__priceMain {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.bs-card--app .bs-card__priceBadge--app .bs-card__priceUnit {
+  color: #c8c8c8;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.bs-card--app .bs-card__body {
+  display: block;
+  padding: 10px 2px 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.bs-card--app .bs-card__appLoc {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.bs-card--app .bs-card__veteran {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  color: #c2410c;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.bs-card--app .bs-card__location {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.bs-card--app .bs-card__appTitleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.bs-card--app .bs-card__appTitleRow .bs-card__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #111827;
+}
+
+.bs-card--app .bs-card__appRating {
+  flex: none;
+  text-align: right;
+}
+
+.bs-card--app .bs-card__ratingLine {
+  justify-content: flex-end;
+  gap: 3px;
+  font-size: 13px;
+}
+
+.bs-card--app .bs-card__star {
+  color: #f5b400;
+  font-size: 13px;
+}
+
+.bs-card--app .bs-card__ratingNum {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.bs-card--app .bs-card__reviews {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.bs-card--app .bs-card__bookings {
+  margin-top: 1px;
+  font-size: 12px;
+  color: #9ca3af;
+  text-align: right;
+}
+
+.bs-card--app .bs-card__meta {
+  margin: 6px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+@media (max-width: 768px) {
+  .bs-page--mapFirst .bs-floatChrome,
+  .bs-page--mapFirst .bs-floatPanel {
+    display: none !important;
+  }
+
+  .bs-page--mapFirst .bs-mapCol {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .bs-page--mapFirst.bs-page--appMap .bs-mapCol {
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .bs-page--mapFirst:not(.bs-page--appMap) .bs-app {
+    display: flex;
+  }
+
+  .bs-app {
+    position: absolute;
+    inset: 0;
+    z-index: 12;
+    flex-direction: column;
+    min-height: 0;
+    background: #f3f4f6;
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .bs-appFab {
+    display: inline-flex;
+  }
+}
+
+.bs-appTop {
+  position: relative;
+  z-index: 4;
+  flex: none;
+}
+
+.bs-appHead {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  align-items: center;
+  margin: 10px 12px 0;
+  min-height: 64px;
+  padding: 8px 4px;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
+}
+
+.bs-appHead__icon,
+.bs-appHead__center {
+  border: 0;
+  background: transparent;
+  color: #111827;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.bs-appHead__icon {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.bs-appHead__center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 4px 8px;
+}
+
+.bs-appHead__title {
+  max-width: 100%;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bs-appHead__date {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: #9ca3af;
+}
+
+.bs-appChevron.is-up {
+  transform: rotate(180deg);
+}
+
+.bs-appQuery {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: calc(100% + 8px);
+  z-index: 30;
+  max-height: min(70vh, 520px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
+  padding: 6px;
+}
+
+.bs-appQuery__row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #111827;
+  font: 600 14px/1.3 inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bs-appQuery__row + .bs-appQuery__row {
+  border-top: 1px solid #f0f1f3;
+}
+
+.bs-appQuery__row.is-open {
+  background: #f3f4f6;
+}
+
+.bs-appQuery .bs-searchBar__cityPanel.pm-cityPanel,
+.bs-appQuery .bs-searchBar__calWrap.pm-calWrap {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  transform: none;
+  width: 100%;
+  max-width: none;
+  margin-top: 6px;
+}
+
+.bs-appChips,
+.bs-appFilters {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  flex: none;
+  padding: 12px 16px 0;
+  scrollbar-width: none;
+}
+
+.bs-appFilters {
+  padding-top: 10px;
+  padding-bottom: 2px;
+}
+
+.bs-appChips::-webkit-scrollbar,
+.bs-appFilters::-webkit-scrollbar {
+  display: none;
+}
+
+.bs-appChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  background: #fff;
+  color: #1a1a1a;
+  font: 600 13px/1 inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.bs-appChip--on {
+  background: #111827;
+  border-color: #111827;
+  color: #fff;
+}
+
+.bs-appChip--filter.bs-appChip--on {
+  background: #fff;
+  color: #111827;
+  border-color: #111827;
+}
+
+.bs-appChip__count {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #111827;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bs-appList {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px 16px 96px;
+}
+
+.bs-appGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.bs-appEmpty {
+  margin: 28px 4px;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.bs-appFab {
+  position: fixed;
+  left: 50%;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  transform: translateX(-50%);
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #1b2437;
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.28);
+  cursor: pointer;
+}
+
+.bs-appHead__icon:focus-visible,
+.bs-appHead__center:focus-visible,
+.bs-appChip:focus-visible,
+.bs-appQuery__row:focus-visible,
+.bs-appFab:focus-visible,
+.bs-card--app .bs-card__heart:focus-visible {
+  outline: 2px solid #1b365d;
+  outline-offset: 2px;
+}

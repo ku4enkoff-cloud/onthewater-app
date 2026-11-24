@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useIsMobileApp } from '../hooks/useIsMobileApp.js'
 import { fetchBoatTypes, fetchBoatsSearch } from '../api/boats'
 import { YANDEX_MAPS_API_KEY, getPhotoUrl } from '../config'
 import {
@@ -157,6 +158,59 @@ function FiltersIcon() {
   )
 }
 
+function AppBackIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M14.5 6.5 8.5 12l6 5.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function AppChevronIcon({ up = false }) {
+  return (
+    <svg className={`bs-appChevron${up ? ' is-up' : ''}`} width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M6.5 9.5 12 15l5.5-5.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function AppSlidersIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <circle cx="9" cy="7" r="2.15" fill="#fff" stroke="currentColor" strokeWidth="1.7" />
+      <circle cx="15" cy="12" r="2.15" fill="#fff" stroke="currentColor" strokeWidth="1.7" />
+      <circle cx="8" cy="17" r="2.15" fill="#fff" stroke="currentColor" strokeWidth="1.7" />
+    </svg>
+  )
+}
+
+function AppPinIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M12 21s7-4.35 7-10a7 7 0 1 0-14 0c0 5.65 7 10 7 10z" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="12" cy="11" r="2.2" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  )
+}
+
+function AppListIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M9 7h11M9 12h11M9 17h11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="5" cy="7" r="1.1" fill="currentColor" />
+      <circle cx="5" cy="12" r="1.1" fill="currentColor" />
+      <circle cx="5" cy="17" r="1.1" fill="currentColor" />
+    </svg>
+  )
+}
+
+function formatAppDateRu(iso) {
+  const base = formatBookingDateRu(iso)
+  if (!base || base === 'Дата') return base
+  return /г\.?\s*$/.test(base) ? base : `${base} г.`
+}
+
 function weekdayLabelRu(iso) {
   try {
     const d = new Date(`${iso}T12:00:00`)
@@ -211,34 +265,45 @@ export default function BoatsSearchPage() {
   const [filtersModalKey, setFiltersModalKey] = useState(0)
   const [filtersModalFocus, setFiltersModalFocus] = useState(null)
   const [filterDropdown, setFilterDropdown] = useState(null)
+  const [appMapOpen, setAppMapOpen] = useState(false)
+  const [appQueryOpen, setAppQueryOpen] = useState(false)
+  const isMobileApp = useIsMobileApp()
 
   useEffect(() => {
-    if (openMapFromUrl) setMapVisible(true)
+    if (openMapFromUrl && !window.matchMedia('(max-width: 768px)').matches) setMapVisible(true)
   }, [openMapFromUrl])
 
   const searchBarRef = useRef(null)
+  const appChromeRef = useRef(null)
   const cityFilterRef = useRef(null)
   const guestsFilterAnchorRef = useRef(null)
+  const guestsMobileAnchorRef = useRef(null)
+  const priceMobileAnchorRef = useRef(null)
+  const durationMobileAnchorRef = useRef(null)
   const filterAnchorRefs = useMemo(
     () => ({
-      guests: guestsFilterAnchorRef,
+      guests: isMobileApp ? guestsMobileAnchorRef : guestsFilterAnchorRef,
+      price: priceMobileAnchorRef,
+      duration: durationMobileAnchorRef,
     }),
-    [],
+    [isMobileApp],
   )
 
   useEffect(() => {
     const onDown = (e) => {
-      if (!searchBarRef.current?.contains(e.target)) {
-        setCityOpen(false)
-        setDateOpen(false)
-        setCityFilter('')
-      }
+      const target = e.target
+      if (searchBarRef.current?.contains(target) || appChromeRef.current?.contains(target)) return
+      setCityOpen(false)
+      setDateOpen(false)
+      setCityFilter('')
+      setAppQueryOpen(false)
     }
     const onKey = (e) => {
       if (e.key === 'Escape') {
         setCityOpen(false)
         setDateOpen(false)
         setCityFilter('')
+        setAppQueryOpen(false)
       }
     }
     window.addEventListener('mousedown', onDown)
@@ -350,6 +415,7 @@ export default function BoatsSearchPage() {
     setLocationKey(value)
     setCityOpen(false)
     setCityFilter('')
+    setAppQueryOpen(false)
   }, [])
 
   const lastGeoSearchRef = useRef(null)
@@ -437,8 +503,19 @@ export default function BoatsSearchPage() {
       ? 'Все регионы'
       : LOCATION_OPTIONS.find((o) => o.value === locationKey)?.label || locationKey
 
+  const appTitle =
+    locationKey !== '__all'
+      ? displayLocation
+      : searchParams.get('near') === '1'
+        ? 'Рядом со мной'
+        : 'Все регионы'
+
   const activeFilters = countActiveFilters(filters, priceRange)
   const isGuestsActive = filters.passengers > 1
+  const isPriceActive =
+    priceRange.max > priceRange.min &&
+    (Number(filters.priceLow) > priceRange.min || Number(filters.priceHigh) < priceRange.max)
+  const isDurationActive = filters.duration != null
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 1025px)')
@@ -530,7 +607,7 @@ export default function BoatsSearchPage() {
       (filters.boatTypeName || '').toLowerCase() === (t.name || '').toLowerCase())
 
   return (
-    <div className={`bs-page bs-page--mapFirst${!mapVisible ? ' bs-page--listOnly' : ''}`}>
+    <div className={`bs-page bs-page--mapFirst${!mapVisible ? ' bs-page--listOnly' : ''}${appMapOpen ? ' bs-page--appMap' : ''}`}>
       <div className="bs-stage">
         <div className="bs-mapCol" aria-hidden={!mapVisible}>
           <div className="bs-mapWrap">
@@ -541,7 +618,7 @@ export default function BoatsSearchPage() {
               zoom={mapViewport.zoom}
               selectedBoatId={selectedBoatId}
               autoFitBounds
-              isActive={mapVisible}
+              isActive={mapVisible && (!isMobileApp || appMapOpen)}
               onGeoSearch={handleGeoSearch}
               onViewportChange={handleViewportChange}
               onPlacemarksPick={handleMapPlacemarksPick}
@@ -679,7 +756,7 @@ export default function BoatsSearchPage() {
               <span>Найти</span>
             </button>
 
-            {cityOpen ? (
+            {!isMobileApp && cityOpen ? (
               <div className="bs-searchBar__cityPanel pm-cityPanel" role="listbox" aria-label="Выбор города">
                 <div className="pm-cityPanel__search">
                   <span className="pm-cityPanel__searchIcon" aria-hidden>
@@ -734,7 +811,7 @@ export default function BoatsSearchPage() {
               </div>
             ) : null}
 
-            {dateOpen ? (
+            {!isMobileApp && dateOpen ? (
               <div className="bs-searchBar__calWrap pm-calWrap">
                 <HomeDateCalendar
                   value={dateStr}
@@ -742,6 +819,7 @@ export default function BoatsSearchPage() {
                   onChange={(iso) => {
                     if (!iso) return
                     setDateStr(iso)
+                    setAppQueryOpen(false)
                   }}
                   onClose={() => setDateOpen(false)}
                 />
@@ -855,6 +933,262 @@ export default function BoatsSearchPage() {
             ) : null}
           </div>
         </aside>
+
+        <div className="bs-app" ref={appChromeRef}>
+          <div className="bs-appTop">
+            <header className="bs-appHead">
+              <button type="button" className="bs-appHead__icon" aria-label="Назад" onClick={() => navigate(-1)}>
+                <AppBackIcon />
+              </button>
+              <button
+                type="button"
+                className="bs-appHead__center"
+                aria-expanded={appQueryOpen}
+                onClick={() => {
+                  setAppQueryOpen((open) => !open)
+                  setCityOpen(false)
+                  setDateOpen(false)
+                  setCityFilter('')
+                  setFilterDropdown(null)
+                }}
+              >
+                <span className="bs-appHead__title">{appTitle}</span>
+                <span className="bs-appHead__date">{formatAppDateRu(dateStr)}</span>
+              </button>
+              <button
+                type="button"
+                className="bs-appHead__icon"
+                aria-label="Изменить место и дату"
+                aria-expanded={appQueryOpen}
+                onClick={() => {
+                  setAppQueryOpen((open) => !open)
+                  setCityOpen(false)
+                  setDateOpen(false)
+                  setCityFilter('')
+                  setFilterDropdown(null)
+                }}
+              >
+                <AppChevronIcon up={appQueryOpen} />
+              </button>
+            </header>
+            {appQueryOpen ? (
+              <div className="bs-appQuery">
+                <button
+                  type="button"
+                  className={`bs-appQuery__row${cityOpen ? ' is-open' : ''}`}
+                  onClick={() => {
+                    setCityOpen((open) => !open)
+                    setDateOpen(false)
+                  }}
+                >
+                  <AppPinIcon />
+                  <span>{displayLocation}</span>
+                </button>
+                <button
+                  type="button"
+                  className={`bs-appQuery__row${dateOpen ? ' is-open' : ''}`}
+                  onClick={() => {
+                    setDateOpen((open) => !open)
+                    setCityOpen(false)
+                    setCityFilter('')
+                  }}
+                >
+                  <SearchBarCalendarIcon />
+                  <span>{formatAppDateRu(dateStr)}</span>
+                </button>
+                {isMobileApp && cityOpen ? (
+                  <div className="bs-searchBar__cityPanel pm-cityPanel" role="listbox" aria-label="Выбор города">
+                    <div className="pm-cityPanel__search">
+                      <span className="pm-cityPanel__searchIcon" aria-hidden>
+                        <CityPanelSearchIcon />
+                      </span>
+                      <input
+                        ref={cityFilterRef}
+                        className="pm-cityPanel__searchInput"
+                        type="text"
+                        placeholder="Поиск города…"
+                        value={cityFilter}
+                        onChange={(e) => setCityFilter(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') {
+                            setCityOpen(false)
+                            setCityFilter('')
+                          }
+                        }}
+                      />
+                    </div>
+                    <ul className="pm-cityPanel__list">
+                      {cityPanelOptions.map((o) => {
+                        const selected = o.value === locationKey
+                        return (
+                          <li key={o.value} role="presentation">
+                            <button
+                              type="button"
+                              role="option"
+                              aria-selected={selected}
+                              className={`pm-cityPanel__item${selected ? ' is-selected' : ''}`}
+                              onClick={() => pickLocation(o.value)}
+                            >
+                              <span className="pm-cityPanel__pin" aria-hidden>
+                                <CityPanelPinIcon />
+                              </span>
+                              <span className="pm-cityPanel__copy">
+                                <span className="pm-cityPanel__name">{o.label}</span>
+                                <span className="pm-cityPanel__region">
+                                  {o.value === '__all' ? 'По всей России' : regionHintFor(o.value)}
+                                </span>
+                              </span>
+                              {selected ? (
+                                <span className="pm-cityPanel__check" aria-hidden>
+                                  <CityPanelCheckIcon />
+                                </span>
+                              ) : null}
+                            </button>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
+                ) : null}
+                {isMobileApp && dateOpen ? (
+                  <div className="bs-searchBar__calWrap pm-calWrap">
+                    <HomeDateCalendar
+                      value={dateStr}
+                      minDate={todayISO()}
+                      onChange={(iso) => {
+                        if (!iso) return
+                        setDateStr(iso)
+                        setAppQueryOpen(false)
+                      }}
+                      onClose={() => setDateOpen(false)}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="bs-appChips" role="tablist" aria-label="Типы катеров">
+            {categoryItems.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={typeSelected(t)}
+                className={`bs-appChip${typeSelected(t) ? ' bs-appChip--on' : ''}`}
+                onClick={() => {
+                  setAppQueryOpen(false)
+                  toggleType(t)
+                }}
+              >
+                {t.name}
+              </button>
+            ))}
+          </div>
+
+          <div className="bs-appFilters" role="region" aria-label="Фильтры">
+            <button
+              type="button"
+              className={`bs-appChip bs-appChip--filter${activeFilters > 0 ? ' bs-appChip--on' : ''}`}
+              onClick={() => {
+                setAppQueryOpen(false)
+                openFiltersModal(null)
+              }}
+            >
+              <AppSlidersIcon />
+              Фильтры
+              {activeFilters > 0 ? <span className="bs-appChip__count">{activeFilters}</span> : null}
+            </button>
+            <button
+              type="button"
+              ref={priceMobileAnchorRef}
+              className={`bs-appChip bs-appChip--filter${isPriceActive || filterDropdown === 'price' ? ' bs-appChip--on' : ''}`}
+              aria-expanded={filterDropdown === 'price'}
+              onClick={() => {
+                setAppQueryOpen(false)
+                setCityOpen(false)
+                setDateOpen(false)
+                toggleFilterDropdown('price')
+              }}
+            >
+              Цена
+              <AppChevronIcon up={filterDropdown === 'price'} />
+            </button>
+            <button
+              type="button"
+              ref={guestsMobileAnchorRef}
+              className={`bs-appChip bs-appChip--filter${isGuestsActive || filterDropdown === 'guests' ? ' bs-appChip--on' : ''}`}
+              aria-expanded={filterDropdown === 'guests'}
+              onClick={() => {
+                setAppQueryOpen(false)
+                setCityOpen(false)
+                setDateOpen(false)
+                toggleFilterDropdown('guests')
+              }}
+            >
+              Гости
+              <AppChevronIcon up={filterDropdown === 'guests'} />
+            </button>
+            <button
+              type="button"
+              ref={durationMobileAnchorRef}
+              className={`bs-appChip bs-appChip--filter${isDurationActive || filterDropdown === 'duration' ? ' bs-appChip--on' : ''}`}
+              aria-expanded={filterDropdown === 'duration'}
+              onClick={() => {
+                setAppQueryOpen(false)
+                setCityOpen(false)
+                setDateOpen(false)
+                toggleFilterDropdown('duration')
+              }}
+            >
+              Длительность
+              <AppChevronIcon up={filterDropdown === 'duration'} />
+            </button>
+          </div>
+
+          <div className="bs-appList" role="region" aria-label="Список катеров">
+            {loading ? (
+              <p className="bs-appEmpty">Загружаем катера…</p>
+            ) : boats.length === 0 ? (
+              <p className="bs-appEmpty">
+                {allBoats.length > 0 && boatsOnDate.length === 0
+                  ? `На ${formatBookingDateDots(dateStr)} нет катеров с выходом в этот день — выберите другую дату.`
+                  : 'Ничего не найдено — измените фильтры или город.'}
+              </p>
+            ) : (
+              <div className="bs-appGrid">
+                {boats.map((boat) => (
+                  <BoatResultCard key={boat.id} boat={boat} filters={filters} layout="app" />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="bs-appFab"
+          onClick={() => {
+            setAppMapOpen((open) => !open)
+            setMapVisible(true)
+            setAppQueryOpen(false)
+            setCityOpen(false)
+            setDateOpen(false)
+            setFilterDropdown(null)
+          }}
+        >
+          {appMapOpen ? (
+            <>
+              <AppListIcon />
+              Список
+            </>
+          ) : (
+            <>
+              <AppPinIcon />
+              Карта
+            </>
+          )}
+        </button>
       </div>
 
       <FilterQuickDropdown
